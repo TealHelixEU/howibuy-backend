@@ -1,0 +1,9 @@
+# Port assignments
+
+We need several microservices to run in parallel in a local development environment.
+For that reason we need to make sure each microservice is assigned its own ports.
+This is a registry of the ports per microservice for reference and allocation.
+
+| Microservice (Maven module name) | HTTP | Test HTTP | Debug |
+|----------------------------------|------|-----------|-------|
+| **betterme**                     | 8180 | 8181      | 5105  |
