@@ -13,8 +13,16 @@
 	<name>BetterMe: Deployable of exposed services</name>
 	<description>Project that makes the deployable artifact of the BetterMe services exposed to the outside world</description>
 
+	<properties>
+		<jvm.args></jvm.args>
+	</properties>
+
 	<dependencies>
 		<!-- FRAMEWORK -->
+		<dependency>
+			<groupId>io.quarkiverse.qute.web</groupId>
+			<artifactId>quarkus-qute-web</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-arc</artifactId>
@@ -50,4 +58,48 @@
 			<artifactId>quarkus-junit5</artifactId>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<finalName>${project.artifactId}</finalName>
+
+		<plugins>
+			<plugin>
+				<groupId>io.quarkus</groupId>
+				<artifactId>quarkus-maven-plugin</artifactId>
+				<version>${version.quarkus.platform}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>betterme-quarkus-dev</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.quarkus</groupId>
+						<artifactId>quarkus-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>dev</goal>
+								</goals>
+								<phase>process-classes</phase>
+							</execution>
+						</executions>
+						<configuration>
+							<debug>5105</debug>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
