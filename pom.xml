@@ -36,7 +36,7 @@
 		<version.junit.jupiter>5.12.2</version.junit.jupiter>
 		<version.kafka>3.2.0</version.kafka><!-- When changing this, also check KafkaTestResource.java -->
 		<version.kafka.scala>2.13</version.kafka.scala>
-		<version.keycloak>18.0.0</version.keycloak>
+		<version.keycloak>26.2.1</version.keycloak>
 		<version.liquibase>4.31.1</version.liquibase>
 		<version.mockito>5.17.0</version.mockito>
 		<version.nimbus-jose-jwt>9.23</version.nimbus-jose-jwt>
