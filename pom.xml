@@ -12,6 +12,7 @@
 	<packaging>pom</packaging>
 
 	<modules>
+		<module>tealhelix-common</module>
 		<module>betterme-container</module>
 		<module>tealhelix-architecture</module>
 	</modules>
@@ -29,7 +30,7 @@
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
 		<!--<version.cdi-api>4.0.1</version.cdi-api>--><!-- Defined in quarkus-universe-bom, jakarta.enterprise.cdi-api -->
 		<version.h2>2.1.210</version.h2>
-		<version.hibernate-validator>8.0.1.Final</version.hibernate-validator><!-- Defined in quarkus-universe-bom, hibernate-validator -->
+		<version.hibernate-validator>8.0.2.Final</version.hibernate-validator><!-- Defined in quarkus-universe-bom, hibernate-validator -->
 		<version.jakarta-el>4.0.2</version.jakarta-el>
 		<version.jakarta.persistence-api>3.1.0</version.jakarta.persistence-api><!-- Defined in quarkus-universe-bom, jakarta.persistence-api -->
 		<version.jaxb.api>2.3.1</version.jaxb.api>
@@ -40,7 +41,7 @@
 		<version.keycloak>26.2.1</version.keycloak>
 		<version.liquibase>4.31.1</version.liquibase>
 		<version.mockito>5.17.0</version.mockito>
-		<version.nimbus-jose-jwt>9.23</version.nimbus-jose-jwt>
+		<version.nimbus-jose-jwt>10.2</version.nimbus-jose-jwt>
 		<version.org.immutables>2.10.1</version.org.immutables>
 		<version.postgres>42.7.5</version.postgres>
 		<version.slf4j>2.0.6</version.slf4j><!-- Defined in quarkus-universe-bom, search for <artifactId>slf4j-api</artifactId> -->
@@ -126,17 +127,12 @@
 			-->
 
 			<!--  OTHER -->
-			<!--
-			<dependency>
-				<groupId>com.github.slugify</groupId>
-				<artifactId>slugify</artifactId>
-				<version>${version.slugify}</version>
-			</dependency>
 			<dependency>
 				<groupId>com.nimbusds</groupId>
 				<artifactId>nimbus-jose-jwt</artifactId>
 				<version>${version.nimbus-jose-jwt}</version>
 			</dependency>
+			<!--
 			<dependency>
 				<groupId>io.swagger</groupId>
 				<artifactId>swagger-annotations</artifactId>
