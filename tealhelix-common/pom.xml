@@ -19,5 +19,6 @@
 		<module>tealhelix-common-services</module>
 		<module>tealhelix-common-services-impl</module>
 		<module>tealhelix-common-types</module>
+		<module>tealhelix-common-web</module>
 	</modules>
 </project>

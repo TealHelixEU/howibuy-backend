@@ -103,7 +103,7 @@ mvn -Ptealhelix-local-postgres quarkus:dev
 
 ### From command line (2)
 
-From the project root, activate the profile of the microservice you want to run (don't forget the profile with the DB settings:
+From the project root, activate the profile of the microservice you want to run (don't forget the profile with the DB settings):
 
 ```shell
 mvn package -Papplication-quarkus-dev,tealhelix-local-postgres
@@ -114,6 +114,7 @@ mvn package -Papplication-quarkus-dev,tealhelix-local-postgres
 Run a Quarkus run configuration. You need to specify the DB connection parameters (and any other runtime parameters)
 from the run configuration. For that, take a look at the `pom.xml` of the microservice you want to run. There is a
 property `jvm.args`. You need to define those and give them the appropriate values (for IntelliJ, "Add VM options").
+You need to make sure the IDE runner resolves workspace artifacts.
 
 ### From Docker
 

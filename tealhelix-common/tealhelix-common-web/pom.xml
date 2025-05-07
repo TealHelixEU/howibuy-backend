@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.tealhelix</groupId>
+		<artifactId>tealhelix-common</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>tealhelix-common-web</artifactId>
+
+	<name>TealHelix: Common web functionalities</name>
+	<description>Infrastructures and functionalities common to all web applications.</description>
+
+	<packaging>jar</packaging>
+
+	<dependencies>
+		<!-- PROJECT -->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-services</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-types</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+
+		<!-- SPECS -->
+		<dependency>
+			<groupId>jakarta.enterprise</groupId>
+			<artifactId>jakarta.enterprise.cdi-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.ws.rs</groupId>
+			<artifactId>jakarta.ws.rs-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.microprofile.config</groupId>
+			<artifactId>microprofile-config-api</artifactId>
+		</dependency>
+
+		<!-- OTHER -->
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+		</dependency>
+	</dependencies>
+</project>
