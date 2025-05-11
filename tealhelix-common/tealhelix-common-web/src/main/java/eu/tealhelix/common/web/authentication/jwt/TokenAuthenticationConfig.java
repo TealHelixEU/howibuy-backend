@@ -15,7 +15,7 @@ public interface TokenAuthenticationConfig {
 	/**
 	 * The default JWK cache (minimum) TTL, see {@link #getJwkCacheTtl()}.
 	 */
-	long MIN_CACHE_TTL =   5 * 60 * 1000; // 5 minutes
+	long MIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 	/**
 	 * Unused in the current configuration.
@@ -37,11 +37,32 @@ public interface TokenAuthenticationConfig {
 	String getUserIdFieldInJwt();
 
 	/**
+	 * The field of the JWT that contains the client id in the case of service accounts.
+	 *
+	 * @return The field of the JWT that contains the client id in the case of service accounts
+	 */
+	String getClientIdFieldInJwt();
+
+	/**
 	 * The field of the JWT that maps to the user's email.
 	 *
 	 * @return The field of the JWT that maps to the user's email
 	 */
 	String getEmailFieldInJwt();
+
+	/**
+	 * The JWT secret.
+	 *
+	 * @return The JWT secret
+	 */
+	String getJwtSecret();
+
+	/**
+	 * The JWT session validity time in seconds.
+	 *
+	 * @return The JWT session validity time in seconds
+	 */
+	Integer getJwtSessionTimeInSeconds();
 
 	/**
 	 * The maximum time to live for the cached JWK; if last retrieval is before this time,

@@ -4,34 +4,46 @@
 
 	<parent>
 		<groupId>eu.tealhelix</groupId>
-		<artifactId>tealhelix-common</artifactId>
+		<artifactId>betterme-container</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>tealhelix-common-services-impl</artifactId>
+	<artifactId>betterme-jaxrs</artifactId>
 
-	<name>TealHelix: Common service implementations</name>
-	<description>Common service implementations</description>
-
-	<packaging>jar</packaging>
+	<name>BetterMe: JAX-RS project</name>
+	<description>JAX-RS implementations for BetterMe</description>
 
 	<dependencies>
 		<!-- PROJECT -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
-			<artifactId>tealhelix-common-services</artifactId>
+			<artifactId>betterme-service-interfaces</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
-			<artifactId>tealhelix-common-types</artifactId>
+			<artifactId>tealhelix-common-web</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
 		<!-- SPECS -->
 		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>mutiny</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>jakarta.enterprise</groupId>
 			<artifactId>jakarta.enterprise.cdi-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.ws.rs</groupId>
+			<artifactId>jakarta.ws.rs-api</artifactId>
+		</dependency>
+
+		<!-- OTHER -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
 		</dependency>
 	</dependencies>
 </project>

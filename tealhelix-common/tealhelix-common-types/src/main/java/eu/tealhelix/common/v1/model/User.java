@@ -22,6 +22,13 @@ public interface User extends Principal, HasUserId {
 	boolean isSystem();
 
 	/**
+	 * Check if this user represents a service account.
+	 *
+	 * @return {@code true} if this user represents a service account
+	 */
+	boolean isService();
+
+	/**
 	 * Check if this user is the unauthenticated (anonymous) user.
 	 *
 	 * @return {@code true} if this user is the unauthenticated (anonymous) user

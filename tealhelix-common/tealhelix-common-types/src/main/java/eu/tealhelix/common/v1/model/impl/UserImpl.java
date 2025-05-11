@@ -1,4 +1,4 @@
-package eu.tealhelix.common.web.authentication.jwt;
+package eu.tealhelix.common.v1.model.impl;
 
 import eu.tealhelix.common.types.Email;
 import eu.tealhelix.common.v1.model.User;
@@ -12,12 +12,14 @@ public class UserImpl implements User {
 	private final String name;
 	private final Email email;
 	private final boolean systemFlag;
+	private final boolean serviceFlag;
 
-	public UserImpl(UserId id, String name, Email email, boolean systemFlag) {
+	public UserImpl(UserId id, String name, Email email, boolean systemFlag, boolean serviceFlag) {
 		this.id = id;
 		this.name = name;
 		this.email = email;
 		this.systemFlag = systemFlag;
+		this.serviceFlag = serviceFlag;
 	}
 
 	@Override
@@ -38,6 +40,11 @@ public class UserImpl implements User {
 	@Override
 	public boolean isSystem() {
 		return systemFlag;
+	}
+
+	@Override
+	public boolean isService() {
+		return serviceFlag;
 	}
 
 	@Override

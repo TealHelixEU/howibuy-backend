@@ -17,5 +17,8 @@
 
 	<modules>
 		<module>betterme</module>
+		<module>betterme-jaxrs</module>
+		<module>betterme-service-interfaces</module>
+		<module>betterme-services</module>
 	</modules>
 </project>

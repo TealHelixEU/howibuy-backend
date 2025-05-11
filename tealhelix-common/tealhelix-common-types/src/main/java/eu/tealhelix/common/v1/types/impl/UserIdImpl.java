@@ -1,4 +1,4 @@
-package eu.tealhelix.common.web.authentication.jwt;
+package eu.tealhelix.common.v1.types.impl;
 
 import java.util.Objects;
 

@@ -65,15 +65,16 @@
 		<!--
 			Let's keep them grouped and sorted as follows:
 
-			GROUPS:
-			FRAMEWORK dependencies, PROJECT (dependencies from within the project), PROJECT TEST
-			(test-scoped dependencies from within the project), SPECS (specification APIs e.g. JAX-rs),
+			- First is the classification of the dependency with the following order:
+
+			FRAMEWORK dependencies, FRAMEWORK TEST, PROJECT (dependencies from within the project), PROJECT TEST
+			(test-scoped dependencies from within the project), SPECS (specification APIs e.g. JAX-RS),
 			OTHER (other non-test libraries), TEST (libraries intended for test scope).
 
-			Within each group sort alphabetically, first by Maven groupId, then by artifactId.
+			- Within each classification group sort alphabetically, first by Maven groupId, then by artifactId.
 
 			Do NOT define the scope of the dependencies here, define it when actually used.
-			This allows us to have e.g. project-specific test modules that depend on JUnit in compile
+			This allows us to have e.g., project-specific test modules that depend on JUnit in compile
 			scope. This is enforced anyway.
 		-->
 		<dependencies>

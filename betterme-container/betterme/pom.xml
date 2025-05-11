@@ -55,13 +55,23 @@
 		<!-- PROJECT -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>betterme-jaxrs</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>betterme-services</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-services-impl</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-web</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 
 		<!-- TEST -->
