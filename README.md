@@ -14,9 +14,53 @@ The build system is Maven and is configured by a set of properties and profiles,
 The following properties are local to an environment; they can be specified as `-Dpropname=propvalue` command line arguments,
 or placed in a local Maven profile in `~/.m2/settings.xml`.
 
+- `database.betterme.jdbc.url`: The JDBC URL of the database for the respective microservice
+- `database.betterme.reactive.url`: The Hibernate *reactive* URL of the database for the respective microservice
+- `database.betterme.username`: The DB user name
+- `database.betterme.password`: The DB password
+- **(TODO)** `kafka.bootstrap.servers`: The Kafka bootstrap servers
+- **(TODO)** `db.env` (default: `dev`): Needed only by Liquibase to indicate which environment-specific
+  [contexts](https://www.liquibase.org/documentation/contexts.html) will it activate;
+  e.g. `dev` will activate the `data-dev` context
+
+- Example:
+
+```xml
+<settings>
+	<profiles>
+		<profile>
+			<id>th-local-postgres</id>
+			<properties>
+				<database.betterme.jdbc.url>jdbc:postgresql://localhost/tealhelix</database.betterme.jdbc.url>
+				<database.betterme.reactive.url>vertx-reactive:postgresql://localhost/tealhelix</database.betterme.reactive.url>
+				<database.betterme.username>th_betterme</database.betterme.username>
+				<database.betterme.password>th_betterme</database.betterme.password>
+				<kafka.bootstrap.servers>localhost:9092</kafka.bootstrap.servers>
+			</properties>
+		</profile>
+		<profile>
+			<id>th-docker-postgres</id>
+			<properties>
+				<database.betterme.jdbc.url>jdbc:postgresql://postgres/tealhelix</database.betterme.jdbc.url>
+				<database.betterme.reactive.url>vertx-reactive:postgresql://postgres/tealhelix</database.betterme.reactive.url>
+				<database.betterme.username>th_betterme</database.betterme.username>
+				<database.betterme.password>th_betterme</database.betterme.password>
+				<kafka.bootstrap.servers>broker:19092</kafka.bootstrap.servers>
+			</properties>
+		</profile>
+	</profiles>
+</settings>
+```
+
+Both profiles use Postgresql. One is to run the entire application through `docker-compose`, in which case
+Postgresql is in the `postgres` host - see `tealhelix-docker/src/main/docker-compose/docker-compose.yml` (**TODO**).
+The other is to run only the peripherals in Docker - see `tealhelix-docker/src/main/docker-compose/docker-compose-peripherals.yml`.
+
 ### Build profiles
 
-TODO
+- `dbupdate-betterme`: Execute Liquibase to bring the respective database up to date
+- `betterme-quarkus-dev`: Activate `quarkus:dev` for the respective microservice; do not activate more than one in the same command
+- `docker`: Activate the Docker image build
 
 ### Updating dependencies
 
@@ -46,17 +90,17 @@ mvn package -Pdocker # to build the docker images too
 
 ### Creating/updating the DB
 
-Assuming that the properties are defined through a Maven profile, e.g. like the `tealhelix-local-postgres` in
+Assuming that the properties are defined through a Maven profile e.g., like the `th-local-postgres` in
 `~/.m2/settings.xml` that was described above, run the following:
 
 ```shell
-mvn process-resources -Pdbupdate-application,tealhelix-local-postgres
+mvn process-resources -Pdbupdate-betterme,th-local-postgres
 ```
 
-Otherwise, you have to specify the properties by command line—obviously much more cumbersome:
+Otherwise, you have to specify the properties by command line, a much more cumbersome option:
 
 ```shell
-mvn process-resources -Pdbupdate-application -Ddatabase.application.jdbc.url=... -Ddatabase.application.username=... -Ddatabase.application.password=... -D...
+mvn process-resources -Pdbupdate-betterme -Ddatabase.betterme.jdbc.url=... -Ddatabase.betterme.username=... -Ddatabase.betterme.password=... -D...
 ```
 
 #### Rolling back changes
@@ -68,8 +112,8 @@ Occasionally you may want to roll back some changes. Switch to the appropriate m
 mvn org.liquibase:liquibase-maven-plugin:rollback \
 	-Dliquibase.rollbackCount=... -Dliquibase.changeLogFile=src/main/resources/db.changelog.xml \
 	-Dliquibase.promptOnNonLocalDatabase=false -Dliquibase.driver=org.postgresql.Driver \
-	-Dliquibase.url=jdbc:postgresql://localhost/tealhelix -Dliquibase.username=tealhelix_application \
-	-Dliquibase.password=tealhelix_application
+	-Dliquibase.url=jdbc:postgresql://localhost/tealhelix -Dliquibase.username=th_betterme \
+	-Dliquibase.password=th_betterme
 ```
 
 Full info [here](https://docs.liquibase.com/tools-integrations/maven/commands/maven-rollback.html).
@@ -79,10 +123,10 @@ Full info [here](https://docs.liquibase.com/tools-integrations/maven/commands/ma
 ### Docker compose
 
 This will be the first thing you need to run in a local development environment, as it launches all the
-necessary peripheral services (e.g. the database).
+necessary peripheral services (e.g., the database).
 
 ```shell
-cd tealhelix-docker/docker-compose/
+cd tealhelix-docker/src/main/docker-compose/
 docker-compose -f docker-compose-peripherals.yml -p tealhelix up -d    # the first time
 docker-compose -f docker-compose-peripherals.yml -p tealhelix start    # to start
 docker-compose -f docker-compose-peripherals.yml -p tealhelix stop     # to stop
@@ -90,7 +134,7 @@ docker-compose -f docker-compose-peripherals.yml -p tealhelix down     # to remo
 docker-compose -f docker-compose-peripherals.yml -p tealhelix down -v  # to remove the containers, also removing the persistent volumes
 ```
 
-### From command line
+### From the command line (TODO - has stopped working)
 
 You need to `mvn install`, so that `quarkus:dev` will find the artifacts!
 
@@ -101,7 +145,7 @@ cd tealhelix-application-module/tealhelix-application
 mvn -Ptealhelix-local-postgres quarkus:dev
 ```
 
-### From command line (2)
+### From the command line (2) (TODO)
 
 From the project root, activate the profile of the microservice you want to run (don't forget the profile with the DB settings):
 
@@ -111,11 +155,29 @@ mvn package -Papplication-quarkus-dev,tealhelix-local-postgres
 
 ### From IDE
 
-Run a Quarkus run configuration. You need to specify the DB connection parameters (and any other runtime parameters)
-from the run configuration. For that, take a look at the `pom.xml` of the microservice you want to run. There is a
-property `jvm.args`. You need to define those and give them the appropriate values (for IntelliJ, "Add VM options").
+Create a Quarkus run configuration. You need to specify the DB connection parameters (and any other runtime parameters)
+from the run configuration. Select "Modify options" and check "Environment variables." Override the following
+configuration properties:
+
+- `quarkus.datasource.username`
+- `quarkus.datasource.password`
+- `quarkus.datasource.reactive.url`
+- `quarkus.datasource.jdbc.url`
+
+The table would look like (see [Quarkus configuration reference](https://quarkus.io/guides/config-reference)):
+
+| Name                            | Value                                           |
+|---------------------------------|-------------------------------------------------|
+| QUARKUS_DATASOURCE_USERNAME     | th_betterme                                     |
+| QUARKUS_DATASOURCE_PASSWORD     | th_betterme                                     |
+| QUARKUS_DATASOURCE_REACTIVE_URL | vertx-reactive:postgresql://localhost/tealhelix |
+| QUARKUS_DATASOURCE_JDBC_URL     | jdbc:postgresql://localhost/tealhelix           |
+
+Or define them inline using semicolon as the separator:
+`QUARKUS_DATASOURCE_USERNAME=th_betterme;QUARKUS_DATASOURCE_PASSWORD=th_betterme;QUARKUS_DATASOURCE_REACTIVE_URL=vertx-reactive:postgresql://localhost/tealhelix;QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://localhost/tealhelix`
+
 You need to make sure the IDE runner resolves workspace artifacts.
 
 ### From Docker
 
-TODO
+**TODO**

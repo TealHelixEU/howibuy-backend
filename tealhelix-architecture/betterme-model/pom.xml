@@ -17,13 +17,11 @@
 
 	<dependencies>
 		<!-- PROJECT -->
-		<!--
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-types</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		-->
 
 		<!-- SPECS -->
 		<dependency>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.31.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="token_exchange_related" author="nikospara">
+		<createTable tableName="THBM_USER_PROFILE" remarks="User profile, some of the data are replicated from the IDM">
+			<column name="id" type="UUID" remarks="The primary key, a UUID that matches the user in the IDM">
+				<constraints primaryKey="true" primaryKeyName="PK_THBM_USER_PROFILE" />
+			</column>
+			<column name="external_id" type="VARCHAR(40)" remarks="An identifier to be communicated to external systems">
+				<constraints
+						nullable="false" notNullConstraintName="NL_THBM_USER_PROFILE__EXTERNAL_ID"
+						unique="true" uniqueConstraintName="UQ_THBM_USER_PROFILE__EXTERNAL_ID"
+				/>
+			</column>
+			<column name="email" type="VARCHAR(320)" />
+			<column name="email_consent" type="BOOLEAN" />
+		</createTable>
+		<createIndex tableName="THBM_USER_PROFILE" indexName="IX_THBM_USER_PROFILE__EXTERNAL_ID">
+			<column name="external_id" />
+		</createIndex>
+
+		<createTable tableName="THBM_RETAILER" remarks="Retailer data, replicated from the IDM (it is the client)">
+			<column name="id" type="UUID" remarks="The primary key, a UUID that matches the client in the IDM">
+				<constraints primaryKey="true" primaryKeyName="PK_THBM_RETAILER" />
+			</column>
+			<column name="name" type="VARCHAR(160)" remarks="The name">
+				<constraints
+						nullable="false" notNullConstraintName="NL_THBM_RETAILER__NAME"
+						unique="true" uniqueConstraintName="UQ_THBM_RETAILER__NAME"
+				/>
+			</column>
+		</createTable>
+
+		<createTable tableName="THBM_CONSENT" remarks="Consent of a user to a retailer to allow integration">
+			<column name="user_id" type="UUID" remarks="The user primary key">
+				<constraints nullable="false" notNullConstraintName="NL_THBM_CONSENT__USER_ID" />
+			</column>
+			<column name="retailer_id" type="UUID" remarks="The retailer primary key">
+				<constraints nullable="false" notNullConstraintName="NL_THBM_CONSENT__RETAILER_ID" />
+			</column>
+			<column name="state" type="VARCHAR(10)" remarks="The consent state">
+				<constraints nullable="false" notNullConstraintName="NL_THBM_CONSENT__STATE" />
+			</column>
+		</createTable>
+		<addPrimaryKey tableName="THBM_CONSENT" constraintName="PK_THBM_CONSENT" columnNames="user_id, retailer_id" />
+		<addForeignKeyConstraint baseTableName="THBM_CONSENT" baseColumnNames="user_id" constraintName="FK_THBM_CONSENT__USER_ID__THBM_USER_PROFILE__ID" referencedTableName="THBM_USER_PROFILE" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="THBM_CONSENT" baseColumnNames="retailer_id" constraintName="FK_THBM_CONSENT__RETAILER_ID__THBM_RETAILER__ID" referencedTableName="THBM_RETAILER" referencedColumnNames="id" />
+		<addUniqueConstraint tableName="THBM_CONSENT" columnNames="user_id,retailer_id" constraintName="UQ_THBM_CONSENT__USER_ID__RETAILER_ID" />
+	</changeSet>
+</databaseChangeLog>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>eu.tealhelix</groupId>
+		<artifactId>tealhelix-common</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>tealhelix-common-dao-reactive</artifactId>
+
+	<name>TealHelix: Common DAO utilities</name>
+	<description>
+		Common DAO-related functionalities, assuming a JPA reactive implementation.
+
+		It would be nice to keep this module independent of any underlying persistence implementation,
+		so that we can plug implementations at will. However, wrapping the entire Criteria API was beyond
+		the scope of this implementation, so the implementation classes leak. Maybe we could replace the
+		Criteria API with a more neutral implementation (QueryDSL???), but that is out of scope for the moment too.
+
+		Or we could give an implementation-aware component access to the underlying implementation-specific objects
+		with a mechanism similar to EntityManager.unwrap().
+	</description>
+
+	<dependencies>
+		<!-- SPECS -->
+		<dependency>
+			<groupId>jakarta.persistence</groupId>
+			<artifactId>jakarta.persistence-api</artifactId>
+		</dependency>
+
+		<!-- OTHER -->
+		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>mutiny</artifactId>
+		</dependency>
+	</dependencies>
+</project>

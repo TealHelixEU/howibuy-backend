@@ -18,7 +18,17 @@
 		<!-- PROJECT -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>betterme-dao</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>betterme-service-interfaces</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-dao-reactive</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

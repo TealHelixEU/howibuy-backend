@@ -18,6 +18,8 @@
    actually used. This allows us to have e.g., project-specific test modules that depend on JUnit in compile scope.
 3. Define the version of dependencies in properties, even if used only in a single dependency. This makes it easy to
    upgrade dependencies with `mvn -N versions:display-property-updates`.
+4. If a project (Maven module) uses artifacts from a dependency directly, it's preferable to declare the dependency
+   directly rather than rely on transitive dependencies.
 
 # Naming conventions
 
@@ -63,13 +65,17 @@
 ## Database artifacts
 
 1. Names are `SNAKE_CASE`
-2. Tables: capitals (even though it should not matter) like `TH_<MOD>_<NAME>`, where:
-   - `<MOD>` is a 3-letter code of the module: `APL` for application, `COM` for common
+2. Tables: capitals (even though it should not matter) like `TH<MOD>_<NAME>`, where:
+   - `<MOD>` is a 2-letter code of the module: `BM` for BetterMe, `CB` for Claims Buster
    - `<NAME>` is the name of the domain object (not the entity, i.e. without the `-Entity` suffix)
    - `<NAME>` is *singular*
+   - Example table name: `THBM_USER`: A table for users of BetterMe.
 3. Columns: minuscules, no prefix or suffix
 4. Primary key constraints: `PK_<TABLE>`, and `<TABLE>` is the full table name as specified above
-5. Not null constraints: `NNL_<TABLE>__<COLUMN>`, the column name is capitalized
-6. Unique constraints: `UNQ_<TABLE>__<COLUMN>`, the column name is capitalized
+5. Not null constraints: `NL_<TABLE>__<COLUMN>`, the column name is capitalized
+6. Unique constraints: `UQ_<TABLE>__<COLUMN>`, the column name is capitalized
 7. Foreign key columns: name them like `<target_table_without_prefix>_<target_column>`; minuscule as all columns
 8. Foreign key constraints: `FK_<SRC_TABLE>__<SRC_COL>__<TARGET_TABLE>__<TARGET_COL>`; capitals and table names without prefixes
+9. Indexes: `IX_<TABLE>__<COLUMN>`
+
+**TODO:** How to deal with the name size limit of PostgreSQL? (Which is 61, see the [documentation](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS))

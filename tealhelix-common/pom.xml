@@ -16,6 +16,8 @@
 	<packaging>pom</packaging>
 
 	<modules>
+		<module>tealhelix-common-dao-reactive</module>
+		<module>tealhelix-common-dao-reactive-hibernate</module>
 		<module>tealhelix-common-services</module>
 		<module>tealhelix-common-services-impl</module>
 		<module>tealhelix-common-types</module>
