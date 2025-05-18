@@ -23,6 +23,6 @@ public class GreetingResource {
 	@Produces(MediaType.TEXT_HTML)
 	public TemplateInstance getHtml(@Context ContainerRequestContext crc, @QueryParam("name") String name) {
 		var user = (User) crc.getSecurityContext().getUserPrincipal();
-		return greeting.data("name", user.getName());
+		return greeting.data("name", user.getName() != null ? user.getName() : (user.getId() != null ? user.getId().asString() : "anonymous"));
 	}
 }

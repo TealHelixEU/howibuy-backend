@@ -65,10 +65,13 @@ public class JwtGenerationServiceImpl implements JwtGenerationService {
 	private SignedJWT makeSignedJWT(String subject, String uuid, Date expirationTime) {
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.subject(subject)
-				.claim("uuid", uuid)
+				.claim(tokenAuthenticationConfig.getUserIdFieldInJwt(), uuid)
 				.expirationTime(expirationTime)
 				.build();
-		SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+		var header = new JWSHeader.Builder(JWSAlgorithm.HS256)
+				.keyID(tokenAuthenticationConfig.getInternalKeyId())
+				.build();
+		SignedJWT signedJWT = new SignedJWT(header, claimsSet);
 		try {
 			signedJWT.sign(signer);
 		} catch (JOSEException e) {

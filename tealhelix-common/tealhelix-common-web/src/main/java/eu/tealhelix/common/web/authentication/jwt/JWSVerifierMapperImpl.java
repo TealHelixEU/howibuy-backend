@@ -3,12 +3,17 @@ package eu.tealhelix.common.web.authentication.jwt;
 import static com.nimbusds.jose.jwk.source.JWKSourceBuilder.DEFAULT_REFRESH_AHEAD_TIME;
 
 import java.io.Serial;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKMatcher;
@@ -19,9 +24,6 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jose.util.events.Event;
-import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 /**
  * Implementation of {@link JWSVerifierMapper}.
@@ -42,13 +44,15 @@ public class JWSVerifierMapperImpl implements JWSVerifierMapper {
 	 */
 	private ConcurrentMap<String, RSASSAVerifier> verifierMap;
 
+	private MACVerifier internalKeyVerifier;
+
 	@Inject
 	public JWSVerifierMapperImpl(TokenAuthenticationConfig tokenAuthenticationConfig) {
 		this.tokenAuthenticationConfig = tokenAuthenticationConfig;
 	}
 
 	@PostConstruct
-	void initialize() {
+	void initialize() throws JOSEException {
 		jwkSet = JWKSourceBuilder.create(tokenAuthenticationConfig.getJwkUrl())
 				.retrying(true)
 				.outageTolerant(true)
@@ -57,6 +61,10 @@ public class JWSVerifierMapperImpl implements JWSVerifierMapper {
 //				.cache(tokenAuthenticationConfig.getJwkCacheTtl()) // TODO Utilize the configuration TTL, Max TTL
 				.build();
 		verifierMap = new ConcurrentHashMap<>();
+		if (tokenAuthenticationConfig.getInternalKeyId() != null) {
+			byte[] sharedSecret = Base64.getMimeDecoder().decode(tokenAuthenticationConfig.getJwtSecret());
+			internalKeyVerifier = new MACVerifier(sharedSecret);
+		}
 	}
 
 	private <C extends SecurityContext> void cacheEventListener(final Event<CachingJWKSetSource<C>, C> event) {
@@ -67,10 +75,12 @@ public class JWSVerifierMapperImpl implements JWSVerifierMapper {
 
 	@Override
 	public JWSVerifier get(String kid) throws JOSEException {
+		if (tokenAuthenticationConfig.getInternalKeyId() != null && tokenAuthenticationConfig.getInternalKeyId().equals(kid)) {
+			return internalKeyVerifier;
+		}
 		try {
 			return verifierMap.computeIfAbsent(kid, this::compute);
-		}
-		catch( JOSEExceptionWrapper wrapper ) {
+		} catch (JOSEExceptionWrapper wrapper) {
 			throw wrapper.getWrapped();
 		}
 	}
@@ -79,20 +89,19 @@ public class JWSVerifierMapperImpl implements JWSVerifierMapper {
 		try {
 			JWKMatcher matcher = new JWKMatcher.Builder().keyID(kid).build();
 			List<JWK> keys = jwkSet.get(new JWKSelector(matcher), null);
-			if( keys.size() > 1 ) {
+			if (keys.size() > 1) {
 				throw new JOSEException("found " + keys.size() + " keys for kid=" + kid);
 			}
 			RSASSAVerifier result = null;
-			if( keys.size() == 1 ) {
+			if (keys.size() == 1) {
 				JWK jwk = keys.getFirst();
-				if( !(jwk instanceof RSAKey) ) {
+				if (!(jwk instanceof RSAKey)) {
 					throw new JOSEException("the key " + kid + " is not an RSAKey");
 				}
 				result = new RSASSAVerifier((RSAKey) jwk);
 			}
 			return result; // If null, it is not entered in the Map (ConcurrentMap/ConcurrentHashMap specs), so we are OK for memory attacks
-		}
-		catch( JOSEException jose ) {
+		} catch (JOSEException jose) {
 			throw new JOSEExceptionWrapper(jose);
 		}
 	}

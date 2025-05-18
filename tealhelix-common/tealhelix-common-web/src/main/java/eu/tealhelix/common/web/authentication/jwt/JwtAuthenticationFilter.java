@@ -36,7 +36,7 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
 				var securityCtx = new JaxRsSecurityContextImpl(user, requestContext.getSecurityContext().isSecure(), "BEARER");
 				requestContext.setSecurityContext(securityCtx);
 			} catch (TokenHelperException e) {
-				throw new NotAuthorizedException("failed to process token", e, unauthorized());
+				throw new NotAuthorizedException("failed to process token", unauthorized(), e);
 			}
 		} else {
 			var user = tokenHelper.makeUnauthenticated();

@@ -58,6 +58,13 @@ public interface TokenAuthenticationConfig {
 	String getJwtSecret();
 
 	/**
+	 * The JWK key id of the key used to sign the tokens issued by this application (see token exchange).
+	 *
+	 * @return The internal key id
+	 */
+	String getInternalKeyId();
+
+	/**
 	 * The JWT session validity time in seconds.
 	 *
 	 * @return The JWT session validity time in seconds

@@ -3,8 +3,12 @@ package eu.tealhelix.common.web.authentication.jwt;
 import java.text.ParseException;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Set;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -14,11 +18,9 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
 @ApplicationScoped
 public class TokenHelperImpl implements TokenHelper {
+	private static final Set<JWSAlgorithm> SUPPORTED_ALGORITHMS = Set.of(JWSAlgorithm.RS256, JWSAlgorithm.HS256);
 
 	private final JWSVerifierMapper jwsVerifierMapper;
 	private final DateTimeService dateTimeService;
@@ -50,7 +52,8 @@ public class TokenHelperImpl implements TokenHelper {
 		try {
 			SignedJWT jwt = parse(token);
 
-			if (!"RS256".equals(jwt.getHeader().getAlgorithm().getName())) {
+			var alg = jwt.getHeader().getAlgorithm();
+			if (alg != null && !SUPPORTED_ALGORITHMS.contains(alg)) {
 				throw new TokenHelperException("unsupported algorithm: " + jwt.getHeader().getAlgorithm().getName());
 			}
 

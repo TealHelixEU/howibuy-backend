@@ -17,6 +17,7 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 	public static final String CLIENT_ID_FIELD_IN_JWT_KEY = "config.jwt.map.clientId";
 	public static final String EMAIL_FIELD_IN_JWT_KEY = "config.jwt.map.email";
 	public static final String JWT_SECRET_KEY = "config.jwt.secret";
+	public static final String INTERNAL_KEY_ID = "config.jwt.internalKeyId";
 	public static final String JWT_SESSION_TIME_KEY = "config.jwt.sessionTimeInSeconds";
 
 	@ConfigProperty(name = USERNAME_FIELD_IN_JWT_KEY)
@@ -33,6 +34,9 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 
 	@ConfigProperty(name = JWT_SECRET_KEY)
 	String jwtSecret;
+
+	@ConfigProperty(name = INTERNAL_KEY_ID)
+	String internalKeyId;
 
 	@ConfigProperty(name = JWT_SESSION_TIME_KEY)
 	Integer jwtSessionTimeInSeconds;
@@ -68,6 +72,11 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 	@Override
 	public String getJwtSecret() {
 		return jwtSecret;
+	}
+
+	@Override
+	public String getInternalKeyId() {
+		return internalKeyId;
 	}
 
 	@Override
