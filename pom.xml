@@ -26,30 +26,30 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<version.quarkus.platform>3.21.4</version.quarkus.platform>
+		<version.quarkus.platform>3.23.0</version.quarkus.platform>
 
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
-		<!--<version.cdi-api>4.0.1</version.cdi-api>--><!-- Defined in quarkus-universe-bom, jakarta.enterprise.cdi-api -->
+		<!--<version.cdi-api>4.0.1</version.cdi-api>--><!-- Defined in quarkus-bom, jakarta.enterprise.cdi-api -->
 		<version.h2>2.1.210</version.h2>
-		<version.hibernate-validator>8.0.2.Final</version.hibernate-validator><!-- Defined in quarkus-universe-bom, hibernate-validator -->
+		<version.hibernate-validator-cdi>8.0.2.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? -->
 		<version.jakarta-el>4.0.2</version.jakarta-el>
-		<version.jakarta.persistence-api>3.1.0</version.jakarta.persistence-api><!-- Defined in quarkus-universe-bom, jakarta.persistence-api -->
+		<!--<version.jakarta.persistence-api>3.1.0</version.jakarta.persistence-api>--><!-- Defined in quarkus-bom, jakarta.persistence-api -->
 		<version.jaxb.api>2.3.1</version.jaxb.api>
 		<version.jaxb.impl>2.3.5</version.jaxb.impl>
-		<version.junit.jupiter>5.12.2</version.junit.jupiter>
+		<version.junit.jupiter>5.13.0</version.junit.jupiter>
 		<version.kafka>3.2.0</version.kafka><!-- When changing this, also check KafkaTestResource.java -->
 		<version.kafka.scala>2.13</version.kafka.scala>
-		<version.keycloak>26.2.1</version.keycloak>
-		<version.liquibase>4.31.1</version.liquibase>
-		<version.mockito>5.17.0</version.mockito>
-		<version.nimbus-jose-jwt>10.2</version.nimbus-jose-jwt>
+		<version.keycloak>26.2.5</version.keycloak>
+		<version.liquibase>4.32.0</version.liquibase>
+		<version.mockito>5.18.0</version.mockito>
+		<version.nimbus-jose-jwt>10.3</version.nimbus-jose-jwt>
 		<version.org.immutables>2.10.1</version.org.immutables>
-		<version.postgres>42.7.5</version.postgres>
-		<version.slf4j>2.0.6</version.slf4j><!-- Defined in quarkus-universe-bom, search for <artifactId>slf4j-api</artifactId> -->
+		<version.postgres>42.7.6</version.postgres>
+		<!--<version.slf4j>2.0.6</version.slf4j>--><!-- Defined in quarkus-bom, search for <artifactId>slf4j-api</artifactId> -->
 		<version.slugify>3.0.1</version.slugify>
 		<version.swagger-annotations>1.6.5</version.swagger-annotations>
-		<version.testcontainers>1.21.0</version.testcontainers><!-- Also specified in quarkus-bom, search for testcontainers -->
-		<version.weld-junit5>5.0.0.Final</version.weld-junit5>
+		<version.testcontainers>1.21.0</version.testcontainers><!-- Defined in quarkus-bom, search for testcontainers -->
+		<version.weld-junit5>5.0.1.Final</version.weld-junit5>
 		<version.wiremock>3.13.0</version.wiremock>
 		<version.wiremock.testcontainers>1.0-alpha-15</version.wiremock.testcontainers><!-- Only in alpha :( check manually in https://central.sonatype.com/artifact/org.wiremock.integrations.testcontainers/wiremock-testcontainers-module -->
 	</properties>
@@ -105,11 +105,13 @@
 				<scope>provided</scope>
 			</dependency>
 			-->
+			<!-- Defined in Quarkus BOM
 			<dependency>
 				<groupId>jakarta.persistence</groupId>
 				<artifactId>jakarta.persistence-api</artifactId>
 				<version>${version.jakarta.persistence-api}</version>
 			</dependency>
+			-->
 			<!--
 			<dependency>
 				<groupId>javax.xml.bind</groupId>
@@ -152,7 +154,7 @@
 			<dependency>
 				<groupId>org.hibernate.validator</groupId>
 				<artifactId>hibernate-validator-cdi</artifactId>
-				<version>${version.hibernate-validator}</version>
+				<version>${version.hibernate-validator-cdi}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.immutables</groupId>
@@ -169,6 +171,7 @@
 				<artifactId>postgresql</artifactId>
 				<version>${version.postgres}</version>
 			</dependency>
+			<!-- Defined in Quarkus BOM
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
@@ -179,6 +182,7 @@
 				<artifactId>slf4j-jdk14</artifactId>
 				<version>${version.slf4j}</version>
 			</dependency>
+			-->
 
 			<!-- TEST -->
 			<dependency>
