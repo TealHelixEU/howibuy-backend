@@ -82,11 +82,15 @@ Be careful when upgrading those dependencies.
 
 ## Building
 
+Build with Maven as usual, `package` is enough:
+
 ```shell
 mvn package
 # -OR-
 mvn package -Pdocker # to build the docker images too
 ```
+
+> **NOTE/WARNING:** As of the date of this writing, the Docker images are for development purposes only!
 
 ### Creating/updating the DB
 
@@ -121,6 +125,8 @@ Full info [here](https://docs.liquibase.com/tools-integrations/maven/commands/ma
 ## Running
 
 ### Docker compose
+
+> **NOTE/WARNING:** As of the date of this writing, the Docker images are for development purposes only!
 
 This will be the first thing you need to run in a local development environment, as it launches all the
 necessary peripheral services (e.g., the database).

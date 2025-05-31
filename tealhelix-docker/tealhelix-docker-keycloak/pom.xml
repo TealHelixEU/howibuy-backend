@@ -8,19 +8,13 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>tealhelix-docker-postgres</artifactId>
+	<artifactId>tealhelix-docker-keycloak</artifactId>
 
-	<name>TealHelix: Postgresql Docker</name>
-	<description>This project builds the Docker image for the Postgresql DB of TealHelix.</description>
+	<name>TealHelix: Keycloak Docker</name>
+	<description>This project builds the Docker image for the Keycloak IDM of TealHelix.</description>
 
 	<dependencies>
-		<!-- PROJECT -->
-		<!-- These are here to make the dependency explicit to Maven and ensure that the migrations are built before this -->
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>betterme-dao-hibernate-reactive</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+		<!-- Empty for the time being -->
 	</dependencies>
 
 	<build>
@@ -57,49 +51,23 @@
 			<id>docker</id>
 			<build>
 				<plugins>
+					<!-- Activate it when we actually have dependencies
 					<plugin>
-						<groupId>com.googlecode.maven-download-plugin</groupId>
-						<artifactId>download-maven-plugin</artifactId>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-dependency-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>download-liquibase</id>
-								<phase>package</phase>
+								<phase>prepare-package</phase>
 								<goals>
-									<goal>wget</goal>
+									<goal>copy-dependencies</goal>
 								</goals>
 								<configuration>
-									<url>https://github.com/liquibase/liquibase/releases/download/v${version.liquibase}/liquibase-${version.liquibase}.tar.gz</url>
-									<outputFileName>liquibase.tar.gz</outputFileName>
-								</configuration>
-							</execution>
-							<execution>
-								<id>download-db-driver</id>
-								<phase>package</phase>
-								<goals>
-									<goal>artifact</goal>
-								</goals>
-								<configuration>
-									<groupId>org.postgresql</groupId>
-									<artifactId>postgresql</artifactId>
-									<version>${version.postgres}</version>
-									<outputFileName>dbdriver.jar</outputFileName>
-								</configuration>
-							</execution>
-							<execution>
-								<id>download-migrations-betterme</id>
-								<phase>package</phase>
-								<goals>
-									<goal>artifact</goal>
-								</goals>
-								<configuration>
-									<groupId>eu.tealhelix</groupId>
-									<artifactId>betterme-dao-hibernate-reactive</artifactId>
-									<version>${project.version}</version>
-									<outputFileName>migrations-betterme.jar</outputFileName>
+									<excludeTransitive>true</excludeTransitive>
 								</configuration>
 							</execution>
 						</executions>
 					</plugin>
+					-->
 					<plugin>
 						<groupId>io.fabric8</groupId>
 						<artifactId>docker-maven-plugin</artifactId>
@@ -113,10 +81,14 @@
 								<configuration>
 									<images>
 										<image>
-											<name>tealhelix-postgres</name>
+											<name>tealhelix-keycloak</name>
 											<build>
 												<contextDir>${project.basedir}</contextDir>
 												<dockerFile>src/main/docker/Dockerfile</dockerFile>
+												<args>
+													<project_version>${project.version}</project_version>
+													<keycloak_version>${version.keycloak}</keycloak_version>
+												</args>
 											</build>
 										</image>
 									</images>

@@ -80,7 +80,12 @@ AUTHENTICATE_URL=$(curl -sSL --get --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	| sed -ne '/<form/s/^.*action=\"\([^"]*\)".*$/\1/p' | sed -e 's/\&amp;/\&/g')
 
 [[ "$DEBUG" = "y" ]] && printf "AUTHENTICATE_URL:\n$AUTHENTICATE_URL\n"
-[[ "$STOP_AT" -le 1 ]] && exit 10
+[[ "$STOP_AT" -le 1 ]] && rm $COOKIE && exit 10
+
+if [[ -z "AUTHENTICATE_URL" ]]; then
+	echo "Something went wrong when retrieving the authentication URL"
+	exit 3
+fi
 
 CODE_URL=$(curl -sS --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	--data-urlencode "username=$USERNAME" \
@@ -89,12 +94,12 @@ CODE_URL=$(curl -sS --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	"$AUTHENTICATE_URL")
 
 [[ "$DEBUG" = "y" ]] && printf "CODE_URL:\n$CODE_URL\n"
-[[ "$STOP_AT" -le 2 ]] && exit 10
+[[ "$STOP_AT" -le 2 ]] && rm $COOKIE && exit 10
 
 CODE=`echo $CODE_URL | sed -e "s/^.*[&?]code=//" -e "s/&.*$//"`
 
 [[ "$DEBUG" = "y" ]] && printf "CODE:\n$CODE\n"
-[[ "$STOP_AT" -le 3 ]] && exit 10
+[[ "$STOP_AT" -le 3 ]] && rm $COOKIE && exit 10
 
 TOKEN_RESPONSE=$(curl -sS --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	--data-urlencode "client_id=$CLIENTID" \

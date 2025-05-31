@@ -10,6 +10,12 @@ services:
       - '5432:5432'
     volumes:
       - data_db:/var/lib/postgresql/data
+  keycloak:
+    image: 'tealhelix-keycloak:latest'
+    ports:
+      - "8280:8080"
+    depends_on:
+      - postgresql
 
 volumes:
   data_db:
