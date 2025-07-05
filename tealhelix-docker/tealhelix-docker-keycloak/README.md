@@ -28,6 +28,7 @@ Create a new enabled realm, "tealhelix". Configure:
 		- Email as username, Login with email: On
 		- Verify email: **should be On, TODO**
 	- Events: **TODO, for when we implement the user management events**
+    - Sessions: Make sure "Offline session settings" -> "Offline Session Idle" is set to something like 30 Days
 
 ### Create a client for BetterMe
 
@@ -51,13 +52,40 @@ Create a new client in the Realm:
 	- Web origins: **TODO**
 - Save & finish the new client wizard
 
+### Create a client for Claims Buster
+
+Create a new client in the Realm:
+
+- General settings:
+    - Client type: OpenID Connect
+    - Client ID: claimsbuster
+    - Name: Claims Buster
+- Capability config:
+    - Client authentication: Off
+    - Authorization: Off
+    - Authentication flow: Check *only* "Standard flow"
+- Login settings:
+    - Root URL: **TODO**
+    - Home URL: **TODO**
+    - Valid redirect URIs:
+        - `http://localhost:8100/authcallback` (**TODO**: also adjust `keycloak-auth.sh`)
+        - **TODO (if we need any more)**
+    - Valid post logout redirect URIs:
+        - `http://localhost:8100/endsession`
+        - **TODO (if we need any more)**
+    - Web origins:
+        - `http://localhost:8100`
+        - **TODO (if we need any more)**
+- Save & finish the new client wizard
+- Advanced tab, Advanced settings, "Proof Key for Code Exchange Code Challenge Method": S256
+
 ### Create the test client
 
 Create a new client in the Realm, for our fictional retailer used for testing and demos:
 
 - General settings:
 	- Client type: OpenID Connect
-	- Client ID: lime_fresh
+	- Client ID: `lime_fresh`
 	- Name: Lime Fresh
 - Capability config:
 	- Client authentication: On (because this is intended to be a service account)
@@ -90,6 +118,7 @@ Go to Manage → Users in the left menu, press "Create new user"
 	- First name: Bob
 	- Last name: Squarepants
 - Create
+- Role mapping -> Assign Role -> Filter by realm roles (dropdown, top-left of the popup) -> `offline_access`
 
 The ID is `72fa53e0-50a9-4bc7-b6ae-07ebe1e28a2d`. Go to the "Credentials" tab, "Set password" to `bob`. Make sure
 "Temporary" is Off and press "Save".
