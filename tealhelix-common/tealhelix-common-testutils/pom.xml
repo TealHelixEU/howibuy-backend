@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>eu.tealhelix</groupId>
+		<artifactId>tealhelix-common</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>tealhelix-common-testutils</artifactId>
+
+	<name>TealHelix: Test utilities</name>
+
+	<dependencies>
+		<!-- FRAMEWORK TEST -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-test-common</artifactId>
+		</dependency>
+
+		<!-- PROJECT -->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-dao-reactive</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- SPECS -->
+		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>mutiny</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.persistence</groupId>
+			<artifactId>jakarta.persistence-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- OTHER -->
+		<!-- Some dependencies that would normally go to test scope are in compile scope because -->
+		<!-- this module is a testing module.                                                    -->
+		<dependency>
+			<groupId>org.hibernate.reactive</groupId>
+			<artifactId>hibernate-reactive-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.liquibase</groupId>
+			<artifactId>liquibase-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>compile</scope>
+		</dependency>
+	</dependencies>
+</project>

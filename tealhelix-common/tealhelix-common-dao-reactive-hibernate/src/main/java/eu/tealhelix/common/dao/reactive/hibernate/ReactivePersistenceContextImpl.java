@@ -39,6 +39,7 @@ class ReactivePersistenceContextImpl implements ReactivePersistenceContext {
 
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
+		// TODO Double check this
 		return session.getFactory().getCriteriaBuilder();
 	}
 

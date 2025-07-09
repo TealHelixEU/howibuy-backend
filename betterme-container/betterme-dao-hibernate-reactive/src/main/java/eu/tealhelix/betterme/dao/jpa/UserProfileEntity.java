@@ -7,7 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "THBM_USER")
+@Table(name = "THBM_USER_PROFILE")
 public class UserProfileEntity {
 	@Id
 	@Column(name = "id")
@@ -15,9 +15,6 @@ public class UserProfileEntity {
 
 	@Column(name = "external_id")
 	private String externalId;
-
-	@Column(name = "username")
-	private String username;
 
 	@Column(name = "email")
 	private String email;

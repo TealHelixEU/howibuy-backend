@@ -12,7 +12,7 @@ import io.smallrye.mutiny.Uni;
  * In the case of Hibernate Reactive, this wraps a {@code Mutiny.Transaction} <em>and</em> a {@code Mutiny.Session}.
  */
 public interface ReactivePersistenceTxContext extends ReactivePersistenceContext {
-	Uni<Void> persist(Object entity);
+	<T> Uni<T> persist(T entity);
 
 	Uni<Void> persistAll(Object... entities);
 

@@ -1,13 +1,14 @@
 package eu.tealhelix.betterme.dao.jpa;
 
 import static jakarta.persistence.EnumType.STRING;
+import static jakarta.persistence.FetchType.LAZY;
 
-import java.util.UUID;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import eu.tealhelix.betterme.dao.jpa.values.ConsentPK;
@@ -18,30 +19,32 @@ import eu.tealhelix.betterme.dao.jpa.values.ConsentState;
 @IdClass(ConsentPK.class)
 public class ConsentEntity {
 	@Id
-	@Column(name = "user_id")
-	private UUID userId;
+	@ManyToOne(fetch = LAZY)
+	@JoinColumn(name = "user_id")
+	private UserProfileEntity user;
 
 	@Id
-	@Column(name = "retailer_id")
-	private UUID retailerId;
+	@ManyToOne(fetch = LAZY)
+	@JoinColumn(name = "retailer_id")
+	private RetailerEntity retailer;
 
 	@Enumerated(STRING)
 	private ConsentState state;
 
-	public UUID getUserId() {
-		return userId;
+	public UserProfileEntity getUser() {
+		return user;
 	}
 
-	public void setUserId(UUID userId) {
-		this.userId = userId;
+	public void setUser(UserProfileEntity user) {
+		this.user = user;
 	}
 
-	public UUID getRetailerId() {
-		return retailerId;
+	public RetailerEntity getRetailer() {
+		return retailer;
 	}
 
-	public void setRetailerId(UUID retailerId) {
-		this.retailerId = retailerId;
+	public void setRetailer(RetailerEntity retailer) {
+		this.retailer = retailer;
 	}
 
 	public ConsentState getState() {

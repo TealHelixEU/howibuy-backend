@@ -50,6 +50,5 @@
 		<addPrimaryKey tableName="THBM_CONSENT" constraintName="PK_THBM_CONSENT" columnNames="user_id, retailer_id" />
 		<addForeignKeyConstraint baseTableName="THBM_CONSENT" baseColumnNames="user_id" constraintName="FK_THBM_CONSENT__USER_ID__THBM_USER_PROFILE__ID" referencedTableName="THBM_USER_PROFILE" referencedColumnNames="id" />
 		<addForeignKeyConstraint baseTableName="THBM_CONSENT" baseColumnNames="retailer_id" constraintName="FK_THBM_CONSENT__RETAILER_ID__THBM_RETAILER__ID" referencedTableName="THBM_RETAILER" referencedColumnNames="id" />
-		<addUniqueConstraint tableName="THBM_CONSENT" columnNames="user_id,retailer_id" constraintName="UQ_THBM_CONSENT__USER_ID__RETAILER_ID" />
 	</changeSet>
 </databaseChangeLog>

@@ -26,24 +26,22 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<version.quarkus.platform>3.24.2</version.quarkus.platform>
+		<version.quarkus.platform>3.24.3</version.quarkus.platform>
 
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
 		<version.h2>2.1.210</version.h2>
 		<version.hibernate-validator-cdi>9.0.1.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? - Anyway, it relates to quarkus-bom hibernate-validator -->
 		<version.jakarta-el>4.0.2</version.jakarta-el>
-		<version.jaxb.api>2.3.1</version.jaxb.api>
-		<version.jaxb.impl>2.3.5</version.jaxb.impl>
 		<version.junit.jupiter>5.13.3</version.junit.jupiter>
 		<version.kafka>3.2.0</version.kafka><!-- When changing this, also check KafkaTestResource.java -->
 		<version.kafka.scala>2.13</version.kafka.scala>
 		<version.keycloak>26.3.0</version.keycloak>
-		<version.liquibase>4.32.0</version.liquibase>
+		<version.liquibase>4.33.0</version.liquibase>
 		<version.mockito>5.18.0</version.mockito>
 		<version.nimbus-jose-jwt>10.3.1</version.nimbus-jose-jwt>
 		<version.org.immutables>2.11.0</version.org.immutables>
 		<version.postgres>42.7.7</version.postgres>
-		<version.slugify>3.0.1</version.slugify>
+		<version.slf4j>2.0.6</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - consider removing from here - for some reason it does not work without it, check again -->
 		<version.swagger-annotations>1.6.5</version.swagger-annotations>
 		<version.testcontainers>1.21.3</version.testcontainers><!-- Defined in quarkus-bom, search for testcontainers - consider removing from here -->
 		<version.weld-junit5>5.0.1.Final</version.weld-junit5>
@@ -86,7 +84,7 @@
 			</dependency>
 
 			<!-- SPECS -->
-			<!-- Defined in Quarkus BOM -->
+			<!-- Many are defined in Quarkus BOM -->
 
 			<!--  OTHER -->
 			<dependency>
@@ -129,7 +127,7 @@
 				<artifactId>postgresql</artifactId>
 				<version>${version.postgres}</version>
 			</dependency>
-			<!-- Defined in Quarkus BOM
+			<!-- Defined in Quarkus BOM but does not work without explicitly declaring the dependencies, check again -->
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
@@ -140,7 +138,6 @@
 				<artifactId>slf4j-jdk14</artifactId>
 				<version>${version.slf4j}</version>
 			</dependency>
-			-->
 
 			<!-- TEST -->
 			<dependency>
@@ -431,6 +428,7 @@
 		</profile>
 
 		<profile>
+			<!-- Deprecated, probably no need for H2 tests -->
 			<id>test-h2</id>
 
 			<properties>

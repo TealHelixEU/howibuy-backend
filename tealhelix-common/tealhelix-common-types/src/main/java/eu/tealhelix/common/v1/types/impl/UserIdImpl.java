@@ -1,6 +1,7 @@
 package eu.tealhelix.common.v1.types.impl;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import eu.tealhelix.common.v1.types.UserId;
 
@@ -14,6 +15,11 @@ public class UserIdImpl implements UserId {
 	@Override
 	public String asString() {
 		return representation;
+	}
+
+	@Override
+	public UUID asUuid() {
+		return UUID.fromString(representation);
 	}
 
 	@Override

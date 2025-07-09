@@ -9,42 +9,42 @@ public class ConsentPK implements Serializable {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	private UUID userId;
-	private UUID retailerId;
+	private UUID user;
+	private UUID retailer;
 
 	public ConsentPK() {
 		// NOOP
 	}
 
-	public ConsentPK(UUID userId, UUID retailerId) {
-		this.userId = userId;
-		this.retailerId = retailerId;
+	public ConsentPK(UUID user, UUID retailer) {
+		this.user = user;
+		this.retailer = retailer;
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof ConsentPK consentPK)) return false;
-		return Objects.equals(getUserId(), consentPK.getUserId()) && Objects.equals(getRetailerId(), consentPK.getRetailerId());
+		return Objects.equals(getUser(), consentPK.getUser()) && Objects.equals(getRetailer(), consentPK.getRetailer());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getUserId(), getRetailerId());
+		return Objects.hash(getUser(), getRetailer());
 	}
 
-	public UUID getUserId() {
-		return userId;
+	public UUID getUser() {
+		return user;
 	}
 
-	public void setUserId(UUID userId) {
-		this.userId = userId;
+	public void setUser(UUID user) {
+		this.user = user;
 	}
 
-	public UUID getRetailerId() {
-		return retailerId;
+	public UUID getRetailer() {
+		return retailer;
 	}
 
-	public void setRetailerId(UUID retailerId) {
-		this.retailerId = retailerId;
+	public void setRetailer(UUID retailer) {
+		this.retailer = retailer;
 	}
 }

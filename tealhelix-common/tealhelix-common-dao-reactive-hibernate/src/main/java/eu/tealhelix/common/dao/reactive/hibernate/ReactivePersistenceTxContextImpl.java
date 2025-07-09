@@ -14,8 +14,8 @@ class ReactivePersistenceTxContextImpl extends ReactivePersistenceContextImpl im
 	}
 
 	@Override
-	public Uni<Void> persist(Object entity) {
-		return session.persist(entity);
+	public <T> Uni<T> persist(T entity) {
+		return session.persist(entity).replaceWith(entity);
 	}
 
 	@Override
