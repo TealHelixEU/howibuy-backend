@@ -16,7 +16,8 @@ RUN ./liquibase --classpath=migrations-betterme.jar --changelog-file=db.changelo
 FROM postgres:17-alpine
 
 COPY src/main/docker/0-create-dbs.sql /docker-entrypoint-initdb.d/
-COPY --from=dbfiles /opt/liquibase/*.sql /docker-entrypoint-initdb.d/
+COPY --from=dbfiles /opt/liquibase/*.sql /docker-entrypoint-initdb.d/sql-scripts/
+COPY src/main/docker/1-populate-dbs.sh /docker-entrypoint-initdb.d/
 
 # This sets the name of the DB created when the image runs
 ENV POSTGRES_DB tealhelix

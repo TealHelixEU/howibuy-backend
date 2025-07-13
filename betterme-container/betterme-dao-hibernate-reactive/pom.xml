@@ -143,9 +143,9 @@
 						<artifactId>liquibase-maven-plugin</artifactId>
 						<version>${version.liquibase}</version>
 						<configuration>
-							<changeLogFile>src/main/resources/db.changelog.xml</changeLogFile>
+							<changeLogDirectory>src/main/resources</changeLogDirectory>
+							<changeLogFile>db.changelog.xml</changeLogFile>
 							<promptOnNonLocalDatabase>false</promptOnNonLocalDatabase>
-							<driver>${database.betterme.driver}</driver>
 							<url>${database.betterme.jdbc.url}</url>
 							<username>${database.betterme.username}</username>
 							<password>${database.betterme.password}</password>

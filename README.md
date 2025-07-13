@@ -16,7 +16,7 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 
 - `database.betterme.jdbc.url`: The JDBC URL of the database for the respective microservice
 - `database.betterme.reactive.url`: The Hibernate *reactive* URL of the database for the respective microservice
-- `database.betterme.username`: The DB user name
+- `database.betterme.username`: The DB username
 - `database.betterme.password`: The DB password
 - **(TODO)** `kafka.bootstrap.servers`: The Kafka bootstrap servers
 - **(TODO)** `db.env` (default: `dev`): Needed only by Liquibase to indicate which environment-specific
