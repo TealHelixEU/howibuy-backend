@@ -27,13 +27,13 @@ public class ReactivePersistenceContextFactoryImpl implements ReactivePersistenc
 	@Override
 	public <T> Uni<T> withTransaction(Function<ReactivePersistenceTxContext, Uni<T>> work) {
 		return sessionFactory.withTransaction((s, tx) -> {
-			var persistenceContext = new ReactivePersistenceTxContextImpl(s, tx);
+			var persistenceContext = new ReactivePersistenceTxContextImpl(sessionFactory, s, tx);
 			return work.apply(persistenceContext);
 		});
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		if (sessionFactory != null) {
 			sessionFactory.close();
 		}

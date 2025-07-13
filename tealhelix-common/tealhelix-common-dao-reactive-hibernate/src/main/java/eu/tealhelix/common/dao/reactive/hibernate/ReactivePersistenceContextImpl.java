@@ -8,12 +8,15 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactiveQuery;
 import eu.tealhelix.common.dao.reactive.ReactiveUpdate;
 import io.smallrye.mutiny.Uni;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Session;
 
 class ReactivePersistenceContextImpl implements ReactivePersistenceContext {
+	private final Mutiny.SessionFactory sessionFactory;
 	protected final Session session;
 
-	public ReactivePersistenceContextImpl(Session session) {
+	public ReactivePersistenceContextImpl(Mutiny.SessionFactory sessionFactory, Session session) {
+		this.sessionFactory = sessionFactory;
 		this.session = session;
 	}
 
@@ -39,8 +42,7 @@ class ReactivePersistenceContextImpl implements ReactivePersistenceContext {
 
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
-		// TODO Double check this
-		return session.getFactory().getCriteriaBuilder();
+		return sessionFactory.getCriteriaBuilder();
 	}
 
 	@Override

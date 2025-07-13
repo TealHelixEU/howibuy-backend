@@ -9,6 +9,7 @@ public class GenericRetailerId implements RetailerId {
 	private final String representation;
 
 	public GenericRetailerId(String representation) {
+		Objects.requireNonNull(representation);
 		this.representation = representation;
 	}
 

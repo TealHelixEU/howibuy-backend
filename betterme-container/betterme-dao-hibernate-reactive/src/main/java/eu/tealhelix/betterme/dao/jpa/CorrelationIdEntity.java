@@ -1,5 +1,7 @@
 package eu.tealhelix.betterme.dao.jpa;
 
+import static jakarta.persistence.FetchType.LAZY;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -15,7 +17,7 @@ import eu.tealhelix.betterme.dao.jpa.values.CorrelationIdPK;
 @IdClass(CorrelationIdPK.class)
 public class CorrelationIdEntity {
 	@Id
-	@ManyToOne
+	@ManyToOne(fetch = LAZY)
 	@JoinColumn(name = "retailer_id")
 	private RetailerEntity retailer;
 
@@ -23,7 +25,7 @@ public class CorrelationIdEntity {
 	@Column(name = "correlation_id")
 	private String correlationId;
 
-	@ManyToOne
+	@ManyToOne(fetch = LAZY)
 	@JoinColumn(name = "user_id")
 	private UserProfileEntity user;
 

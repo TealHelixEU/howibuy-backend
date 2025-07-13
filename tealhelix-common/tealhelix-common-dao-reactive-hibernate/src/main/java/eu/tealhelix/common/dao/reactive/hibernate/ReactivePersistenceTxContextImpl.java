@@ -2,14 +2,15 @@ package eu.tealhelix.common.dao.reactive.hibernate;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import io.smallrye.mutiny.Uni;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Session;
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 
 class ReactivePersistenceTxContextImpl extends ReactivePersistenceContextImpl implements ReactivePersistenceTxContext {
 	private final Transaction transaction;
 
-	public ReactivePersistenceTxContextImpl(Session session, Transaction transaction) {
-		super(session);
+	public ReactivePersistenceTxContextImpl(Mutiny.SessionFactory sessionFactory, Session session, Transaction transaction) {
+		super(sessionFactory, session);
 		this.transaction = transaction;
 	}
 

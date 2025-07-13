@@ -52,6 +52,7 @@
    suffix respectively.
 6. Classes used as inputs/outputs of services and are not part of the main model have the `-Param`/`-Result`
    suffix respectively.
+7. When a word component of a Java identifier is all capitals, de-capitalize it, e.g. "DTO" &rarr; "SomethingDto", "DAO" &rarr; "SomethingDao".
 
 ## Tests
 
@@ -79,3 +80,10 @@
 9. Indexes: `IX_<TABLE>__<COLUMN>`
 
 **TODO:** How to deal with the name size limit of PostgreSQL? (Which is 61, see the [documentation](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS))
+
+## DAOs
+
+1. Place methods to DAOs according to the returned type. If it returns `SomethingEntity` or `Collection<SomethingEntity`, it belongs to the `SomethingDao`.
+2. Never name methods that access the DB with a `get-` prefix. They look like ordinary getters.
+   - Use `find-` or `findBy-` if the method may return `null`/empty `Optional`
+   - Use `require-` or `requireBy-` if the method throws when it does not find a result

@@ -11,7 +11,6 @@ import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -21,8 +20,6 @@ import org.junit.jupiter.api.extension.ParameterResolver;
  * to provide as argument to test methods.
  */
 public class HibernateReactiveExtension implements BeforeAllCallback, AfterAllCallback, ParameterResolver {
-
-	private static final String SFW_KEY = "SessionFactoryWrapper";
 
 	private final Supplier<String> dburlSupplier;
 	private final String dbuser;
@@ -71,12 +68,7 @@ public class HibernateReactiveExtension implements BeforeAllCallback, AfterAllCa
 		}
 	}
 
-	private SessionFactory getOrUnwrapSessionFactory(ExtensionContext extensionContext) {
-		return (SessionFactory) getStore(extensionContext)
-				.getOrComputeIfAbsent(SFW_KEY, ignored -> entityManagerFactory.unwrap(SessionFactory.class));
-	}
-
-	private ExtensionContext.Store getStore(ExtensionContext extensionContext) {
-		return extensionContext.getStore(Namespace.create(getClass()));
+	private SessionFactory getOrUnwrapSessionFactory(@SuppressWarnings("unused") ExtensionContext extensionContext) {
+		return entityManagerFactory.unwrap(SessionFactory.class);
 	}
 }

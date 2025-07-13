@@ -9,6 +9,7 @@ public class UserIdImpl implements UserId {
 	private final String representation;
 
 	public UserIdImpl(String representation) {
+		Objects.requireNonNull(representation);
 		this.representation = representation;
 	}
 
