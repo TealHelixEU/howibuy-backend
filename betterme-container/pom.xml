@@ -18,9 +18,10 @@
 	<modules>
 		<module>betterme</module>
 		<module>betterme-dao</module>
+		<module>betterme-dao-hibernate-reactive</module>
 		<module>betterme-jaxrs</module>
 		<module>betterme-service-interfaces</module>
 		<module>betterme-services</module>
-		<module>betterme-dao-hibernate-reactive</module>
+		<module>betterme-testutils</module>
 	</modules>
 </project>

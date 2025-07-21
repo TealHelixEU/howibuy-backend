@@ -32,4 +32,9 @@ public class UserIdImpl implements UserId {
 	public int hashCode() {
 		return Objects.hashCode(representation);
 	}
+
+	@Override
+	public String toString() {
+		return "UserIdImpl(" + representation + ")";
+	}
 }

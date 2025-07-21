@@ -1,5 +1,7 @@
 package eu.tealhelix.betterme.dao.impl;
 
+import static eu.tealhelix.betterme.dao.impl.UserProfileUtils.toUser;
+
 import java.util.Optional;
 import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -8,20 +10,29 @@ import jakarta.persistence.criteria.Root;
 import eu.tealhelix.betterme.dao.CorrelationIdDao;
 import eu.tealhelix.betterme.dao.jpa.CorrelationIdEntity;
 import eu.tealhelix.betterme.dao.jpa.CorrelationIdEntity_;
+import eu.tealhelix.betterme.dao.jpa.RetailerEntity;
 import eu.tealhelix.betterme.dao.jpa.RetailerEntity_;
 import eu.tealhelix.betterme.dao.jpa.UserProfileEntity;
 import eu.tealhelix.betterme.dao.jpa.values.CorrelationIdPK;
 import eu.tealhelix.betterme.v1.types.RetailerId;
 import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
-import eu.tealhelix.common.types.impl.EmailImpl;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.v1.model.User;
-import eu.tealhelix.common.v1.model.impl.UserImpl;
-import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.common.v1.types.HasUserId;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class CorrelationIdDaoImpl implements CorrelationIdDao {
+	@Override
+	public Uni<Void> createCorrelation(ReactivePersistenceTxContext tx, RetailerId retailerId, String correlationId, HasUserId userId) {
+		var correlationIdEntity = new CorrelationIdEntity();
+		correlationIdEntity.setRetailer(tx.getReference(RetailerEntity.class, retailerId.asUuid()));
+		correlationIdEntity.setCorrelationId(correlationId);
+		correlationIdEntity.setUser(tx.getReference(UserProfileEntity.class, userId.getId().asUuid()));
+		return tx.persist(correlationIdEntity).replaceWithVoid();
+	}
+
 	@Override
 	public Uni<User> requireByRetailerAndCorrelationId(ReactivePersistenceContext em, RetailerId retailerId, String correlationId) {
 		return findCorrelationEntityAndUser(em, retailerId.asUuid(), correlationId)
@@ -38,10 +49,6 @@ public class CorrelationIdDaoImpl implements CorrelationIdDao {
 				cb.equal(correlationIdEntity.get(CorrelationIdEntity_.correlationId), correlationId)
 		);
 		return em.createQuery(q).getSingleOptionalResult();
-	}
-
-	private User toUser(UserProfileEntity u) {
-		return new UserImpl(new UserIdImpl(u.getId().toString()), u.getEmail(), new EmailImpl(u.getEmail()), false, false);
 	}
 
 	private EntityNotFoundException notFound(RetailerId retailerId, String correlationId) {

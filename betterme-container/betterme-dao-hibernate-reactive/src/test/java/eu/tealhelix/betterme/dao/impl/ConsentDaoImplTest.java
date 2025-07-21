@@ -1,5 +1,6 @@
 package eu.tealhelix.betterme.dao.impl;
 
+import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,7 +24,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Testcontainers
@@ -36,7 +36,7 @@ public class ConsentDaoImplTest {
 
 	@Container
 	private static final PostgreSQLContainer<?> postgres =
-			new PostgreSQLContainer<>(DockerImageName.parse("postgres:17-alpine").asCompatibleSubstituteFor("postgres"));
+			new PostgreSQLContainer<>(POSTGRES_IMAGE);
 
 	@RegisterExtension
 	@SuppressWarnings("unused")

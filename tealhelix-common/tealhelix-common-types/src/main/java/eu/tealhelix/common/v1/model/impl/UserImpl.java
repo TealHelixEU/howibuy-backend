@@ -23,6 +23,17 @@ public class UserImpl implements User {
 	}
 
 	@Override
+	public String toString() {
+		return "UserImpl{" +
+				"id=" + id +
+				(name != null ? ", name='" + name + '\'' : "") +
+				(email != null ? ", email=" + email : "") +
+				(systemFlag ? ", system" : "") +
+				(serviceFlag ? ", service" : "") +
+				'}';
+	}
+
+	@Override
 	public UserId getId() {
 		return id;
 	}

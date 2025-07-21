@@ -1,12 +1,12 @@
 package eu.tealhelix.betterme.dao.impl;
 
+import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.Duration;
 import java.util.UUID;
 
-import eu.tealhelix.betterme.dao.jpa.CorrelationIdEntity;
 import eu.tealhelix.betterme.dao.jpa.RetailerEntity;
 import eu.tealhelix.betterme.dao.jpa.UserProfileEntity;
 import eu.tealhelix.betterme.v1.types.impl.GenericRetailerId;
@@ -14,6 +14,7 @@ import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
+import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.MethodOrderer;
@@ -24,7 +25,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Testcontainers
@@ -38,7 +38,7 @@ public class CorrelationIdDaoImplTest {
 
 	@Container
 	private static final PostgreSQLContainer<?> postgres =
-			new PostgreSQLContainer<>(DockerImageName.parse("postgres:17-alpine").asCompatibleSubstituteFor("postgres"));
+			new PostgreSQLContainer<>(POSTGRES_IMAGE);
 
 	@RegisterExtension
 	@SuppressWarnings("unused")
@@ -75,15 +75,11 @@ public class CorrelationIdDaoImplTest {
 	@Test
 	@Order(2)
 	void testCreation(Mutiny.SessionFactory sessionFactory) {
+		var sut = new CorrelationIdDaoImpl();
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
-		// TODO Refactor when we have the CorrelationIdEntity creation method
-		factory.withTransaction(tx -> {
-			var correlationIdEntity = new CorrelationIdEntity();
-			correlationIdEntity.setRetailer(tx.getReference(RetailerEntity.class, RETAILER_ID));
-			correlationIdEntity.setCorrelationId(CORRELATION_ID);
-			correlationIdEntity.setUser(tx.getReference(UserProfileEntity.class, USER_ID));
-			return tx.persistAll(correlationIdEntity);
-		}).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		factory.withTransaction(tx ->
+				sut.createCorrelation(tx, new GenericRetailerId(RETAILER_ID.toString()), CORRELATION_ID, new UserIdImpl(USER_ID.toString()))
+		).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
 	@Test

@@ -26,7 +26,7 @@ public class TokenExchangeResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<Response> exchangeToken(@Context ContainerRequestContext crc, TokenExchangeRequest request) {
 		var user = (User) crc.getSecurityContext().getUserPrincipal();
-		return userImpersonationService.impersonateUser(user, request.correlationId())
+		return userImpersonationService.impersonateUserAsRetailer(user, request.correlationId())
 				.map(impersonatedUser -> jwtGenerationService.toTokenForImpersonation(impersonatedUser)) // TODO Double check
 				.map(t -> new TokenExchangeResponse(t.accessToken(), t.expiresInSeconds()))
 				.map(t -> Response.ok(t).build());

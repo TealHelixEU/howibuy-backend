@@ -33,4 +33,9 @@ public class GenericRetailerId implements RetailerId {
 	public int hashCode() {
 		return Objects.hashCode(representation);
 	}
+
+	@Override
+	public String toString() {
+		return "GenericRetailerId(" + representation + ")";
+	}
 }
