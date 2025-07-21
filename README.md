@@ -101,6 +101,8 @@ Assuming that the properties are defined through a Maven profile e.g., like the 
 mvn process-resources -Pdbupdate-betterme,th-local-postgres
 ```
 
+The `dev` context add data for the development environment; add `-Dliquibase.contexts=dev` to the previous command to activate.
+
 Otherwise, you have to specify the properties by command line, a much more cumbersome option:
 
 ```shell

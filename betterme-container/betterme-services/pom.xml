@@ -31,6 +31,11 @@
 			<artifactId>tealhelix-common-dao-reactive</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-services</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 		<!-- PROJECT TEST -->
 		<dependency>

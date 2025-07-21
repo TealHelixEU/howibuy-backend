@@ -22,5 +22,11 @@
 			<artifactId>tealhelix-common-types</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<!-- SPECS -->
+		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>mutiny</artifactId>
+		</dependency>
 	</dependencies>
 </project>

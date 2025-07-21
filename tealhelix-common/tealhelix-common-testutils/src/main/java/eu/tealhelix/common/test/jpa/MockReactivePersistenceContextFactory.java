@@ -11,6 +11,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.dao.reactive.ReactiveQuery;
@@ -55,7 +56,49 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 	public record FlushAction() implements PersistenceAction {
 	}
 
-	public static class MockReactivePersistenceTxContext implements ReactivePersistenceTxContext {
+	public static class MockReactivePersistenceContext implements ReactivePersistenceContext {
+		protected final List<PersistenceAction> actions = new ArrayList<>();
+
+		@Override
+		public Uni<Void> flush() {
+			actions.add(new FlushAction());
+			return Uni.createFrom().nullItem();
+		}
+
+		@Override
+		public <T> Uni<T> flush(T t) {
+			return flush().replaceWith(t);
+		}
+
+		@Override
+		public <T> Uni<T> find(Class<T> entityClass, Object id) {
+			actions.add(new FindAction(entityClass, id));
+			return Uni.createFrom().nullItem(); // TODO Make it return something useful, if configured so
+		}
+
+		@Override
+		public <T> T getReference(Class<T> entityClass, Object id) {
+			return null; // TODO Make it return something useful, if configured so
+		}
+
+		@Override
+		public CriteriaBuilder getCriteriaBuilder() {
+			return mock(CriteriaBuilder.class, RETURNS_DEEP_STUBS);
+		}
+
+		@Override
+		public <R> ReactiveQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+			@SuppressWarnings("unchecked")
+			ReactiveQuery<R> m = mock(ReactiveQuery.class, RETURNS_DEEP_STUBS);
+			return m;
+		}
+
+		public List<PersistenceAction> getActions() {
+			return actions;
+		}
+	}
+
+	public static class MockReactivePersistenceTxContext extends MockReactivePersistenceContext implements ReactivePersistenceTxContext {
 		private boolean markedForRollback;
 		private final List<PersistenceAction> actions = new ArrayList<>();
 
@@ -104,47 +147,9 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 		}
 
 		@Override
-		public Uni<Void> flush() {
-			actions.add(new FlushAction());
-			return Uni.createFrom().nullItem();
-		}
-
-		@Override
-		public <T> Uni<T> flush(T t) {
-			return flush().replaceWith(t);
-		}
-
-		@Override
-		public <T> Uni<T> find(Class<T> entityClass, Object id) {
-			actions.add(new FindAction(entityClass, id));
-			return Uni.createFrom().nullItem(); // TODO Make it return something useful, if configured so
-		}
-
-		@Override
-		public <T> T getReference(Class<T> entityClass, Object id) {
-			return null; // TODO Make it return something useful, if configured so
-		}
-
-		@Override
-		public CriteriaBuilder getCriteriaBuilder() {
-			return mock(CriteriaBuilder.class, RETURNS_DEEP_STUBS);
-		}
-
-		@Override
-		public <R> ReactiveQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-			@SuppressWarnings("unchecked")
-			ReactiveQuery<R> m = mock(ReactiveQuery.class, RETURNS_DEEP_STUBS);
-			return m;
-		}
-
-		@Override
 		public <R> ReactiveUpdate createUpdate(CriteriaUpdate<R> criteriaUpdate) {
 			ReactiveUpdate m = mock(ReactiveUpdate.class, RETURNS_DEEP_STUBS);
 			return m;
-		}
-
-		public List<PersistenceAction> getActions() {
-			return actions;
 		}
 	}
 
@@ -155,6 +160,12 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 		var tx = new MockReactivePersistenceTxContext();
 		openedTransactions.add(tx);
 		return work.apply(tx);
+	}
+
+	@Override
+	public <T> Uni<T> withoutTransaction(Function<ReactivePersistenceContext, Uni<T>> work) {
+		var em = new MockReactivePersistenceContext();
+		return work.apply(em);
 	}
 
 	@Override

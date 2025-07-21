@@ -7,6 +7,6 @@ import eu.tealhelix.common.types.impl.EmailImpl;
  */
 public interface Email extends RepresentableAsString {
 	static Email of(String email) {
-		return new EmailImpl(email);
+		return email == null ? null : new EmailImpl(email);
 	}
 }

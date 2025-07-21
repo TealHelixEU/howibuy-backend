@@ -2,8 +2,10 @@ package eu.tealhelix.common.dao.reactive.hibernate;
 
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.NoResultException;
 
 import eu.tealhelix.common.dao.reactive.ReactiveQuery;
+import eu.tealhelix.common.types.entity.NotFoundException;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 
@@ -21,7 +23,9 @@ class ReactiveQueryImpl<R> implements ReactiveQuery<R> {
 
 	@Override
 	public Uni<R> getSingleResult() {
-		return query.getSingleResult();
+		return query.getSingleResult()
+				.onFailure(NoResultException.class)
+				.transform(nre -> new NotFoundException("No entity matches the criteria", nre));
 	}
 
 	@Override

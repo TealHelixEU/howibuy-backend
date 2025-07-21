@@ -1,5 +1,6 @@
 package eu.tealhelix.betterme.dao;
 
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.UserId;
@@ -12,6 +13,10 @@ public interface UserProfileDao {
 	 * @return The user object representing the newly created user profile
 	 */
 	Uni<User> createAutoUser(ReactivePersistenceTxContext tx);
+
+	Uni<User> requireByIdmId(ReactivePersistenceContext em, String userIdFromIdm, String name, boolean serviceFlag);
+
+	Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name, boolean serviceFlag);
 
 	/**
 	 * Create a simple, regular (non-system, non-service) user model holding information only about the user id, to be

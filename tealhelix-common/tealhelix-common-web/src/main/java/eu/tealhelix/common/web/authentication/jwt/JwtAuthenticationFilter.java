@@ -1,47 +1,48 @@
 package eu.tealhelix.common.web.authentication.jwt;
 
-import static jakarta.ws.rs.Priorities.AUTHENTICATION;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import eu.tealhelix.common.web.authentication.JaxRsSecurityContextImpl;
-import jakarta.annotation.Priority;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.Provider;
+
+import eu.tealhelix.common.web.authentication.JaxRsSecurityContextImpl;
+import io.smallrye.mutiny.Uni;
+import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 /**
  * Extract the user info from the request and set the JAX-RS {@code SecurityContext}
  * of this application.
  */
-@Provider
-@Priority(AUTHENTICATION)
-public class JwtAuthenticationFilter implements ContainerRequestFilter {
+@SuppressWarnings("unused")
+public class JwtAuthenticationFilter {
 	public static final String AUTHORIZATION_HEADER = "Authorization";
 	private static final Pattern AUTH_HEADER_RE = Pattern.compile("^Bearer (.*)$", Pattern.CASE_INSENSITIVE);
 
-	@Inject
-	private TokenHelper tokenHelper;
+	private final TokenHelper tokenHelper;
 
-	@Override
-	public void filter(ContainerRequestContext requestContext) {
+	public JwtAuthenticationFilter(TokenHelper tokenHelper) {
+		this.tokenHelper = tokenHelper;
+	}
+
+	@ServerRequestFilter
+	public Uni<Void> filter(ContainerRequestContext requestContext) {
 		String token = extractRawToken(requestContext);
 		if (token != null) {
-			try {
-				var user = tokenHelper.processToken(token);
-				var securityCtx = new JaxRsSecurityContextImpl(user, requestContext.getSecurityContext().isSecure(), "BEARER");
-				requestContext.setSecurityContext(securityCtx);
-			} catch (TokenHelperException e) {
-				throw new NotAuthorizedException("failed to process token", unauthorized(), e);
-			}
+			return tokenHelper.processToken(token)
+					.onItem()
+					.invoke(user -> {
+						var securityCtx = new JaxRsSecurityContextImpl(user, requestContext.getSecurityContext().isSecure(), "BEARER");
+						requestContext.setSecurityContext(securityCtx);
+					})
+					.replaceWithVoid()
+					.onFailure(TokenHelperException.class)
+					.transform(e -> new NotAuthorizedException("failed to process token", unauthorized(), e));
 		} else {
 			var user = tokenHelper.makeUnauthenticated();
 			var securityCtx = new JaxRsSecurityContextImpl(user, requestContext.getSecurityContext().isSecure(), null);
 			requestContext.setSecurityContext(securityCtx);
+			return Uni.createFrom().voidItem();
 		}
 	}
 

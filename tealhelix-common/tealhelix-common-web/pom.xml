@@ -15,6 +15,12 @@
 	<packaging>jar</packaging>
 
 	<dependencies>
+		<!-- FRAMEWORK -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-rest</artifactId>
+		</dependency>
+
 		<!-- PROJECT -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
@@ -45,6 +51,10 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
 		</dependency>
 	</dependencies>
 </project>

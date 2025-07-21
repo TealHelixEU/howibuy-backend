@@ -31,6 +31,4 @@ public interface ReactivePersistenceContext {
 	CriteriaBuilder getCriteriaBuilder();
 
 	<R> ReactiveQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
-
-	<R> ReactiveUpdate createUpdate(CriteriaUpdate<R> criteriaUpdate);
 }

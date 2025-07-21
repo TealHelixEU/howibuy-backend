@@ -13,8 +13,8 @@ public class UserProfileEntity {
 	@Column(name = "id")
 	private UUID id;
 
-	@Column(name = "external_id")
-	private String externalId;
+	@Column(name = "idm_id")
+	private String idmId;
 
 	@Column(name = "email")
 	private String email;
@@ -30,20 +30,20 @@ public class UserProfileEntity {
 		this.id = id;
 	}
 
-	public String getExternalId() {
-		return externalId;
-	}
-
-	public void setExternalId(String externalId) {
-		this.externalId = externalId;
-	}
-
 	public String getEmail() {
 		return email;
 	}
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+
+	public String getIdmId() {
+		return idmId;
+	}
+
+	public void setIdmId(String idmId) {
+		this.idmId = idmId;
 	}
 
 	public Boolean getEmailConsent() {

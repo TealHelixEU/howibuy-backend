@@ -1,5 +1,7 @@
 package eu.tealhelix.common.dao.reactive;
 
+import jakarta.persistence.criteria.CriteriaUpdate;
+
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -25,4 +27,6 @@ public interface ReactivePersistenceTxContext extends ReactivePersistenceContext
 	boolean isMarkedForRollback();
 
 	void markForRollback();
+
+	<R> ReactiveUpdate createUpdate(CriteriaUpdate<R> criteriaUpdate);
 }

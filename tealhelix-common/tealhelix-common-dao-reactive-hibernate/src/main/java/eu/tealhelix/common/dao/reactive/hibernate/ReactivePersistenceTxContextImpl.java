@@ -1,6 +1,9 @@
 package eu.tealhelix.common.dao.reactive.hibernate;
 
+import jakarta.persistence.criteria.CriteriaUpdate;
+
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.common.dao.reactive.ReactiveUpdate;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Session;
@@ -47,5 +50,10 @@ class ReactivePersistenceTxContextImpl extends ReactivePersistenceContextImpl im
 	@Override
 	public void markForRollback() {
 		transaction.markForRollback();
+	}
+
+	@Override
+	public <R> ReactiveUpdate createUpdate(CriteriaUpdate<R> criteriaUpdate) {
+		return new ReactiveUpdateImpl(session.createQuery(criteriaUpdate));
 	}
 }

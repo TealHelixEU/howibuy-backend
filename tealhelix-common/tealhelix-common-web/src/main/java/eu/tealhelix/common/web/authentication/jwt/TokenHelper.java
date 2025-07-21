@@ -1,6 +1,7 @@
 package eu.tealhelix.common.web.authentication.jwt;
 
 import eu.tealhelix.common.v1.model.User;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Token processing helper, a facade to ease the job of putting the pieces of JWT authentication together.
@@ -12,9 +13,9 @@ public interface TokenHelper {
 	 * Process the token to create a {@link User}.
 	 *
 	 * @param token The token, cannot be {@code null}
-	 * @return The user
+	 * @return The user, asynchronously
 	 */
-	User processToken(String token);
+	Uni<User> processToken(String token);
 
 	User makeUnauthenticated();
 }

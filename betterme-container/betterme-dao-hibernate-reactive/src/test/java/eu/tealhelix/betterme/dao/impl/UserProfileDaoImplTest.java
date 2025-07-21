@@ -5,11 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.Duration;
+import java.util.UUID;
 
 import eu.tealhelix.betterme.dao.jpa.UserProfileEntity;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
+import eu.tealhelix.common.types.entity.NotFoundException;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -24,6 +27,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class UserProfileDaoImplTest {
 	private static final long ASYNC_WAIT_SECONDS = 300;
+	private static final UUID USER_ID = UUID.fromString("2e788895-0503-4777-a7bd-24e5d61db5b1");
+	private static final String IDM_ID = "IDM ID";
+	private static final String USER_NAME = "User Name";
 
 	@Container
 	private static final PostgreSQLContainer<?> postgres =
@@ -53,5 +59,33 @@ public class UserProfileDaoImplTest {
 		assertNotNull(actualUser);
 		assertNotNull(actualUser.getId());
 		assertEquals(returnedUser.getId().asUuid(), actualUser.getId());
+	}
+
+	@Test
+	@Order(2)
+	void testRequireByIdmId(Mutiny.SessionFactory sessionFactory) {
+		var sut = new UserProfileDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		factory.withTransaction(tx -> {
+			var user = new UserProfileEntity();
+			user.setId(USER_ID);
+			return tx.persist(user);
+		}).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		var subscriber = UniAssertSubscriber.create();
+		factory.withoutTransaction(em ->
+				sut.requireByIdmId(em, IDM_ID, USER_NAME, false)
+		).subscribe().withSubscriber(subscriber);
+		subscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
+
+		factory.withTransaction(tx ->
+				tx.find(UserProfileEntity.class, USER_ID)
+						.invoke(u -> u.setIdmId(IDM_ID))
+		).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		var user = factory.withoutTransaction(em ->
+				sut.requireByIdmId(em, IDM_ID, USER_NAME, false)
+		).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		assertEquals(USER_NAME, user.getName());
 	}
 }

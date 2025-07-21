@@ -23,6 +23,8 @@ import eu.tealhelix.common.v1.model.User;
  */
 @ApplicationScoped
 public class JwtGenerationServiceImpl implements JwtGenerationService {
+	private static final String CLAIM_IMPERSONATED = "impersonated";
+
 	private final DateTimeService dateTimeService;
 	private final TokenAuthenticationConfig tokenAuthenticationConfig;
 
@@ -58,14 +60,15 @@ public class JwtGenerationServiceImpl implements JwtGenerationService {
 	public TokenForImpersonationResult toTokenForImpersonation(User user) {
 		var expiresInSeconds = tokenAuthenticationConfig.getJwtSessionTimeInSeconds();
 		var expirationTime = dateTimeService.currentTimeMillis() + expiresInSeconds * 1000;
-		SignedJWT signedJWT = makeSignedJWT(user.getName(), user.getId().asString(), new Date(expirationTime));
+		SignedJWT signedJWT = makeSignedJWTForImpersonation(user.getName(), user.getId().asString(), new Date(expirationTime));
 		return new TokenForImpersonationResult(signedJWT.serialize(), expiresInSeconds);
 	}
 
-	private SignedJWT makeSignedJWT(String subject, String uuid, Date expirationTime) {
+	private SignedJWT makeSignedJWTForImpersonation(String subject, String uuid, Date expirationTime) {
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.subject(subject)
 				.claim(tokenAuthenticationConfig.getUserIdFieldInJwt(), uuid)
+				.claim(CLAIM_IMPERSONATED, true)
 				.expirationTime(expirationTime)
 				.build();
 		var header = new JWSHeader.Builder(JWSAlgorithm.HS256)
@@ -78,5 +81,10 @@ public class JwtGenerationServiceImpl implements JwtGenerationService {
 			throw new TokenGenerationException(e);
 		}
 		return signedJWT;
+	}
+
+	@Override
+	public boolean isImpersonated(JWTClaimsSet jwtClaimsSet) {
+		return Boolean.TRUE.equals(jwtClaimsSet.getClaim(CLAIM_IMPERSONATED));
 	}
 }

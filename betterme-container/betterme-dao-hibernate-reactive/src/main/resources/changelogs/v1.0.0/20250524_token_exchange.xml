@@ -3,7 +3,7 @@
 	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.31.xsd
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd
 	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
 >
 	<changeSet id="token_exchange_related" author="nikospara">
@@ -11,17 +11,14 @@
 			<column name="id" type="UUID" remarks="The primary key, a UUID that matches the user in the IDM">
 				<constraints primaryKey="true" primaryKeyName="PK_THBM_USER_PROFILE" />
 			</column>
-			<column name="external_id" type="VARCHAR(40)" remarks="An identifier to be communicated to external systems">
-				<constraints
-						nullable="false" notNullConstraintName="NL_THBM_USER_PROFILE__EXTERNAL_ID"
-						unique="true" uniqueConstraintName="UQ_THBM_USER_PROFILE__EXTERNAL_ID"
-				/>
+			<column name="idm_id" type="VARCHAR(40)" remarks="The identifier of this profile as stored in the IDM">
+				<constraints unique="true" uniqueConstraintName="UQ_THBM_USER_PROFILE__IDM_ID" />
 			</column>
 			<column name="email" type="VARCHAR(320)" />
 			<column name="email_consent" type="BOOLEAN" />
 		</createTable>
-		<createIndex tableName="THBM_USER_PROFILE" indexName="IX_THBM_USER_PROFILE__EXTERNAL_ID">
-			<column name="external_id" />
+		<createIndex tableName="THBM_USER_PROFILE" indexName="IX_THBM_USER_PROFILE__IDM_ID">
+			<column name="idm_id" />
 		</createIndex>
 
 		<createTable tableName="THBM_RETAILER" remarks="Retailer data, replicated from the IDM (it is the client)">
@@ -50,5 +47,12 @@
 		<addPrimaryKey tableName="THBM_CONSENT" constraintName="PK_THBM_CONSENT" columnNames="user_id, retailer_id" />
 		<addForeignKeyConstraint baseTableName="THBM_CONSENT" baseColumnNames="user_id" constraintName="FK_THBM_CONSENT__USER_ID__THBM_USER_PROFILE__ID" referencedTableName="THBM_USER_PROFILE" referencedColumnNames="id" />
 		<addForeignKeyConstraint baseTableName="THBM_CONSENT" baseColumnNames="retailer_id" constraintName="FK_THBM_CONSENT__RETAILER_ID__THBM_RETAILER__ID" referencedTableName="THBM_RETAILER" referencedColumnNames="id" />
+	</changeSet>
+
+	<changeSet id="dev_retailers" author="nikospara" context="@dev">
+		<insert tableName="THBM_RETAILER">
+			<column name="id">dc73176c-7069-4a4f-a74f-d60c4a5ec1ee</column>
+			<column name="name">Lime Fresh</column>
+		</insert>
 	</changeSet>
 </databaseChangeLog>

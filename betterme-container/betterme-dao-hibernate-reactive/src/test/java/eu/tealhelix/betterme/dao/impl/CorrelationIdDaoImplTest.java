@@ -32,7 +32,6 @@ public class CorrelationIdDaoImplTest {
 	private static final long ASYNC_WAIT_SECONDS = 300;
 
 	private static final UUID USER_ID = UUID.fromString("2e788895-0503-4777-a7bd-24e5d61db5b1");
-	private static final UUID USER_EXTERNAL_ID = UUID.fromString("2e788895-0503-4777-a7bd-24e5d61d0000");
 	private static final UUID RETAILER_ID = UUID.fromString("518cae6a-f2b2-4454-b74d-f2404feab2f5");
 	private static final String CORRELATION_ID = "abc";
 
@@ -61,7 +60,6 @@ public class CorrelationIdDaoImplTest {
 			retailer.setName("Retailer 1");
 			var user = new UserProfileEntity();
 			user.setId(USER_ID);
-			user.setExternalId(USER_EXTERNAL_ID.toString());
 			return tx.persistAll(retailer, user);
 		}).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 

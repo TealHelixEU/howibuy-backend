@@ -4,6 +4,7 @@ import java.util.function.Function;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import io.smallrye.mutiny.Uni;
@@ -28,6 +29,14 @@ public class ReactivePersistenceContextFactoryImpl implements ReactivePersistenc
 	public <T> Uni<T> withTransaction(Function<ReactivePersistenceTxContext, Uni<T>> work) {
 		return sessionFactory.withTransaction((s, tx) -> {
 			var persistenceContext = new ReactivePersistenceTxContextImpl(sessionFactory, s, tx);
+			return work.apply(persistenceContext);
+		});
+	}
+
+	@Override
+	public <T> Uni<T> withoutTransaction(Function<ReactivePersistenceContext, Uni<T>> work) {
+		return sessionFactory.withSession(s -> {
+			var persistenceContext = new ReactivePersistenceContextImpl(sessionFactory, s);
 			return work.apply(persistenceContext);
 		});
 	}
