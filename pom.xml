@@ -26,20 +26,20 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<version.quarkus.platform>3.24.3</version.quarkus.platform>
+		<version.quarkus.platform>3.25.0</version.quarkus.platform>
 
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
 		<version.h2>2.1.210</version.h2>
 		<version.hibernate-validator-cdi>9.0.1.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? - Anyway, it relates to quarkus-bom hibernate-validator -->
 		<version.jakarta-el>4.0.2</version.jakarta-el>
-		<version.junit.jupiter>5.13.3</version.junit.jupiter>
+		<version.junit.jupiter>5.13.4</version.junit.jupiter>
 		<version.kafka>3.2.0</version.kafka><!-- When changing this, also check KafkaTestResource.java -->
 		<version.kafka.scala>2.13</version.kafka.scala>
 		<version.keycloak>26.3.0</version.keycloak>
 		<version.liquibase>4.33.0</version.liquibase>
 		<version.mockito>5.18.0</version.mockito>
-		<version.nimbus-jose-jwt>10.3.1</version.nimbus-jose-jwt>
-		<version.org.immutables>2.11.0</version.org.immutables>
+		<version.nimbus-jose-jwt>10.4</version.nimbus-jose-jwt>
+		<version.org.immutables>2.11.1</version.org.immutables>
 		<version.postgres>42.7.7</version.postgres>
 		<version.slf4j>2.0.6</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - consider removing from here - for some reason it does not work without it, check again -->
 		<version.swagger-annotations>1.6.5</version.swagger-annotations>
@@ -193,7 +193,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.6.0</version>
+				<version>3.6.1</version>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
