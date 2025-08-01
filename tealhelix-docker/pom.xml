@@ -15,5 +15,4 @@
 		<module>tealhelix-docker-postgres</module>
 		<module>tealhelix-docker-keycloak</module>
 	</modules>
-
 </project>

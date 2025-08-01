@@ -74,6 +74,12 @@
 			<artifactId>quarkus-smallrye-health</artifactId>
 		</dependency>
 
+		<!-- FRAMEWORK TEST -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-junit5</artifactId>
+		</dependency>
+
 		<!-- PROJECT -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
@@ -106,6 +112,28 @@
 			<version>${project.version}</version>
 		</dependency>
 
+		<!-- PROJECT TEST -->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-testutils</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-docker-keycloak</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+			<type>pom</type>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-docker-postgres</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+			<type>pom</type>
+		</dependency>
+
 		<!-- OTHER -->
 		<dependency>
 			<groupId>org.jboss.slf4j</groupId>
@@ -114,8 +142,9 @@
 
 		<!-- TEST -->
 		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-junit5</artifactId>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
