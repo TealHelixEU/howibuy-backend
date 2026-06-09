@@ -25,7 +25,7 @@ class ReactiveQueryImpl<R> implements ReactiveQuery<R> {
 	public Uni<R> getSingleResult() {
 		return query.getSingleResult()
 				.onFailure(NoResultException.class)
-				.transform(nre -> new NotFoundException("No entity matches the criteria", nre));
+				.transform(nre -> new NotFoundException("No entity matches the criteria", nre)); // XXX use DAO exception here, translate in the service layer!
 	}
 
 	@Override

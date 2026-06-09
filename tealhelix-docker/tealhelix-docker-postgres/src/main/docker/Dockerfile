@@ -13,7 +13,7 @@ RUN ./liquibase --classpath=migrations-betterme.jar --changelog-file=db.changelo
 
 
 # https://hub.docker.com/_/postgres
-FROM postgres:17-alpine
+FROM postgres:18-alpine
 
 COPY src/main/docker/0-create-dbs.sql /docker-entrypoint-initdb.d/
 COPY --from=dbfiles /opt/liquibase/*.sql /docker-entrypoint-initdb.d/sql-scripts/

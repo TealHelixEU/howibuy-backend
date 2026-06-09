@@ -1,18 +1,18 @@
-version: '3.5'
 services:
   postgresql:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    image: tealhelix-postgres:latest
+    image: 'tealhelix-postgres:latest'
     ports:
       - '5432:5432'
     volumes:
+      # Remember, for Postgres 18+ remove .../data from the path!
       - data_db:/var/lib/postgresql/data
   keycloak:
     image: 'tealhelix-keycloak:latest'
     ports:
-      - "8280:8080"
+      - '8280:8080'
     depends_on:
       - postgresql
 

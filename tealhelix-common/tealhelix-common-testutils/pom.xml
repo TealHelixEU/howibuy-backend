@@ -13,12 +13,6 @@
 	<name>TealHelix: Test utilities</name>
 
 	<dependencies>
-		<!-- FRAMEWORK TEST -->
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-test-common</artifactId>
-		</dependency>
-
 		<!-- PROJECT -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
@@ -43,8 +37,6 @@
 		</dependency>
 
 		<!-- OTHER -->
-		<!-- Some dependencies that would normally go to test scope are in compile scope because -->
-		<!-- this module is a testing module.                                                    -->
 		<dependency>
 			<groupId>org.hibernate.reactive</groupId>
 			<artifactId>hibernate-reactive-core</artifactId>
@@ -69,11 +61,17 @@
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>postgresql</artifactId>
+			<artifactId>testcontainers-postgresql</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
+		</dependency>
+
+		<!-- FRAMEWORK TEST -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-test-common</artifactId>
 		</dependency>
 	</dependencies>
 </project>

@@ -112,7 +112,7 @@ mvn process-resources -Pdbupdate-betterme -Ddatabase.betterme.jdbc.url=... -Ddat
 #### Rolling back changes
 
 Occasionally you may want to roll back some changes. Switch to the appropriate migration project and run
-(example is for application migrations):
+(example is for BetterMe/HowiBuy):
 
 ```shell
 mvn org.liquibase:liquibase-maven-plugin:rollback \
@@ -189,3 +189,19 @@ You need to make sure the IDE runner resolves workspace artifacts.
 ### From Docker
 
 **TODO**
+
+
+## Releases
+
+```bash
+git checkout master
+# merge appropriately
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion=x.y.z
+git commit -am "Version x.y.z"
+git tag -am "Version x.y.z" vx.y.z
+git checkout develop
+git merge master
+mvn versions:set -DnewVersion=1.0.0-SNAPSHOT -DgenerateBackupPoms=false
+git commit -am "Continue development with 1.0.0-SNAPSHOT"
+git push --tags origin master:master develop:develop
+```

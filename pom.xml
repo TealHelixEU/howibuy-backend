@@ -19,33 +19,31 @@
 	</modules>
 
 	<properties>
-		<version.java>21</version.java>
+		<version.java>25</version.java>
 
 		<database-test.active>false</database-test.active>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<version.quarkus.platform>3.25.0</version.quarkus.platform>
+		<version.quarkus.platform>3.36.1</version.quarkus.platform>
 
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
-		<version.h2>2.1.210</version.h2>
-		<version.hibernate-validator-cdi>9.0.1.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? - Anyway, it relates to quarkus-bom hibernate-validator -->
+		<version.hibernate-validator-cdi>9.1.0.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? - Anyway, it relates to quarkus-bom hibernate-validator -->
 		<version.jakarta-el>4.0.2</version.jakarta-el>
-		<version.junit.jupiter>5.13.4</version.junit.jupiter>
+		<version.junit.jupiter>6.1.0</version.junit.jupiter>
 		<version.kafka>3.2.0</version.kafka><!-- When changing this, also check KafkaTestResource.java -->
 		<version.kafka.scala>2.13</version.kafka.scala>
-		<version.keycloak>26.3.0</version.keycloak>
-		<version.liquibase>4.33.0</version.liquibase>
-		<version.mockito>5.18.0</version.mockito>
-		<version.nimbus-jose-jwt>10.4</version.nimbus-jose-jwt>
-		<version.org.immutables>2.11.1</version.org.immutables>
-		<version.postgres>42.7.7</version.postgres>
-		<version.slf4j>2.0.6</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - consider removing from here - for some reason it does not work without it, check again -->
+		<version.keycloak>26.6.3</version.keycloak>
+		<version.liquibase>5.0.3</version.liquibase>
+		<version.mockito>5.23.0</version.mockito>
+		<version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
+		<version.org.immutables>2.12.2</version.org.immutables>
+		<version.postgres>42.7.11</version.postgres><!-- Defined in quarkus-bom, search for org.postgresql; keep here, needed by the build scripts -->
+		<version.slf4j>2.0.18</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - consider removing from here - for some reason it does not work without it, check again -->
 		<version.swagger-annotations>1.6.5</version.swagger-annotations>
-		<version.testcontainers>1.21.3</version.testcontainers><!-- Defined in quarkus-bom, search for testcontainers - consider removing from here -->
-		<version.weld-junit5>5.0.1.Final</version.weld-junit5>
-		<version.wiremock>3.13.1</version.wiremock>
+		<version.weld-junit5>5.0.3.Final</version.weld-junit5>
+		<version.wiremock>3.13.2</version.wiremock>
 		<version.wiremock.testcontainers>1.0-alpha-15</version.wiremock.testcontainers><!-- Only in alpha :( check manually in https://central.sonatype.com/artifact/org.wiremock.integrations.testcontainers/wiremock-testcontainers-module -->
 	</properties>
 
@@ -63,11 +61,11 @@
 
 			- First is the classification of the dependency with the following order:
 
-			FRAMEWORK dependencies, FRAMEWORK TEST, PROJECT (dependencies from within the project), PROJECT TEST
-			(test-scoped dependencies from within the project), SPECS (specification APIs e.g. JAX-RS),
-			OTHER (other non-test libraries), TEST (libraries intended for test scope).
+			PROJECT (dependencies from within the project), FRAMEWORK dependencies, SPECS (specification APIs e.g. JAX-RS),
+			OTHER (other non-test libraries), PROJECT TEST (test-scoped dependencies from within the project),
+			FRAMEWORK TEST, TEST (libraries intended for test scope, like JUnit and Mockito).
 
-			- Within each classification group sort alphabetically, first by Maven groupId, then by artifactId.
+			- Within each classification section, sort alphabetically. First by Maven groupId, then by artifactId.
 
 			Do NOT define the scope of the dependencies here, define it when actually used.
 			This allows us to have e.g., project-specific test modules that depend on JUnit in compile
@@ -169,13 +167,6 @@
 				<version>${version.mockito}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.testcontainers</groupId>
-				<artifactId>testcontainers-bom</artifactId>
-				<version>${version.testcontainers}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-			<dependency>
 				<groupId>org.wiremock</groupId>
 				<artifactId>wiremock</artifactId>
 				<version>${version.wiremock}</version>
@@ -193,7 +184,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.6.1</version>
+				<version>3.6.3</version>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
@@ -225,7 +216,7 @@
 				<plugin>
 					<groupId>io.fabric8</groupId>
 					<artifactId>docker-maven-plugin</artifactId>
-					<version>0.46.0</version>
+					<version>0.48.1</version>
 				</plugin>
 				<plugin>
 					<groupId>io.quarkus.platform</groupId>
@@ -238,12 +229,26 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.14.0</version>
+					<version>3.15.0</version>
 					<configuration>
 						<release>${version.java}</release>
 						<source>${version.java}</source>
 						<target>${version.java}</target>
 						<parameters>true</parameters>
+						<!-- See https://quarkus.io/guides/hibernate-orm#jakarta-data -->
+						<annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
+						<!-- Why does Java 25 need the annotation processors explicitly? -->
+						<annotationProcessorPaths>
+							<annotationProcessorPath>
+								<groupId>org.immutables</groupId>
+								<artifactId>value</artifactId>
+								<version>${version.org.immutables}</version>
+							</annotationProcessorPath>
+							<annotationProcessorPath>
+								<groupId>org.hibernate.orm</groupId>
+								<artifactId>hibernate-processor</artifactId>
+							</annotationProcessorPath>
+						</annotationProcessorPaths>
 					</configuration>
 				</plugin>
 				<!--
@@ -284,15 +289,15 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.4.2</version>
+					<version>3.5.0</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.3.1</version>
+					<version>3.5.0</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-site-plugin</artifactId>
-					<version>3.21.0</version>
+					<version>3.22.0</version>
 					<!-- we shall see about that...
 					<dependencies>
 						<dependency>
@@ -305,7 +310,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>3.5.3</version>
+					<version>3.5.5</version>
 					<!-- TODO The configuration is from Quarkus. Double check if it is needed at this level, or just in the Quarkus modules. -->
 					<configuration>
 						<systemPropertyVariables>
@@ -331,7 +336,7 @@
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>versions-maven-plugin</artifactId>
-					<version>2.18.0</version>
+					<version>2.21.0</version>
 					<configuration>
 						<ruleSet>
 							<ignoreVersions>
@@ -391,7 +396,7 @@
 						<plugin>
 							<groupId>org.jacoco</groupId>
 							<artifactId>jacoco-maven-plugin</artifactId>
-							<version>0.8.13</version>
+							<version>0.8.14</version>
 						</plugin>
 					</plugins>
 				</pluginManagement>
@@ -426,30 +431,6 @@
 					</plugin>
 				</plugins>
 			</build>
-		</profile>
-
-		<profile>
-			<!-- Deprecated, probably no need for H2 tests -->
-			<id>test-h2</id>
-
-			<properties>
-				<database-test.active>true</database-test.active>
-				<database-test.hibernate.dialect>org.hibernate.dialect.H2Dialect</database-test.hibernate.dialect>
-				<database-test.url>jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1</database-test.url>
-				<database-test.username>sa</database-test.username>
-				<database-test.password>sa</database-test.password>
-			</properties>
-
-			<dependencyManagement>
-				<dependencies>
-					<!-- TODO Place a regular dependencyManagement entry and use it here without the version -->
-					<dependency>
-						<groupId>com.h2database</groupId>
-						<artifactId>h2</artifactId>
-						<version>${version.h2}</version>
-					</dependency>
-				</dependencies>
-			</dependencyManagement>
 		</profile>
 	</profiles>
 </project>

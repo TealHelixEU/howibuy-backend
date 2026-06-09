@@ -13,6 +13,14 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 /**
  * Extract the user info from the request and set the JAX-RS {@code SecurityContext}
  * of this application.
+ * <p>
+ * <strong>Warning:</strong> the filter is declared with {@code nonBlocking = true} because it performs
+ * Hibernate Reactive I/O (via {@link TokenHelper#processToken(String)}), which requires execution on a
+ * Vert.x event-loop thread. Without this flag the filter would inherit the threading model of the target
+ * resource method, and any blocking resource (e.g., one returning a Qute {@code TemplateInstance}) would
+ * cause the reactive session to be opened from a worker thread and fail. For the {@code nonBlocking} setting
+ * to take effect, this filter must run before any filter allowed to block; keep this in mind when
+ * adding new filters or adjusting priorities.
  */
 @SuppressWarnings("unused")
 public class JwtAuthenticationFilter {
@@ -25,7 +33,7 @@ public class JwtAuthenticationFilter {
 		this.tokenHelper = tokenHelper;
 	}
 
-	@ServerRequestFilter
+	@ServerRequestFilter(nonBlocking = true)
 	public Uni<Void> filter(ContainerRequestContext requestContext) {
 		String token = extractRawToken(requestContext);
 		if (token != null) {
