@@ -12,7 +12,7 @@ WORKDIR /opt/liquibase
 RUN ./liquibase --classpath=migrations-howibuy.jar --changelog-file=db.changelog.xml --url=offline:postgresql?outputLiquibaseSql=true --driver=org.postgresql.Driver --output-default-schema=true --default-schema-name=th_howibuy update-sql > 1-howibuy.sql
 
 
-# https://hub.docker.com/_/postgres
+# https://hub.docker.com/_/postgres - also change DockerImageNames!
 FROM postgres:18-alpine
 
 COPY src/main/docker/0-create-dbs.sql /docker-entrypoint-initdb.d/

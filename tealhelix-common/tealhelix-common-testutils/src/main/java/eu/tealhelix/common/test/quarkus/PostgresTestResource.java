@@ -8,7 +8,7 @@ import java.util.Map;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * Start Postgres as a test resource, implement injection of the Postgres test container,
@@ -57,7 +57,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  *}
  */
 public class PostgresTestResource implements QuarkusTestResourceLifecycleManager {
-	private final PostgreSQLContainer<?> postgres;
+	private final PostgreSQLContainer postgres;
 	private boolean skipMigration;
 	private String contexts;
 	private String changeLogFile = "db.changelog.xml";
@@ -69,7 +69,7 @@ public class PostgresTestResource implements QuarkusTestResourceLifecycleManager
 	private String connectionDbPassword;
 
 	public PostgresTestResource() {
-		postgres = new PostgreSQLContainer<>(POSTGRES_IMAGE_TEALHELIX);
+		postgres = new PostgreSQLContainer(POSTGRES_IMAGE_TEALHELIX);
 	}
 
 	@Override

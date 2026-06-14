@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @QuarkusTest
 @QuarkusTestResource(value = PostgresAndKeycloakTestResource.class, initArgs = {
@@ -36,7 +36,7 @@ public class CorrelationIdWorkflowTest {
 	private static final String CORRELATION_ID1 = "ABCDE";
 
 	@InjectPostgres
-	private PostgreSQLContainer<?> postgres;
+	private PostgreSQLContainer postgres;
 
 	@InjectKeycloak
 	private GenericContainer<?> keycloak;

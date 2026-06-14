@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Testcontainers
@@ -34,8 +34,7 @@ public class ConsentDaoImplTest {
 	private static final UUID RETAILER_ID = UUID.fromString("518cae6a-f2b2-4454-b74d-f2404feab2f5");
 
 	@Container
-	private static final PostgreSQLContainer<?> postgres =
-			new PostgreSQLContainer<>(POSTGRES_IMAGE);
+	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
 
 	@RegisterExtension
 	@SuppressWarnings("unused")

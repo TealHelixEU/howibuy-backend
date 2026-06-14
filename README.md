@@ -52,7 +52,7 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 </settings>
 ```
 
-Both profiles use Postgresql. One is to run the entire application through `docker-compose`, in which case
+Both profiles use Postgresql. One is to run the entire application through `docker compose`, in which case
 Postgresql is in the `postgres` host - see `tealhelix-docker/src/main/docker-compose/docker-compose.yml` (**TODO**).
 The other is to run only the peripherals in Docker - see `tealhelix-docker/src/main/docker-compose/docker-compose-peripherals.yml`.
 
@@ -135,11 +135,11 @@ necessary peripheral services (e.g., the database).
 
 ```shell
 cd tealhelix-docker/src/main/docker-compose/
-docker-compose -f docker-compose-peripherals.yml -p tealhelix up -d    # the first time
-docker-compose -f docker-compose-peripherals.yml -p tealhelix start    # to start
-docker-compose -f docker-compose-peripherals.yml -p tealhelix stop     # to stop
-docker-compose -f docker-compose-peripherals.yml -p tealhelix down     # to remove the containers, without removing the persistent volumes
-docker-compose -f docker-compose-peripherals.yml -p tealhelix down -v  # to remove the containers, also removing the persistent volumes
+docker compose -f docker-compose-peripherals.yml -p tealhelix up -d    # the first time
+docker compose -f docker-compose-peripherals.yml -p tealhelix start    # to start
+docker compose -f docker-compose-peripherals.yml -p tealhelix stop     # to stop
+docker compose -f docker-compose-peripherals.yml -p tealhelix down     # to remove the containers, without removing the persistent volumes
+docker compose -f docker-compose-peripherals.yml -p tealhelix down -v  # to remove the containers, also removing the persistent volumes
 ```
 
 ### From the command line (TODO - has stopped working)

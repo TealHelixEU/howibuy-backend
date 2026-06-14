@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Testcontainers
@@ -36,8 +36,7 @@ public class CorrelationIdDaoImplTest {
 	private static final String CORRELATION_ID = "abc";
 
 	@Container
-	private static final PostgreSQLContainer<?> postgres =
-			new PostgreSQLContainer<>(POSTGRES_IMAGE);
+	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
 
 	@RegisterExtension
 	@SuppressWarnings("unused")
