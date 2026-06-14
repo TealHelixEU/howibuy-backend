@@ -4,11 +4,11 @@
 # > ACCESS_TOKEN=`./keycloak-auth-service.sh -u the_client -p secret`
 # > IMPERSONATION_TOKEN=`./correlation-id.sh -c ABCD -a $ACCESS_TOKEN`
 # You can then access the system on behalf of the user with the given correlation id, e.g.:
-# > curl -iS -X GET -H "Authorization: Bearer $IMPERSONATION_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/betterme/v1/greeting
+# > curl -iS -X GET -H "Authorization: Bearer $IMPERSONATION_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 #
 # This script requires curl and jq
 
-BETTERME_URL="http://localhost:8180/api/betterme/v1"
+HOWIBUY_URL="http://localhost:8180/api/howibuy/v1"
 CORRELATION_ID=
 
 while [[ $# -gt 0 ]]; do
@@ -34,7 +34,7 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
-TOKEN_RESPONSE=$(curl -s -X POST $BETTERME_URL/tokenexchange \
+TOKEN_RESPONSE=$(curl -s -X POST $HOWIBUY_URL/tokenexchange \
 	-d "{ \"correlationId\": \"$CORRELATION_ID\" }" \
 	-H "Authorization: Bearer $ACCESS_TOKEN" \
 	-H "Content-Type: application/json")

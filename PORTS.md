@@ -11,5 +11,5 @@ The relevant parts of the configuration are:
 
 | Microservice (Maven module name) | HTTP | Test HTTP | Debug |
 |----------------------------------|------|-----------|-------|
-| **betterme**                     | 8180 | 8181      | 5105  |
+| **howibuy**                      | 8180 | 8181      | 5105  |
 | **Keycloak**                     | 8280 | -         | -     |

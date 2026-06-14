@@ -2,14 +2,14 @@
 
 # Use this script to easily run the OpenID Connect code flow from bash. Example usage:
 # > ACCESS_TOKEN=`./keycloak-auth.sh -u bob@home.com -p bob`
-# > curl -iS -X GET -H "Authorization: Bearer $ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/betterme/v1/greeting
+# > curl -iS -X GET -H "Authorization: Bearer $ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 # Requires curl, sed and jq.
 # From https://medium.com/@rishabhsvats/understanding-authorization-code-flow-3946d746407
 
 KEYCLOAK_URL="http://localhost:8280/"
-REDIRECT_URL="http://localhost:8180/betterme/"
+REDIRECT_URL="http://localhost:8180/howibuy/"
 REALM="tealhelix"
-CLIENTID="betterme"
+CLIENTID="howibuy"
 COOKIE="`pwd`/cookie.jar"
 DECODED=n
 PRINT_TOKEN_RESPONSE=n

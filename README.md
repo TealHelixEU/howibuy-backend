@@ -14,10 +14,10 @@ The build system is Maven and is configured by a set of properties and profiles,
 The following properties are local to an environment; they can be specified as `-Dpropname=propvalue` command line arguments,
 or placed in a local Maven profile in `~/.m2/settings.xml`.
 
-- `database.betterme.jdbc.url`: The JDBC URL of the database for the respective microservice
-- `database.betterme.reactive.url`: The Hibernate *reactive* URL of the database for the respective microservice
-- `database.betterme.username`: The DB username
-- `database.betterme.password`: The DB password
+- `database.howibuy.jdbc.url`: The JDBC URL of the database for the respective microservice
+- `database.howibuy.reactive.url`: The Hibernate *reactive* URL of the database for the respective microservice
+- `database.howibuy.username`: The DB username
+- `database.howibuy.password`: The DB password
 - **(TODO)** `kafka.bootstrap.servers`: The Kafka bootstrap servers
 - **(TODO)** `db.env` (default: `dev`): Needed only by Liquibase to indicate which environment-specific
   [contexts](https://www.liquibase.org/documentation/contexts.html) will it activate;
@@ -31,20 +31,20 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 		<profile>
 			<id>th-local-postgres</id>
 			<properties>
-				<database.betterme.jdbc.url>jdbc:postgresql://localhost/tealhelix</database.betterme.jdbc.url>
-				<database.betterme.reactive.url>vertx-reactive:postgresql://localhost/tealhelix</database.betterme.reactive.url>
-				<database.betterme.username>th_betterme</database.betterme.username>
-				<database.betterme.password>th_betterme</database.betterme.password>
+				<database.howibuy.jdbc.url>jdbc:postgresql://localhost/tealhelix</database.howibuy.jdbc.url>
+				<database.howibuy.reactive.url>vertx-reactive:postgresql://localhost/tealhelix</database.howibuy.reactive.url>
+				<database.howibuy.username>th_howibuy</database.howibuy.username>
+				<database.howibuy.password>th_howibuy</database.howibuy.password>
 				<kafka.bootstrap.servers>localhost:9092</kafka.bootstrap.servers>
 			</properties>
 		</profile>
 		<profile>
 			<id>th-docker-postgres</id>
 			<properties>
-				<database.betterme.jdbc.url>jdbc:postgresql://postgres/tealhelix</database.betterme.jdbc.url>
-				<database.betterme.reactive.url>vertx-reactive:postgresql://postgres/tealhelix</database.betterme.reactive.url>
-				<database.betterme.username>th_betterme</database.betterme.username>
-				<database.betterme.password>th_betterme</database.betterme.password>
+				<database.howibuy.jdbc.url>jdbc:postgresql://postgres/tealhelix</database.howibuy.jdbc.url>
+				<database.howibuy.reactive.url>vertx-reactive:postgresql://postgres/tealhelix</database.howibuy.reactive.url>
+				<database.howibuy.username>th_howibuy</database.howibuy.username>
+				<database.howibuy.password>th_howibuy</database.howibuy.password>
 				<kafka.bootstrap.servers>broker:19092</kafka.bootstrap.servers>
 			</properties>
 		</profile>
@@ -58,8 +58,8 @@ The other is to run only the peripherals in Docker - see `tealhelix-docker/src/m
 
 ### Build profiles
 
-- `dbupdate-betterme`: Execute Liquibase to bring the respective database up to date
-- `betterme-quarkus-dev`: Activate `quarkus:dev` for the respective microservice; do not activate more than one in the same command
+- `dbupdate-howibuy`: Execute Liquibase to bring the respective database up to date
+- `howibuy-quarkus-dev`: Activate `quarkus:dev` for the respective microservice; do not activate more than one in the same command
 - `docker`: Activate the Docker image build
 
 ### Updating dependencies
@@ -98,7 +98,7 @@ Assuming that the properties are defined through a Maven profile e.g., like the 
 `~/.m2/settings.xml` that was described above, run the following:
 
 ```shell
-mvn process-resources -Pdbupdate-betterme,th-local-postgres
+mvn process-resources -Pdbupdate-howibuy,th-local-postgres
 ```
 
 The `dev` context add data for the development environment; add `-Dliquibase.contexts=dev` to the previous command to activate.
@@ -106,20 +106,20 @@ The `dev` context add data for the development environment; add `-Dliquibase.con
 Otherwise, you have to specify the properties by command line, a much more cumbersome option:
 
 ```shell
-mvn process-resources -Pdbupdate-betterme -Ddatabase.betterme.jdbc.url=... -Ddatabase.betterme.username=... -Ddatabase.betterme.password=... -D...
+mvn process-resources -Pdbupdate-howibuy -Ddatabase.howibuy.jdbc.url=... -Ddatabase.howibuy.username=... -Ddatabase.howibuy.password=... -D...
 ```
 
 #### Rolling back changes
 
 Occasionally you may want to roll back some changes. Switch to the appropriate migration project and run
-(example is for BetterMe/HowiBuy):
+(example is for HowiBuy/HowiBuy):
 
 ```shell
 mvn org.liquibase:liquibase-maven-plugin:rollback \
 	-Dliquibase.rollbackCount=... -Dliquibase.changeLogFile=src/main/resources/db.changelog.xml \
 	-Dliquibase.promptOnNonLocalDatabase=false -Dliquibase.driver=org.postgresql.Driver \
-	-Dliquibase.url=jdbc:postgresql://localhost/tealhelix -Dliquibase.username=th_betterme \
-	-Dliquibase.password=th_betterme
+	-Dliquibase.url=jdbc:postgresql://localhost/tealhelix -Dliquibase.username=th_howibuy \
+	-Dliquibase.password=th_howibuy
 ```
 
 Full info [here](https://docs.liquibase.com/tools-integrations/maven/commands/maven-rollback.html).
@@ -176,13 +176,13 @@ The table would look like (see [Quarkus configuration reference](https://quarkus
 
 | Name                            | Value                                           |
 |---------------------------------|-------------------------------------------------|
-| QUARKUS_DATASOURCE_USERNAME     | th_betterme                                     |
-| QUARKUS_DATASOURCE_PASSWORD     | th_betterme                                     |
+| QUARKUS_DATASOURCE_USERNAME     | th_howibuy                                      |
+| QUARKUS_DATASOURCE_PASSWORD     | th_howibuy                                      |
 | QUARKUS_DATASOURCE_REACTIVE_URL | vertx-reactive:postgresql://localhost/tealhelix |
 | QUARKUS_DATASOURCE_JDBC_URL     | jdbc:postgresql://localhost/tealhelix           |
 
 Or define them inline using semicolon as the separator:
-`QUARKUS_DATASOURCE_USERNAME=th_betterme;QUARKUS_DATASOURCE_PASSWORD=th_betterme;QUARKUS_DATASOURCE_REACTIVE_URL=vertx-reactive:postgresql://localhost/tealhelix;QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://localhost/tealhelix`
+`QUARKUS_DATASOURCE_USERNAME=th_howibuy;QUARKUS_DATASOURCE_PASSWORD=th_howibuy;QUARKUS_DATASOURCE_REACTIVE_URL=vertx-reactive:postgresql://localhost/tealhelix;QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://localhost/tealhelix`
 
 You need to make sure the IDE runner resolves workspace artifacts.
 

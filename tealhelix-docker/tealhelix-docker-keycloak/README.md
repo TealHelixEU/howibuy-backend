@@ -30,14 +30,14 @@ Create a new enabled realm, "tealhelix". Configure:
 	- Events: **TODO, for when we implement the user management events**
     - Sessions: Make sure "Offline session settings" -> "Offline Session Idle" is set to something like 30 Days
 
-### Create a client for BetterMe
+### Create a client for HowiBuy
 
 Create a new client in the Realm:
 
 - General settings:
 	- Client type: OpenID Connect
-	- Client ID: betterme
-	- Name: BetterMe
+	- Client ID: howibuy
+	- Name: HowiBuy
 - Capability config:
 	- Client authentication: Off
 	- Authorization: Off
@@ -46,7 +46,7 @@ Create a new client in the Realm:
 	- Root URL: **TODO**
 	- Home URL: **TODO**
 	- Valid redirect URIs:
-        - `http://localhost:8180/betterme/` (also specified in `keycloak-auth.sh`)
+        - `http://localhost:8180/howibuy/` (also specified in `keycloak-auth.sh`)
         - **TODO**
 	- Valid post logout redirect URIs: **TODO**
 	- Web origins: **TODO**

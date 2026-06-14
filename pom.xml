@@ -13,7 +13,7 @@
 
 	<modules>
 		<module>tealhelix-common</module>
-		<module>betterme-container</module>
+		<module>howibuy-container</module>
 		<module>tealhelix-architecture</module>
 		<module>tealhelix-docker</module>
 	</modules>

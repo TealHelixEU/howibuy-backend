@@ -2,9 +2,9 @@
 
 # Use this script to easily authenticate with client credentials to Keycloak. Example usage:
 # > ACCESS_TOKEN=`./keycloak-auth-service.sh -u the_client -p secret`
-# > curl -iS -X GET -H "Authorization: Bearer $ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/betterme/v1/greeting
+# > curl -iS -X GET -H "Authorization: Bearer $ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 # Or:
-# > curl -iS -X POST -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"userId": "abc"}' http://localhost:8180/api/betterme/v1/tokenexchange
+# > curl -iS -X POST -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"userId": "abc"}' http://localhost:8180/api/howibuy/v1/tokenexchange
 #
 # This script requires curl, sed and jq.
 

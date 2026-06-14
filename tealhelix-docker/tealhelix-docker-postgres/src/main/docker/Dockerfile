@@ -1,5 +1,5 @@
 # https://hub.docker.com/_/eclipse-temurin/
-FROM eclipse-temurin:21 AS dbfiles
+FROM eclipse-temurin:25 AS dbfiles
 
 ADD target/liquibase.tar.gz /opt/liquibase/
 COPY target/dbdriver*.jar /opt/liquibase/lib/
@@ -9,7 +9,7 @@ COPY target/migrations*.jar /opt/liquibase/
 # See this: https://dzone.com/articles/using-liquibase-without #
 ################################################################
 WORKDIR /opt/liquibase
-RUN ./liquibase --classpath=migrations-betterme.jar --changelog-file=db.changelog.xml --url=offline:postgresql?outputLiquibaseSql=true --driver=org.postgresql.Driver --output-default-schema=true --default-schema-name=th_betterme update-sql > 1-betterme.sql
+RUN ./liquibase --classpath=migrations-howibuy.jar --changelog-file=db.changelog.xml --url=offline:postgresql?outputLiquibaseSql=true --driver=org.postgresql.Driver --output-default-schema=true --default-schema-name=th_howibuy update-sql > 1-howibuy.sql
 
 
 # https://hub.docker.com/_/postgres

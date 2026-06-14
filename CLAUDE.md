@@ -17,7 +17,7 @@ Treat `tealhelix-architecture/src/site/markdown/CodingConventions.md` as authori
 ```
 tealhelix/
 ├── tealhelix-architecture/        Pure domain model (entities, value types). No framework deps.
-│   └── betterme-model/            BetterMe domain entities
+│   └── howibuy-model/            HowiBuy domain entities
 ├── tealhelix-common/              Cross-microservice infrastructure. No Quarkus deps outside deployment modules.
 │   ├── tealhelix-common-types/    Shared value types (Email, UserId, ...)
 │   ├── tealhelix-common-dao-reactive/         Persistence abstraction interfaces (ReactivePersistenceContext, ...)
@@ -26,20 +26,20 @@ tealhelix/
 │   ├── tealhelix-common-services-impl/        Implementations of the above
 │   ├── tealhelix-common-web/                  JAX-RS infrastructure (JwtAuthenticationFilter, TokenHelper, ...)
 │   └── tealhelix-common-testutils/            Test resources & utilities (Postgres/Keycloak Testcontainers, @InjectPostgres, ...)
-├── betterme-container/            The BetterMe microservice
-│   ├── betterme-dao/              DAO interfaces
-│   ├── betterme-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog
-│   ├── betterme-service-interfaces/       Service interfaces
-│   ├── betterme-services/                 Service implementations
-│   ├── betterme-jaxrs/                    JAX-RS resources
-│   ├── betterme-testutils/                Module-specific test utilities
-│   └── betterme/                          Quarkus deployable (ties everything together)
+├── howibuy-container/            The HowiBuy microservice
+│   ├── howibuy-dao/              DAO interfaces
+│   ├── howibuy-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog
+│   ├── howibuy-service-interfaces/       Service interfaces
+│   ├── howibuy-services/                 Service implementations
+│   ├── howibuy-jaxrs/                    JAX-RS resources
+│   ├── howibuy-testutils/                Module-specific test utilities
+│   └── howibuy/                          Quarkus deployable (ties everything together)
 └── tealhelix-docker/              Dockerfiles + docker-compose
     ├── tealhelix-docker-postgres/
     └── tealhelix-docker-keycloak/
 ```
 
-Dependency rule: only the `*-deployable` modules (`betterme/`) and `*-testutils` may depend on Quarkus. Everything else
+Dependency rule: only the `*-deployable` modules (`howibuy/`) and `*-testutils` may depend on Quarkus. Everything else
 stays framework-agnostic so the artifacts remain reusable. When upgrading a dependency whose version is dictated by
 Quarkus, look for the XML comment marker next to its `version.*` property in the root [pom.xml](pom.xml) and bump the
 bundle together.
@@ -60,11 +60,11 @@ bundle together.
 
 ## Liquibase
 
-- Changelog root: `betterme-container/betterme-dao-hibernate-reactive/src/main/resources/db.changelog.xml`, including
+- Changelog root: `howibuy-container/howibuy-dao-hibernate-reactive/src/main/resources/db.changelog.xml`, including
   per-version files under `changelogs/v1.0.0/`.
 - **For changes that belong to the same epic/ticket, merge new changesets into the existing per-epic file rather than
   creating a new one.** Minimize the number of new changeset files.
-- The `dev` context loads development seed data — activate with `-Dliquibase.contexts=dev` on the `dbupdate-betterme` profile.
+- The `dev` context loads development seed data — activate with `-Dliquibase.contexts=dev` on the `dbupdate-howibuy` profile.
 
 ## Running things
 
@@ -77,20 +77,20 @@ mvn package
 # Build everything including Docker images
 mvn package -Pdocker
 
-# Run a single test in betterme (note -am to pull in the install-skipped tealhelix-docker-* modules,
+# Run a single test in howibuy (note -am to pull in the install-skipped tealhelix-docker-* modules,
 # and -Dsurefire.failIfNoSpecifiedTests=false so upstream modules without a matching test don't fail the run)
-mvn test -pl betterme-container/betterme -am \
+mvn test -pl howibuy-container/howibuy -am \
     -Dtest=CorrelationIdWorkflowTest \
     -Dsurefire.failIfNoSpecifiedTests=false
 
 # Apply Liquibase to a local DB (needs a Maven profile in ~/.m2/settings.xml — see README)
-mvn process-resources -Pdbupdate-betterme,th-local-postgres
+mvn process-resources -Pdbupdate-howibuy,th-local-postgres
 
-# Dev mode for BetterMe
-mvn -Pbetterme-quarkus-dev,th-local-postgres
+# Dev mode for HowiBuy
+mvn -Phowibuy-quarkus-dev,th-local-postgres
 ```
 
-Ports (see [PORTS.md](PORTS.md)): BetterMe HTTP 8180 / test 8181 / debug 5105; Keycloak 8280.
+Ports (see [PORTS.md](PORTS.md)): HowiBuy HTTP 8180 / test 8181 / debug 5105; Keycloak 8280.
 
 ## Testing
 

@@ -248,7 +248,7 @@
         "containerId" : "1df23a22-8b7b-4162-9e4f-2d71e5894918",
         "attributes" : { }
       } ],
-      "betterme" : [ ],
+      "howibuy" : [ ],
       "lime_fresh" : [ ],
       "security-admin-console" : [ ],
       "admin-cli" : [ ],
@@ -532,8 +532,8 @@
     "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
   }, {
     "id" : "701c8c68-84fe-4dea-87d4-d188e1e78b3a",
-    "clientId" : "betterme",
-    "name" : "BetterMe",
+    "clientId" : "howibuy",
+    "name" : "HowiBuy",
     "description" : "",
     "rootUrl" : "",
     "adminUrl" : "",
@@ -542,7 +542,7 @@
     "enabled" : true,
     "alwaysDisplayInConsole" : false,
     "clientAuthenticatorType" : "client-secret",
-    "redirectUris" : [ "http://localhost:8180/betterme/" ],
+    "redirectUris" : [ "http://localhost:8180/howibuy/" ],
     "webOrigins" : [ "/*" ],
     "notBefore" : 0,
     "bearerOnly" : false,

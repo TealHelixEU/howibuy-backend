@@ -16,6 +16,6 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>betterme-model</module>
+		<module>howibuy-model</module>
 	</modules>
 </project>
