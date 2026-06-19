@@ -29,6 +29,7 @@
 		<version.quarkus.platform>3.36.1</version.quarkus.platform>
 
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
+		<version.assertj>3.27.7</version.assertj>
 		<version.hibernate-validator-cdi>9.1.0.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? - Anyway, it relates to quarkus-bom hibernate-validator -->
 		<version.jakarta-el>4.0.2</version.jakarta-el>
 		<version.junit.jupiter>6.1.0</version.junit.jupiter>
@@ -139,6 +140,11 @@
 			</dependency>
 
 			<!-- TEST -->
+			<dependency>
+				<groupId>org.assertj</groupId>
+				<artifactId>assertj-core</artifactId>
+				<version>${version.assertj}</version>
+			</dependency>
 			<dependency>
 				<groupId>org.glassfish</groupId>
 				<artifactId>jakarta.el</artifactId>

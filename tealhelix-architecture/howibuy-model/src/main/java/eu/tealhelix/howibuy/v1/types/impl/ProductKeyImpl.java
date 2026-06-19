@@ -1,14 +1,13 @@
 package eu.tealhelix.howibuy.v1.types.impl;
 
 import java.util.Objects;
-import java.util.UUID;
 
-import eu.tealhelix.howibuy.v1.types.RetailerId;
+import eu.tealhelix.howibuy.v1.types.ProductKey;
 
-public class GenericRetailerId implements RetailerId {
+public class ProductKeyImpl implements ProductKey {
 	private final String representation;
 
-	public GenericRetailerId(String representation) {
+	public ProductKeyImpl(String representation) {
 		this.representation = Objects.requireNonNull(representation);
 	}
 
@@ -18,13 +17,8 @@ public class GenericRetailerId implements RetailerId {
 	}
 
 	@Override
-	public UUID asUuid() {
-		return UUID.fromString(representation);
-	}
-
-	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof RetailerId that)) return false;
+		if (!(o instanceof ProductKey that)) return false;
 		return Objects.equals(asString(), that.asString());
 	}
 
@@ -35,6 +29,6 @@ public class GenericRetailerId implements RetailerId {
 
 	@Override
 	public String toString() {
-		return "GenericRetailerId(" + representation + ")";
+		return "ProductKeyImpl(" + representation + ")";
 	}
 }

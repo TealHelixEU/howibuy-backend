@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Use this script to easily run the OpenID Connect code flow from bash. Example usage:
-# > ACCESS_TOKEN=`./keycloak-auth.sh -u bob@home.com -p bob`
+# > ACCESS_TOKEN=`./keycloak-auth.sh -u bob@krusty-krab.com -p bob`
 # > curl -iS -X GET -H "Authorization: Bearer $ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 # Requires curl, sed and jq.
 # From https://medium.com/@rishabhsvats/understanding-authorization-code-flow-3946d746407
 
-KEYCLOAK_URL="http://localhost:8280/"
+KEYCLOAK_URL="http://localhost:8280"
 REDIRECT_URL="http://localhost:8180/howibuy/"
 REALM="tealhelix"
 CLIENTID="howibuy"
@@ -15,6 +15,7 @@ DECODED=n
 PRINT_TOKEN_RESPONSE=n
 DEBUG=
 STOP_AT=1111
+KEEP_COOKIE=
 
 decode() {
 	jq -R 'split(".") | .[1] | @base64d | fromjson' <<< $1
@@ -49,6 +50,10 @@ while [[ $# -gt 0 ]]; do
 			DEBUG=y
 			shift
 			;;
+		--keep-cookie)
+			KEEP_COOKIE=y
+			shift
+			;;
 		--stop-at)
 			STOP_AT="$2"
 			DEBUG=y
@@ -61,6 +66,12 @@ while [[ $# -gt 0 ]]; do
 			;;
 	esac
 done
+
+function cleanup {
+	if [[ "$KEEP_COOKIE" != "y" ]]; then
+		rm $COOKIE
+	fi
+}
 
 if [[ -z "$USERNAME" ]]; then
 	echo "Username (-u|--user|--username) is required"
@@ -80,7 +91,7 @@ AUTHENTICATE_URL=$(curl -sSL --get --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	| sed -ne '/<form/s/^.*action=\"\([^"]*\)".*$/\1/p' | sed -e 's/\&amp;/\&/g')
 
 [[ "$DEBUG" = "y" ]] && printf "AUTHENTICATE_URL:\n$AUTHENTICATE_URL\n"
-[[ "$STOP_AT" -le 1 ]] && rm $COOKIE && exit 10
+[[ "$STOP_AT" -le 1 ]] && cleanup && exit 10
 
 if [[ -z "AUTHENTICATE_URL" ]]; then
 	echo "Something went wrong when retrieving the authentication URL"
@@ -94,12 +105,12 @@ CODE_URL=$(curl -sS --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	"$AUTHENTICATE_URL")
 
 [[ "$DEBUG" = "y" ]] && printf "CODE_URL:\n$CODE_URL\n"
-[[ "$STOP_AT" -le 2 ]] && rm $COOKIE && exit 10
+[[ "$STOP_AT" -le 2 ]] && cleanup && exit 10
 
 CODE=`echo $CODE_URL | sed -e "s/^.*[&?]code=//" -e "s/&.*$//"`
 
 [[ "$DEBUG" = "y" ]] && printf "CODE:\n$CODE\n"
-[[ "$STOP_AT" -le 3 ]] && rm $COOKIE && exit 10
+[[ "$STOP_AT" -le 3 ]] && cleanup && exit 10
 
 TOKEN_RESPONSE=$(curl -sS --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	--data-urlencode "client_id=$CLIENTID" \
@@ -122,4 +133,4 @@ if [[ "$DECODED" = "y" ]]; then
 	decode $ACCESS_TOKEN
 fi
 
-rm $COOKIE
+cleanup

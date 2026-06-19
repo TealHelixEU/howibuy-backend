@@ -17,5 +17,6 @@
 
 	<modules>
 		<module>howibuy-model</module>
+		<module>howibuy-model-json</module>
 	</modules>
 </project>
