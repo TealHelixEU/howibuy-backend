@@ -10,7 +10,7 @@ import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity_;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
-import eu.tealhelix.common.types.Email;
+import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
@@ -50,6 +50,6 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	}
 
 	private User toUser(UserProfileEntity p, String name, boolean serviceFlag) {
-		return new UserImpl(new UserIdImpl(p.getId().toString()), name, Email.of(p.getEmail()), false, serviceFlag);
+		return new UserImpl(new UserIdImpl(p.getId().toString()), name, EmailAddress.of(p.getEmail()), false, serviceFlag);
 	}
 }

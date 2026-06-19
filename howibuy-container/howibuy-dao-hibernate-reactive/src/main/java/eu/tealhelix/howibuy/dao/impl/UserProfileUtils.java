@@ -1,7 +1,7 @@
 package eu.tealhelix.howibuy.dao.impl;
 
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
-import eu.tealhelix.common.types.impl.EmailImpl;
+import eu.tealhelix.common.types.impl.EmailAddressImpl;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.UserId;
@@ -15,7 +15,7 @@ interface UserProfileUtils {
 	 * @return The corresponding {@code User} model
 	 */
 	static User toUser(UserProfileEntity u) {
-		return new UserImpl(new UserIdImpl(u.getId().toString()), u.getEmail(), new EmailImpl(u.getEmail()), false, false);
+		return new UserImpl(new UserIdImpl(u.getId().toString()), u.getEmail(), new EmailAddressImpl(u.getEmail()), false, false);
 	}
 
 	/**

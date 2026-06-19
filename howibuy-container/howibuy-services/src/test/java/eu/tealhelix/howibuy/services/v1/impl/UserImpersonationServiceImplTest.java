@@ -22,7 +22,7 @@ import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
-import eu.tealhelix.common.types.Email;
+import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
@@ -49,7 +49,7 @@ public class UserImpersonationServiceImplTest {
 	private static final UserId USER_ID_RETAILER = new UserIdImpl("518cae6a-f2b2-4454-b74d-f2404feab2f5");
 	private static final User RETAILER_USER = new UserImpl(USER_ID_RETAILER, null, null, false, true);
 	private static final User REGULAR_USER = new UserImpl(USER_ID_REGULAR, null, null, false, false);
-	private static final User USER_BOB = new UserImpl(USER_ID_REGULAR, "Bob Squarepants", Email.of("bob@krusty-krab.com"), false, false);
+	private static final User USER_BOB = new UserImpl(USER_ID_REGULAR, "Bob Squarepants", EmailAddress.of("bob@krusty-krab.com"), false, false);
 	private static final String CORRELATION_ID = "abc";
 
 	@Produces

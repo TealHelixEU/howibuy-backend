@@ -17,7 +17,7 @@ import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
-import eu.tealhelix.common.types.impl.EmailImpl;
+import eu.tealhelix.common.types.impl.EmailAddressImpl;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
@@ -93,7 +93,7 @@ public class TokenHelperImpl implements TokenHelper {
 					boolean serviceFlag = clientIdObj != null;
 					var userIdFromIdm = jwtClaimsSet.getClaim(tokenAuthenticationConfig.getUserIdFieldInJwt()).toString();
 					var emailObj = jwtClaimsSet.getClaim(tokenAuthenticationConfig.getEmailFieldInJwt());
-					var email = emailObj != null ? new EmailImpl(emailObj.toString()) : null;
+					var email = emailObj != null ? new EmailAddressImpl(emailObj.toString()) : null;
 
 					if (serviceFlag) {
 						var userImpl = new UserImpl(new UserIdImpl(userIdFromIdm), userName, email, false, true);

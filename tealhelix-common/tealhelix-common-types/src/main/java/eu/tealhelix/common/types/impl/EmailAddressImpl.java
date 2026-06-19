@@ -2,15 +2,15 @@ package eu.tealhelix.common.types.impl;
 
 import java.util.Objects;
 
-import eu.tealhelix.common.types.Email;
+import eu.tealhelix.common.types.EmailAddress;
 
 /**
- * Default implementation of the {@link Email}.
+ * Default implementation of the {@link EmailAddress}.
  */
-public class EmailImpl implements Email {
+public class EmailAddressImpl implements EmailAddress {
 	private final String representation;
 
-	public EmailImpl(String representation) {
+	public EmailAddressImpl(String representation) {
 		this.representation = representation;
 	}
 
@@ -22,7 +22,7 @@ public class EmailImpl implements Email {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof Email email)) return false;
+		if (!(o instanceof EmailAddress email)) return false;
 		return Objects.equals(asString(), email.asString());
 	}
 
