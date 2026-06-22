@@ -7,6 +7,10 @@ import io.smallrye.mutiny.Uni;
  * Module-specific methods for authorizing the access to the services of HowiBuy.
  */
 public interface HowiBuyAuthorization {
+	void requireLogin(User user);
+
+	void requireUserNotService(User user);
+
 	/**
 	 * Ensure that the given user has impersonation rights, returning a failure with a {@code NotAuthorizedException}
 	 * if they do not.

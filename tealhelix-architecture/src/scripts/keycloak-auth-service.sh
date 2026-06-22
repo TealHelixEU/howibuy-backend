@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Use this script to easily authenticate with client credentials to Keycloak. Example usage:
-# > ACCESS_TOKEN=`./keycloak-auth-service.sh -u the_client -p secret`
-# > curl -iS -X GET -H "Authorization: Bearer $ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
+# > SVC_ACCESS_TOKEN=`./keycloak-auth-service.sh -u the_client -p secret`
+# > curl -iS -X GET -H "Authorization: Bearer $SVC_ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 # Or:
-# > curl -iS -X POST -H "Authorization: Bearer $ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"userId": "abc"}' http://localhost:8180/api/howibuy/v1/tokenexchange
+# > curl -iS -X POST -H "Authorization: Bearer $SVC_ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"correlationId": "abc"}' http://localhost:8180/api/howibuy/v1/tokenexchange
 #
 # This script requires curl, sed and jq.
 
-KEYCLOAK_URL="http://localhost:8280/"
+KEYCLOAK_URL="http://localhost:8280"
 REALM="tealhelix"
 DECODED=n
 PRINT_TOKEN_RESPONSE=n

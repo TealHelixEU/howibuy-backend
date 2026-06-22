@@ -41,7 +41,7 @@
 		<version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
 		<version.org.immutables>2.12.2</version.org.immutables>
 		<version.postgres>42.7.11</version.postgres><!-- Defined in quarkus-bom, search for org.postgresql; keep here, needed by the build scripts -->
-		<version.slf4j>2.0.18</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - consider removing from here - for some reason it does not work without it, check again -->
+		<version.slf4j>2.0.18</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - needed for the slf4j-jdk14 dependency -->
 		<version.swagger-annotations>1.6.5</version.swagger-annotations>
 		<version.weld-junit5>5.0.3.Final</version.weld-junit5>
 		<version.wiremock>3.13.2</version.wiremock>
@@ -126,14 +126,7 @@
 				<artifactId>postgresql</artifactId>
 				<version>${version.postgres}</version>
 			</dependency>
-			<!-- Defined in Quarkus BOM but does not work without explicitly declaring the dependencies, check again -->
 			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-api</artifactId>
-				<version>${version.slf4j}</version>
-			</dependency>
-			<dependency>
-				<!-- TODO Why do we need this? -->
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-jdk14</artifactId>
 				<version>${version.slf4j}</version>

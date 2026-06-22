@@ -36,6 +36,11 @@
 			<artifactId>tealhelix-common-services</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-utils</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 		<!-- PROJECT TEST -->
 		<dependency>
@@ -59,6 +64,12 @@
 		<dependency>
 			<groupId>jakarta.enterprise</groupId>
 			<artifactId>jakarta.enterprise.cdi-api</artifactId>
+		</dependency>
+
+		<!-- OTHER -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
 		</dependency>
 
 		<!-- TEST -->
