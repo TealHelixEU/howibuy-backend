@@ -19,6 +19,11 @@ decode() {
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
+		-i|--idm)
+			KEYCLOAK_URL="$2"
+			shift
+			shift
+			;;
 		-u|--client|--client-id)
 			CLIENT_ID="$2"
 			shift

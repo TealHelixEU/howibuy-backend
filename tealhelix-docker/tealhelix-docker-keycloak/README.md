@@ -42,12 +42,13 @@ Create a new client in the Realm:
 	- Client authentication: Off
 	- Authorization: Off
 	- Authentication flow: Check *only* "Standard flow"
+	- Require PKCE: Not yet; must be enabled when we have standalone accounts
 - Login settings:
 	- Root URL: **TODO**
 	- Home URL: **TODO**
 	- Valid redirect URIs:
-        - `http://localhost:8180/howibuy/` (also specified in `keycloak-auth.sh`)
-        - **TODO**
+		- `http://localhost:8180/howibuy/` (also specified in `keycloak-auth.sh`)
+		- **TODO**
 	- Valid post logout redirect URIs: **TODO**
 	- Web origins: **TODO**
 - Save & finish the new client wizard
@@ -57,25 +58,25 @@ Create a new client in the Realm:
 Create a new client in the Realm:
 
 - General settings:
-    - Client type: OpenID Connect
-    - Client ID: claimsbuster
-    - Name: Claims Buster
+	- Client type: OpenID Connect
+	- Client ID: claimsbuster
+	- Name: Claims Buster
 - Capability config:
-    - Client authentication: Off
-    - Authorization: Off
-    - Authentication flow: Check *only* "Standard flow"
+	- Client authentication: Off
+	- Authorization: Off
+	- Authentication flow: Check *only* "Standard flow"
 - Login settings:
-    - Root URL: **TODO**
-    - Home URL: **TODO**
-    - Valid redirect URIs:
-        - `http://localhost:8100/authcallback` (**TODO**: also adjust `keycloak-auth.sh`)
-        - **TODO (if we need any more)**
-    - Valid post logout redirect URIs:
-        - `http://localhost:8100/endsession`
-        - **TODO (if we need any more)**
-    - Web origins:
-        - `http://localhost:8100`
-        - **TODO (if we need any more)**
+	- Root URL: **TODO**
+	- Home URL: **TODO**
+	- Valid redirect URIs:
+		- `http://localhost:8100/authcallback` (**TODO**: also adjust `keycloak-auth.sh`)
+		- **TODO (if we need any more)**
+	- Valid post logout redirect URIs:
+		- `http://localhost:8100/endsession`
+		- **TODO (if we need any more)**
+	- Web origins:
+		- `http://localhost:8100`
+		- **TODO (if we need any more)**
 - Save & finish the new client wizard
 - Advanced tab, Advanced settings, "Proof Key for Code Exchange Code Challenge Method": S256
 
@@ -106,6 +107,17 @@ the client:
 
 ```bash
 ./keycloak-auth-service.sh -u lime_fresh -p GrZ4Vd8xWAthuLFOXe1tlYvAtXo8INv1
+```
+
+**DON'T FORGET** to create the retailer user in the DB, using the actual UUID from the JWT:
+
+```bash
+# to find the UUID run the following and keep the `sub` value
+./keycloak-auth-service.sh -u lime_fresh -p GrZ4Vd8xWAthuLFOXe1tlYvAtXo8INv1 --decoded
+```
+
+```sql
+INSERT INTO th_retailer (id, name) VALUES ('...uuid...', 'lime_fresh');
 ```
 
 ### Create some test users
