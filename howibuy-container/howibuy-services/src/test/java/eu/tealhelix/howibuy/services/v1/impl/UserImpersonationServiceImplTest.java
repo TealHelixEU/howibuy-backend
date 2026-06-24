@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 
 import eu.tealhelix.howibuy.dao.ConsentDao;
 import eu.tealhelix.howibuy.dao.CorrelationIdDao;
+import eu.tealhelix.howibuy.dao.RetailerDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.services.v1.authz.impl.HowiBuyAuthorizationImpl;
 import eu.tealhelix.common.dao.EntityNotFoundException;
@@ -65,6 +66,10 @@ public class UserImpersonationServiceImplTest {
 	UserProfileDao mockUserProfileDao;
 
 	@Produces
+	@Mock
+	RetailerDao mockRetailerDao;
+
+	@Produces
 	@RegisterExtension
 	private MockReactivePersistenceContextFactory mockReactivePersistenceContextFactory = new MockReactivePersistenceContextFactory();
 
@@ -80,8 +85,18 @@ public class UserImpersonationServiceImplTest {
 	}
 
 	@Test
+	@DisplayName("When invoking impersonateUserAsRetailer and the retailer is not in the database, we get an IllegalStateException")
+	void testImpersonateUserAsRetailerRetailerDoesNotExist() {
+		mockRetailerDoesNotExist(RETAILER_USER);
+		var t = sut.impersonateUserAsRetailer(RETAILER_USER, CORRELATION_ID).subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getFailure();
+		assertInstanceOf(IllegalStateException.class, t);
+	}
+
+	@Test
 	@DisplayName("When invoking impersonateUserAsRetailer, the correlation id exists and the user has not consented, we get a NotAuthorizedException")
 	void testImpersonateUserAsRetailerCorrelationIdExistsNoConsent() {
+		mockRetailerExists(RETAILER_USER);
 		mockExistingCorrelationId(RETAILER_USER, USER_BOB);
 		mockNoConsent(USER_BOB, RETAILER_USER);
 		var t = sut.impersonateUserAsRetailer(RETAILER_USER, CORRELATION_ID).subscribe().withSubscriber(UniAssertSubscriber.create())
@@ -92,6 +107,7 @@ public class UserImpersonationServiceImplTest {
 	@Test
 	@DisplayName("When invoking impersonateUserAsRetailer, the correlation id exists and the user has consented, we get a User object")
 	void testImpersonateUserAsRetailerCorrelationIdExistsConsent() {
+		mockRetailerExists(RETAILER_USER);
 		mockExistingCorrelationId(RETAILER_USER, USER_BOB);
 		mockConsent(USER_BOB, RETAILER_USER);
 		mockToUser();
@@ -104,6 +120,7 @@ public class UserImpersonationServiceImplTest {
 	@Test
 	@DisplayName("When invoking impersonateUserAsRetailer and the correlation id does not exist, we create the user, consent and correlation")
 	void testImpersonateUserAsRetailerCorrelationIdDoesNotExist() {
+		mockRetailerExists(RETAILER_USER);
 		mockNotExistingCorrelationId(RETAILER_USER);
 		mockAutoUserCreation();
 		mockUpdateConsent(USER_BOB, RETAILER_USER, true);
@@ -112,6 +129,16 @@ public class UserImpersonationServiceImplTest {
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 		assertNotNull(u);
 		assertEquals(USER_ID_REGULAR, u.getId());
+	}
+
+	private void mockRetailerExists(User retailerUser) {
+		when(mockRetailerDao.exists(any(ReactivePersistenceContext.class), matchesRetailerId(retailerUser)))
+				.thenReturn(Uni.createFrom().item(true));
+	}
+
+	private void mockRetailerDoesNotExist(User retailerUser) {
+		when(mockRetailerDao.exists(any(ReactivePersistenceContext.class), matchesRetailerId(retailerUser)))
+				.thenReturn(Uni.createFrom().item(false));
 	}
 
 	private void mockNotExistingCorrelationId(User retailerUser) {

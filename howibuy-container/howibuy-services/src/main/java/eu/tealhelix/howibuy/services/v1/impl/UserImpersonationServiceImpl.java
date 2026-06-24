@@ -16,6 +16,7 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.dao.ConsentDao;
 import eu.tealhelix.howibuy.dao.CorrelationIdDao;
+import eu.tealhelix.howibuy.dao.RetailerDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
 import eu.tealhelix.howibuy.services.v1.authz.HowiBuyAuthorization;
@@ -33,6 +34,7 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 	private final CorrelationIdDao correlationIdDao;
 	private final ConsentDao consentDao;
 	private final UserProfileDao userProfileDao;
+	private final RetailerDao retailerDao;
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
 
 	@Inject
@@ -41,12 +43,14 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 			CorrelationIdDao correlationIdDao,
 			ConsentDao consentDao,
 			UserProfileDao userProfileDao,
+			RetailerDao retailerDao,
 			ReactivePersistenceContextFactory persistenceContextFactory
 	) {
 		this.authorization = authorization;
 		this.correlationIdDao = correlationIdDao;
 		this.consentDao = consentDao;
 		this.userProfileDao = userProfileDao;
+		this.retailerDao = retailerDao;
 		this.persistenceContextFactory = persistenceContextFactory;
 	}
 
@@ -59,13 +63,25 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 						persistenceContextFactory.withTransaction(tx -> {
 							LOG.info("Impersonating user as retailer {} -> correlationId: {}", currentUser.getId().asString(), correlationId);
 							var retailerId = new GenericRetailerId(currentUser.getId().asString());
-							return correlationIdDao.requireByRetailerAndCorrelationId(tx, retailerId, correlationId)
-									.flatMap(user -> checkConsent(tx, user.getId(), retailerId))
-									.map(userId -> createUserObjectForExistingCorrelationId(userId, retailerId, correlationId))
-									.onFailure(EntityNotFoundException.class)
-									.recoverWithUni(_ -> createAndConfigureAutoUser(tx, retailerId, correlationId));
+							return requireRetailerExists(tx, retailerId)
+									.chain(() -> correlationIdDao.requireByRetailerAndCorrelationId(tx, retailerId, correlationId)
+											.flatMap(user -> checkConsent(tx, user.getId(), retailerId))
+											.map(userId -> createUserObjectForExistingCorrelationId(userId, retailerId, correlationId))
+											.onFailure(EntityNotFoundException.class)
+											.recoverWithUni(_ -> createAndConfigureAutoUser(tx, retailerId, correlationId)));
 						})
 				);
+	}
+
+	private Uni<Void> requireRetailerExists(ReactivePersistenceContext em, RetailerId retailerId) {
+		return retailerDao.exists(em, retailerId)
+				.invoke(exists -> {
+					if (!TRUE.equals(exists)) {
+						LOG.error("Retailer {} is authenticated but absent from the database; IDM replication is out of sync", retailerId.asString());
+						throw new IllegalStateException("Retailer not found in the database: " + retailerId.asString());
+					}
+				})
+				.replaceWithVoid();
 	}
 
 	private Uni<UserId> checkConsent(ReactivePersistenceContext em, UserId userId, RetailerId retailerId) {
