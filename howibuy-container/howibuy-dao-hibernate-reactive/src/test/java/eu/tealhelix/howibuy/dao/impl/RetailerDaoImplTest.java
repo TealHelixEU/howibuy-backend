@@ -7,11 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.util.UUID;
 
-import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
-import eu.tealhelix.howibuy.v1.types.impl.GenericRetailerId;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
+import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
+import eu.tealhelix.howibuy.v1.types.impl.GenericRetailerId;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.MethodOrderer;
@@ -36,7 +36,7 @@ public class RetailerDaoImplTest {
 	@RegisterExtension
 	@SuppressWarnings("unused")
 	private static final LiquibaseExtension liquibaseExtension =
-			new LiquibaseExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword());
+			LiquibaseExtension.withContexts(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "test");
 
 	@RegisterExtension
 	@SuppressWarnings("unused")

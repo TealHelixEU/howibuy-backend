@@ -7,14 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.time.Duration;
 import java.util.UUID;
 
-import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
-import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
-import eu.tealhelix.howibuy.v1.types.impl.GenericRetailerId;
 import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
+import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
+import eu.tealhelix.howibuy.v1.types.impl.GenericRetailerId;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.MethodOrderer;
@@ -41,7 +41,7 @@ public class CorrelationIdDaoImplTest {
 	@RegisterExtension
 	@SuppressWarnings("unused")
 	private static final LiquibaseExtension liquibaseExtension =
-			new LiquibaseExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword());
+			LiquibaseExtension.withContexts(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "test");
 
 	@RegisterExtension
 	@SuppressWarnings("unused")

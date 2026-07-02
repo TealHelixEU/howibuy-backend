@@ -6,6 +6,8 @@
 	<persistence-unit name="default-persistence-unit">
 		<provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 
+		<class>eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.ConsentEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.CorrelationIdEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerEntity</class>

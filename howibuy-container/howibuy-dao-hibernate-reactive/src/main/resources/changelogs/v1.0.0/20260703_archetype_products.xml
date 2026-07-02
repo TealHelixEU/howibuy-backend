@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="archetype_products_schema" author="nikospara">
+		<createTable tableName="TH_ARCHETYPE_CATEGORY" remarks="SAFAD taxonomy tree: L1/L2/L3 categories of archetype products">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_ARCHETYPE_CATEGORY" />
+			</column>
+			<column name="parent_id" type="UUID" remarks="The parent category; null for top-level (L1) categories" />
+			<column name="level" type="SMALLINT" remarks="Taxonomy level: 1, 2 or 3">
+				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_CATEGORY__LEVEL" />
+			</column>
+			<column name="name" type="VARCHAR(255)" remarks="The category name">
+				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_CATEGORY__NAME" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_ARCHETYPE_CATEGORY" baseColumnNames="parent_id" constraintName="FK_ARCHETYPE_CATEGORY__PARENT_ID__ARCHETYPE_CATEGORY__ID" referencedTableName="TH_ARCHETYPE_CATEGORY" referencedColumnNames="id" />
+		<createIndex tableName="TH_ARCHETYPE_CATEGORY" indexName="IX_TH_ARCHETYPE_CATEGORY__PARENT_ID">
+			<column name="parent_id" />
+		</createIndex>
+		<addUniqueConstraint tableName="TH_ARCHETYPE_CATEGORY" columnNames="parent_id, name" constraintName="UQ_TH_ARCHETYPE_CATEGORY__PARENT_ID_NAME" />
+
+		<createTable tableName="TH_ARCHETYPE_PRODUCT" remarks="Leaf archetype products of the SAFAD taxonomy with the raw inputs of the sustainability assessment">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_ARCHETYPE_PRODUCT" />
+			</column>
+			<column name="category_id" type="UUID" remarks="The L3 category this product is classified under">
+				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__CATEGORY_ID" />
+			</column>
+			<column name="name" type="VARCHAR(255)" remarks="The product name">
+				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__NAME" />
+			</column>
+			<column name="agb_code" type="VARCHAR(32)" remarks="The Agribalyse identifier; the stable external key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__AGB_CODE" unique="true" uniqueConstraintName="UQ_TH_ARCHETYPE_PRODUCT__AGB_CODE" />
+			</column>
+			<column name="e_climate_change" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_CLIMATE_CHANGE" /></column>
+			<column name="e_ozon_depletion" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_OZON_DEPLETION" /></column>
+			<column name="e_ionizing_radiation" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_IONIZING_RADIATION" /></column>
+			<column name="e_ozon_formation" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_OZON_FORMATION" /></column>
+			<column name="e_particulate_matter" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_PARTICULATE_MATTER" /></column>
+			<column name="e_non_carcinogenic_toxicity" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_NON_CARCINOGENIC_TOXICITY" /></column>
+			<column name="e_carcinogenic_toxicity" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_CARCINOGENIC_TOXICITY" /></column>
+			<column name="e_land_water_acidification" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_LAND_WATER_ACIDIFICATION" /></column>
+			<column name="e_freshwater_eutrophication" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_FRESHWATER_EUTROPHICATION" /></column>
+			<column name="e_marine_eutrophication" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_MARINE_EUTROPHICATION" /></column>
+			<column name="e_terrestrial_eutrophication" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_TERRESTRIAL_EUTROPHICATION" /></column>
+			<column name="e_freshwater_ecotoxicity" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_FRESHWATER_ECOTOXICITY" /></column>
+			<column name="e_land_use" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_LAND_USE" /></column>
+			<column name="e_water_use" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_WATER_USE" /></column>
+			<column name="e_energy_use" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_ENERGY_USE" /></column>
+			<column name="e_mineral_use" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_MINERAL_USE" /></column>
+			<column name="aw_index" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__AW_INDEX" /></column>
+			<column name="aw_antibio_index" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__AW_ANTIBIO_INDEX" /></column>
+			<column name="s_child_labour" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_CHILD_LABOUR" /></column>
+			<column name="s_forced_labour" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_FORCED_LABOUR" /></column>
+			<column name="s_fair_salary" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_FAIR_SALARY" /></column>
+			<column name="s_working_time" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_WORKING_TIME" /></column>
+			<column name="s_discrimination" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_DISCRIMINATION" /></column>
+			<column name="s_health_safety_workers" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_HEALTH_SAFETY_WORKERS" /></column>
+			<column name="s_social_benefits_legal_issues" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_SOCIAL_BENEFITS_LEGAL_ISSUES" /></column>
+			<column name="s_workers_rights" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_WORKERS_RIGHTS" /></column>
+			<column name="s_fair_competition" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_FAIR_COMPETITION" /></column>
+			<column name="s_corruption" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_CORRUPTION" /></column>
+			<column name="s_contribution_econ_dev" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_CONTRIBUTION_ECON_DEV" /></column>
+			<column name="s_illiteracy" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_ILLITERACY" /></column>
+			<column name="s_health_safety_society" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_HEALTH_SAFETY_SOCIETY" /></column>
+			<column name="s_indigenous_rights" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__S_INDIGENOUS_RIGHTS" /></column>
+			<column name="nutri_score" type="VARCHAR(20)" remarks="The Nutri-Score label; '0' for products excluded from Nutri-Score">
+				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__NUTRI_SCORE" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_ARCHETYPE_PRODUCT" baseColumnNames="category_id" constraintName="FK_ARCHETYPE_PRODUCT__CATEGORY_ID__ARCHETYPE_CATEGORY__ID" referencedTableName="TH_ARCHETYPE_CATEGORY" referencedColumnNames="id" />
+		<createIndex tableName="TH_ARCHETYPE_PRODUCT" indexName="IX_TH_ARCHETYPE_PRODUCT__CATEGORY_ID">
+			<column name="category_id" />
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="archetype_category_root_name_unique" author="nikospara">
+		<comment>Enforce L1 name uniqueness: the (parent_id, name) unique constraint does not, since NULL parent_ids are distinct in Postgres.</comment>
+		<sql>CREATE UNIQUE INDEX UQ_TH_ARCHETYPE_CATEGORY__ROOT_NAME ON TH_ARCHETYPE_CATEGORY (name) WHERE parent_id IS NULL</sql>
+		<rollback>DROP INDEX UQ_TH_ARCHETYPE_CATEGORY__ROOT_NAME</rollback>
+	</changeSet>
+
+	<changeSet id="archetype_data_categories" author="nikospara" context="appdata">
+		<loadData tableName="TH_ARCHETYPE_CATEGORY" file="db/archetype/archetype_category.csv" relativeToChangelogFile="false">
+			<column name="id" type="UUID" />
+			<column name="parent_id" type="UUID" />
+			<column name="level" type="NUMERIC" />
+			<column name="name" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_ARCHETYPE_CATEGORY" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="archetype_data_products" author="nikospara" context="appdata">
+		<loadData tableName="TH_ARCHETYPE_PRODUCT" file="db/archetype/archetype_product.csv" relativeToChangelogFile="false">
+			<column name="id" type="UUID" />
+			<column name="category_id" type="UUID" />
+			<column name="name" type="STRING" />
+			<column name="agb_code" type="STRING" />
+			<column name="e_climate_change" type="NUMERIC" />
+			<column name="e_ozon_depletion" type="NUMERIC" />
+			<column name="e_ionizing_radiation" type="NUMERIC" />
+			<column name="e_ozon_formation" type="NUMERIC" />
+			<column name="e_particulate_matter" type="NUMERIC" />
+			<column name="e_non_carcinogenic_toxicity" type="NUMERIC" />
+			<column name="e_carcinogenic_toxicity" type="NUMERIC" />
+			<column name="e_land_water_acidification" type="NUMERIC" />
+			<column name="e_freshwater_eutrophication" type="NUMERIC" />
+			<column name="e_marine_eutrophication" type="NUMERIC" />
+			<column name="e_terrestrial_eutrophication" type="NUMERIC" />
+			<column name="e_freshwater_ecotoxicity" type="NUMERIC" />
+			<column name="e_land_use" type="NUMERIC" />
+			<column name="e_water_use" type="NUMERIC" />
+			<column name="e_energy_use" type="NUMERIC" />
+			<column name="e_mineral_use" type="NUMERIC" />
+			<column name="aw_index" type="NUMERIC" />
+			<column name="aw_antibio_index" type="NUMERIC" />
+			<column name="s_child_labour" type="NUMERIC" />
+			<column name="s_forced_labour" type="NUMERIC" />
+			<column name="s_fair_salary" type="NUMERIC" />
+			<column name="s_working_time" type="NUMERIC" />
+			<column name="s_discrimination" type="NUMERIC" />
+			<column name="s_health_safety_workers" type="NUMERIC" />
+			<column name="s_social_benefits_legal_issues" type="NUMERIC" />
+			<column name="s_workers_rights" type="NUMERIC" />
+			<column name="s_fair_competition" type="NUMERIC" />
+			<column name="s_corruption" type="NUMERIC" />
+			<column name="s_contribution_econ_dev" type="NUMERIC" />
+			<column name="s_illiteracy" type="NUMERIC" />
+			<column name="s_health_safety_society" type="NUMERIC" />
+			<column name="s_indigenous_rights" type="NUMERIC" />
+			<column name="nutri_score" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_ARCHETYPE_PRODUCT" />
+		</rollback>
+	</changeSet>
+</databaseChangeLog>

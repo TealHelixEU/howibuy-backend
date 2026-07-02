@@ -1,0 +1,830 @@
+id,parent_id,level,name
+08aaa7cf-5af8-5977-9159-9f5b0053fc4d,,1,Alcoholic beverages
+b3ffeebc-0213-53e3-9375-4e13621f61b2,,1,Animal and vegetable fats and oils
+da0a350a-39e8-5881-b42f-c96d8f77eb68,,1,Composite food (including frozen products)
+31183dd4-6dc4-5cae-a155-e0a3d33b8a92,,1,Drinking water (water without any additives except carbon dioxide; includes water ice for consumption)
+fd55a778-9f11-51b1-81f6-d9d86f2a926d,,1,Eggs and egg products
+805ecf67-6ad5-5e17-8019-1863618aec92,,1,"Fish and other seafood (including amphibians, reptiles, snails and insects)"
+3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,,1,Food for infants and small children
+e0236c5f-9fec-5468-880b-640bec9a3358,,1,Fruit and fruit products
+12a5b805-8050-56f2-a37a-097bbefcd8ea,,1,Fruit and vegetable juices
+5a8b9e50-c42d-5a99-9598-ae729def3f59,,1,Grains and grain-based products
+4b2f8f6f-444b-5043-979e-552df39037a7,,1,"Herbs, spices and condiments"
+cdfba7bd-3b7c-5387-b03e-1e36d3265f58,,1,"Legumes, nuts and oilseeds"
+aa753be3-9452-5a22-bd46-0dab30ccd3c1,,1,Meat and meat products (including edible offal)
+772d913e-bf93-5ce1-993f-87b1e839b51d,,1,Milk and dairy products
+b660323b-a9d3-5ebb-b100-9bc9b5c57a79,,1,Non-alcoholic beverages (excepting milk based beverages)
+3b87e447-8e98-5f73-9514-6c790a366cb6,,1,Products for special nutritional use
+df88a1b8-8bb8-5061-b616-fe62a01200cd,,1,"Snacks, desserts, and other foods"
+39015fd8-0e4b-59ff-9ca1-7a50799a7d82,,1,Starchy roots and tubers
+8c70bb8c-4791-5342-b858-c9ef55733081,,1,Sugar and confectionary
+d718d975-0ecd-54fe-a119-c0e05d99d8e2,,1,Vegetables and vegetable products (including fungi)
+6cb1940e-089b-550c-994b-967a2838a1c6,08aaa7cf-5af8-5977-9159-9f5b0053fc4d,2,Alcoholic mixed drinks
+be08644d-074f-5f3a-9efe-76fd98dd9352,08aaa7cf-5af8-5977-9159-9f5b0053fc4d,2,Beer and beer-like beverage
+71a51932-46c6-5ac5-9664-416aa6d0314e,08aaa7cf-5af8-5977-9159-9f5b0053fc4d,2,Liqueur
+d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,08aaa7cf-5af8-5977-9159-9f5b0053fc4d,2,Spirits
+7442da53-9c7d-577e-9ad7-410bee197b1e,08aaa7cf-5af8-5977-9159-9f5b0053fc4d,2,Wine
+57d1d8bd-114a-5579-b4e4-9f9f16b6dac1,08aaa7cf-5af8-5977-9159-9f5b0053fc4d,2,"Wine-like drinks (e.g. Cider, Perry)"
+305f942e-780e-5e9a-b83c-c3bf6aac4da2,b3ffeebc-0213-53e3-9375-4e13621f61b2,2,Animal fat
+84d748e6-afb6-5fd2-ad3e-5da242b4db83,b3ffeebc-0213-53e3-9375-4e13621f61b2,2,Fish oil
+06ce4e90-4c18-5c6a-81ed-69439d70eb70,b3ffeebc-0213-53e3-9375-4e13621f61b2,2,Margarine and similar products
+5bdf0653-4e33-595a-b189-d26137596c1a,b3ffeebc-0213-53e3-9375-4e13621f61b2,2,Vegetable fat
+bda11d26-d01c-50c3-8f8b-7b6128c68da1,b3ffeebc-0213-53e3-9375-4e13621f61b2,2,Vegetable oil
+e43a37b9-d86e-50bf-90c1-20b4c0cffbe0,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Beans-based meals
+c91c0cbf-9b34-5cb2-88f9-ca5937963928,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Cereal-based dishes
+28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,"Egg-based meal (e.g., omelette)"
+2e62310c-5778-5861-96cd-1a95e53e044e,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Fish and seafood based meals
+b34520b6-8f5a-591a-83b8-dbce1961baac,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Meat-based meals
+784c6b4f-efcf-581a-8fc5-075ec33f4065,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Potato based dishes
+41fbc688-c61e-5d88-894c-a1ba8c9030cc,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Prepared salads
+740f372f-3c34-5462-9834-bd152faacd83,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Ready to eat soups
+ddf9c247-5ec0-57fb-a41d-c9cf7546e2d8,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Rice-based meals
+71ddb23f-c0c9-5706-afe4-0c0e61e23113,da0a350a-39e8-5881-b42f-c96d8f77eb68,2,Vegetable-based meals
+4f4b0751-5cfe-5a43-9362-8c7dba59b36c,31183dd4-6dc4-5cae-a155-e0a3d33b8a92,2,Bottled water
+df1d48cd-df3a-5628-a040-6778bf13622b,31183dd4-6dc4-5cae-a155-e0a3d33b8a92,2,Tap water
+d03a8f6e-7994-5cdb-ac19-9e83ed2b42a5,fd55a778-9f11-51b1-81f6-d9d86f2a926d,2,"Eggs, fresh"
+89d77124-c997-569d-82b4-71eb82cfae08,fd55a778-9f11-51b1-81f6-d9d86f2a926d,2,"Eggs, powder"
+e05c5e11-180d-5409-b37f-173d43d465bc,805ecf67-6ad5-5e17-8019-1863618aec92,2,"Amphibians, reptiles, snails, insects"
+9cbbb4a4-2e06-50e4-b155-074fbb698b91,805ecf67-6ad5-5e17-8019-1863618aec92,2,Crustaceans
+bf2e9326-8051-57d2-a020-18418d7e4e6f,805ecf67-6ad5-5e17-8019-1863618aec92,2,Fish meat
+c8a8a61f-a72b-5294-a855-7c2368f6a922,805ecf67-6ad5-5e17-8019-1863618aec92,2,Fish products
+7af13960-ba5e-581c-b839-6dd085d4f423,805ecf67-6ad5-5e17-8019-1863618aec92,2,Water molluscs
+1fa1dd4e-7900-5b05-a761-8b8474b38b93,3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,2,Cereal-based food for infants and young children
+e1f51fe6-394f-54bc-b864-f2130a85601d,3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,2,"Follow-on formulae, liquid"
+083084f8-ffab-5a23-b2f1-c097c76cee17,3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,2,"Follow-on formulae, powder"
+f0336fb9-dc40-5502-8987-773dbfc9023a,3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,2,"Infant formulae, liquid"
+f3fecfbb-61d7-57c2-a586-22cbad031c7a,3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,2,"Infant formulae, powder"
+8bd80623-c3ee-5601-80af-8329401fe06c,3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,2,Ready-to-eat meal for infants and young children
+96e97afb-0019-500e-a6aa-cc1bebc3a8be,3e9a4774-0d60-5c24-adc0-d9ce5ec2e3fd,2,"Yoghurt, cheese and milk-based dessert for infants and young children"
+077e3610-db30-5535-96c5-4b4fb6c0ecbd,e0236c5f-9fec-5468-880b-640bec9a3358,2,Berries and small fruits
+752e5386-1dcd-593a-824f-4399292f3e60,e0236c5f-9fec-5468-880b-640bec9a3358,2,Citrus fruits
+b3087ff5-3dc2-5f99-a844-b5774317be2c,e0236c5f-9fec-5468-880b-640bec9a3358,2,Dried fruits
+c6a2b173-e738-5995-b07c-2a50079f11c1,e0236c5f-9fec-5468-880b-640bec9a3358,2,"Jam, marmalade and other fruit spreads"
+0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,e0236c5f-9fec-5468-880b-640bec9a3358,2,Miscellaneous fruits
+911f879d-e8c9-5b49-8994-3a720fa7d634,e0236c5f-9fec-5468-880b-640bec9a3358,2,Other fruit products (excluding beverages)
+f3b140a6-414b-55d8-8437-7a37e09772ad,e0236c5f-9fec-5468-880b-640bec9a3358,2,Pome fruits
+b275afee-1ddc-5879-a993-d0ad3fe115e8,e0236c5f-9fec-5468-880b-640bec9a3358,2,Stone fruits
+386a6ef6-09ba-5655-b636-ae4dba9a0515,12a5b805-8050-56f2-a37a-097bbefcd8ea,2,Concentrated fruit juice
+6e834874-ddde-59d5-ae61-151ce52f3bd9,12a5b805-8050-56f2-a37a-097bbefcd8ea,2,Fruit juice
+c0d261de-414a-5439-9b3e-5d11d63ca082,12a5b805-8050-56f2-a37a-097bbefcd8ea,2,Fruit nectar
+620fcc12-1c5b-5d2e-ad11-e9b506320a0e,12a5b805-8050-56f2-a37a-097bbefcd8ea,2,Mixed fruit and vegetable juice
+f9bcacc3-ec3b-54f5-9f37-c919d69d55dc,12a5b805-8050-56f2-a37a-097bbefcd8ea,2,Mixed fruit juice
+b90181dd-8347-50e0-afe4-81250bf3f29b,12a5b805-8050-56f2-a37a-097bbefcd8ea,2,Vegetable juice
+dc819ed5-f7e0-51f7-a6ef-03017bbf41c5,5a8b9e50-c42d-5a99-9598-ae729def3f59,2,Bread and rolls
+14176a14-0fff-5757-89a2-39c4571a7139,5a8b9e50-c42d-5a99-9598-ae729def3f59,2,Breakfast cereals
+c694bfe8-dc9c-5496-a633-2e8374e3f777,5a8b9e50-c42d-5a99-9598-ae729def3f59,2,Fine bakery wares
+03e4abec-bd68-517f-8c24-1037ebe75115,5a8b9e50-c42d-5a99-9598-ae729def3f59,2,Grain milling products
+1e1d0a0f-a1f7-5413-81c3-334d88bc199a,5a8b9e50-c42d-5a99-9598-ae729def3f59,2,Grains for human consumption
+55ffbeaf-7b1b-587e-ac86-b7f128600580,5a8b9e50-c42d-5a99-9598-ae729def3f59,2,Pasta (Raw)
+7cf363e0-c966-55b1-926c-18bc2fa0e4b7,4b2f8f6f-444b-5043-979e-552df39037a7,2,Baking ingredients
+1cc7c977-1b5d-5306-9933-2ddc299ad937,4b2f8f6f-444b-5043-979e-552df39037a7,2,Condiment
+09b101aa-b945-5d4e-a0af-deb4238a10f2,4b2f8f6f-444b-5043-979e-552df39037a7,2,Dressing
+a3da86d0-0570-5ed8-918e-244bdd014c76,4b2f8f6f-444b-5043-979e-552df39037a7,2,Flavourings or essences
+9f98e0fa-ece1-540d-b32c-128f51993d77,4b2f8f6f-444b-5043-979e-552df39037a7,2,Herb and spice mixtures
+c77e7e51-1254-596e-86e7-959a156242e7,4b2f8f6f-444b-5043-979e-552df39037a7,2,Herbs
+eda8b7f4-4240-59f0-bf3f-9b0a22324b80,4b2f8f6f-444b-5043-979e-552df39037a7,2,Savoury sauces
+c3432b9f-b83c-524c-9e42-aef732b4fa75,4b2f8f6f-444b-5043-979e-552df39037a7,2,Seasoning or extracts
+4c684722-0fee-582f-877f-50359ef25254,4b2f8f6f-444b-5043-979e-552df39037a7,2,Spices
+c639d49c-15c7-5825-b7d8-4765005e6503,cdfba7bd-3b7c-5387-b03e-1e36d3265f58,2,"Legumes, beans, dried"
+0936718b-bdf4-5888-a93e-0afdb4d81aa5,cdfba7bd-3b7c-5387-b03e-1e36d3265f58,2,"Legumes, beans, green, without pods"
+467447f9-4484-5574-924c-dfc124d92620,cdfba7bd-3b7c-5387-b03e-1e36d3265f58,2,Oilseeds
+767913ad-afe5-5808-9392-13b928678c23,cdfba7bd-3b7c-5387-b03e-1e36d3265f58,2,Other seeds
+0a778475-8e92-519e-bcda-2c02a0fd516d,cdfba7bd-3b7c-5387-b03e-1e36d3265f58,2,Tree nuts
+b670eb05-6ea0-560e-b97e-e99ab502276c,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,"Edible offal, farmed animals"
+38862325-903a-5c90-a407-4a7d95aaa21f,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,"Edible offal, game animals"
+1fd5c63f-f772-5f65-b816-e78e38bc7c42,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Game birds
+a44a5788-c0bd-51bb-b7f3-47dd16e2be0f,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Game mammals
+630e0f1d-b1bb-59f7-b19e-280f48548722,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Livestock meat
+1cc52057-5c13-599d-926e-b5beb535377f,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Meat imitates
+894256de-b67e-5c4b-8c98-9c075dbafa43,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Meat specialities
+18a19ff3-cd95-526e-b49d-f0f164331891,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Mixed meat
+d2c7ed1d-c8c5-5d26-be45-7869771d6d54,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,"Pastes, pâtés and terrines"
+9216e979-ed16-5497-b963-f707d343ba3d,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Poultry
+9da881a4-ff31-548f-9c8f-e87fd67983aa,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Preserved meat
+ac1ffc46-2ef5-5f03-a2c2-ef3aba1d5455,aa753be3-9452-5a22-bd46-0dab30ccd3c1,2,Sausages
+1e419658-4d63-5c56-b066-8872836eb5e9,772d913e-bf93-5ce1-993f-87b1e839b51d,2,Cheese
+6317c10c-48a3-54d4-9009-61c064461d2d,772d913e-bf93-5ce1-993f-87b1e839b51d,2,Concentrated milk
+d8eb6802-633f-5c7e-a4b4-6f7b585f1d75,772d913e-bf93-5ce1-993f-87b1e839b51d,2,Cream and cream products
+79d55e52-2a80-5e5d-8bc9-3d2020d844ae,772d913e-bf93-5ce1-993f-87b1e839b51d,2,Fermented milk products
+6766f734-fa72-5b43-8aeb-108daaa93ecc,772d913e-bf93-5ce1-993f-87b1e839b51d,2,Liquid milk
+86457463-d115-58f7-aaa6-6dfc7ad345c0,772d913e-bf93-5ce1-993f-87b1e839b51d,2,Milk and milk product imitates
+77e80601-42e2-5aaa-acd2-fd1079174ab3,772d913e-bf93-5ce1-993f-87b1e839b51d,2,Milk based beverages
+22f5885d-8434-56df-89e2-885b68232365,b660323b-a9d3-5ebb-b100-9bc9b5c57a79,2,Cocoa beverage
+fe3eaaec-0928-5934-847d-95f8d93942cd,b660323b-a9d3-5ebb-b100-9bc9b5c57a79,2,Coffee (Beverage)
+a6c19abd-e1b1-5ab8-8816-b2f6c05ba496,b660323b-a9d3-5ebb-b100-9bc9b5c57a79,2,Coffee imitates beverage
+458d030e-4592-537b-aec8-dc33588eb337,b660323b-a9d3-5ebb-b100-9bc9b5c57a79,2,Energy drink
+cce79a8e-8eae-5ee6-be2a-7af0a7a08459,b660323b-a9d3-5ebb-b100-9bc9b5c57a79,2,Soft drinks
+87f95c22-1504-5c92-a8f0-2d1ee8df5466,b660323b-a9d3-5ebb-b100-9bc9b5c57a79,2,Tea (Infusion)
+b06df40b-c007-560d-aa03-aeff9475df28,3b87e447-8e98-5f73-9514-6c790a366cb6,2,Dietary supplements
+575ee2db-397d-5aa2-8f31-c8a185b8d862,3b87e447-8e98-5f73-9514-6c790a366cb6,2,Food for weight reduction
+2825dbaa-bbd0-53c6-bd1e-d30679b51a69,df88a1b8-8bb8-5061-b616-fe62a01200cd,2,Ices and desserts
+4c69140f-b5c1-59fc-a421-f8ad1a394a64,df88a1b8-8bb8-5061-b616-fe62a01200cd,2,Snack food
+14954378-e6e5-5ed8-9482-e21de0c8c019,39015fd8-0e4b-59ff-9ca1-7a50799a7d82,2,Other starchy roots and tubers
+c586380d-da3d-59f1-b17e-e36dbd3dae38,39015fd8-0e4b-59ff-9ca1-7a50799a7d82,2,Potatoes and potatoes products
+83a28abf-2628-5048-92a1-58d37ed3d708,8c70bb8c-4791-5342-b858-c9ef55733081,2,Chocolate (Cocoa) products
+482c19a2-0809-5e37-87c3-b9102f57cf81,8c70bb8c-4791-5342-b858-c9ef55733081,2,Confectionery (non-chocolate)
+aa4da362-ecaa-5bb4-8222-84653d4932d3,8c70bb8c-4791-5342-b858-c9ef55733081,2,Dessert sauces
+01e1ed25-a83b-57c5-be07-6fb6e25bd20d,8c70bb8c-4791-5342-b858-c9ef55733081,2,Honey
+4be1cc4c-d9b1-55d4-b4bd-99b3f445ffb5,8c70bb8c-4791-5342-b858-c9ef55733081,2,Molasses and other syrups
+e831362e-6240-5d54-9ecc-5c7c384bc98b,8c70bb8c-4791-5342-b858-c9ef55733081,2,Sugar substitutes
+c518b4f0-9b16-5c4b-871c-bd9509e86e8a,8c70bb8c-4791-5342-b858-c9ef55733081,2,Sugars
+098f16b9-1f50-51ab-96c8-b490e2f6791c,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Brassica vegetables
+099db3bd-2162-5fda-93c3-5b3b018f4d0d,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Bulb vegetables
+7d7cec0e-2c09-5b0b-8c50-643fcdf97a53,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Cocoa beans and cocoa products
+0fc96ba5-2e99-50dd-9e48-21a7a7013eca,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Coffee beans and coffee products (Solid)
+a92a73a1-df74-5394-b24a-f1eeae520988,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Coffee imitates (Solid)
+e38dfa77-80fe-583f-87de-9c68002a6ee4,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Fruiting vegetables
+e2672248-764f-59ba-8a6a-959fb1f2097a,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,"Fungi, wild, edible"
+c5c268e9-c0b7-5bba-ac50-e070acc27dc1,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Leaf vegetables
+61f44d00-e7e0-5397-98f9-fb4cd632cbdb,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Legume vegetables
+85a4de6a-5fb4-5b75-8b1d-c96933e42420,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Root vegetables
+77ece2d6-5532-585e-bafd-4d13346a04ea,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Sea weeds
+ba061473-0e83-548d-acec-2fa521d1b955,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Stem vegetables (Fresh)
+1bc7ca18-6ff2-5560-9b5c-cf95d6265cb8,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Sugar plants
+8410b912-0b3e-574f-986b-a86c59b91748,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Tea and herbs for infusions (Solid)
+20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,d718d975-0ecd-54fe-a119-c0e05d99d8e2,2,Vegetable products
+da753992-7ecf-5e04-9ae6-8214aed2f7c4,6cb1940e-089b-550c-994b-967a2838a1c6,3,Cocktail drink
+c3891750-8f98-5193-8b74-06fe453e8361,6cb1940e-089b-550c-994b-967a2838a1c6,3,Punch
+94e963ba-e490-59a6-947c-577a4d5b17de,be08644d-074f-5f3a-9efe-76fd98dd9352,3,Beer with limonade 1/1
+405cbb4c-92db-5e0b-9647-52d79a6e8858,be08644d-074f-5f3a-9efe-76fd98dd9352,3,"Beer, alcohol-free"
+3bf71d24-7db7-5be7-80fc-de05ffed9a3a,be08644d-074f-5f3a-9efe-76fd98dd9352,3,"Beer, light (reduced alcohol content)"
+ef317323-ff71-5f4e-ad01-4855d3b4a7ed,be08644d-074f-5f3a-9efe-76fd98dd9352,3,"Beer, regular"
+3fbafc3e-d18e-5f73-8947-067014ec8460,be08644d-074f-5f3a-9efe-76fd98dd9352,3,"Beer, strong"
+4201c3c5-b9bd-5a66-a498-448e82ebd268,71a51932-46c6-5ac5-9664-416aa6d0314e,3,Fruit liqueur
+9120735a-f609-5a8e-9481-3a40a8390fa8,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Alcohol 90 - 95°
+ecda7ba2-db85-5146-abb5-718aca650681,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Brandy
+11a600cb-35eb-531a-b3a4-bc1d50af315d,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Gin
+60f43c4c-f555-548e-87b6-1702b1bca3b2,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Rum
+90880c10-e3a6-58a1-aeff-f900ec058a4f,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Spirits made from fruits
+c8f50e3e-4ad8-52cd-80d7-653d45e6005a,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Spirits made from vegetables (Tequila)
+6e2417c5-ef2a-5b69-ac10-7a198804372a,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Vodka and vodka-like spirits
+154c117f-3b1f-555f-89d3-69e98fd09883,d0b7e504-f9c6-5ce6-8fe9-c129f6b67cea,3,Whisky
+0afef90b-a040-5ca1-8080-5a356e9cae93,7442da53-9c7d-577e-9ad7-410bee197b1e,3,"Wine, red"
+a158aa57-5172-5530-bdb1-1a885aa9bd83,7442da53-9c7d-577e-9ad7-410bee197b1e,3,"Wine, white"
+73bb22f7-0105-5be4-86a0-7b34be672358,7442da53-9c7d-577e-9ad7-410bee197b1e,3,"Wine, white, sparkling"
+1f5379d5-8ccf-53f6-8191-bcb0382a16e5,57d1d8bd-114a-5579-b4e4-9f9f16b6dac1,3,Cider
+155f6e92-22f9-5694-b94d-e842edb7500d,57d1d8bd-114a-5579-b4e4-9f9f16b6dac1,3,Perry
+b2ec349d-f6ca-5fea-994d-40f5f8dc5233,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Animal fat
+29fa8f63-522b-5020-b2f4-51d79cf91e0a,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Butter
+ed8058a5-ae04-5afd-95d8-2222adddb03d,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Butter oil
+d0027e1c-2900-52a9-af84-3c250adc0266,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Chicken fat
+ec34156c-d09f-5380-b938-2640e4e96839,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Duck fat
+99ef638a-5546-56c9-a383-89fe2e3e9e37,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Goose fat
+ae3e2521-cb02-5acc-9152-1fbbe55b8eec,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Pork lard (Schmaltz)
+c75dc9a4-dcc3-5cca-bd7b-9e3a714f7a26,305f942e-780e-5e9a-b83c-c3bf6aac4da2,3,Turkey fat
+96e3955b-2a6e-5be6-b02d-99bb7b75b23f,84d748e6-afb6-5fd2-ad3e-5da242b4db83,3,Cod liver oil
+6194ffe2-da0b-519c-b962-5e3f704e45ed,84d748e6-afb6-5fd2-ad3e-5da242b4db83,3,Herring oil
+0ec3d1f1-9b5a-5b95-9fa6-141aff78c52e,06ce4e90-4c18-5c6a-81ed-69439d70eb70,3,Fat emulsions
+dae812be-dca7-56ef-9249-f1cba7208f2c,06ce4e90-4c18-5c6a-81ed-69439d70eb70,3,Margarine with other ingredients
+dabf7898-23ae-5951-84d8-90a1c445cb69,06ce4e90-4c18-5c6a-81ed-69439d70eb70,3,"Margarine, low fat"
+36cf9689-b6fa-5435-a7ec-078e2c1cde49,06ce4e90-4c18-5c6a-81ed-69439d70eb70,3,"Margarine, normal fat"
+dadc96c3-84aa-511a-827a-0c69e036713f,5bdf0653-4e33-595a-b189-d26137596c1a,3,Cocoa butter
+7d60b0f4-60b8-5a06-8f8c-65be44924e41,5bdf0653-4e33-595a-b189-d26137596c1a,3,Coconut fat
+1c1d4d27-e1bb-52bc-bff5-583c99d4c80e,5bdf0653-4e33-595a-b189-d26137596c1a,3,Peanuts butter
+0256ab06-58da-5de8-8c8a-b0d14e213f8c,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Coconut oil
+7dbe2d32-aa56-58b3-8332-023cedc57c2f,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Corn oil
+cfb3da80-5ae7-5af5-a66f-d522bf6f7f16,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Cottonseed oil
+3fe90872-82a3-51ca-a075-74f5d18933cd,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Grape seed oil
+40d3854f-f0a5-54c4-9444-1b1d4f8d9a84,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Linseed oil
+44b30bbc-83c7-5dc3-886c-2ef17f38b428,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,"Oil, frying, blend"
+6483dacb-4a66-5f74-b790-ca41eda639c1,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Olive oil
+47e6fb20-f861-5fc9-8f8e-6408056277b4,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Palm oil
+41cb8c06-5f55-51e3-af8e-19f9ff64df78,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Peanut oil
+57baeb27-9242-5598-a0f0-c5bb31e720d5,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Rapeseed oil
+fc111153-1a57-5666-86d5-f5795a05984e,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Sesame oil
+7309ff58-25b9-53f8-b7e0-52bebda138cd,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Soybean oil
+be7cc073-ec42-5ae8-9b06-aec0764776d8,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Sunflower oil
+51d003c2-614d-5c5d-822b-d9975bab2d7f,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Vegetable oil
+c2d00545-7b34-57cf-b6f9-f55dce68b86a,bda11d26-d01c-50c3-8f8b-7b6128c68da1,3,Walnut oil
+38ae980d-fcc0-593d-a654-01b97103c20b,e43a37b9-d86e-50bf-90c1-20b4c0cffbe0,3,Beans and meat meal
+fce124d8-012e-5c93-8e63-b43da04bd3b6,e43a37b9-d86e-50bf-90c1-20b4c0cffbe0,3,Beans and vegetables meal
+df92a08b-c189-542b-8740-0c833f2a01d5,c91c0cbf-9b34-5cb2-88f9-ca5937963928,3,Grain patties
+e28d343b-3bc3-504e-981d-b09f7050ca0e,c91c0cbf-9b34-5cb2-88f9-ca5937963928,3,"Pasta, cooked"
+24e79954-fb38-519a-8240-af619d1c1eeb,c91c0cbf-9b34-5cb2-88f9-ca5937963928,3,Pizza and pizza-like pies
+909dba02-f119-51ca-a3d9-dd70963269ab,c91c0cbf-9b34-5cb2-88f9-ca5937963928,3,Sandwich and sandwich-like meal
+5e7e9766-5dba-5bc1-938c-d780fe84f8af,28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,3,Fried eggs
+b7e54015-dbf7-50ff-9a20-2334be2d3299,28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,3,Omelette with bacon
+4bf77835-cb5d-568c-afb1-ad1f09810752,28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,3,Omelette with cheese
+2344099b-88d1-5229-bdca-1e92b9402f62,28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,3,Omelette with mushrooms
+71d9eca4-01b7-5020-a9c4-17474c63d94d,28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,3,Omelette with vegetables
+4fc2cc50-eaeb-5213-bea1-2fc6383bd7e7,28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,3,"Omelette, plain"
+e364f580-ea55-5bdc-b5e0-eabf3ac7178c,28b0d572-aa4e-5de7-b620-6ae9cb6cab9e,3,Poached eggs
+46d6b61d-1c57-54f5-af6e-23c09e13d315,2e62310c-5778-5861-96cd-1a95e53e044e,3,Fish and rice meal
+74a52fd1-4b83-584f-b172-2b714c76d29d,2e62310c-5778-5861-96cd-1a95e53e044e,3,Fish and vegetables meal
+8cd4edac-44b0-55d5-8e8e-89e732b88caf,2e62310c-5778-5861-96cd-1a95e53e044e,3,Fish gratin
+548b29c5-e424-51e9-a99a-3a896cfaea29,2e62310c-5778-5861-96cd-1a95e53e044e,3,Salmon en croute
+fca4932f-f689-54d4-936f-c4d578980b8d,2e62310c-5778-5861-96cd-1a95e53e044e,3,Seafood-based meals
+942551b9-5760-5454-a513-11b388c5d56b,2e62310c-5778-5861-96cd-1a95e53e044e,3,Sushi
+98836b76-b05d-505e-8c93-50a6624947f1,b34520b6-8f5a-591a-83b8-dbce1961baac,3,Cordon bleu
+76f716c7-4a34-5ced-998f-794d04e2d0be,b34520b6-8f5a-591a-83b8-dbce1961baac,3,Meat balls
+dae4d700-9c24-5d61-83db-1136a282a160,b34520b6-8f5a-591a-83b8-dbce1961baac,3,Meat burger
+4db7e8d8-e516-5bbe-9f4e-330a33a7b1ad,b34520b6-8f5a-591a-83b8-dbce1961baac,3,Meat croquettes
+fa079f98-57d8-5fff-b807-05f7e12faac6,b34520b6-8f5a-591a-83b8-dbce1961baac,3,Meat stew
+a4e6d1a1-7711-5a6a-8743-22f9cf3d589c,b34520b6-8f5a-591a-83b8-dbce1961baac,3,Offal-based meals
+12ae0af6-bb7f-5cbe-b157-dd2fe03bc01c,b34520b6-8f5a-591a-83b8-dbce1961baac,3,Pressed meat snacks
+eb798370-eb49-506c-a5d2-cc14d52b448e,784c6b4f-efcf-581a-8fc5-075ec33f4065,3,Potatoes and cheese meal
+7fbb6add-6421-5db1-b8bd-8a09cc7c1e3c,784c6b4f-efcf-581a-8fc5-075ec33f4065,3,Potatoes and meat meal
+fb12874a-6c5d-5c5f-a40d-afe6fe23a009,784c6b4f-efcf-581a-8fc5-075ec33f4065,3,Potatoes and vegetables meal
+5e27bc51-26ea-58fd-b5e9-416f0c989ca8,784c6b4f-efcf-581a-8fc5-075ec33f4065,3,"Potatoes, meat, and vegetables meal"
+76ba9233-78ef-5d7a-b356-a811fb152d5b,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared fish salad
+d6bc0900-9da5-52b8-8d83-051f8fa870dc,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared green salad
+ceb99560-28c2-52fc-a7d4-37a2f6f0a58c,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared meat salad
+9a0d83e7-21f8-5b24-92a8-e4f588e06e1c,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared mixed egg/meat/fish/vegetable salad
+12f0e6d6-1e6a-5609-80e7-3bb01c3c4d6a,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared mixed vegetable salad
+b79a186c-9781-5cae-8cc9-8bcb13bfc65d,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared pasta salad
+e062c869-3a6d-5f64-8263-d464dd9389f3,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared potato salad
+d9de24a0-56ed-55ec-91b3-92e8a1afccbe,41fbc688-c61e-5d88-894c-a1ba8c9030cc,3,Prepared rice salad
+0c125688-fa09-5844-bf67-d58aedad47a3,740f372f-3c34-5462-9834-bd152faacd83,3,Fish soup
+4361a5f6-511a-543f-85d2-aa31a9b7afe8,740f372f-3c34-5462-9834-bd152faacd83,3,Grain soup
+1bcd09d7-dbeb-55e3-a6fc-9aba6dc1d387,740f372f-3c34-5462-9834-bd152faacd83,3,Legume (beans) soup
+019b6b4e-589c-5b2e-8361-af5099187c96,740f372f-3c34-5462-9834-bd152faacd83,3,Meat/poultry broth
+94bb3d28-2e2e-58b9-b397-0e9210a94e6e,740f372f-3c34-5462-9834-bd152faacd83,3,Meat/poultry soup
+1a9d90c4-df55-55a7-93e2-d75e7ca30097,740f372f-3c34-5462-9834-bd152faacd83,3,Mushroom soup
+4813813e-051d-5ece-8d0c-25ea1deb4a00,740f372f-3c34-5462-9834-bd152faacd83,3,Noodle soup
+521455fd-d191-5f0b-b980-c41297207664,740f372f-3c34-5462-9834-bd152faacd83,3,Potato soup
+8b26fd33-7e22-52e6-a2a8-96172d649b42,740f372f-3c34-5462-9834-bd152faacd83,3,Vegetable broth
+769a77de-e4c7-5dad-8f46-8063f5346e4e,740f372f-3c34-5462-9834-bd152faacd83,3,Vegetable/herb soup
+4b2cefe0-465f-5910-96ee-6e0eaf10a967,ddf9c247-5ec0-57fb-a41d-c9cf7546e2d8,3,Rice and meat meal
+3552ec3c-655b-5dc9-8d8b-b1af76c65381,ddf9c247-5ec0-57fb-a41d-c9cf7546e2d8,3,Rice and vegetables meal
+20dcba63-ae14-557c-be85-46b59a0537a1,ddf9c247-5ec0-57fb-a41d-c9cf7546e2d8,3,"Rice, meat, and vegetables meal"
+243192d4-0a0f-5a0e-b18b-7c864c22f29f,71ddb23f-c0c9-5706-afe4-0c0e61e23113,3,"Mixed vegetables, boiled"
+80e555fc-5278-5072-aa7c-64eabb36d5a1,71ddb23f-c0c9-5706-afe4-0c0e61e23113,3,"Mixed vegetables, fried"
+65054957-5e46-54b4-8bd7-5b13233bfa32,71ddb23f-c0c9-5706-afe4-0c0e61e23113,3,"Mixed vegetables, grilled"
+a701ae11-8fe8-50d7-915f-973d07cd3764,71ddb23f-c0c9-5706-afe4-0c0e61e23113,3,Ratatouille
+762d7b51-b61d-574c-a531-5b3bc8fd23df,71ddb23f-c0c9-5706-afe4-0c0e61e23113,3,Vegetable soufflé
+407f8903-f771-5524-918a-94845e115f7a,71ddb23f-c0c9-5706-afe4-0c0e61e23113,3,"Vegetables, gratinated"
+0e45edab-41d2-5ab7-9d9f-abab312a75ad,4f4b0751-5cfe-5a43-9362-8c7dba59b36c,3,Bottled water
+c3c96b91-866e-51b8-bf0c-b9c82a420494,df1d48cd-df3a-5628-a040-6778bf13622b,3,Tap water
+d99cdb8b-676b-551b-8416-15f3aefc4753,d03a8f6e-7994-5cdb-ac19-9e83ed2b42a5,3,Duck eggs
+1c71843f-c222-54b5-ae18-c49ea033b468,d03a8f6e-7994-5cdb-ac19-9e83ed2b42a5,3,"Egg white, chicken"
+81e7e227-8091-5477-892d-2d917dabe142,d03a8f6e-7994-5cdb-ac19-9e83ed2b42a5,3,"Egg yolk, chicken"
+d6341603-d8a0-54f4-b8ba-c1b483b81f8d,d03a8f6e-7994-5cdb-ac19-9e83ed2b42a5,3,Goose eggs
+ab4ad4eb-7f42-575c-b815-a52604d32df0,d03a8f6e-7994-5cdb-ac19-9e83ed2b42a5,3,"Whole egg, chicken"
+af87bc6d-ef6f-5788-b095-da1c353e835d,89d77124-c997-569d-82b4-71eb82cfae08,3,Dried egg white
+f570898d-b851-54c2-a23f-cdf8f989fa7e,89d77124-c997-569d-82b4-71eb82cfae08,3,Dried egg yolk
+ce11edbf-4aba-5c1c-884d-88d1e77f1e06,89d77124-c997-569d-82b4-71eb82cfae08,3,"Dried egg, whole"
+4cc6aae1-fe26-54da-8c25-7238714d29d5,e05c5e11-180d-5409-b37f-173d43d465bc,3,Snail (Helix sp.)
+f0e82774-a473-511b-9276-851f43ae3e9e,9cbbb4a4-2e06-50e4-b155-074fbb698b91,3,Crab (Cancer spp.)
+3efdc2f4-b22f-596a-b9b2-931bba0fb22b,9cbbb4a4-2e06-50e4-b155-074fbb698b91,3,Lobster (Homarus vulgaris)
+d58497c6-71d4-56bb-a7fe-db32baf50b80,9cbbb4a4-2e06-50e4-b155-074fbb698b91,3,Norway lobster (Nephrophs norvegicus)
+8a2a5fa9-d0e4-58b7-9a28-74095ae4bf7d,9cbbb4a4-2e06-50e4-b155-074fbb698b91,3,Prawns (Palaemon serratus)
+dad5d772-d335-51ce-8ad4-9233ade4e8da,9cbbb4a4-2e06-50e4-b155-074fbb698b91,3,Shrimps (Crangon crangon)
+2a943bb6-a7a1-5877-9c1a-c93d8c5863ad,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Anchovy (Engraulis)
+0e076823-df00-5e4b-ba1e-d84ad3c9addb,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Bass (Marone)
+9dcfed22-075d-5ef0-b5e8-3ddbc928a6b4,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Bonito (Sarda Sarda)
+8931fc80-743f-50c5-be06-2b9644efa009,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Bream (Charax)
+287d60bd-2e28-58a2-8798-53a945814376,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Carp (Cyprinus)
+e50a4881-48eb-5b53-a92e-8c0050e89465,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Char (Salvelinus)
+300f5030-22f0-5885-9bbb-67219c9d6ad0,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Cod and whiting (Gadus spp.)
+b93f202d-625a-585c-855f-83bd82cc7d2e,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Eels (Apodes)
+ccbc9cfa-46c7-5d71-a5b2-4526cda29b3c,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Flounder (Platichthys flesus)
+32f4b13c-fae1-5a65-8699-b34af6b13cea,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Grey mullet (Mugil)
+7bfa4fcc-f7bd-509c-a5bb-0221c36c694d,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Hake (Merluccius)
+66e41268-b9a4-5dd6-8acf-d7302884fd0d,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Halibut (Hippoglossus spp.)
+b1a142ac-9927-5b85-b710-3def0a903937,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Herring (Clupea)
+94c1d61f-2aa6-5d70-b0b5-1118696bcb24,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Lophiiformes (Pediculati)
+4af39453-db59-5d5f-a13e-2d654a91d56c,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Mackeral (Scomber)
+bb65d15a-69ce-50b9-8895-8871ac4d2eb2,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Perch (Perca)
+f7a3d18f-53fb-541d-a33f-e1af0541eb89,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Plaice (Pleuronectes)
+af0a0d46-a35e-5dd5-ac53-f4325f88c374,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Rays (Hypotremata)
+a8453f93-2dfe-5c6a-824f-e349580388c3,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Salmon and trout (Salmo spp.)
+2443976d-de5b-5dbb-bded-8bee25bf0017,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Sardine and pilchard (Sardina)
+c3a1324d-b0de-51b0-addb-6239a2a0157e,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Sea catfish and wolf-fish (Anarhichas)
+34e1317d-3cdb-5104-8538-228ed0097151,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Selachoidei (Pleurotremata)
+e4b7e987-880c-512f-abf1-c769d2a70f1f,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Smelt (Osmerus)
+3cf1027a-7995-574a-8fcc-177061dd908f,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Sprat (Sprattus sprattus)
+02904c48-63b6-58b6-b106-81fd81f1c100,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Swordfish (Xiphidae spp.)
+fcbd862b-0a7e-50f7-85be-ce56ce4494db,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Tuna (Thunnus)
+b784540c-df7c-5975-96b3-67b488136c20,bf2e9326-8051-57d2-a020-18418d7e4e6f,3,Whitefish (Coregonus)
+5fb5a1d3-1971-5826-8436-711e51f687c6,c8a8a61f-a72b-5294-a855-7c2368f6a922,3,Fish fingers
+800c4ae1-f51d-5bff-9375-d8d5c5944146,c8a8a61f-a72b-5294-a855-7c2368f6a922,3,Fish paste
+1530fa52-48fd-5ef1-8ca3-22638f2a7662,c8a8a61f-a72b-5294-a855-7c2368f6a922,3,Fish pâté
+339de9a2-49c6-5193-afb1-c6729539e938,c8a8a61f-a72b-5294-a855-7c2368f6a922,3,Fishcakes
+77a6c984-5aaf-563e-93da-81ea14bd2165,7af13960-ba5e-581c-b839-6dd085d4f423,3,Mussel (Mytilus edulis)
+e1735ab4-2576-5378-a73d-55b7ea9b886f,7af13960-ba5e-581c-b839-6dd085d4f423,3,Oyster (Ostrea edulis)
+04931864-16c6-5b49-ab1c-63ce16702b51,7af13960-ba5e-581c-b839-6dd085d4f423,3,Scallop (Pecten spp.)
+d0a05a9e-9e66-5468-ba17-c0560b1c2d3c,7af13960-ba5e-581c-b839-6dd085d4f423,3,Squid (Loligo vulgaris)
+46c8e346-71f3-500a-a7c0-ba458881b179,1fa1dd4e-7900-5b05-a761-8b8474b38b93,3,"Biscuits, rusks and cookies for children"
+e515bb6a-1ae4-5b1c-935c-f2f56388c308,1fa1dd4e-7900-5b05-a761-8b8474b38b93,3,Simple cereals reconstituted with milk or other appropriate nutritious liquids
+ccb6df3c-b180-5378-9704-316756fd5b04,1fa1dd4e-7900-5b05-a761-8b8474b38b93,3,Simple cereals which are or have to be reconstituted with milk or other appropriate nutritious liquids
+f67bf655-ce93-5b62-98a5-f14cbc3f27df,e1f51fe6-394f-54bc-b864-f2130a85601d,3,"Follow-on formulae, liquid"
+72913258-27ea-5eab-93d6-1ffd9bd4a303,083084f8-ffab-5a23-b2f1-c097c76cee17,3,"Follow-on formula, milk-based, powder"
+b46caec4-bf12-5deb-8f6b-35ff1d056e73,083084f8-ffab-5a23-b2f1-c097c76cee17,3,"Follow-on formulae, powder"
+9432674c-3994-5200-b494-f6350bb601c4,f0336fb9-dc40-5502-8987-773dbfc9023a,3,"Infant formulae, liquid"
+5cc4183f-9e65-5fad-a42a-00863fa601fc,f3fecfbb-61d7-57c2-a586-22cbad031c7a,3,"Infant formulae, powder"
+1806c032-9229-5991-8a76-286a545de1d1,8bd80623-c3ee-5601-80af-8329401fe06c,3,Fruit purée for children
+a3632ca0-c8f2-540b-8a00-14dcdefa7a4f,8bd80623-c3ee-5601-80af-8329401fe06c,3,"Ready-to-eat meal for children, cereal-based"
+a6138882-6db2-5777-a549-b24e5df6d4ce,8bd80623-c3ee-5601-80af-8329401fe06c,3,"Ready-to-eat meal for children, meat/fish-based"
+ef2fb2aa-b24d-5f30-b103-b928af5e3d8c,8bd80623-c3ee-5601-80af-8329401fe06c,3,"Ready-to-eat meal for children, vegetable-based"
+4c65e757-203c-50d7-bdd9-b02a1feaad64,96e97afb-0019-500e-a6aa-cc1bebc3a8be,3,Dessert and puddings for infants and young children
+28fc746e-99a2-5e88-ad8a-93abb21fe84f,96e97afb-0019-500e-a6aa-cc1bebc3a8be,3,Yoghurt for infants and young children
+e8955f73-8ff5-5e04-b380-4b889d50e261,96e97afb-0019-500e-a6aa-cc1bebc3a8be,3,"Yoghurt, cheese and milk-based dessert for infants and young children"
+2c5d78d0-299b-5ae3-bee9-7672b6c8fd0e,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Blackberries (Rubus fruticosus)
+4e6c6283-46e3-5314-9b43-41a9ab5081f8,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Blueberries (Vaccinium corymbosum)
+2460dfb4-a768-50b6-88de-d16ae591a483,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Cranberries (Vaccinium macrocarpon)
+34221e5c-cca4-5d52-851f-a0ace23f7d9a,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,"Currants (red, black and white) (Ribes nigrum, Ribes rubrum)"
+c03ee573-b28f-5d7f-a9f4-b1dbf01b3d92,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Elderberries (Sambucus nigra)
+34c25061-01db-54b1-8e04-e95a5d93d4fe,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Gooseberries (Ribes uva-crispa)
+922ecb0e-3963-5c9c-969a-5330ed0f3518,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Mulberries (Morus spp.)
+b0e6f9aa-46c8-5e9a-bac0-c26c7a362443,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Raspberries (Rubus idaeus)
+163a9913-a4b4-5b9a-bdbd-3bd10c5c82f9,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Strawberries (Fragaria × ananassa)
+0b0cb671-c4fc-5ca4-9c95-94ccc3fec4df,077e3610-db30-5535-96c5-4b4fb6c0ecbd,3,Table grapes (Vitis euvitis)
+0af6acee-07bc-565d-a43b-6a061a5ab74c,752e5386-1dcd-593a-824f-4399292f3e60,3,Grapefruit (Citrus paradisi)
+30731369-2e20-5820-9f08-4061548847f2,752e5386-1dcd-593a-824f-4399292f3e60,3,Lemons (Citrus limon)
+a56fea0f-85ee-5af1-b3c5-338a8d5e91dc,752e5386-1dcd-593a-824f-4399292f3e60,3,Limes (Citrus aurantifolia)
+e8c3dde4-6e6b-5fce-90fa-63b61864e4e3,752e5386-1dcd-593a-824f-4399292f3e60,3,Mandarins (Citrus reticulata)
+719a076a-2a7e-5860-9a9b-9f6e9b3fdab5,752e5386-1dcd-593a-824f-4399292f3e60,3,Oranges (Citrus sinensis)
+b87b644d-0846-5fcb-ae67-1d64bdaa70f2,752e5386-1dcd-593a-824f-4399292f3e60,3,Pomelo (Citrus grandis)
+1435a64d-0599-5a8b-b715-473d54a4bf6c,b3087ff5-3dc2-5f99-a844-b5774317be2c,3,Dried apples (Malus domesticus)
+8d97aaf7-6a4c-5a65-8af4-cafb27e33e5c,b3087ff5-3dc2-5f99-a844-b5774317be2c,3,Dried prunes (Prunus domestica)
+6b5710f9-d5b7-5866-9bbf-2ec07a2f9181,b3087ff5-3dc2-5f99-a844-b5774317be2c,3,"Dried vine fruits (currants, raisins and sultanas)"
+0466e41f-d0ed-5cfa-a6e7-9e3b8fab7e69,c6a2b173-e738-5995-b07c-2a50079f11c1,3,Jam
+055dfe5c-00a9-5c51-88fd-c4eed18636ad,c6a2b173-e738-5995-b07c-2a50079f11c1,3,Marmalade
+1c2b150c-22d2-503d-a9e1-899db05eb0c0,c6a2b173-e738-5995-b07c-2a50079f11c1,3,Other fruit spreads
+9d05492b-5877-5119-beb8-7661f21baea1,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Avocados (Persea americana)
+569f031e-d28f-5dd0-a732-e836e13ccb22,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Bananas (Musa × paradisica)
+74000e84-9476-5ea4-98de-2e5877c7758b,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Bread fruit (jackfruit) (Artocarpus altilis)
+5dcc01b9-038a-5ed4-9a23-3d990ef66d00,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Carambola (Averrhoa carambola)
+2e72d833-4349-5771-bf2d-acc6d889b42f,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Dates (Phoenix dactylifera)
+272aba9d-5242-507e-8197-11f5b1da94ba,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Figs (Ficus carica)
+f08b7557-f38e-556b-a661-de4fcb6b9a26,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Guava (Psidium guajava)
+e328cf04-0dea-5bfd-b311-b2514279df84,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Kiwi (Actinidia deliciosa syn. A. chinensis)
+25b52b18-aec6-5e8b-8bad-ae1c5da2875c,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Kumquats (Fortunella species)
+8459bc50-c4b1-5025-be1c-1ffec841cf7a,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Lychee (Litchi) (Litchi chinensis)
+c2e54640-3ab2-58df-8762-b7333e8a634d,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Mangoes (Mangifera indica)
+799e1bad-07ca-582d-aaf2-19ba4d2c6fa1,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Papaya (Carica papaya)
+2290e83b-9044-511c-a679-fc3b307d6c78,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Passion fruit (Passiflora edulis)
+23d35d6e-3e79-5775-8a0f-3e6e6c0f70de,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Persimmon (Sharon fruit) (Diospyros kaki)
+5aeff362-735e-5c23-a529-7775ea915022,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Pineapples (Ananas comosus)
+ef526149-12ae-5bd3-a4c7-36542bf9d055,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Pomegranate (Punica granatum)
+190e5c97-3bf5-5b13-a881-fa65c738c22f,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Prickly pear (cactus fruit) (Opuntia ficus-indica)
+9bc62cb1-7cff-5797-928a-39fa09f9aaf8,0f962b9a-a2c1-5ba9-93a7-3609e59f75a1,3,Table olives (Olea europaea)
+1c592b58-3d39-525b-a1dd-2e179d23a8c8,911f879d-e8c9-5b49-8994-3a720fa7d634,3,Fruit compote
+3f96e274-f131-58b6-b66f-77b41c2797ed,911f879d-e8c9-5b49-8994-3a720fa7d634,3,Fruit salad
+93f0ade4-d3a2-50a6-904c-213407b10548,911f879d-e8c9-5b49-8994-3a720fa7d634,3,"Fruit, canned"
+a3efc54b-4a07-522f-a762-bafa57bc19f9,911f879d-e8c9-5b49-8994-3a720fa7d634,3,"Fruit, purèe"
+6d99632c-53b4-5b86-a6e0-3a5dfb8a35b0,f3b140a6-414b-55d8-8437-7a37e09772ad,3,Apple (Malus domesticus)
+55e0480a-731a-55e0-b2cd-f867f50bc4c8,f3b140a6-414b-55d8-8437-7a37e09772ad,3,Pear (Pyrus communis)
+aeb50afb-8ea5-5889-9ff9-d000e5861b18,f3b140a6-414b-55d8-8437-7a37e09772ad,3,Quince (Cydonia oblonga)
+a27d0d24-ee92-538b-8098-f012fa85def1,b275afee-1ddc-5879-a993-d0ad3fe115e8,3,Apricots (Prunus armeniaca)
+e1e7236c-2a49-5747-aaa1-22e5a4c4b60d,b275afee-1ddc-5879-a993-d0ad3fe115e8,3,Greengage (Prunus domestica var italica)
+2c294c5f-79c5-5d86-95fa-cf0e62987573,b275afee-1ddc-5879-a993-d0ad3fe115e8,3,Peaches (Prunus persica)
+748682c2-b3e4-5282-935e-e384df1a4235,b275afee-1ddc-5879-a993-d0ad3fe115e8,3,Plums (Prunus domestica)
+beb36413-ffa5-579b-bb64-2b9b00603829,b275afee-1ddc-5879-a993-d0ad3fe115e8,3,Sour cherry (Prunus cerasus)
+1c938cb7-5ba7-53dc-a3e0-1a3cd95ec2b2,b275afee-1ddc-5879-a993-d0ad3fe115e8,3,Sweet cherry (Prunus avium)
+d67995f7-0f14-5e56-a6eb-d69d8deff2f0,386a6ef6-09ba-5655-b636-ae4dba9a0515,3,"Juice concentrate, Lemon"
+b2d0bd39-e946-5b3a-94ca-47ceff52fa5a,386a6ef6-09ba-5655-b636-ae4dba9a0515,3,"Juice concentrate, Mango"
+d07f08ce-5af3-5a77-9a1f-9773dcb48a0d,6e834874-ddde-59d5-ae61-151ce52f3bd9,3,"Juice, Carrot"
+127c5e9c-cb07-5314-943d-20a83cd3d015,6e834874-ddde-59d5-ae61-151ce52f3bd9,3,"Juice, Grape"
+6e705c4e-29fd-5d89-ac4b-9b64cfe9523a,6e834874-ddde-59d5-ae61-151ce52f3bd9,3,"Juice, Grapefruit"
+912052f0-cdd3-5b2c-8aa9-2250839b225c,6e834874-ddde-59d5-ae61-151ce52f3bd9,3,"Juice, Lemon"
+a2b258a6-b0d2-5e74-9bc3-95aaa311959f,6e834874-ddde-59d5-ae61-151ce52f3bd9,3,"Juice, Orange"
+11f30dc3-b9bd-50a0-a7a8-4b4c50dddb6b,6e834874-ddde-59d5-ae61-151ce52f3bd9,3,"Juice, Pineapple"
+812bd0ef-b092-5a51-9078-8adf709f1b2e,c0d261de-414a-5439-9b3e-5d11d63ca082,3,"Nectar, Apricot"
+a6ea9d96-31a2-5fd8-aff3-8080e618dc99,c0d261de-414a-5439-9b3e-5d11d63ca082,3,"Nectar, Banana"
+be6a381e-3eb1-544a-a45c-74b00d6efee8,c0d261de-414a-5439-9b3e-5d11d63ca082,3,"Nectar, Mango"
+8923b91b-14a3-5e4d-9876-a54e4251688d,c0d261de-414a-5439-9b3e-5d11d63ca082,3,"Nectar, Mixed fruit"
+68525e5e-5f50-50d3-b8b0-ad8d6de01931,c0d261de-414a-5439-9b3e-5d11d63ca082,3,"Nectar, Orange"
+5a5da496-4cd2-51ec-bf7a-687a110f060c,c0d261de-414a-5439-9b3e-5d11d63ca082,3,"Nectar, Peach"
+20737e32-2bef-52d0-9f84-9eaeaee25074,c0d261de-414a-5439-9b3e-5d11d63ca082,3,"Nectar, Pear"
+2139c823-a992-5a05-acfc-2f31ccab994c,620fcc12-1c5b-5d2e-ad11-e9b506320a0e,3,Apple/carrot juice
+1c001ba6-b90b-567c-a96c-4c0fec99a312,f9bcacc3-ec3b-54f5-9f37-c919d69d55dc,3,"Juice, Berries"
+01a719dc-bad7-56ef-a950-ada56d33ab23,f9bcacc3-ec3b-54f5-9f37-c919d69d55dc,3,"Juice, Mixed citrus fruit"
+952348ff-7823-58c2-9be3-3ff09bcf4129,f9bcacc3-ec3b-54f5-9f37-c919d69d55dc,3,Mixed fruit juice
+bf750df9-5d2a-5b72-a35a-722014aa0ac2,b90181dd-8347-50e0-afe4-81250bf3f29b,3,"Juice, Beetroot"
+2394ecbc-6a8d-5660-bca1-3be2d8017dab,b90181dd-8347-50e0-afe4-81250bf3f29b,3,"Juice, Tomato"
+169b9f7e-f4d6-514e-bc9d-72a75c7a6cc3,dc819ed5-f7e0-51f7-a6ef-03017bbf41c5,3,Bread products
+ccbb02f3-e415-5a4e-8cd7-5cb8fd44fe8e,dc819ed5-f7e0-51f7-a6ef-03017bbf41c5,3,Mixed wheat and rye bread and rolls
+4bf46c80-f6c5-596f-9aa6-049294e7e8ea,dc819ed5-f7e0-51f7-a6ef-03017bbf41c5,3,Multigrain bread and rolls
+1cd1b778-437d-5419-abb1-ad4b9ca6fe8c,dc819ed5-f7e0-51f7-a6ef-03017bbf41c5,3,Other bread
+6c073dc2-18f2-5001-8363-3791850c2588,dc819ed5-f7e0-51f7-a6ef-03017bbf41c5,3,"Unleavened bread, crisp bread and rusk"
+2319accc-31cf-5e81-a701-4292bfcb8017,dc819ed5-f7e0-51f7-a6ef-03017bbf41c5,3,Wheat bread and rolls
+1aaef7a4-a4ea-5e43-a543-a77fc646d307,14176a14-0fff-5757-89a2-39c4571a7139,3,Cereal bars
+3716e87f-adc3-5bb7-a4d4-55bcd505c058,14176a14-0fff-5757-89a2-39c4571a7139,3,Cereal flakes
+50ca9e9e-1807-518e-b348-4193ea0efe86,14176a14-0fff-5757-89a2-39c4571a7139,3,Mixed breakfast cereals
+10355ea7-8787-58de-ac24-27ac46932b6f,14176a14-0fff-5757-89a2-39c4571a7139,3,Muesli
+da386c24-e0ea-5fae-b088-736090edb77c,14176a14-0fff-5757-89a2-39c4571a7139,3,Popped cereals
+d886b7b4-ffa3-5a4e-b571-6e9048c02f38,c694bfe8-dc9c-5496-a633-2e8374e3f777,3,Biscuits (cookies)
+71ee6091-ad38-5eff-a7ad-0f5b41f9843e,c694bfe8-dc9c-5496-a633-2e8374e3f777,3,Pastries and cakes
+6140d9b8-7815-511b-a043-bd9fc88578ca,03e4abec-bd68-517f-8c24-1037ebe75115,3,Buckwheat milling products
+e7dee88d-b212-5d39-8bdf-123867dbb584,03e4abec-bd68-517f-8c24-1037ebe75115,3,Corn milling products
+bf51c1ba-0b3d-59d9-9ebd-1f6b9057cc01,03e4abec-bd68-517f-8c24-1037ebe75115,3,Oat milling products
+db2e9a91-9fc1-5315-8136-48f0bf94bf55,03e4abec-bd68-517f-8c24-1037ebe75115,3,Other milling products
+05a7240f-139f-500c-a528-2ada4ebcf6fd,03e4abec-bd68-517f-8c24-1037ebe75115,3,Rice milling products
+4eab7ad6-26db-576f-96d5-6d869dc3e7d2,03e4abec-bd68-517f-8c24-1037ebe75115,3,Rye milling products
+0fc4b11c-9266-5c2b-b82f-4da6cf0067e1,03e4abec-bd68-517f-8c24-1037ebe75115,3,Spelt milling products
+4d34b849-eaf9-577b-96b3-1611c37f6c96,03e4abec-bd68-517f-8c24-1037ebe75115,3,Wheat milling products
+e692cfb4-0778-562c-bb85-44978e31b74b,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Barley grain
+02eeac5c-2244-583d-8379-2fe2d6d7f268,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Buckwheat grain
+e4235f34-4b97-5809-bf6d-3b05f26dd441,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Corn grain
+ebcefa28-6d8b-5dbc-9d03-63d0575d09b1,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Millet grain
+1087f466-1f17-51dd-a29e-8178ab365932,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,"Oats, grain"
+ae2c2bd1-04d8-5328-89ae-9c215015ee0a,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Other grains
+53ec4d78-d789-5362-831b-d6e1b7df6f41,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Rice
+76a9b5b8-02b1-52bf-b85e-85904e6f954d,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Rye grain
+2dc4506f-b92b-505a-b3a1-8319b555b1f9,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Spelt grain
+a11fdedd-68cc-5c7e-8765-38c2ac85bb2b,1e1d0a0f-a1f7-5413-81c3-334d88bc199a,3,Wheat grain
+011ff86e-f3e4-5f0a-af2c-6cca4264c103,55ffbeaf-7b1b-587e-ac86-b7f128600580,3,"Noodle, rice"
+459a474b-b973-5a12-b26a-621e2df6bc0f,55ffbeaf-7b1b-587e-ac86-b7f128600580,3,"Noodle, wheat flour, without eggs"
+8df588d1-f006-5271-b67f-4525197324b9,55ffbeaf-7b1b-587e-ac86-b7f128600580,3,"Pasta, gluten free"
+930ba8ac-adce-548e-9ede-aedda5ffc8d4,55ffbeaf-7b1b-587e-ac86-b7f128600580,3,"Pasta, mixed cereal flour"
+f42a9621-5ed5-5e53-823c-c74872e9a55b,55ffbeaf-7b1b-587e-ac86-b7f128600580,3,"Pasta, wheat flour, with eggs"
+77b09ead-e225-5bfc-9bfe-a1c0c8fc2bcd,55ffbeaf-7b1b-587e-ac86-b7f128600580,3,"Pasta, wheat flour, without eggs"
+29024fb8-4d7f-581e-a520-d33f8c4073b5,55ffbeaf-7b1b-587e-ac86-b7f128600580,3,"Pasta, wheat wholemeal, without eggs"
+c4ad80c6-56cf-5da4-9dd4-89b769235633,7cf363e0-c966-55b1-926c-18bc2fa0e4b7,3,Baking powder
+14c71cbb-0a5a-5b1d-a3a1-276cbd827ce0,7cf363e0-c966-55b1-926c-18bc2fa0e4b7,3,Gelatine
+46ec88bd-ac27-5a73-a70b-8ac8898dd4e9,7cf363e0-c966-55b1-926c-18bc2fa0e4b7,3,Sodium bicarbonate
+856adeaa-7327-51cf-baeb-a3ab88734478,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,Barbecue sauce
+df14bcae-ba9c-5119-9cf8-1e81b6a86c13,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,Curry sauce
+bd8a848b-1a5b-50a7-9870-ed1933f067c6,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,Mixed condiment
+dce9f54c-4c50-56cc-ae63-caf82d4081f3,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,"Mustard, mild"
+69f87abb-4daa-5f0b-ab4d-a61f62d62d12,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,Soy sauce
+215472b1-bab8-5a7f-a0e1-68b96c07538a,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,Tabasco sauce
+e3ccc8e9-0aa3-50e4-9f0f-c7411c2135a8,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,Tartar sauce
+403e4139-e245-584c-a63f-629e953d0d9a,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,Tomato ketchup
+f122d28a-72f5-5fe2-880f-a56a17ae390e,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,"Vinegar, apple"
+14787fbd-f35d-5a8b-820a-82ca257beb0c,1cc7c977-1b5d-5306-9933-2ddc299ad937,3,"Vinegar, wine"
+deb6735e-f283-5028-8350-e5744336669d,09b101aa-b945-5d4e-a0af-deb4238a10f2,3,"Mayonnaise, < 25% oil"
+70e4c75e-5da3-51a5-b9e4-0cc9e3dd8d10,09b101aa-b945-5d4e-a0af-deb4238a10f2,3,"Mayonnaise, > 50% oil"
+b05fcfa4-6559-5d53-8466-58050e7bb02c,09b101aa-b945-5d4e-a0af-deb4238a10f2,3,"Mayonnaise, 25 - 50% oil"
+a8044949-ddd3-576b-ba2a-edd584a52cb8,09b101aa-b945-5d4e-a0af-deb4238a10f2,3,"Salad dressing, < 25% oil"
+e0b8d0c1-0a4d-5b79-acb5-a60cdd0b05fd,09b101aa-b945-5d4e-a0af-deb4238a10f2,3,"Salad dressing, > 50% oil"
+37fd5b7d-626c-506d-9c03-912c9b4bb6bc,09b101aa-b945-5d4e-a0af-deb4238a10f2,3,"Salad dressing, 25 - 50% oil"
+3ff7edba-7e3c-5a9f-8f74-b9c11cee3aea,09b101aa-b945-5d4e-a0af-deb4238a10f2,3,Yogonaise
+cf25104a-0651-5f93-9e18-6efdd055f2a5,a3da86d0-0570-5ed8-918e-244bdd014c76,3,Vanilla essence
+1ac07827-ac07-5327-b00a-f099c06183fc,9f98e0fa-ece1-540d-b32c-128f51993d77,3,Curry powder
+0679b3a6-cda8-53fe-a4b7-d3693d9a3aa0,9f98e0fa-ece1-540d-b32c-128f51993d77,3,Garam masala
+bd2aa4e3-0bf2-5b5e-8b01-9872301b04d4,9f98e0fa-ece1-540d-b32c-128f51993d77,3,Mixed herbs
+d70b79b9-5a60-5919-977c-c1f717b5d201,c77e7e51-1254-596e-86e7-959a156242e7,3,"Basil, dried"
+1f7e6496-9b12-55b8-8828-e410fbc7012f,c77e7e51-1254-596e-86e7-959a156242e7,3,"Basil, herb (Ocimum basilicum)"
+f29fd94a-8959-52c1-b309-2e5de911245d,c77e7e51-1254-596e-86e7-959a156242e7,3,Bay leaves (laurel) (Laurus nobilis)
+9c1c5be0-8977-5a21-a946-e28a7e6d7bb6,c77e7e51-1254-596e-86e7-959a156242e7,3,"Chervil, herb (Anthriscus cerefolium)"
+5c903b78-928e-50d6-8238-ac0a5acf25c6,c77e7e51-1254-596e-86e7-959a156242e7,3,"Chives, herb (Allium schoenoprasum)"
+8d067964-2ea9-5493-a165-1cc836275193,c77e7e51-1254-596e-86e7-959a156242e7,3,Coriander leaves
+f6afde37-c587-58fd-9f47-cbca83c1feb0,c77e7e51-1254-596e-86e7-959a156242e7,3,"Dill, herb (Anethum graveolens)"
+e8c87a6f-7702-545e-803a-8fe280b4c002,c77e7e51-1254-596e-86e7-959a156242e7,3,"Marjoram, dried"
+a46ac95d-bbec-5663-ae8f-90b1c8366199,c77e7e51-1254-596e-86e7-959a156242e7,3,Mint
+2c335cd8-9f10-53e1-a26e-019b20186fe9,c77e7e51-1254-596e-86e7-959a156242e7,3,"Origano, dried"
+92922612-a634-5294-9a4a-2f7f394d5bbd,c77e7e51-1254-596e-86e7-959a156242e7,3,"Parsley, dried"
+3a195d01-0828-5797-a5dd-93e6756a78ad,c77e7e51-1254-596e-86e7-959a156242e7,3,"Parsley, herb (Petroselinum crispum)"
+0415c344-7dc0-5c5c-b5b9-37932969d7f4,c77e7e51-1254-596e-86e7-959a156242e7,3,"Rosemary, dried"
+7dce2a2a-04af-58a2-8c85-da91c8abf5fa,c77e7e51-1254-596e-86e7-959a156242e7,3,"Rosemary, herb (Rosmarinus officinalis)"
+c2ebecb5-c568-5b6c-b210-36b47fdae3e7,c77e7e51-1254-596e-86e7-959a156242e7,3,"Sage, dried"
+9b85bace-6c0a-567b-8412-64f57bfacb8e,c77e7e51-1254-596e-86e7-959a156242e7,3,"Sage, herb (Salvia officinalis)"
+2eeaa26b-4464-58e3-b19a-ef9355cf9bbc,c77e7e51-1254-596e-86e7-959a156242e7,3,"Tarragon, herb (Artemisia dracunculus)"
+cae877c0-6bd5-50aa-b6f9-36548d18a88c,c77e7e51-1254-596e-86e7-959a156242e7,3,"Thyme, dried"
+0a0645ca-d5cb-5671-b976-a00499939f01,c77e7e51-1254-596e-86e7-959a156242e7,3,"Thyme, herb (Thymus spp.)"
+32bf760d-16e1-55e7-8684-fc77bb2a3c4b,c77e7e51-1254-596e-86e7-959a156242e7,3,"Winter savory, dried"
+3201cfad-d892-5943-b5f8-068172b1d00a,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,Alcoholic sauce
+7d11d991-1da1-50d7-9747-f0ebd3fc388d,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,"Brown sauce (Gravy, Lyonnais sauce)"
+28339f51-25e9-57ea-974c-a343064f83be,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,Butter sauce
+664c20c4-f8c9-5594-b7e5-eef7de5cd4ca,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,Cream sauce
+79c88e49-8b61-5ce0-aa91-d1d79b52818d,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,Emulsion sauce (Hollandaise sauce)
+e3677141-6a3a-575e-98a2-fe6161c815b5,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,Fish sauce
+f5a034ea-4593-5e7b-aebd-665eb9c41328,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,Meat sauce
+9d4f5699-4d1e-5c10-9d09-dc2394b0dc65,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,"Oil-based sauce (Pesto, Aioli sauce)"
+0e17817b-90dd-5d7c-872c-088983801f3e,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,Vegetable sauce
+fe8196d1-2b86-565a-b54e-c06f36ce849d,eda8b7f4-4240-59f0-bf3f-9b0a22324b80,3,"White sauce (Bechamel sauce, Cheese sauce)"
+6f086b3e-c351-5638-8264-c53f0ebbc5a1,c3432b9f-b83c-524c-9e42-aef732b4fa75,3,Salt
+3d80e5a3-104c-5d27-95ef-c085993a234c,c3432b9f-b83c-524c-9e42-aef732b4fa75,3,"Salt, flavoured"
+0ca96b2a-2e69-5382-baff-2e4547a19a76,c3432b9f-b83c-524c-9e42-aef732b4fa75,3,"Salt, iodised"
+c4aafe2a-ad01-5364-b32b-88159c758bc1,c3432b9f-b83c-524c-9e42-aef732b4fa75,3,Sea salt
+f2e9a720-1a3a-565f-bd75-274137d6e2f1,c3432b9f-b83c-524c-9e42-aef732b4fa75,3,Stock cubes (bouillon cube)
+95fca450-6630-524c-be2a-459f63e26a45,4c684722-0fee-582f-877f-50359ef25254,3,Black caraway seed (Nigella sativa)
+cf411f90-f3af-5bfe-b216-c15c618d866e,4c684722-0fee-582f-877f-50359ef25254,3,Cardamom (Elettaria cardamomum)
+cc96db3c-a46d-57cb-a625-bea007fd8f2e,4c684722-0fee-582f-877f-50359ef25254,3,Cayenne pepper (Capsicum frutescens)
+be94749e-626a-5298-90d2-ff0c4b1a4d68,4c684722-0fee-582f-877f-50359ef25254,3,Cinnamon (Cinnamonum verum syn. C. zeylanicum)
+9df07437-591f-5679-bce4-7d813856b5d5,4c684722-0fee-582f-877f-50359ef25254,3,Cloves (Syzygium aromaticum)
+c26cdd5c-4c07-5467-8aee-8bf79b5a3a4f,4c684722-0fee-582f-877f-50359ef25254,3,Coriander seed (Coriandrum sativum)
+317f4076-cbfc-5829-8af3-40f3cac5db60,4c684722-0fee-582f-877f-50359ef25254,3,Cumin seed (Cuminum cyminum)
+313026cf-e0ae-5c7a-af25-84e486258997,4c684722-0fee-582f-877f-50359ef25254,3,Fennel seed (Foeniculum vulgare)
+dac96664-ecc6-51a3-866c-e76826f8cb9e,4c684722-0fee-582f-877f-50359ef25254,3,Fenugreek (Trigonella foenumgraecum)
+1098a967-5f58-5189-836c-3e2e85572391,4c684722-0fee-582f-877f-50359ef25254,3,"Garlic, dried"
+209156be-927d-575f-bd12-94c4fbe0cbed,4c684722-0fee-582f-877f-50359ef25254,3,Ginger (Zingiber officinale)
+c50c0f16-d3c0-56e6-9a94-1ba320e70a5b,4c684722-0fee-582f-877f-50359ef25254,3,"Ginger, dried"
+954e3215-5112-547f-b5fc-60ab00ab5bad,4c684722-0fee-582f-877f-50359ef25254,3,Nutmeg (Myristica fragans)
+1fc91430-f7d3-51c5-89dc-70d5bc6aeef9,4c684722-0fee-582f-877f-50359ef25254,3,Paprika powder
+e6de8a55-d85e-5a97-ad45-17a5eaabed09,4c684722-0fee-582f-877f-50359ef25254,3,"Pepper, black and white (Piper nigrum)"
+53e370ae-c44c-5b7f-8062-4bc82b4c52aa,4c684722-0fee-582f-877f-50359ef25254,3,Saffron (Crocus sativus)
+5c72522d-8eb9-5a75-949b-85b48e920344,4c684722-0fee-582f-877f-50359ef25254,3,Spices
+8c4264f1-6ad3-5444-b2bf-3e956d638e98,4c684722-0fee-582f-877f-50359ef25254,3,Tamarind (Tamarindus indica)
+615766bf-b35a-5e4e-ab40-a86db6ac3f60,4c684722-0fee-582f-877f-50359ef25254,3,Turmeric (Curcuma) (Curcuma domestica syn. C. longa)
+f7e033bc-a4cd-5cc1-b619-e8a393d4e8a4,c639d49c-15c7-5825-b7d8-4765005e6503,3,Beans (Phaseolus vulgaris)
+1941b7db-279c-5b94-820c-f992d90a8451,c639d49c-15c7-5825-b7d8-4765005e6503,3,Black eye bean (Vigna unguiculata)
+2cc647f5-d80e-5281-a830-23fde42ed55f,c639d49c-15c7-5825-b7d8-4765005e6503,3,Broad bean (Vicia faba)
+3ab260f1-507c-5221-9d75-8dcd9160bcf4,c639d49c-15c7-5825-b7d8-4765005e6503,3,Chick pea (Cicer arietinum)
+2f0e0f29-042d-5458-87f4-17e69f349535,c639d49c-15c7-5825-b7d8-4765005e6503,3,Chick pea flour
+fd935989-5587-5195-b118-801aa3a72371,c639d49c-15c7-5825-b7d8-4765005e6503,3,Lentils (Lens culinaris syn. L. esculenta)
+ca1a8816-8314-5c13-9ec7-dd4b2008ed75,c639d49c-15c7-5825-b7d8-4765005e6503,3,Lima bean (Phaseolus lunatis)
+deb526db-cfd2-5eb6-9245-96eed843099d,c639d49c-15c7-5825-b7d8-4765005e6503,3,Mung bean (Phaseolus aureus)
+71fd69a8-e5d4-556f-9f8d-fd5d29673dcb,c639d49c-15c7-5825-b7d8-4765005e6503,3,Peanut (Arachis hypogea)
+193db4c2-e017-5ab7-a4a4-e5ca5bda8c48,c639d49c-15c7-5825-b7d8-4765005e6503,3,"Peas (dry), soaked/boiled/canned"
+d6bd88bb-f4a9-540c-a53d-bd1f90934e7d,c639d49c-15c7-5825-b7d8-4765005e6503,3,Peas (Pisum sativum)
+dec701d9-2b25-5917-8eac-4e2e733feb65,c639d49c-15c7-5825-b7d8-4765005e6503,3,Soya beans flour
+10922744-79ac-5ed5-a66c-6614b5ff8c3e,c639d49c-15c7-5825-b7d8-4765005e6503,3,"Soya beans, soaked/boiled/canned"
+f437eccf-f351-5272-83dc-dda6be90b0a5,0936718b-bdf4-5888-a93e-0afdb4d81aa5,3,"Beans, green, without pods (Phaseolus vulgaris)"
+31f4815b-58d8-5bac-ae36-6d504e5759da,467447f9-4484-5574-924c-dfc124d92620,3,Linseed (Linum usitatissimum)
+2e0cd650-716f-5cdc-9f32-8fd3e1100d10,467447f9-4484-5574-924c-dfc124d92620,3,Poppy seed (Papaver somniferum)
+585156c8-b8da-51af-add8-9bd4eca684a7,467447f9-4484-5574-924c-dfc124d92620,3,Pumpkin seeds (Cucurbita pepo var. oleifera)
+5a1c0bc4-c22d-59d2-bfe1-68f31bbba426,467447f9-4484-5574-924c-dfc124d92620,3,Sesame seed (Sesamum indicum syn. S. orientale)
+09e62449-5bcb-5955-9f3d-4f8e4c5ce396,467447f9-4484-5574-924c-dfc124d92620,3,Sunflower seed (Helianthus annuus)
+b6149632-5840-52e6-a5b0-1264c20c8c35,767913ad-afe5-5808-9392-13b928678c23,3,Other seeds
+7b1bd7a6-3993-5b75-b757-7af53752e83d,0a778475-8e92-519e-bcda-2c02a0fd516d,3,"Almond, bitter (Prunus amygalus amara)"
+effcbf32-b153-5e74-971e-a4461e5523b7,0a778475-8e92-519e-bcda-2c02a0fd516d,3,"Almond, sweet (Prunus amygalus dulcis)"
+d8a3ce43-41ef-5321-9685-49a73bff4ef0,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Brazil nuts (Bertholletia excelsa)
+00f36fcf-7b4e-519d-9cf2-4c99e5ad19cf,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Cashew nuts (Anacardium occidentale)
+a252490f-522d-5b7d-80d4-59ea9f3ff59a,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Chestnuts (Castanea sativa)
+36d8b655-7bb3-56b9-9145-b70601074207,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Coconuts (Cocos nucifera)
+f8792a78-8cf7-55d5-9907-4b652533ff3c,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Hazelnuts (Corylus avellana)
+6751d1d1-2038-547e-a4ed-3d8568a81f34,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Macadamia (Macadamia ternifolia)
+019fefb1-3ee7-591d-8a58-33a03f4203db,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Mixed nuts and dried fruits
+d879fd24-3a31-5dca-90d1-3439a7741824,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Pecans (Carya illinoensis)
+70d054ec-5e44-535e-85a2-8e8d8a67c157,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Pine nuts (Pinus pinea)
+99dff6d2-119d-5d4a-a087-b5beee61c568,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Pistachios (Pistachia vera)
+97151b9e-8ff6-5da8-a79a-d72a52fa3f98,0a778475-8e92-519e-bcda-2c02a0fd516d,3,Walnuts (Juglans regia)
+b721146e-5dd7-5cfa-b565-9cb4620aabef,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Beef kidney
+9cb15550-7853-5e7f-b726-800d16d0fce2,b670eb05-6ea0-560e-b97e-e99ab502276c,3,"Brain (veal, lamb, pork)"
+50ee4421-9a35-5cd9-b83e-7303b1b78c8f,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Chicken liver
+b18e3423-6298-5e4c-bf11-4dce72ec47c6,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Duck liver
+4ad861ef-660c-5772-8175-e8e3a04ef298,b670eb05-6ea0-560e-b97e-e99ab502276c,3,"Giblets (chicken, turkey, duck, goose)"
+44519e21-71ff-51ec-913e-701086af75a9,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Goose liver
+b174480e-66b2-5baf-930a-f5139bc427eb,b670eb05-6ea0-560e-b97e-e99ab502276c,3,"Heart (beef, veal, pork, mutton, lamb)"
+c9a7c124-b387-5419-b074-a48395e1ca9b,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Mutton / lamb kidney
+f0946b8d-f774-5742-ab87-a804ae6c92bd,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Mutton / lamb liver
+96aa54e4-ca65-5c40-9269-f62d8cf80210,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Pork kidney
+9e2550f6-81e6-55c1-84ea-465734c7d7c1,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Pork liver
+5d1e5c36-f2ec-5dd2-af58-4bac35823126,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Stomach (beef)
+2d7f44c7-cf27-5583-a9b0-a61e8082fc8f,b670eb05-6ea0-560e-b97e-e99ab502276c,3,"Thymus (veal, lamb)"
+52898d9e-18cc-5919-adea-3bae98e9e029,b670eb05-6ea0-560e-b97e-e99ab502276c,3,"Tongue (beef, veal, mutton, lamb, pork)"
+13cdd237-3cb4-50d6-ba16-9663b93fdd8e,b670eb05-6ea0-560e-b97e-e99ab502276c,3,"Totters and feet (calf, pork)"
+6ad698fb-7736-5961-9c69-7b7850c8e21a,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Turkey liver
+0fa75a03-9c60-5412-88c7-4f7be89ab067,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Veal kidney
+492f4e28-fd10-5c56-b888-077720b7027f,b670eb05-6ea0-560e-b97e-e99ab502276c,3,Veal liver
+131442a9-76a0-55ab-8f63-99edf382e27e,38862325-903a-5c90-a407-4a7d95aaa21f,3,"Liver, game animals"
+162bb59b-c69e-5f08-b4c2-433c393353a3,1fd5c63f-f772-5f65-b816-e78e38bc7c42,3,Pheasant meat (Phasianus colchius)
+4093e6cb-923a-5d65-81a6-2bf1c6c7e6c2,1fd5c63f-f772-5f65-b816-e78e38bc7c42,3,Quail meat (Coturnix coturnix)
+d70e4369-b63e-5d13-bd60-3d6f3881152e,a44a5788-c0bd-51bb-b7f3-47dd16e2be0f,3,Hare meat (Lepus europaeus)
+771d8a1f-53f4-5128-ac7e-8253d02b420f,630e0f1d-b1bb-59f7-b19e-280f48548722,3,Beef meat (Bos spp.)
+43e8820a-5120-50f6-acc3-91cce409e9e4,630e0f1d-b1bb-59f7-b19e-280f48548722,3,Goat / kid meat (Capra hircus)
+01205157-ded5-58fe-8918-d6f0888bb48c,630e0f1d-b1bb-59f7-b19e-280f48548722,3,Mutton / lamb meat (Ovis aries)
+8a51f395-e389-5d6a-b1bd-31a5afa131ce,630e0f1d-b1bb-59f7-b19e-280f48548722,3,Pork / piglet meat (Sus scrofa)
+000ef319-9c05-53cd-b273-042a36942fb3,630e0f1d-b1bb-59f7-b19e-280f48548722,3,Rabbit meat (Lepus cuniculus)
+5f896a06-f162-572f-88a2-c74ba2bef8da,630e0f1d-b1bb-59f7-b19e-280f48548722,3,Veal meat
+9035598d-4a28-56b6-b0d0-3e7e46735d37,1cc52057-5c13-599d-926e-b5beb535377f,3,Meat imitates
+61b36156-3226-591a-833a-a2c95baa6a78,1cc52057-5c13-599d-926e-b5beb535377f,3,Textured soy protein
+bd615fb8-3785-5fde-99fa-2c1d2c888c94,894256de-b67e-5c4b-8c98-9c075dbafa43,3,Head cheese (Brawn)
+92b478ab-33ee-54b8-8a90-7ab6d5eec8f7,894256de-b67e-5c4b-8c98-9c075dbafa43,3,Meat in aspic
+52ae9756-92b5-5c7f-a6bb-99a356f39622,894256de-b67e-5c4b-8c98-9c075dbafa43,3,Pork meat loaf
+bb2fb52c-e4e8-50b2-ad8d-047797269855,18a19ff3-cd95-526e-b49d-f0f164331891,3,Mixed beef and mutton/lamb meat
+31482334-bd16-51c7-9e66-022930e5ea48,18a19ff3-cd95-526e-b49d-f0f164331891,3,Mixed beef and pork meat
+299a19ab-eb52-5b78-8b40-e6a1c0197e91,d2c7ed1d-c8c5-5d26-be45-7869771d6d54,3,Meat paste
+5c80fd6e-09e2-5798-a048-51f7805bd2aa,d2c7ed1d-c8c5-5d26-be45-7869771d6d54,3,"Pate, chicken liver"
+9e7a6dac-2f23-5e90-9e52-54abd7a054ce,d2c7ed1d-c8c5-5d26-be45-7869771d6d54,3,"Pate, goose liver"
+efb7e4a3-14e7-5f63-b64c-82124ec7922f,d2c7ed1d-c8c5-5d26-be45-7869771d6d54,3,"Pate, pork liver"
+78fb5511-80be-51f5-bc75-7000217cda4f,d2c7ed1d-c8c5-5d26-be45-7869771d6d54,3,Terrine
+8889a615-4d8a-5be8-9da7-273bff3b05d5,9216e979-ed16-5497-b963-f707d343ba3d,3,Chicken meat (Gallus domesticus)
+9703c1fc-146a-57ac-b197-b2e7a7e340ce,9216e979-ed16-5497-b963-f707d343ba3d,3,Duck meat (Anas spp.)
+dcfd0471-541e-58bc-8916-cdf34102c409,9216e979-ed16-5497-b963-f707d343ba3d,3,"Goose meat (Anser, Branta, Chen)"
+c2af3725-783f-5c38-ad4d-5506ed1a40a7,9216e979-ed16-5497-b963-f707d343ba3d,3,Guinea fowl meat (Numida meleagris)
+7f6e6c1c-da5a-5448-a89a-d181725c79c4,9216e979-ed16-5497-b963-f707d343ba3d,3,Pigeon meat (Columba spp.)
+5f3ee5f8-c552-5546-8dcf-800ebbfac6d5,9216e979-ed16-5497-b963-f707d343ba3d,3,Turkey meat (Meleagris gallopavo)
+5c900a39-26aa-59cb-8aa1-9ee5afc910ca,9da881a4-ff31-548f-9c8f-e87fd67983aa,3,Bacon
+0f1cf5c1-5f76-5ee8-809b-be791d7cb5a4,9da881a4-ff31-548f-9c8f-e87fd67983aa,3,"Beef, dried"
+d770e472-fd29-5b5d-93b6-46052ac0628f,9da881a4-ff31-548f-9c8f-e87fd67983aa,3,"Cooked Ham, Pork"
+b04b2a1a-2221-5971-8cf4-f14ad8ec84ba,9da881a4-ff31-548f-9c8f-e87fd67983aa,3,"Ham, pork"
+921515f9-80fd-5210-97b2-0bc18bf1e9a6,9da881a4-ff31-548f-9c8f-e87fd67983aa,3,"Ham, turkey"
+e16e68da-aa4d-5d4c-bb61-d5eb5bb905c5,9da881a4-ff31-548f-9c8f-e87fd67983aa,3,Preserved poultry
+a281c45a-89b6-52dc-ad50-c2a12def68ef,ac1ffc46-2ef5-5f03-a2c2-ef3aba1d5455,3,Cooked sausage
+af33b13b-1e0c-5af9-8dc7-618d266ef691,ac1ffc46-2ef5-5f03-a2c2-ef3aba1d5455,3,Cooked smoked sausage
+7a1772ca-8dcc-5a9f-86ec-eddd82a76657,ac1ffc46-2ef5-5f03-a2c2-ef3aba1d5455,3,Dry sausage
+647db420-bcff-516e-a9cb-3802bac66d0a,ac1ffc46-2ef5-5f03-a2c2-ef3aba1d5455,3,Fresh and lightly cooked sausage
+131a49ba-6808-5412-898d-56ce02b4ac82,ac1ffc46-2ef5-5f03-a2c2-ef3aba1d5455,3,Semi-dry sausage
+829ca036-4324-558e-aa09-b4ea391afe31,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Asiago"
+535174f8-ff2a-5874-ba63-325b187c1ffd,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Beaufort"
+dcedeb3a-a61a-5581-b46c-c9af6d0d0226,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Bleu d'Auvergne"
+f1c331f7-4860-507c-8353-2904f8571e3e,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Blue Castello"
+ec66118f-3fa0-5a42-acdc-99cb1d5f495a,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Brie"
+3039e667-9a0a-5964-a1fc-031b4118b387,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Buche de Chevre"
+e02c763d-35c0-54d1-8801-35be51d736f5,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Camembert"
+65eaeb43-2f73-5cd8-9540-03e9cb7011fd,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Cantal"
+7856b90d-121e-51e7-ad89-4119e3b25dab,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Capra"
+83423b20-8136-5d69-8a98-d14ea9f3833b,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Chaource"
+33b6fcaa-4d6d-50e8-98f6-13c0761a2f11,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Cheddar"
+5dab999e-5ecd-5eff-8a87-05150eef434b,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Chevres"
+117aa4dc-a362-517f-a312-0ba8486e79f1,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Comte"
+77f37c86-c94a-5bfb-bea3-8f9cc1c6b248,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Coulommiers"
+612d515d-1fe6-5107-ad4e-17b6accf6423,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Edam"
+4a103228-6d54-5705-8a29-f5626febf7c9,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Emmental"
+1a388634-660f-5e39-be80-6f2253dd1b45,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Epoisses"
+e3ca80b4-2522-5e8a-adf0-045eca2ab7d1,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Feta"
+ef1a5758-8aab-5d57-9ee1-86b9134b99ed,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Fontina"
+67490e63-34f3-5adf-bf91-836dcc20e6fe,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Fourme d'Ambert"
+c1e58399-340a-5140-8a88-dc5502f73418,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Gorgonzola"
+063cc6ba-776a-50a4-b506-1e6dd5c10ce3,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Gouda"
+de7d678f-ce5c-5b34-a11d-e950caabc747,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Grana Padano"
+ab757884-0f1a-51ac-80ca-b12981e6221b,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Gruyere"
+4f4c2fb9-0c27-5fef-86c7-044a26c63c96,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Langres"
+737f7f61-9843-55db-86cb-ff1ef30a2cb4,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Livarot"
+4ec331a9-18d4-5755-bea7-ff130684212a,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Maasdam"
+24bae5d9-ca1a-56b3-bb1c-4bd371798d4b,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Manchego"
+536b7e51-46f0-51c9-9428-4845a5980030,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Mimolette"
+36c8d0ce-24b8-594d-a3b0-5ad03d98784b,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Morbier"
+e7bca7ca-5f16-59af-8038-784b8191cbad,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Mozzarella"
+0028c7f7-0817-5792-bb2d-615c5d907fcf,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Munster"
+db006d39-387c-5677-9ad8-a75d13831160,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Parmigiano Reggiano"
+702b7d24-29ea-5da5-8eb6-806e9b330b1d,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Pont L'Eveque"
+2f57847c-bfe1-538a-b5c6-4f65b3bb4d2e,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Pouligny-Saint-Pierre"
+b036f25c-e553-5854-bbdf-429b4876da79,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, processed cheese, plain"
+358973ab-c716-5c21-992d-a780b15b8363,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, processed, sliceable"
+091915f2-fc4e-5e8b-9c60-d8ae27eade6b,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, processed, with condiments"
+02b88666-2dee-540f-bdd9-ec018d04ccca,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, processed, with walnuts"
+f16f31d5-856b-525d-a86a-7afbb2f703da,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Provolone"
+b84a59f2-4415-5da8-83a2-c971f72fda82,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Raclette"
+4cf67abf-96ad-5175-b4c5-c8c3e0a53a01,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Reblochon"
+f0ae1fd2-8b73-58e5-8e88-0deaa0e6d11f,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Roquefort"
+a40d39aa-f4b2-5678-ba37-e86362049f3d,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Saint Marcellin"
+950341ce-d237-5ebc-8ff8-6a6d776af3f5,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Saint Nectaire"
+fb6911fb-5663-54d6-9f57-2e1441c79d13,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Saint Paulin"
+c1093047-b9cf-5786-a592-535e37d6584c,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Tomme de Savoie"
+35720006-1c64-5026-851f-215107882eab,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Cheese, Vacherin Mont d'Or"
+86fc6a48-f215-526d-ac81-a93e6e0e67e9,1e419658-4d63-5c56-b066-8872836eb5e9,3,Firm/semi-hard cheese (gouda and edam type)
+f154bfb3-e19b-5ce3-88fa-1b41f6d1a265,1e419658-4d63-5c56-b066-8872836eb5e9,3,Fresh uncured cheese
+55dff863-1543-553c-92c2-680255fadb2a,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Soft-ripened cheese veined with blue mould (blue bavarian, blue de graven type )"
+6da58dc2-a5c1-50bf-bcf4-d36e57293e61,1e419658-4d63-5c56-b066-8872836eb5e9,3,"Soft-ripened cheese with bloomy rind (white mould) (brie, camembert type)"
+191d7814-b098-58e1-9778-915533ec0115,6317c10c-48a3-54d4-9009-61c064461d2d,3,Condensed milk
+66db3447-a72c-5406-98e4-00a5e309d25c,6317c10c-48a3-54d4-9009-61c064461d2d,3,Dried milk
+eb20db93-9e70-5be9-9127-bc7a84b3839e,d8eb6802-633f-5c7e-a4b4-6f7b585f1d75,3,Cream
+534d1faa-851c-5365-8323-69a0c7309d03,79d55e52-2a80-5e5d-8bc9-3d2020d844ae,3,Acidophilus milk
+8dd40322-7232-59df-8b93-29c023df01e8,79d55e52-2a80-5e5d-8bc9-3d2020d844ae,3,Buttermilk
+2c3d8abf-74a7-53f4-a87c-cc66dc4cfa65,79d55e52-2a80-5e5d-8bc9-3d2020d844ae,3,Kefir
+a684f450-7dad-53c6-b022-80635093a905,79d55e52-2a80-5e5d-8bc9-3d2020d844ae,3,"Yoghurt, cow milk, plain"
+a96eb33f-98b5-5095-bb62-e1b178344205,79d55e52-2a80-5e5d-8bc9-3d2020d844ae,3,"Yoghurt, cow milk, with fruit"
+4d34c42b-39be-539c-8c29-7e3f06a37cdd,79d55e52-2a80-5e5d-8bc9-3d2020d844ae,3,"Yoghurt, goat milk"
+7db849ee-c29e-5f72-9c50-f869c3895e4c,79d55e52-2a80-5e5d-8bc9-3d2020d844ae,3,"Yoghurt, sheep milk"
+e647c2f2-69b8-5f0d-8708-32f516d626c2,6766f734-fa72-5b43-8aeb-108daaa93ecc,3,Cow milk
+aca8bfec-0e6e-5389-82fe-f84f94e4df80,6766f734-fa72-5b43-8aeb-108daaa93ecc,3,Goat milk
+494b1fe9-f0d5-551d-bdf1-db63aefaf848,6766f734-fa72-5b43-8aeb-108daaa93ecc,3,Sheep milk
+c08cc626-9fa3-59c1-94cf-d73d95fe48df,86457463-d115-58f7-aaa6-6dfc7ad345c0,3,Almond drink
+1af7cb67-1ecf-5267-bcfc-9bc96c6f1b67,86457463-d115-58f7-aaa6-6dfc7ad345c0,3,Oats drink
+365134a9-b143-53d7-b8d5-62b1b288d0df,86457463-d115-58f7-aaa6-6dfc7ad345c0,3,Rice drink
+d09d3084-04e1-5ee4-b0c6-b77f0e018e8a,86457463-d115-58f7-aaa6-6dfc7ad345c0,3,Soya cheese
+116a4a22-b5b2-53cb-b0d8-eb118b35005b,86457463-d115-58f7-aaa6-6dfc7ad345c0,3,Soya drink
+90e8ba96-756e-5af0-85f2-9b2b792eada3,86457463-d115-58f7-aaa6-6dfc7ad345c0,3,Soya yoghurt
+ba36290b-5acf-5918-bda3-4b5ccba822f7,86457463-d115-58f7-aaa6-6dfc7ad345c0,3,Tofu
+aee31e5b-5e1d-57d9-a73a-9427fed6cace,77e80601-42e2-5aaa-acd2-fd1079174ab3,3,Flavoured milk
+9f7ffaa2-d21a-599d-b632-966a9333cdf3,77e80601-42e2-5aaa-acd2-fd1079174ab3,3,Fruit and dairy smoothie
+ee70f63b-b84b-50f9-bcd1-f6fd0116da29,77e80601-42e2-5aaa-acd2-fd1079174ab3,3,Milkshakes
+a077dc00-4770-50e3-aad7-6537a4eb184f,22f5885d-8434-56df-89e2-885b68232365,3,Cocoa drink
+909c5b1d-d6c1-50e0-96f7-b1f6d3c4fbe1,fe3eaaec-0928-5934-847d-95f8d93942cd,3,"Coffee drink, café américano"
+10c5f1ea-8485-5ad5-ab2c-f0d1c75d6ed5,fe3eaaec-0928-5934-847d-95f8d93942cd,3,"Coffee drink, espresso"
+00348827-bb1b-5979-aa1c-8ad5dce3d235,fe3eaaec-0928-5934-847d-95f8d93942cd,3,"Coffee with milk (café latte, café au lait)"
+5b424f0a-9dde-5a44-93ee-96b7ddd10f00,fe3eaaec-0928-5934-847d-95f8d93942cd,3,"Instant coffee, liquid"
+ad86e28c-dd7b-5f6d-b77d-0db76b94b073,a6c19abd-e1b1-5ab8-8816-b2f6c05ba496,3,Coffee imitates beverage
+5bd0785f-c161-5fe7-813a-73ebaeae052c,458d030e-4592-537b-aec8-dc33588eb337,3,Energy drink
+aba7ef0e-6881-5682-a02c-f30167e7831d,cce79a8e-8eae-5ee6-be2a-7af0a7a08459,3,"Cola beverages, caffeinic"
+a19515b0-8cef-5893-b81f-e04efd121af0,cce79a8e-8eae-5ee6-be2a-7af0a7a08459,3,"Cola beverages, caffeinic, low calorie"
+112455dd-749b-5106-9425-5ea05d25da74,cce79a8e-8eae-5ee6-be2a-7af0a7a08459,3,"Cola beverages, decaffeinated"
+de5fafdc-ff4d-508e-ae02-951e4f64f326,cce79a8e-8eae-5ee6-be2a-7af0a7a08459,3,"Cola beverages, decaffeinated, low calorie"
+974cccb2-ef25-5cfc-899d-bb1b19cdb2a1,cce79a8e-8eae-5ee6-be2a-7af0a7a08459,3,"Soft drink, flavoured"
+c6893ce9-d010-5e56-853b-e23eee47d6b8,cce79a8e-8eae-5ee6-be2a-7af0a7a08459,3,"Soft drink, fruit content"
+9f97c7d4-d184-5246-8c24-26c1d046484d,87f95c22-1504-5c92-a8f0-2d1ee8df5466,3,"Black tea, infusion"
+90c8317c-1b22-54af-a81c-87671ed99947,87f95c22-1504-5c92-a8f0-2d1ee8df5466,3,"Green tee, infusion"
+664353ea-300b-519f-a578-4c6051314606,87f95c22-1504-5c92-a8f0-2d1ee8df5466,3,"Herbal tea, infusion"
+ff739d0a-8e65-543e-ac3e-c3ca421dc566,b06df40b-c007-560d-aa03-aeff9475df28,3,"Algae formula (e.g. Spirulina, Chlorella)"
+75597b02-693b-5f89-bd92-83ab149f1c18,575ee2db-397d-5aa2-8f31-c8a185b8d862,3,Products presented as a replacement for one or more meals of the daily diet
+63e096a9-ff13-5b4c-a86a-d99b74702188,2825dbaa-bbd0-53c6-bd1e-d30679b51a69,3,Chocolate mousse
+b687e556-8fd8-5eec-9051-e7c9dff4f6b9,2825dbaa-bbd0-53c6-bd1e-d30679b51a69,3,Custard
+39d2e1b3-5d12-5988-88f1-436050febbcb,2825dbaa-bbd0-53c6-bd1e-d30679b51a69,3,Gelatine dessert
+2ef6061f-0c5c-5ad4-bc06-a1ff0e28d341,2825dbaa-bbd0-53c6-bd1e-d30679b51a69,3,"Ice cream, milk-based"
+9a8f4dc1-3ca9-5260-9d84-330145bec258,2825dbaa-bbd0-53c6-bd1e-d30679b51a69,3,Sorbet
+ad6ee52c-ee9f-5c6c-8706-2b3a9310e866,2825dbaa-bbd0-53c6-bd1e-d30679b51a69,3,Starchy pudding
+6a0f3340-2317-5375-8edc-92cd5ac15278,2825dbaa-bbd0-53c6-bd1e-d30679b51a69,3,Tiramisù
+d87060e5-657e-58ae-b2f4-944d87ceefec,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Cheese puffs
+707c94fd-e6f0-5b48-8673-de3ea0da3945,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Corn chips
+06538c92-3adf-55de-864e-cbba289a48c7,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Fish-based snacks
+48ce8a3c-5207-5785-8486-439f807e6e43,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Popcorn
+55f02331-3182-5962-86ae-e5d098fb8b7d,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Potato crisps
+035af557-d655-515f-8d0f-f1480e9c2f67,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Pretzels
+6757f74e-184d-5152-995b-0552e0624c92,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Seafood chips
+4234963b-2dfa-5f9f-bc2b-aee20bde324f,4c69140f-b5c1-59fc-a421-f8ad1a394a64,3,Tortilla chips
+28370585-7a80-56de-8039-4715ff7c2daf,14954378-e6e5-5ed8-9482-e21de0c8c019,3,Cassava root (Manihot esculenta)
+a3a593d4-31bc-50df-8311-c3958c2e6231,14954378-e6e5-5ed8-9482-e21de0c8c019,3,Jerusalem artichokes tubers (Helianthus tuberosus)
+2096b3b3-cff4-5ca3-8650-a9aa90367c1c,14954378-e6e5-5ed8-9482-e21de0c8c019,3,Sweet potatoes (Ipomoea batatas)
+1cdecd30-08c7-5b59-b94e-2439651a1706,14954378-e6e5-5ed8-9482-e21de0c8c019,3,Tapioca
+66270b78-a5c3-5f08-961e-04bab2bab060,14954378-e6e5-5ed8-9482-e21de0c8c019,3,Yam tubers (Dioscorea sp.)
+e0c9ef99-6fd1-5569-b6ba-c7c6ecee3342,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,French fries
+15d6486d-e2ab-5605-9058-f9752ea4fcd0,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Main-crop potatoes
+9137fb2a-901a-543a-a3ee-768b00acc557,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Mashed potatoes (fresh)
+4a61177e-f16e-5124-b2c0-9bf062efecbf,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Mashed potatoes (prepared from flakes or powder)
+f66db08a-b220-5763-a99f-ca509e8b9303,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,New potatoes
+74f79a45-f20d-57c6-a286-2bee44737490,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Potato baked
+30bb5869-5cd0-51e3-950b-e7dc8f8aa902,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Potato boiled
+fb669106-54fc-5067-bc95-660a635e9799,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Potato croquettes
+c1db5bce-81ca-5197-ab66-111654332097,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,"Potato dumpling, plain"
+9e9d1657-c265-5618-97ce-643f1cf560ad,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Potato flakes
+2e822741-f81c-5089-9cb2-69c3c758711a,c586380d-da3d-59f1-b17e-e36dbd3dae38,3,Roesti
+afca3874-33c6-54a0-8f46-5e1e9d47c1cb,83a28abf-2628-5048-92a1-58d37ed3d708,3,Bitter chocolate
+e7b14f72-81af-5652-9ff2-ff86b07241ba,83a28abf-2628-5048-92a1-58d37ed3d708,3,Bitter-sweet chocolate
+f7f75d19-4da1-56d0-8d0b-779708a7f666,83a28abf-2628-5048-92a1-58d37ed3d708,3,Chocolate coated confectionery
+703886f9-628f-536f-9758-51bd2cc5bfb6,83a28abf-2628-5048-92a1-58d37ed3d708,3,Chocolate with nuts or fruits
+6fc31702-2585-50c7-ab96-ae8ac28bfe1d,83a28abf-2628-5048-92a1-58d37ed3d708,3,"Chocolate, cream"
+90566a34-13cb-56e3-976d-6793af3aabeb,83a28abf-2628-5048-92a1-58d37ed3d708,3,Cooking chocolate
+20c929a1-1003-5693-83cb-df27caf740ec,83a28abf-2628-5048-92a1-58d37ed3d708,3,Filled chocolate
+6cfb0168-0bc2-5a01-ba6e-ecd7b9a5a51d,83a28abf-2628-5048-92a1-58d37ed3d708,3,Milk chocolate
+5f2dc495-89f1-5c73-835a-e7717d3bf612,83a28abf-2628-5048-92a1-58d37ed3d708,3,White chocolate
+b4b6935d-615c-532b-97bf-cf173a4d83e2,482c19a2-0809-5e37-87c3-b9102f57cf81,3,"Candies, with sugar"
+da222ac6-c661-50c9-a46f-62ecb797af6f,482c19a2-0809-5e37-87c3-b9102f57cf81,3,"Caramel, soft"
+984320b9-ca05-51c7-a8d1-8eab1091cd5a,482c19a2-0809-5e37-87c3-b9102f57cf81,3,"Dragée, sugar coated"
+d1b8e6e8-daee-5ec6-aa9e-8c0dc0cc1ba0,482c19a2-0809-5e37-87c3-b9102f57cf81,3,Foamed sugar products (marshmallows)
+2a5795bb-bd16-5ce0-93ec-591dc340d173,482c19a2-0809-5e37-87c3-b9102f57cf81,3,Jelly candies
+5bcad36c-5636-54d3-b873-546b733e4e50,482c19a2-0809-5e37-87c3-b9102f57cf81,3,Marzipan
+c423cdf3-fca7-5f56-b80e-adaff8cad4d7,482c19a2-0809-5e37-87c3-b9102f57cf81,3,Nougat
+692c18a4-ffde-5c23-b2d1-0b0c6dca9dba,aa4da362-ecaa-5bb4-8222-84653d4932d3,3,Chocolate sauce
+1825e249-5886-5eb4-942f-9febad8c461a,01e1ed25-a83b-57c5-be07-6fb6e25bd20d,3,Honey
+d3ded8ff-8569-5332-8a27-75fe6f89f687,4be1cc4c-d9b1-55d4-b4bd-99b3f445ffb5,3,Agave syrup
+d8348aef-994a-5012-b526-3a0db63fba10,4be1cc4c-d9b1-55d4-b4bd-99b3f445ffb5,3,Maple syrup
+603195f2-3e79-5ad5-934c-04fb054e672a,4be1cc4c-d9b1-55d4-b4bd-99b3f445ffb5,3,Molasses
+81dbdacc-6768-55fe-bd61-448521d638cb,4be1cc4c-d9b1-55d4-b4bd-99b3f445ffb5,3,Sugar beet syrup
+553dc182-d0df-5a19-9fa9-f7f5bc940642,e831362e-6240-5d54-9ecc-5c7c384bc98b,3,"Non-nutritive sweeteners (e.g., aspartam, sacccharine)"
+e859d651-6728-58d2-b183-8be893b57704,c518b4f0-9b16-5c4b-871c-bd9509e86e8a,3,Brown sugar
+b8df3b10-f688-5988-b7dc-009a189a2b70,c518b4f0-9b16-5c4b-871c-bd9509e86e8a,3,Flavoured sugar
+fe2d1d27-d28b-5ead-8e65-357b93855642,c518b4f0-9b16-5c4b-871c-bd9509e86e8a,3,Fructose
+795e26f9-ef6b-5970-9b0e-89891adb4295,c518b4f0-9b16-5c4b-871c-bd9509e86e8a,3,White sugar
+6eaf520f-70ef-5619-8bce-bcb58ebbc98c,098f16b9-1f50-51ab-96c8-b490e2f6791c,3,Broccoli (Brassica oleracea var. italica)
+d57d5d44-e874-5bc5-835c-fcaeec2b3734,098f16b9-1f50-51ab-96c8-b490e2f6791c,3,Brussels sprouts (Brassica oleracea var. gemmifera)
+0298d4f7-8df8-5c02-af6e-b6fdae8ac921,098f16b9-1f50-51ab-96c8-b490e2f6791c,3,Cauliflower (Brassica oleracea var. botrytis)
+bc49b44c-2e5a-55d4-9166-014c44cccd53,098f16b9-1f50-51ab-96c8-b490e2f6791c,3,Chinese cabbage (Brassica pekinensis)
+7a0394c1-86e4-5fb6-afb2-2de561b4d56e,098f16b9-1f50-51ab-96c8-b490e2f6791c,3,Head cabbage (Brassica oleracea convar. capitata)
+acb68e8c-387b-59aa-8353-1d6e8e19f57a,098f16b9-1f50-51ab-96c8-b490e2f6791c,3,Kale (Brassica oleracea convar. Acephalea)
+004deb22-1d0c-5a6a-9489-0a2bdabaa404,098f16b9-1f50-51ab-96c8-b490e2f6791c,3,"Kohlrabi (Brassica oleracea convar. acephala, var. gongylodes)"
+e176691f-7244-5412-a98f-c76c1cea7472,099db3bd-2162-5fda-93c3-5b3b018f4d0d,3,"Garlic, bulb (Allium sativum)"
+be71a4a1-467e-5061-835d-3c4fa0d8f58a,099db3bd-2162-5fda-93c3-5b3b018f4d0d,3,"Onions, bulb (Allium cepa)"
+e5b61875-4f58-50f3-897e-a1ed94186220,099db3bd-2162-5fda-93c3-5b3b018f4d0d,3,"Shallots, bulb (Allium ascalonicum, Allium cepa var. aggregatum)"
+4b65543a-5f9a-55e1-ae56-553ab59a13c2,7d7cec0e-2c09-5b0b-8c50-643fcdf97a53,3,Cocoa powder
+34b4b152-3d5c-5ef2-b5fa-dcbce57b3457,0fc96ba5-2e99-50dd-9e48-21a7a7013eca,3,"Coffee beans, roasted and ground"
+af4c8a61-9db2-5b98-9977-2182cd446272,0fc96ba5-2e99-50dd-9e48-21a7a7013eca,3,"Coffee beans, roasted and ground, decaffeinated"
+8026170f-f7fe-5131-a415-18a1eb4a9f86,0fc96ba5-2e99-50dd-9e48-21a7a7013eca,3,"Instant coffee, powder, decaffeinated"
+eac52739-3ba4-5f8e-a128-6d7252d11b74,a92a73a1-df74-5394-b24a-f1eeae520988,3,Chicory coffee
+9cf3dde7-7c4e-51e9-8f13-98fb46339448,a92a73a1-df74-5394-b24a-f1eeae520988,3,Mixture of coffee imitates
+dcba55fe-adcf-5f6f-9e87-e354a5edecef,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Aubergines (egg plants) (Solanum melongena)
+bbce9980-bff8-53c9-8d6b-39a53f6e93b6,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Chilli pepper (Capsicum frutescens)
+ec6390ff-8fb8-581e-bfb1-ef1a20ad0988,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Courgettes (Zucchini) (Cucurbita pepo var. melopepo)
+0563cba6-a33e-51a3-b282-f4a5b43bac78,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Cucumbers (Cucumis sativus)
+a436d641-ab57-5356-9db4-a0d2ef20e3bf,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Melons (Cucumis melo)
+3eaf27d1-5bdf-5513-947a-8a3e5dd856d7,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,"Okra, ladys fingers (Hibiscus esculentus)"
+dc56696f-36a4-558e-9b5d-ea5eec07d6ea,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,"Peppers, paprika (Capsicum annuum, var. grossum and var. longum)"
+139abd43-3214-5d4f-b071-f97094990a96,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Pumpkins (Cucurbita maxima)
+68c5609f-db83-5198-9ac3-3d9172f8fa61,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Sweet corn (Zea mays var. saccharata)
+fd37260f-9f24-522f-9a8a-b847f536bab4,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Tomatoes (Lycopersicum esculentum)
+31a6e189-5eaa-518e-bd2e-2f6bf4f37f5f,e38dfa77-80fe-583f-87de-9c68002a6ee4,3,Watermelons (Citrullus lanatus)
+f8b2ec32-6077-50b6-b7d3-ba9a79770301,e2672248-764f-59ba-8a6a-959fb1f2097a,3,Morel (Morchella esculanta)
+bf9f851b-b944-574f-8bc8-7bd7cabe01d6,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,"Alfalfa spouts, fresh (Medicago sativa)"
+bd665786-f198-5c5c-93ad-9958527f9535,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Bean sprout
+7b01b4ef-8b83-5962-b37f-b14461a644d4,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Beet leaves (Beta vulgaris)
+6ad5aac6-cf43-567d-b30c-29d281b5b072,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Cress (Lepidium sativum)
+b200980f-b73e-5611-8101-b8f630cbbbc1,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Dandelion leaf (Taraxacum officinalis)
+d2b8d358-6755-5dbd-80df-8700f179fe68,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,"Endive, scarole (broad-leaf endive) (Cichorium endiva)"
+2c27093c-c255-507b-ab0d-258ac8183777,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Iceberg-type lettuce
+56c3da25-a6dc-51b4-a51c-b3fd238b3db5,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Lamb's lettuce (Valerianella locusta)
+7f965704-ddd5-5b90-a9a5-4658f0cc5e64,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Leaf vegetables
+543efc17-92c9-5d19-a2f9-88f4d8fc2f5d,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,"Lettuce, excluding Iceberg-type lettuce (Lactuca sativa)"
+8c81db42-a8b1-5050-b07d-8853cd57c74f,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,"Rocket, Rucola (Eruca sativa, Diplotaxis spec.)"
+56634806-2c32-559c-a6d6-42e30c01357e,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Sorrel (Rumex spp.)
+7fee791c-8fc7-5e1d-add8-c50cb06b97db,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,"Spinach  (Spinacia oleracea), preserved, deep-frozen or frozen"
+a468f6c1-c177-5c7e-8989-ad492fa5937c,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Spinach (fresh) (Spinacia oleracea)
+1054b14b-0c10-5c3e-a0fe-2c484983282d,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Water cress (Nasturtium officinale)
+8fbee206-65cf-56c6-abd3-adec5a3d9b7a,c5c268e9-c0b7-5bba-ac50-e070acc27dc1,3,Witloof (Cichorium intybus. var. foliosum)
+c2f20654-65ea-5862-85b3-38206d7bb92a,61f44d00-e7e0-5397-98f9-fb4cd632cbdb,3,"Peas, with pods (Pisum sativum)"
+635a76d5-d72a-5d1e-9bea-525095a6721e,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Beetroot (Beta vulgaris subsp. vulgaris)
+18c772ef-5576-5a6a-8ad6-4f81bda142f4,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Carrots (Daucus carota)
+aa5a799c-682d-5155-8675-d4bcb89e26c1,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Celeriac (Apium graveolens var. rapaceum)
+585bba70-86a0-5f59-8c45-e2b08949c7f5,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Horseradish (Armoracia rusticana)
+41ddf53b-7e9f-5b37-901c-1f00f4372e45,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Parsnips (Pastinaca sativa)
+e7f5234b-a33f-572f-af35-f7c5f1f2b680,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Radishes (Raphanus sativus var. sativus)
+0d18b445-ff3f-596c-86de-d4d3af0f6f94,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Salsify (Tragopogon porrifolius)
+34520652-3c27-5d4a-85ff-ccf2a58e8621,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Swedes (Brassica napus var. napobrassica)
+3b77e0f5-0e88-50df-8e9f-c82fc1e77ed2,85a4de6a-5fb4-5b75-8b1d-c96933e42420,3,Turnips (Brassica rapa)
+e421dc45-fbd9-535e-a173-5c45fc1ad7bd,77ece2d6-5532-585e-bafd-4d13346a04ea,3,Irish moss (Chondrus crispus)
+6b577920-ed48-5ff4-9da5-ccca301bd8b9,77ece2d6-5532-585e-bafd-4d13346a04ea,3,Kombu (Laminaria spp.)
+a1f63f2b-c785-56ef-b2fd-818b53d3cf73,77ece2d6-5532-585e-bafd-4d13346a04ea,3,Laver (Porphyra spp.)
+e06b3759-af5d-5226-9cb7-4604b5891e61,77ece2d6-5532-585e-bafd-4d13346a04ea,3,Wakame (Undaria spp)
+71f63c2e-3b29-59b5-bc2b-c4393e83ed94,ba061473-0e83-548d-acec-2fa521d1b955,3,Asparagus (Asparagus officinalis)
+da11c630-95c3-5719-8e8c-9dfbbdaf9e95,ba061473-0e83-548d-acec-2fa521d1b955,3,Bamboo shoots (Bambusa vulgaris)
+18d09f34-5b2c-5729-a610-79766bcc1e1f,ba061473-0e83-548d-acec-2fa521d1b955,3,Cardoons (Cynara cardunculus)
+4d67ba76-2535-538c-a27b-738d009b588d,ba061473-0e83-548d-acec-2fa521d1b955,3,Celery (Apium graveolens var. dulce)
+1ae2c72c-0e00-5504-ae23-f802e36b4eec,ba061473-0e83-548d-acec-2fa521d1b955,3,Fennel (Foeniculum vulgare)
+8fbdd9b7-865c-5baa-8453-7ba2e29fffdc,ba061473-0e83-548d-acec-2fa521d1b955,3,Globe artichokes (Cynara scolymus)
+296338a2-ccba-5b63-91c9-0f6ce28cb4b1,ba061473-0e83-548d-acec-2fa521d1b955,3,Leek (Allium porrum)
+8d904927-b882-58f6-89b1-3c59ca613fa0,ba061473-0e83-548d-acec-2fa521d1b955,3,"Palm hearts (Euterpa oleracea, Cocos nucifera, Bactris gasipaes, Daemonorops schmidtiana)"
+96e1d058-af79-54fb-b661-49d49e0b37da,ba061473-0e83-548d-acec-2fa521d1b955,3,Rhubarb (Rheum × hybridum)
+01fe659c-5748-5907-99bd-747f23a657a9,1bc7ca18-6ff2-5560-9b5c-cf95d6265cb8,3,Chicory roots (Cichorium intybus)
+7a0720e7-751a-551c-87b7-52060b130c70,8410b912-0b3e-574f-986b-a86c59b91748,3,Peppermint (Mentha × piperita)
+fb9f759b-f331-557c-9c32-0e6d60d6c435,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,Chestnut purée (Castanea vulgaris)
+2d3bcbc0-11e1-5cf0-9a31-da69004b578b,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,Coconut milk (Cocos nucifera)
+2c5dc5de-2201-503b-bec1-e6bac497a903,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,Mashed vegetables
+66cf36bb-2a8e-5561-ab63-bb3d31643f5c,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,Mixed vegetable purée
+9e5bbed6-e8d7-51f0-bdce-f95e417e3d0c,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,Sesam paste (Tahini) (Sesamus indicum)
+d9d43ae4-d29e-5f1f-8a04-300c34740fec,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,Sun-dried tomatoes
+7c324ab9-1ef3-5e1b-8e1f-603ee1b876b4,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,Tomato purée
+dbe32a0b-3cc2-57bc-b072-2eb5177399c6,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,"Tomato, canned"
+7779c5e0-5955-52b4-8adf-3c0f5e8214df,20e88f8a-bd21-5e0e-9f82-1dbeb7572f27,3,"Tomato, paste"

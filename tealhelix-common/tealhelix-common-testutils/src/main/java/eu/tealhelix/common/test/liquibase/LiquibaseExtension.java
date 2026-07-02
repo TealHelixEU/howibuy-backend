@@ -50,6 +50,13 @@ public class LiquibaseExtension implements BeforeAllCallback {
 		this.contexts = contexts;
 	}
 
+	/**
+	 * Runs the default changelog with the given Liquibase contexts, so a test loads only the changesets it wants.
+	 */
+	public static LiquibaseExtension withContexts(Supplier<String> dburlSupplier, String dbuser, String dbpass, String contexts) {
+		return new LiquibaseExtension(dburlSupplier, dbuser, dbpass, DEFAULT_CHANGELOG_FILE, contexts);
+	}
+
 	@Override
 	public void beforeAll(ExtensionContext extensionContext) throws Exception {
 		if (LOG.isDebugEnabled()) {
