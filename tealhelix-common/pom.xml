@@ -18,6 +18,7 @@
 	<modules>
 		<module>tealhelix-common-dao-reactive</module>
 		<module>tealhelix-common-dao-reactive-hibernate</module>
+		<module>tealhelix-common-jee</module>
 		<module>tealhelix-common-services</module>
 		<module>tealhelix-common-services-impl</module>
 		<module>tealhelix-common-testutils</module>
