@@ -35,17 +35,6 @@
 		</dependency>
 
 		<!-- OTHER -->
-		<!--
-			I have reluctantly added this to the model package to get things going faster.
-			It would be cleaner to have a model-jackson module that defines mixins for all the classes
-			and interfaces of the model.
-			Then again, this would be really cumbersome. Which is better? TBD
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<optional>true</optional>
-		</dependency>
-		-->
 		<dependency>
 			<groupId>org.immutables</groupId>
 			<artifactId>value</artifactId>

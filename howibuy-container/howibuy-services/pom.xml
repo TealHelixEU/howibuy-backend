@@ -28,6 +28,11 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>howibuy-services-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-dao-reactive</artifactId>
 			<version>${project.version}</version>
 		</dependency>

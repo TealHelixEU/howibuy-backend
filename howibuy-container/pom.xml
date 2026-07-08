@@ -22,6 +22,7 @@
 		<module>howibuy-jaxrs</module>
 		<module>howibuy-service-interfaces</module>
 		<module>howibuy-services</module>
+		<module>howibuy-services-model</module>
 		<module>howibuy-testutils</module>
 	</modules>
 </project>

@@ -107,11 +107,7 @@ Ports (see [PORTS.md](PORTS.md)): HowiBuy HTTP 8180 / test 8181 / debug 5105; Ke
 ## Versions & dependency upgrades
 
 - Every dependency version lives as a `version.<id>` property in the root [pom.xml](pom.xml). Add new ones the same way.
-- Check for updates non-recursively (all properties are in the parent pom):
-  ```bash
-  mvn -N versions:display-property-updates
-  mvn -N versions:display-plugin-updates
-  ```
+- Check out `README.md`, section "Updating dependencies" for how to update dependencies.
 - Quarkus-coupled versions are marked with an XML comment; upgrade them together with the Quarkus platform, not independently.
 
 ## Authentication flow (so you know what you're looking at)
@@ -128,3 +124,26 @@ Request → JwtAuthenticationFilter (nonBlocking, event loop)
 
 The `/tokenexchange` endpoint mints an impersonation JWT signed by us (see `JwtGenerationService`); the
 `JwtAuthenticationFilter` recognises it via `isImpersonated(...)` and takes the second branch above.
+
+## Data Objects Between Layers
+Any data object shared internally between the DAO and service layers belongs in the `howibuy-services-model`
+module (package `eu.tealhelix.howibuy.services.model.*`).
+DAO interfaces in `howibuy-dao` may return these types directly. Do not place such carriers in the `howibuy-dao`
+module itself.
+
+Distinguish three homes for data types:
+- **Core domain model** — types central to the domain (e.g. `ProductData`) live in `tealhelix-architecture`,
+  `howibuy-model`, package `eu.tealhelix.howibuy.v1.model`). These are the model the whole system is built around.
+- **Service-interface return/parameter types** — types returned or accepted by a service interface (in
+  `eu.tealhelix.howibuy.services.v1`) that are NOT part of the core model belong in `eu.tealhelix.howibuy.services.v1.types`.
+  The `v1` package holds the service interfaces; `v1.types` holds the peripheral data types they exchange.
+- **DAO↔service carriers** — internal, not exposed by any service interface: `howibuy-services-model` as above.
+- **Types shared by both the DAO and a service interface** — a generic data type returned by a DAO *and* carried in a
+  service-interface type can live in neither `services-model` (service-interfaces must not depend on it) nor `v1.types`
+  (the DAO must not depend on service-interfaces). Put such a type in `tealhelix-common-types` (`eu.tealhelix.common.types`).
+  Keep it generic — no feature-specific wording — since it sits in a foundational module.
+
+## Log/exception messages
+Try to place variable content of the message to be logged/used in an exception at the end of the message. E.g.,
+instead of "Product ${id} not found", use "Product not found, id: ${id}" or similar. This way when we see a message in
+the logs, we can search for it in the code more easily.
