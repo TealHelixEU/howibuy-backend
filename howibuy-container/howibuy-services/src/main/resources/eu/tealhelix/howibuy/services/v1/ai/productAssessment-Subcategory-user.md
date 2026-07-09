@@ -6,6 +6,6 @@ Product name: {name}
 
 {tags}
 
-### Candidate product categories
+### Candidate subcategories
 
 {categories}

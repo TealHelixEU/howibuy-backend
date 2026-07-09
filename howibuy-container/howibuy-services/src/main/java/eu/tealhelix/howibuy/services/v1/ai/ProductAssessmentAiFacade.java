@@ -13,4 +13,8 @@ import io.smallrye.mutiny.Uni;
  */
 public interface ProductAssessmentAiFacade {
 	Uni<String> extractL1Category(ProductData productData, List<String> categories);
+
+	Uni<String> extractSubcategory(ProductData productData, List<String> categories);
+
+	Uni<String> extractArchetypeProduct(ProductData productData, List<String> products);
 }

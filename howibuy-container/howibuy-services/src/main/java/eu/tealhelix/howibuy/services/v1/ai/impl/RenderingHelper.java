@@ -29,11 +29,11 @@ class RenderingHelper {
 				.collect(Collectors.joining("\n", TAGS_HEADER, "\n"));
 	}
 
-	public static String renderCategories(List<String> categories) {
-		if (categories == null || categories.isEmpty()) {
-			throw new IllegalArgumentException("categories must not be null or empty");
+	public static String renderCandidates(List<String> candidates) {
+		if (candidates == null || candidates.isEmpty()) {
+			throw new IllegalArgumentException("candidates must not be null or empty");
 		}
-		return categories.stream()
+		return candidates.stream()
 				.map(t -> "- " + t)
 				.collect(Collectors.joining("\n"));
 	}

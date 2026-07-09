@@ -26,14 +26,37 @@ public class ProductAssessmentAiFacadeImpl implements ProductAssessmentAiFacade 
 
 	@Override
 	public Uni<String> extractL1Category(ProductData productData, List<String> categories) {
+		return classify(productData, categories, aiService::extractL1Category);
+	}
+
+	@Override
+	public Uni<String> extractSubcategory(ProductData productData, List<String> categories) {
+		return classify(productData, categories, aiService::extractSubcategory);
+	}
+
+	@Override
+	public Uni<String> extractArchetypeProduct(ProductData productData, List<String> products) {
+		return classify(productData, products, aiService::extractArchetypeProduct);
+	}
+
+	/**
+	 * Renders the product and the candidate names to the flat strings the AI templates expect, invokes the guarded
+	 * (blocking) AI call off the event loop, and re-emits the result on the caller's Vert.x context.
+	 */
+	private Uni<String> classify(ProductData productData, List<String> candidates, AiCall aiCall) {
 		String lang = Objects.requireNonNull(productData.getLanguage()).getDisplayLanguage(Locale.ENGLISH);
 		String characteristics = RenderingHelper.renderTheProductCharacteristics(Objects.requireNonNull(productData.getCharacteristics()));
 		String tags = RenderingHelper.renderTheProductTags(Objects.requireNonNull(productData.getTags()));
-		String categoriesStr = RenderingHelper.renderCategories(categories);
+		String candidatesStr = RenderingHelper.renderCandidates(candidates);
 		Context callerContext = Vertx.currentContext();
-		Uni<String> resultUni = Uni.createFrom().item(() -> aiCircuitBreaker.guard(() -> aiService.extractL1Category(lang, productData.getName(), characteristics, tags, categoriesStr)))
+		Uni<String> resultUni = Uni.createFrom().item(() -> aiCircuitBreaker.guard(() -> aiCall.call(lang, productData.getName(), characteristics, tags, candidatesStr)))
 				.runSubscriptionOn(Infrastructure.getDefaultExecutor());
 		if (callerContext == null) return resultUni;
 		return resultUni.emitOn(command -> callerContext.runOnContext(_ -> command.run()));
+	}
+
+	@FunctionalInterface
+	private interface AiCall {
+		String call(String lang, String name, String characteristics, String tags, String candidates);
 	}
 }

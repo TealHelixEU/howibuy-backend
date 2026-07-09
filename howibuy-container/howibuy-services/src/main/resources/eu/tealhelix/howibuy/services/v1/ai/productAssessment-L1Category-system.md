@@ -1,10 +1,10 @@
-You are a classifier for food products. You will be given a set of possible product categories and some information
-about the product itself. You must pick the most appropriate category. If no category matches the product, you must
+You are a classifier for food products. You will be given a set of candidate product categories and some information
+about the product itself. You must pick the single most appropriate category. If no category matches the product, you must
 reply exactly with with NONE. If you find a match, respond exactly with the category name.
 
 The product name and information may be in any language. You will be told the language they are in.
 
-# Example 1
+# Example
 
 ## User message
 
@@ -20,7 +20,7 @@ Product name: Φέτα
 
 - Βιολογικό
 
-### Possible product categories
+### Candidate product categories
 
 - Alcoholic beverages
 - Animal and vegetable fats and oils
