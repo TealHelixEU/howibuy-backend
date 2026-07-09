@@ -1,7 +1,6 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,7 +33,7 @@ import eu.tealhelix.howibuy.v1.model.ProductData;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
 import org.junit.jupiter.api.Test;
@@ -56,6 +55,13 @@ public class ProductAssessmentServiceImplTest {
 			.language(Locale.ENGLISH)
 			.name("Freshly squeezed orange juice")
 			.price(new BigDecimal("2.50"))
+			.currency(Currency.getInstance("EUR"))
+			.build();
+	private static final ProductData PRODUCT2 = ImmutableProductData.builder()
+			.productKey(new ProductKeyImpl("product-key-2"))
+			.language(Locale.ENGLISH)
+			.name("Some other drink")
+			.price(new BigDecimal("1.00"))
 			.currency(Currency.getInstance("EUR"))
 			.build();
 
@@ -148,19 +154,17 @@ public class ProductAssessmentServiceImplTest {
 	}
 
 	@Test
-	void failsWhenAiPicksACategoryOutsideTheCandidates() {
+	void reportsFailureOtherWhenAiPicksACategoryOutsideTheCandidates() {
 		mockL1Categories();
 		mockExtractL1("Confectionery");
 
-		var failure = sut.assessSingleProduct(USER, PRODUCT)
-				.subscribe().withSubscriber(UniAssertSubscriber.create())
-				.awaitFailure(WAIT).getFailure();
+		var outcome = assess();
 
-		assertInstanceOf(IllegalStateException.class, failure);
+		assertEquals(ProductAssessmentOutcomeType.FAILURE_OTHER, outcome.getType());
 	}
 
 	@Test
-	void failsWhenAiPicksAProductOutsideTheCandidates() {
+	void reportsFailureOtherWhenAiPicksAProductOutsideTheCandidates() {
 		mockL1Categories();
 		mockExtractL1("Beverages");
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -169,11 +173,71 @@ public class ProductAssessmentServiceImplTest {
 		mockProductsOf(L3_ORANGE);
 		mockExtractArchetypeProduct("A product the AI made up");
 
-		var failure = sut.assessSingleProduct(USER, PRODUCT)
-				.subscribe().withSubscriber(UniAssertSubscriber.create())
-				.awaitFailure(WAIT).getFailure();
+		var outcome = assess();
 
-		assertInstanceOf(IllegalStateException.class, failure);
+		assertEquals(ProductAssessmentOutcomeType.FAILURE_OTHER, outcome.getType());
+		assertEquals("Beverages", outcome.getDiagnostics().getL1Category());
+		assertEquals("Juices", outcome.getDiagnostics().getL2Category());
+		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category());
+		assertNull(outcome.getDiagnostics().getProduct());
+	}
+
+	@Test
+	void syncBatchReportsAnOutcomePerProductIsolatingFailures() {
+		mockL1Categories();
+		mockExtractL1("Beverages", "Confectionery");
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory("Juices", "Orange juice");
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct("Tropicana");
+
+		var outcomes = sut.assessMultipleProductsSync(USER, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
+
+		assertEquals(2, outcomes.size());
+		assertEquals(PRODUCT.getProductKey(), outcomes.get(0).getProductKey());
+		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcomes.get(0).getType());
+		assertEquals(PRODUCT2.getProductKey(), outcomes.get(1).getProductKey());
+		assertEquals(ProductAssessmentOutcomeType.FAILURE_OTHER, outcomes.get(1).getType());
+	}
+
+	@Test
+	void syncBatchIsolatesAnUnexpectedFailureAsFailureOther() {
+		when(archetypeCategoryDao.retrieveL1Categories(any()))
+				.thenReturn(Uni.createFrom().item(L1_CATEGORIES))
+				.thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
+		mockExtractL1("Beverages");
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory("Juices", "Orange juice");
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct("Tropicana");
+
+		var outcomes = sut.assessMultipleProductsSync(USER, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
+
+		assertEquals(2, outcomes.size());
+		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcomes.get(0).getType());
+		assertEquals(ProductAssessmentOutcomeType.FAILURE_OTHER, outcomes.get(1).getType());
+	}
+
+	@Test
+	void asyncBatchStreamsAnOutcomePerProductIsolatingFailures() {
+		mockL1Categories();
+		mockExtractL1("Beverages", "Confectionery");
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory("Juices", "Orange juice");
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct("Tropicana");
+
+		var outcomes = sut.assessMultipleProductsAsync(USER, List.of(PRODUCT, PRODUCT2))
+				.subscribe().withSubscriber(AssertSubscriber.create(Long.MAX_VALUE))
+				.awaitCompletion(WAIT)
+				.getItems();
+
+		assertEquals(2, outcomes.size());
+		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcomes.get(0).getType());
+		assertEquals(ProductAssessmentOutcomeType.FAILURE_OTHER, outcomes.get(1).getType());
 	}
 
 	private ProductAssessmentOutcome assess() {
@@ -192,8 +256,11 @@ public class ProductAssessmentServiceImplTest {
 		when(archetypeProductDao.retrieveProductsInCategory(any(), eq(categoryId))).thenReturn(Uni.createFrom().item(PRODUCTS));
 	}
 
-	private void mockExtractL1(String pick) {
-		when(productAssessmentAiFacade.extractL1Category(any(), any())).thenReturn(Uni.createFrom().item(pick));
+	private void mockExtractL1(String... picks) {
+		var stubbing = when(productAssessmentAiFacade.extractL1Category(any(), any()));
+		for (String pick : picks) {
+			stubbing = stubbing.thenReturn(Uni.createFrom().item(pick));
+		}
 	}
 
 	private void mockExtractSubcategory(String pick1, String pick2) {

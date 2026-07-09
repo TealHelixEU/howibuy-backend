@@ -3,10 +3,10 @@ package eu.tealhelix.howibuy.services.v1.impl;
 import static eu.tealhelix.common.utils.UniComprehensions.forc;
 import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.NO_SUGGESTION;
 import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.SUGGESTION;
+import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_OTHER;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_TO_IDENTIFY;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -28,6 +28,7 @@ import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcomeDiagnostic
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcomeDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ProductData;
+import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
@@ -63,19 +64,46 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	public Uni<ProductAssessmentOutcome> assessSingleProduct(User user, ProductData productData) {
 		authorization.requireUserNotService(user);
 		LOG.info("Assess single product as user {}: {}", user.getId().asString(), ProductData.toLogString(productData));
+		return assessOne(productData);
+	}
+
+	/**
+	 * Assesses one product, turning every {@link ProductNotAssessedException} raised by the descent into its
+	 * corresponding non-{@code SUCCESS} outcome. Unexpected failures (a DB error, an open circuit breaker) are left on
+	 * the failure channel so the single-product endpoint surfaces them as a server error; the batch entry points
+	 * isolate them per product instead (see {@link #assessOneIsolated}).
+	 */
+	private Uni<ProductAssessmentOutcome> assessOne(ProductData productData) {
+		return assessOneWithoutHandlingFailures(productData)
+				.onFailure(ProductNotAssessedException.class)
+				.recoverWithItem(failure -> outcomeFor(productData, failure));
+	}
+
+	private Uni<ProductAssessmentOutcome> assessOneWithoutHandlingFailures(ProductData productData) {
 		return forc(
 				retrieveL1Categories(),
 				l1categories -> pickOrFail(productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories)),
 						diagnostics(null, null, null, null)),
-				(l1categories, l1name) -> retrieveSubcategoriesOf(idOfPicked(l1categories, l1name)),
+				(l1categories, l1name) -> retrieveSubcategoriesOf(idOfPicked(l1categories, l1name, diagnostics(null, null, null, null))),
 				(_, l1name, l2categories) -> pickOrFail(productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories)),
 						diagnostics(l1name, null, null, null)),
-				(_, _, l2categories, l2name) -> retrieveSubcategoriesOf(idOfPicked(l2categories, l2name)),
+				(_, l1name, l2categories, l2name) -> retrieveSubcategoriesOf(idOfPicked(l2categories, l2name, diagnostics(l1name, null, null, null))),
 				(_, l1name, _, l2name, l3categories) -> pickOrFail(productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories)),
 						diagnostics(l1name, l2name, null, null)),
-				(_, _, _, _, l3categories, l3name) -> retrieveProductsInCategory(idOfPicked(l3categories, l3name)),
+				(_, l1name, _, l2name, l3categories, l3name) -> retrieveProductsInCategory(idOfPicked(l3categories, l3name, diagnostics(l1name, l2name, null, null))),
 				(_, l1name, _, l2name, _, l3name, products) -> extractProduct(productData, l1name, l2name, l3name, products)
-		).onFailure(FailureToIdentifyException.class).recoverWithUni(e -> failureToIdentifyOutcome(productData, e.getDiagnostics()));
+		);
+	}
+
+	private ProductAssessmentOutcome outcomeFor(ProductData productData, ProductNotAssessedException failure) {
+		return switch (failure) {
+			case FailureToIdentifyException e -> outcome(productData, FAILURE_TO_IDENTIFY, e.getDiagnostics());
+			case AiPickNotAmongCandidatesException e -> {
+				LOG.warn("AI picked {} not among the candidates, reporting {}: '{}'",
+						e.getKind(), FAILURE_OTHER, e.getPickedName());
+				yield outcome(productData, FAILURE_OTHER, e.getDiagnostics());
+			}
+		};
 	}
 
 	private Uni<List<ArchetypeCategory>> retrieveL1Categories() {
@@ -89,14 +117,10 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	}
 
 	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products) {
-		return productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products)).flatMap(productName -> {
-			if (isNoMatch(productName)) {
-				return failureToIdentifyOutcome(productData, diagnostics(l1name, l2name, l3name, null));
-			} else {
-				requirePicked(products, productName, ArchetypeProduct::getName, "product");
-				return successfulAssessment(productData, diagnostics(l1name, l2name, l3name, productName));
-			}
-		});
+		ProductAssessmentOutcomeDiagnostics diagnostics = diagnostics(l1name, l2name, l3name, null);
+		return pickOrFail(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products)), diagnostics)
+				.map(productName -> requirePicked(products, productName, ArchetypeProduct::getName, "product", diagnostics))
+				.flatMap(product -> successfulAssessment(productData, diagnostics(l1name, l2name, l3name, product.getName())));
 	}
 
 	private Uni<List<ArchetypeCategory>> retrieveSubcategoriesOf(UUID parentId) {
@@ -119,16 +143,16 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		return NO_MATCH.equals(pickedName);
 	}
 
-	private static UUID idOfPicked(List<ArchetypeCategory> categories, String name) {
-		return requirePicked(categories, name, ArchetypeCategory::getName, "category").getId();
+	private static UUID idOfPicked(List<ArchetypeCategory> categories, String name, ProductAssessmentOutcomeDiagnostics diagnosticsSoFar) {
+		return requirePicked(categories, name, ArchetypeCategory::getName, "category", diagnosticsSoFar).getId();
 	}
 
-	private static <C> C requirePicked(List<C> candidates, String pickedName, Function<C, String> nameOf, String kind) {
+	private static <C> C requirePicked(List<C> candidates, String pickedName, Function<C, String> nameOf, String kind,
+	                                   ProductAssessmentOutcomeDiagnostics diagnosticsSoFar) {
 		return candidates.stream()
 				.filter(candidate -> nameOf.apply(candidate).equals(pickedName))
 				.findFirst()
-				.orElseThrow(() -> new IllegalStateException(
-						"AI picked choice which is not among the candidates of kind " + kind + ": '" + pickedName + "'"));
+				.orElseThrow(() -> new AiPickNotAmongCandidatesException(diagnosticsSoFar, kind, pickedName));
 	}
 
 	private static ProductAssessmentOutcomeDiagnostics diagnostics(String l1category, String l2category, String l3category, String product) {
@@ -149,37 +173,48 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		return Uni.createFrom().failure(new FailureToIdentifyException(diagnostics));
 	}
 
-	private static Uni<ProductAssessmentOutcome> failureToIdentifyOutcome(ProductData productData, ProductAssessmentOutcomeDiagnostics diagnostics) {
-		return Uni.createFrom().item(ImmutableProductAssessmentOutcome.builder()
+	private static ProductAssessmentOutcome outcome(
+			ProductData productData, ProductAssessmentOutcomeType type,
+			ProductAssessmentOutcomeDiagnostics diagnostics) {
+		return ImmutableProductAssessmentOutcome.builder()
 				.productKey(productData.getProductKey())
-				.type(FAILURE_TO_IDENTIFY)
+				.type(type)
 				.diagnostics(diagnostics)
-				.build());
+				.build();
 	}
 
 	@Override
 	public Uni<List<ProductAssessmentOutcome>> assessMultipleProductsSync(User user, List<ProductData> productsData) {
 		authorization.requireUserNotService(user);
-		// TODO Implement for real
-		return Multi.createFrom().iterable(productsData)
-				.map(pd -> {
-					LOG.info("Assess (sync) product as user {}: {}", user.getId().asString(), ProductData.toLogString(pd));
-					return makeDummyProductAssessmentOutcome(pd);
-				})
-				.collect().asList();
+		return assessBatch(user, productsData).collect().asList();
 	}
 
 	@Override
 	public Multi<ProductAssessmentOutcome> assessMultipleProductsAsync(User user, List<ProductData> productsData) {
 		authorization.requireUserNotService(user);
-		// TODO Implement for real
+		return assessBatch(user, productsData);
+	}
+
+	/**
+	 * Assesses each product in order, emitting one outcome per product. Every per-product failure — an AI signal or an
+	 * unexpected error — is isolated into that product's outcome by {@link #assessOneIsolated}, so a failure in one
+	 * product never terminates the batch.
+	 */
+	private Multi<ProductAssessmentOutcome> assessBatch(User user, List<ProductData> productsData) {
 		return Multi.createFrom().iterable(productsData)
-				.map(pd -> {
-					LOG.info("Assess (sync) product as user {}: {}", user.getId().asString(), ProductData.toLogString(pd));
-					return makeDummyProductAssessmentOutcome(pd);
-				})
-				.onItem()
-				.call(item -> Uni.createFrom().nullItem().onItem().delayIt().by(Duration.ofSeconds(1)));
+				.onItem().transformToUniAndConcatenate(productData -> {
+					LOG.info("Assess (batch) product as user {}: {}", user.getId().asString(), ProductData.toLogString(productData));
+					return assessOneIsolated(productData);
+				});
+	}
+
+	private Uni<ProductAssessmentOutcome> assessOneIsolated(ProductData productData) {
+		return assessOne(productData)
+				.onFailure().recoverWithItem(failure -> {
+					LOG.error("Unexpected failure assessing product in batch, key: {}",
+							productData.getProductKey().asString(), failure);
+					return outcome(productData, FAILURE_OTHER, null);
+				});
 	}
 
 	private ProductAssessmentOutcome makeDummyProductAssessmentOutcome(ProductData productData) {
