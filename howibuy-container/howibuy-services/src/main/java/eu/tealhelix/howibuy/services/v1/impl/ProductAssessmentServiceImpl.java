@@ -9,6 +9,7 @@ import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -64,58 +65,35 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		LOG.info("Assess single product as user {}: {}", user.getId().asString(), ProductData.toLogString(productData));
 		return forc(
 				retrieveL1Categories(),
-				l1categories -> extractL1Category(productData, l1categories),
+				l1categories -> pickOrFail(productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories)),
+						diagnostics(null, null, null, null)),
 				(l1categories, l1name) -> retrieveSubcategoriesOf(idOfPicked(l1categories, l1name)),
-				(_, l1name, l2categories) -> extractSubcategory(productData, l1name, l2categories),
+				(_, l1name, l2categories) -> pickOrFail(productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories)),
+						diagnostics(l1name, null, null, null)),
 				(_, _, l2categories, l2name) -> retrieveSubcategoriesOf(idOfPicked(l2categories, l2name)),
-				(_, l1name, _, l2name, l3categories) -> extractSubsubcategory(productData, l1name, l2name, l3categories),
+				(_, l1name, _, l2name, l3categories) -> pickOrFail(productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories)),
+						diagnostics(l1name, l2name, null, null)),
 				(_, _, _, _, l3categories, l3name) -> retrieveProductsInCategory(idOfPicked(l3categories, l3name)),
 				(_, l1name, _, l2name, _, l3name, products) -> extractProduct(productData, l1name, l2name, l3name, products)
-		).onFailure(FailureToIdentifyException.class).recoverWithUni(e -> failureToIdentifyOutcome(e.getProductData(), e.getDiagnostics()));
+		).onFailure(FailureToIdentifyException.class).recoverWithUni(e -> failureToIdentifyOutcome(productData, e.getDiagnostics()));
 	}
 
 	private Uni<List<ArchetypeCategory>> retrieveL1Categories() {
 		return persistenceContextFactory.withoutTransaction(archetypeCategoryDao::retrieveL1Categories);
 	}
 
-	private Uni<String> extractL1Category(ProductData productData, List<ArchetypeCategory> l1categories) {
-		return productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories)).flatMap(l1name -> {
-			if (isNoMatch(l1name)) {
-				return failureToIdentify(productData, diagnostics(null, null, null, null));
-			} else {
-				return Uni.createFrom().item(l1name);
-			}
-		});
-	}
-
-	private Uni<String> extractSubcategory(ProductData productData, String l1name, List<ArchetypeCategory> l2categories) {
-		return productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories)).flatMap(l2name -> {
-			if (isNoMatch(l2name)) {
-				return failureToIdentify(productData, diagnostics(l1name, null, null, null));
-			} else {
-				return Uni.createFrom().item(l2name);
-			}
-		});
-	}
-
-	private Uni<String> extractSubsubcategory(ProductData productData, String l1name, String l2name, List<ArchetypeCategory> l3categories) {
-		return productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories)).flatMap(l3name -> {
-			if (isNoMatch(l3name)) {
-				return failureToIdentify(productData, diagnostics(l1name, l2name, null, null));
-			} else {
-				return Uni.createFrom().item(l3name);
-			}
-		});
+	private static Uni<String> pickOrFail(Uni<String> pick, ProductAssessmentOutcomeDiagnostics diagnosticsIfNoMatch) {
+		return pick.flatMap(name -> isNoMatch(name)
+				? failureToIdentify(diagnosticsIfNoMatch)
+				: Uni.createFrom().item(name));
 	}
 
 	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products) {
-		var productNames = productNames(products);
-		return productAssessmentAiFacade.extractArchetypeProduct(productData, productNames).flatMap(productName -> {
+		return productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products)).flatMap(productName -> {
 			if (isNoMatch(productName)) {
 				return failureToIdentifyOutcome(productData, diagnostics(l1name, l2name, l3name, null));
-			} else if (!productNames.contains(productName)) {
-				return failureToIdentifyOutcome(productData, diagnostics(l1name, l2name, l3name, productName));
 			} else {
+				requirePicked(products, productName, ArchetypeProduct::getName, "product");
 				return successfulAssessment(productData, diagnostics(l1name, l2name, l3name, productName));
 			}
 		});
@@ -142,12 +120,15 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	}
 
 	private static UUID idOfPicked(List<ArchetypeCategory> categories, String name) {
-		return categories.stream()
-				.filter(category -> category.getName().equals(name))
+		return requirePicked(categories, name, ArchetypeCategory::getName, "category").getId();
+	}
+
+	private static <C> C requirePicked(List<C> candidates, String pickedName, Function<C, String> nameOf, String kind) {
+		return candidates.stream()
+				.filter(candidate -> nameOf.apply(candidate).equals(pickedName))
 				.findFirst()
-				.map(ArchetypeCategory::getId)
 				.orElseThrow(() -> new IllegalStateException(
-						"AI picked category which is not among the candidates: '" + name + "'"));
+						"AI picked choice which is not among the candidates of kind " + kind + ": '" + pickedName + "'"));
 	}
 
 	private static ProductAssessmentOutcomeDiagnostics diagnostics(String l1category, String l2category, String l3category, String product) {
@@ -164,8 +145,8 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		return Uni.createFrom().item(output.withDiagnostics(diagnostics));
 	}
 
-	private static <O> Uni<O> failureToIdentify(ProductData productData, ProductAssessmentOutcomeDiagnostics diagnostics) {
-		return Uni.createFrom().failure(new FailureToIdentifyException(productData, diagnostics));
+	private static <O> Uni<O> failureToIdentify(ProductAssessmentOutcomeDiagnostics diagnostics) {
+		return Uni.createFrom().failure(new FailureToIdentifyException(diagnostics));
 	}
 
 	private static Uni<ProductAssessmentOutcome> failureToIdentifyOutcome(ProductData productData, ProductAssessmentOutcomeDiagnostics diagnostics) {

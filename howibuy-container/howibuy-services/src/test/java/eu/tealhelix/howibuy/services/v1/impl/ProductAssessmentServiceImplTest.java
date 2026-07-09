@@ -159,6 +159,23 @@ public class ProductAssessmentServiceImplTest {
 		assertInstanceOf(IllegalStateException.class, failure);
 	}
 
+	@Test
+	void failsWhenAiPicksAProductOutsideTheCandidates() {
+		mockL1Categories();
+		mockExtractL1("Beverages");
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory("Juices", "Orange juice");
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct("A product the AI made up");
+
+		var failure = sut.assessSingleProduct(USER, PRODUCT)
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(WAIT).getFailure();
+
+		assertInstanceOf(IllegalStateException.class, failure);
+	}
+
 	private ProductAssessmentOutcome assess() {
 		return sut.assessSingleProduct(USER, PRODUCT).await().atMost(WAIT);
 	}
