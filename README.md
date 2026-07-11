@@ -18,7 +18,6 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 - `database.howibuy.reactive.url`: The Hibernate *reactive* URL of the database for the respective microservice
 - `database.howibuy.username`: The DB username
 - `database.howibuy.password`: The DB password
-- **(TODO)** `kafka.bootstrap.servers`: The Kafka bootstrap servers
 - **(TODO)** `db.env` (default: `dev`): Needed only by Liquibase to indicate which environment-specific
   [contexts](https://www.liquibase.org/documentation/contexts.html) will it activate;
   e.g. `dev` will activate the `data-dev` context
@@ -35,7 +34,6 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 				<database.howibuy.reactive.url>vertx-reactive:postgresql://localhost/tealhelix</database.howibuy.reactive.url>
 				<database.howibuy.username>th_howibuy</database.howibuy.username>
 				<database.howibuy.password>th_howibuy</database.howibuy.password>
-				<kafka.bootstrap.servers>localhost:9092</kafka.bootstrap.servers>
 			</properties>
 		</profile>
 		<profile>
@@ -45,21 +43,20 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 				<database.howibuy.reactive.url>vertx-reactive:postgresql://postgres/tealhelix</database.howibuy.reactive.url>
 				<database.howibuy.username>th_howibuy</database.howibuy.username>
 				<database.howibuy.password>th_howibuy</database.howibuy.password>
-				<kafka.bootstrap.servers>broker:19092</kafka.bootstrap.servers>
 			</properties>
 		</profile>
 	</profiles>
 </settings>
 ```
 
-Both profiles use Postgresql. One is to run the entire application through `docker compose`, in which case
+Both profiles use Postgresql. One (`th-docker-postgres`) is to run the entire application through `docker compose`, in which case
 Postgresql is in the `postgres` host - see `tealhelix-docker/src/main/docker-compose/docker-compose.yml` (**TODO**).
-The other is to run only the peripherals in Docker - see `tealhelix-docker/src/main/docker-compose/docker-compose-peripherals.yml`.
+The other (`th-local-postgres`) is to run only the peripherals in Docker - see `tealhelix-docker/src/main/docker-compose/docker-compose-peripherals.yml`.
 
 ### Build profiles
 
-- `dbupdate-howibuy`: Execute Liquibase to bring the respective database up to date
-- `howibuy-quarkus-dev`: Activate `quarkus:dev` for the respective microservice; do not activate more than one in the same command
+- `dbupdate-howibuy`: Execute Liquibase to bring the respective database up to date; you will need to specify connection data, e.g. using the profiles above
+- `howibuy-quarkus-dev`: Activate `quarkus:dev` for the respective service; do not activate more than one in the same command
 - `docker`: Activate the Docker image build
 
 ### Updating dependencies
@@ -142,26 +139,15 @@ docker compose -f docker-compose-peripherals.yml -p tealhelix down     # to remo
 docker compose -f docker-compose-peripherals.yml -p tealhelix down -v  # to remove the containers, also removing the persistent volumes
 ```
 
-### From the command line (TODO - has stopped working)
-
-You need to `mvn install`, so that `quarkus:dev` will find the artifacts!
-
-Cd to a Quarkus module and execute the `quarkus:dev` Maven goal. Don't forget to activate the profile that defines DB connection parameters. E.g.:
-
-```shell
-cd tealhelix-application-module/tealhelix-application
-mvn -Ptealhelix-local-postgres quarkus:dev
-```
-
-### From the command line (2) (TODO)
+### From the command line with Maven
 
 From the project root, activate the profile of the microservice you want to run (don't forget the profile with the DB settings):
 
 ```shell
-mvn package -Papplication-quarkus-dev,tealhelix-local-postgres
+mvn package -Phowibuy-quarkus-dev,th-local-postgres -DskipTests
 ```
 
-### From IDE
+### From IDE, specifying the environment variables
 
 Create a Quarkus run configuration. You need to specify the DB connection parameters (and any other runtime parameters)
 from the run configuration. Select "Modify options" and check "Environment variables." Override the following
@@ -186,6 +172,12 @@ Or define them inline using semicolon as the separator:
 
 You need to make sure the IDE runner resolves workspace artifacts.
 
+### From IDE, specifying the Maven profile
+
+Instead of specifying all the environment variables, you can use the Maven profile you have created in `~/.m2/settings.xml`.
+Create a Quarkus run configuration. Select "Modify options" and then "Quarkus" -> "Add arguments". The value of the
+argument should be `-Pth-local-postgres`.
+
 ### From Docker
 
 **TODO**
@@ -195,10 +187,11 @@ You need to make sure the IDE runner resolves workspace artifacts.
 
 ```bash
 git checkout master
+NEW_VERSION=x.y.z
 # merge appropriately
-mvn versions:set -DgenerateBackupPoms=false -DnewVersion=x.y.z
-git commit -am "Version x.y.z"
-git tag -am "Version x.y.z" vx.y.z
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$NEW_VERSION
+git commit -am "Version $NEW_VERSION"
+git tag -am "Version $NEW_VERSION" v$NEW_VERSION
 git checkout develop
 git merge master
 mvn versions:set -DnewVersion=1.0.0-SNAPSHOT -DgenerateBackupPoms=false

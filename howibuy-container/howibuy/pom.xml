@@ -13,11 +13,9 @@
 	<name>HowiBuy: Deployable of exposed services</name>
 	<description>Project that makes the deployable artifact of the HowiBuy services exposed to the outside world</description>
 
-	<!--
 	<properties>
 		<jvm.args>-Dquarkus.datasource.reactive.url=${database.howibuy.reactive.url} -Dquarkus.datasource.jdbc.url=${database.howibuy.jdbc.url} -Dquarkus.datasource.username=${database.howibuy.username} -Dquarkus.datasource.password=${database.howibuy.password}</jvm.args>
 	</properties>
-	-->
 
 	<dependencies>
 		<!-- FRAMEWORK -->
