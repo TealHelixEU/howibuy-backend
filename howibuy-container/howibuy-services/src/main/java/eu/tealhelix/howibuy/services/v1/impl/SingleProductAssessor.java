@@ -9,8 +9,6 @@ import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -19,6 +17,7 @@ import eu.tealhelix.howibuy.dao.ArchetypeCategoryDao;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
+import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.v1.model.ImmutableAlternativeForProduct;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcome;
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class SingleProductAssessor {
 	private static final Logger LOG = LoggerFactory.getLogger(SingleProductAssessor.class);
-	private static final String NO_MATCH = "NONE";
 
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
 	private final ProductAssessmentAiFacade productAssessmentAiFacade;
@@ -76,16 +74,23 @@ public class SingleProductAssessor {
 	private Uni<ProductAssessmentOutcome> assessOneWithoutHandlingFailures(ProductData productData) {
 		return forc(
 				retrieveL1Categories(),
-				l1categories -> pickOrFail(productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories)),
-						diagnostics(null, null, null, null)),
-				(l1categories, l1name) -> retrieveSubcategoriesOf(idOfPicked(l1categories, l1name, diagnostics(null, null, null, null))),
-				(_, l1name, l2categories) -> pickOrFail(productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories)),
-						diagnostics(l1name, null, null, null)),
-				(_, l1name, l2categories, l2name) -> retrieveSubcategoriesOf(idOfPicked(l2categories, l2name, diagnostics(l1name, null, null, null))),
-				(_, l1name, _, l2name, l3categories) -> pickOrFail(productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories)),
-						diagnostics(l1name, l2name, null, null)),
-				(_, l1name, _, l2name, l3categories, l3name) -> retrieveProductsInCategory(idOfPicked(l3categories, l3name, diagnostics(l1name, l2name, null, null))),
-				(_, l1name, _, l2name, _, l3name, products) -> extractProduct(productData, l1name, l2name, l3name, products)
+				l1categories -> pick(
+						productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories)),
+						l1categories, "category", diagnostics(null, null, null, null)
+				),
+				(_, l1category) -> retrieveSubcategoriesOf(l1category.getId()),
+				(_, l1category, l2categories) -> pick(
+						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories)),
+						l2categories, "category", diagnostics(l1category.getName(), null, null, null)
+				),
+				(_, l1category, _, l2category) -> retrieveSubcategoriesOf(l2category.getId()),
+				(_, l1category, _, l2category, l3categories) -> pick(
+						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories)),
+						l3categories, "category", diagnostics(l1category.getName(), l2category.getName(), null, null)
+				),
+				(_, l1category, _, l2category, _, l3category) -> retrieveProductsInCategory(l3category.getId()),
+				(_, l1category, _, l2category, _, l3category, products) ->
+						extractProduct(productData, l1category.getName(), l2category.getName(), l3category.getName(), products)
 		);
 	}
 
@@ -93,8 +98,8 @@ public class SingleProductAssessor {
 		return switch (failure) {
 			case FailureToIdentifyException e -> outcome(productData, FAILURE_TO_IDENTIFY, e.getDiagnostics());
 			case AiPickNotAmongCandidatesException e -> {
-				LOG.warn("AI picked {} not among the candidates, reporting {}: '{}'",
-						e.getKind(), FAILURE_OTHER, e.getPickedName());
+				LOG.warn("AI selection for {} was not a valid candidate number, reporting {}, raw reply: '{}'",
+						e.getKind(), FAILURE_OTHER, e.getRawReply());
 				yield outcome(productData, FAILURE_OTHER, e.getDiagnostics());
 			}
 		};
@@ -104,16 +109,23 @@ public class SingleProductAssessor {
 		return persistenceContextFactory.withoutTransaction(archetypeCategoryDao::retrieveL1Categories);
 	}
 
-	private static Uni<String> pickOrFail(Uni<String> pick, ProductAssessmentOutcomeDiagnostics diagnosticsIfNoMatch) {
-		return pick.flatMap(name -> isNoMatch(name)
-				? failureToIdentify(diagnosticsIfNoMatch)
-				: Uni.createFrom().item(name));
+	/**
+	 * Resolves the AI's selection against the candidates it was shown: a {@link AiSelection.Match} yields the chosen
+	 * candidate, a {@link AiSelection.None} short-circuits to {@link FailureToIdentifyException}, and a
+	 * {@link AiSelection.Malformed} reply to {@link AiPickNotAmongCandidatesException}.
+	 */
+	private static <C> Uni<C> pick(Uni<AiSelection> selection, List<C> candidates, String kind, ProductAssessmentOutcomeDiagnostics diagnosticsSoFar) {
+		return selection.flatMap(chosen -> switch (chosen) {
+			case AiSelection.Match match -> Uni.createFrom().item(candidates.get(match.index()));
+			case AiSelection.None _ -> failureToIdentify(diagnosticsSoFar);
+			case AiSelection.Malformed malformed -> Uni.createFrom()
+					.failure(new AiPickNotAmongCandidatesException(diagnosticsSoFar, kind, malformed.rawReply()));
+		});
 	}
 
 	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products) {
 		ProductAssessmentOutcomeDiagnostics diagnostics = diagnostics(l1name, l2name, l3name, null);
-		return pickOrFail(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products)), diagnostics)
-				.map(productName -> requirePicked(products, productName, ArchetypeProduct::getName, "product", diagnostics))
+		return pick(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products)), products, "product", diagnostics)
 				.flatMap(product -> successfulAssessment(productData, diagnostics(l1name, l2name, l3name, product.getName())));
 	}
 
@@ -131,34 +143,6 @@ public class SingleProductAssessor {
 
 	private static List<String> productNames(List<ArchetypeProduct> products) {
 		return products.stream().map(ArchetypeProduct::getName).toList();
-	}
-
-	private static boolean isNoMatch(String pickedName) {
-		return NO_MATCH.equals(pickedName);
-	}
-
-	private static UUID idOfPicked(List<ArchetypeCategory> categories, String name, ProductAssessmentOutcomeDiagnostics diagnosticsSoFar) {
-		return requirePicked(categories, name, ArchetypeCategory::getName, "category", diagnosticsSoFar).getId();
-	}
-
-	private static <C> C requirePicked(
-			List<C> candidates,
-			String pickedName,
-			Function<C, String> nameOf,
-			String kind,
-			ProductAssessmentOutcomeDiagnostics diagnosticsSoFar
-	) {
-		return candidates.stream()
-				.filter(candidate -> nameOf.apply(candidate).equals(pickedName))
-				.findFirst()
-				.orElseThrow(() -> {
-					if (LOG.isDebugEnabled()) {
-						String allCategories = candidates.stream().map(nameOf).collect(Collectors.joining("\", \"", "\"", "\""));
-						LOG.debug("AI picked not among the candidates, pick: \"{}\", all candidates of kind {}: {}", pickedName, kind, allCategories);
-					}
-					LOG.debug("AI picked {} not among the candidates, reporting {}: '{}'", kind, FAILURE_OTHER, pickedName);
-					return new AiPickNotAmongCandidatesException(diagnosticsSoFar, kind, pickedName);
-				});
 	}
 
 	private static ProductAssessmentOutcomeDiagnostics diagnostics(String l1category, String l2category, String l3category, String product) {

@@ -22,6 +22,7 @@ import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProduct;
+import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
@@ -42,7 +43,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class SingleProductAssessorTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
-	private static final String NO_MATCH = "NONE";
+
+	// At every level the intended pick is the first candidate (index 0) in the lists below.
+	private static final AiSelection FIRST = new AiSelection.Match(0);
 
 	private static final ProductData PRODUCT = ImmutableProductData.builder()
 			.productKey(new ProductKeyImpl("product-key"))
@@ -88,12 +91,12 @@ public class SingleProductAssessorTest {
 	@Test
 	void descendsAllFourLevelsAndReportsTheMatchedPath() {
 		mockL1Categories();
-		mockExtractL1("Beverages");
+		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory("Juices", "Orange juice");
+		mockExtractSubcategory(FIRST, FIRST);
 		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
 		mockProductsOf(L3_ORANGE);
-		mockExtractArchetypeProduct("Tropicana");
+		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
 
@@ -108,9 +111,9 @@ public class SingleProductAssessorTest {
 	@Test
 	void reportsFailureToIdentifyWhenAiFindsNoSubcategory() {
 		mockL1Categories();
-		mockExtractL1("Beverages");
+		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(NO_MATCH, null);
+		mockExtractSubcategory(new AiSelection.None());
 
 		var outcome = assess();
 
@@ -124,12 +127,12 @@ public class SingleProductAssessorTest {
 	@Test
 	void reportsFailureToIdentifyWhenAiFindsNoArchetypeProduct() {
 		mockL1Categories();
-		mockExtractL1("Beverages");
+		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory("Juices", "Orange juice");
+		mockExtractSubcategory(FIRST, FIRST);
 		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
 		mockProductsOf(L3_ORANGE);
-		mockExtractArchetypeProduct(NO_MATCH);
+		mockExtractArchetypeProduct(new AiSelection.None());
 
 		var outcome = assess();
 
@@ -143,7 +146,7 @@ public class SingleProductAssessorTest {
 	@Test
 	void reportsFailureOtherWhenAiPicksACategoryOutsideTheCandidates() {
 		mockL1Categories();
-		mockExtractL1("Confectionery");
+		mockExtractL1(new AiSelection.Malformed("Confectionery"));
 
 		var outcome = assess();
 
@@ -153,12 +156,12 @@ public class SingleProductAssessorTest {
 	@Test
 	void reportsFailureOtherWhenAiPicksAProductOutsideTheCandidates() {
 		mockL1Categories();
-		mockExtractL1("Beverages");
+		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory("Juices", "Orange juice");
+		mockExtractSubcategory(FIRST, FIRST);
 		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
 		mockProductsOf(L3_ORANGE);
-		mockExtractArchetypeProduct("A product the AI made up");
+		mockExtractArchetypeProduct(new AiSelection.Malformed("A product the AI made up"));
 
 		var outcome = assess();
 
@@ -185,17 +188,21 @@ public class SingleProductAssessorTest {
 		when(archetypeProductDao.retrieveProductsInCategory(any(), eq(categoryId))).thenReturn(Uni.createFrom().item(PRODUCTS));
 	}
 
-	private void mockExtractL1(String pick) {
+	private void mockExtractL1(AiSelection pick) {
 		when(productAssessmentAiFacade.extractL1Category(any(), any())).thenReturn(Uni.createFrom().item(pick));
 	}
 
-	private void mockExtractSubcategory(String pick1, String pick2) {
+	private void mockExtractSubcategory(AiSelection pick) {
+		when(productAssessmentAiFacade.extractSubcategory(any(), any())).thenReturn(Uni.createFrom().item(pick));
+	}
+
+	private void mockExtractSubcategory(AiSelection pick1, AiSelection pick2) {
 		when(productAssessmentAiFacade.extractSubcategory(any(), any()))
 				.thenReturn(Uni.createFrom().item(pick1))
 				.thenReturn(Uni.createFrom().item(pick2));
 	}
 
-	private void mockExtractArchetypeProduct(String pick) {
+	private void mockExtractArchetypeProduct(AiSelection pick) {
 		when(productAssessmentAiFacade.extractArchetypeProduct(any(), any())).thenReturn(Uni.createFrom().item(pick));
 	}
 

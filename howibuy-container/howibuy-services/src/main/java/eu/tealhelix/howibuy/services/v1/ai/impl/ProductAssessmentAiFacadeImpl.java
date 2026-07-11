@@ -6,6 +6,7 @@ import java.util.Objects;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import eu.tealhelix.common.services.jee.impl.AiCircuitBreaker;
+import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiService;
 import eu.tealhelix.howibuy.v1.model.ProductData;
@@ -25,31 +26,33 @@ public class ProductAssessmentAiFacadeImpl implements ProductAssessmentAiFacade 
 	}
 
 	@Override
-	public Uni<String> extractL1Category(ProductData productData, List<String> categories) {
+	public Uni<AiSelection> extractL1Category(ProductData productData, List<String> categories) {
 		return classify(productData, categories, aiService::extractL1Category);
 	}
 
 	@Override
-	public Uni<String> extractSubcategory(ProductData productData, List<String> categories) {
+	public Uni<AiSelection> extractSubcategory(ProductData productData, List<String> categories) {
 		return classify(productData, categories, aiService::extractSubcategory);
 	}
 
 	@Override
-	public Uni<String> extractArchetypeProduct(ProductData productData, List<String> products) {
+	public Uni<AiSelection> extractArchetypeProduct(ProductData productData, List<String> products) {
 		return classify(productData, products, aiService::extractArchetypeProduct);
 	}
 
 	/**
 	 * Renders the product and the candidate names to the flat strings the AI templates expect, invokes the guarded
-	 * (blocking) AI call off the event loop, and re-emits the result on the caller's Vert.x context.
+	 * (blocking) AI call off the event loop, parses the reply into an {@link AiSelection}, and re-emits the result on
+	 * the caller's Vert.x context.
 	 */
-	private Uni<String> classify(ProductData productData, List<String> candidates, AiCall aiCall) {
+	private Uni<AiSelection> classify(ProductData productData, List<String> candidates, AiCall aiCall) {
 		String lang = Objects.requireNonNull(productData.getLanguage()).getDisplayLanguage(Locale.ENGLISH);
 		String characteristics = RenderingHelper.renderTheProductCharacteristics(Objects.requireNonNull(productData.getCharacteristics()));
 		String tags = RenderingHelper.renderTheProductTags(Objects.requireNonNull(productData.getTags()));
 		String candidatesStr = RenderingHelper.renderCandidates(candidates);
 		Context callerContext = Vertx.currentContext();
-		Uni<String> resultUni = Uni.createFrom().item(() -> aiCircuitBreaker.guard(() -> aiCall.call(lang, productData.getName(), characteristics, tags, candidatesStr)))
+		Uni<AiSelection> resultUni = Uni.createFrom().item(() -> aiCircuitBreaker.guard(() -> aiCall.call(lang, productData.getName(), characteristics, tags, candidatesStr)))
+				.map(reply -> RenderingHelper.parseSelection(reply, candidates.size()))
 				.runSubscriptionOn(Infrastructure.getDefaultExecutor());
 		if (callerContext == null) return resultUni;
 		return resultUni.emitOn(command -> callerContext.runOnContext(_ -> command.run()));
