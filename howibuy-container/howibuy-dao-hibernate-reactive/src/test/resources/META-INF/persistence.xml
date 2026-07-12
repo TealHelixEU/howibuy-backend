@@ -9,6 +9,7 @@
 		<class>eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.ConsentEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.FoodTermEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.CorrelationIdEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.UserProfileEntity</class>

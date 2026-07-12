@@ -9,4 +9,5 @@
 	<include relativeToChangelogFile="true" file="changelogs/v1.0.0/20250524_token_exchange.xml"/>
 	<include relativeToChangelogFile="true" file="changelogs/v1.0.0/20250705_correlation_id.xml"/>
 	<include relativeToChangelogFile="true" file="changelogs/v1.0.0/20260703_archetype_products.xml"/>
+	<include relativeToChangelogFile="true" file="changelogs/v1.0.0/20260712_food_terms.xml"/>
 </databaseChangeLog>
