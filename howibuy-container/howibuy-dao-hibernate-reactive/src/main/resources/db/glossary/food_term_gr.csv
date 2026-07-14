@@ -1,6 +1,172 @@
 id,lang,term,canonical_en,description,category_hint
-b7e1a1f0-0001-4a00-9000-000000000001,el,Ανθότυρος,anthotyros,"Greek whey cheese, similar to ricotta or mizithra",Milk and dairy products → Cheese
-b7e1a1f0-0002-4a00-9000-000000000002,el,Βλήτα,amaranth greens,"amaranth greens, a leafy green vegetable",Vegetables and vegetable products (including fungi) → Leaf vegetables
-b7e1a1f0-0003-4a00-9000-000000000003,el,Γραβιέρα,graviera,"aged hard cheese, Gruyère-style",Milk and dairy products → Cheese
-b7e1a1f0-0004-4a00-9000-000000000004,el,Μυζήθρα,mizithra,"fresh whey cheese, soft and mild",Milk and dairy products → Cheese
-b7e1a1f0-0005-4a00-9000-000000000005,el,Κεφαλοτύρι,kefalotyri,"hard, salty yellow cheese",Milk and dairy products → Cheese
+f9640921-c508-5165-acba-7f2202c14f61,el,Ανθότυρος,anthotyros,"Greek whey cheese, similar to ricotta or mizithra",Milk and dairy products → Cheese
+3ca3ad0b-bf27-5caf-8d03-15cd08a5e6ea,el,Γραβιέρα,graviera,"aged hard cheese, Gruyère-style",Milk and dairy products → Cheese
+e4db3a6f-4e42-5353-9dbd-edc42100f787,el,Μυζήθρα,mizithra,"fresh whey cheese, soft and mild",Milk and dairy products → Cheese
+77166524-0451-5259-85e2-4e4fdef78ea3,el,Ξινομυζήθρα,xinomizithra,"aged sour whey cheese, tangy and salty",Milk and dairy products → Cheese
+2515ff5e-034e-50b0-944e-f7b9f1ac1cfa,el,Γαλομυζήθρα,galomizithra,"fresh whey cheese enriched with milk, soft and mild",Milk and dairy products → Cheese
+a58d2442-8645-5dfa-8a94-ed31ff130dc2,el,Κεφαλοτύρι,kefalotyri,"hard, salty yellow cheese",Milk and dairy products → Cheese
+37c96ea7-e451-596a-9e4a-1e502143fe3b,el,Τυροζούλι,tyrozouli,Cretan fresh soft cheese,Milk and dairy products → Cheese
+bc62d639-c09e-5f2d-bf2c-2fd4dc2752e2,el,Τυρομάλαμα,tyromalama,"Cretan soft, mild cheese",Milk and dairy products → Cheese
+0d3b08d6-fa46-5dc6-a358-ea8e0bdc2e36,el,Πηχτόγαλο,pichtogalo,"Pichtogalo Chanion, soft creamy PDO cheese from Chania, Crete",Milk and dairy products → Cheese
+52879f82-c6f7-5fee-86ed-cb7f2ce9103b,el,Ξύγαλο,xygalo,"Xygalo Siteias, soft spreadable sour PDO cheese from Sitia, Crete",Milk and dairy products → Cheese
+dc06124c-89a8-5a85-a16e-b5c1269f5aa7,el,Κατσοχοίρι,katsochoiri,Cretan semi-hard cheese,Milk and dairy products → Cheese
+d0c831ee-9717-5fe3-bf7e-daa3bf978eb1,el,Τυρί Κρέμα,cream cheese,"fresh cream cheese, soft and spreadable",Milk and dairy products → Cheese
+6d6490e2-9e7e-56ef-a219-babd73ac1efe,el,Στάκα,staka,"Cretan clotted-cream fat skimmed from sheep/goat milk, cooked into a rich spread",Milk and dairy products → Cream and cream products
+c1d0ca83-8dfa-5719-9517-4ecb6c7c3bd1,el,Στακοβούτυρο,stakovoutyro,Cretan butter rendered from staka,Animal and vegetable fats and oils → Animal fat
+60c91ecb-8729-57d4-ba9d-a7a349e474fe,el,Edam,edam,Dutch semi-hard cow's-milk cheese,Milk and dairy products → Cheese
+7ef61105-11a2-5b48-849f-3453a2c398b9,el,Gouda,gouda,Dutch semi-hard cow's-milk cheese,Milk and dairy products → Cheese
+f45945c6-fe91-5f9c-b2b7-f4757d04496b,el,Emmental,emmental,Swiss hard cow's-milk cheese with holes,Milk and dairy products → Cheese
+57a3f0bb-de1b-5023-bd27-76f25fc1210b,el,Mozzarella,mozzarella,Italian fresh soft cow's-milk cheese,Milk and dairy products → Cheese
+4efb1d12-3e88-5bab-93a7-24eb4e2670a7,el,Regato,regato,"hard grating cheese, Regato style",Milk and dairy products → Cheese
+7df8d198-df4d-5448-ac78-34c3437a9db6,el,Κοτόπουλο,chicken,chicken meat,Meat and meat products (including edible offal) → Poultry → Chicken meat (Gallus domesticus)
+4f4de760-665a-5d16-850a-0e3989fd1b7f,el,Πετεινός,rooster,rooster (cockerel) meat,Meat and meat products (including edible offal) → Poultry → Chicken meat (Gallus domesticus)
+bb6b498e-84a0-5f7c-b532-fe0e01a9343f,el,Γαλοπούλα,turkey,turkey meat,Meat and meat products (including edible offal) → Poultry → Turkey meat (Meleagris gallopavo)
+76076a14-ce70-5555-98a3-665202beadcc,el,Βόειο,beef,"beef, meat of cattle",Meat and meat products (including edible offal) → Livestock meat → Beef meat (Bos spp.)
+05ffaf05-a9c4-5614-ad82-2efaec4febe5,el,Χοιρινό,pork,"pork, meat of pig",Meat and meat products (including edible offal) → Livestock meat → Pork / piglet meat (Sus scrofa)
+f48a8933-3d75-53f0-aa62-285cf8bd1553,el,Χοιρίδιο,suckling pig,suckling pig (piglet) meat,Meat and meat products (including edible offal) → Livestock meat → Pork / piglet meat (Sus scrofa)
+1072f082-e8ab-5c8c-b9da-666d7e3868c4,el,Κατσίκι,kid / goat,kid (young goat) meat,Meat and meat products (including edible offal) → Livestock meat → Goat / kid meat (Capra hircus)
+d50a30e9-d192-5c56-81da-fd2862ac93f4,el,Γίδα,goat,goat (adult) meat,Meat and meat products (including edible offal) → Livestock meat → Goat / kid meat (Capra hircus)
+2931ddcc-1ce8-5619-bc29-36a7badbfd7d,el,Αρνί,lamb,lamb meat,Meat and meat products (including edible offal) → Livestock meat → Mutton / lamb meat (Ovis aries)
+534f1b7e-f7bc-5b93-8c94-69f2402db8e8,el,Πρόβατο,mutton / sheep,"mutton, meat of adult sheep",Meat and meat products (including edible offal) → Livestock meat → Mutton / lamb meat (Ovis aries)
+0538bb29-8351-5e96-a56d-0f4756510807,el,Κουνέλι,rabbit,rabbit meat,Meat and meat products (including edible offal) → Livestock meat → Rabbit meat (Lepus cuniculus)
+e4fc19c7-8079-5179-9c46-296f4299a783,el,Ζαμπόν,ham,cooked pork ham (deli cold cut),Meat and meat products (including edible offal) → Preserved meat
+743f14d6-84a8-599d-bc99-21050c595eda,el,Σαλάμι,salami,dry-cured sausage (salami),Meat and meat products (including edible offal) → Sausages
+34d968f4-d396-567b-9699-7af519025f2a,el,Λουκάνικο,sausage,"sausage; Greek/Cretan styles, usually pork, often leek- or wine-flavoured",Meat and meat products (including edible offal) → Sausages
+0b418916-555f-5313-b72b-af5d55c60202,el,Φρανκφούρτης,frankfurter,"frankfurter, cooked smoked sausage",Meat and meat products (including edible offal) → Sausages
+1023c9ee-dc9b-5a44-87fb-91ec7b2e484e,el,Πάριζα,parizer / bologna,"parizer, a mortadella/bologna-style cooked sausage",Meat and meat products (including edible offal) → Sausages
+7039a69d-88c9-5955-900a-3e48fe07f8c8,el,Μπέικον,bacon,"bacon, cured and smoked pork",Meat and meat products (including edible offal) → Preserved meat
+6a5d78b5-0d3a-5502-866d-bc5439d6e7eb,el,Πανσέτα,pancetta / pork belly,cured or smoked pork belly,Meat and meat products (including edible offal) → Preserved meat
+f3e25b51-4fa5-5829-b401-02af3e85b94d,el,Απάκι,apaki,"apaki, Cretan lean pork marinated in vinegar and cold-smoked over aromatic herbs",Meat and meat products (including edible offal) → Preserved meat
+e8cf5dcc-f4dc-5fbf-9940-b5b9f6becb77,el,Σύγκλινο,syglino,"syglino (sfakiano), Cretan pork salt-cured, smoked and preserved in fat",Meat and meat products (including edible offal) → Preserved meat
+2337dc8f-d29b-547f-90d1-091c2cee64b7,el,Γάλα,milk,"milk from cow, sheep or goat",Milk and dairy products → Liquid milk
+b04c3593-0206-5eaf-8e89-af2b0176bd2c,el,Κεφίρ,kefir,"kefir, a fermented milk drink",Milk and dairy products → Fermented milk products
+447ed36b-ac73-5a68-911e-aed7a2cd134a,el,Ξυνόγαλο,soured milk,"xinogalo, soured milk / buttermilk drink",Milk and dairy products → Fermented milk products
+13151e7c-07ff-53b7-a594-9ebc272cb2f0,el,Αριάνι,ayran,"ayran, a salted diluted-yogurt drink",Milk and dairy products → Fermented milk products
+f10b892b-be2b-5b29-8b42-f8122736c755,el,Γιαούρτι,yogurt,"yogurt; Greek-style strained varieties from cow, sheep or goat milk",Milk and dairy products → Fermented milk products
+75a3d0df-7099-5c26-861e-e77e0d693225,el,Κρέμα,custard,"custard-style milk dessert (crème), vanilla or chocolate","Snacks, desserts, and other foods → Ices and desserts"
+601d2ea1-ea7a-5c09-9072-106352a611fc,el,Ρυζόγαλο,rice pudding,"rice pudding, rice simmered in milk","Snacks, desserts, and other foods → Ices and desserts"
+2fc50502-bb28-5701-8dc0-e9255c56ad97,el,Μουσταλευριά,moustalevria,"moustalevria, pudding of grape must thickened with flour or semolina","Snacks, desserts, and other foods → Ices and desserts"
+df1cc4cb-c414-5cb7-9a6a-4263ef1e1daa,el,Κεφτεδάκια,meatballs,"keftedes, fried Greek meatballs",Composite food (including frozen products) → Meat-based meals
+2e2fdb69-4a74-59ec-9df8-add8c273c726,el,Σουτζουκάκια,soutzoukakia,"soutzoukakia, spiced minced-meat rolls in tomato sauce",Composite food (including frozen products) → Meat-based meals
+ae21312e-13c2-552c-8956-bdc6a8d581f2,el,Ντολμαδάκια,dolmades,"dolmades, vine leaves stuffed with rice (sometimes meat)",Composite food (including frozen products) → Meat-based meals
+238aa32a-dcf9-5059-9b63-eb54ff9295e7,el,Ανθοί κολοκυθιού,stuffed courgette flowers,courgette/zucchini blossoms stuffed with rice or meat,Composite food (including frozen products) → Meat-based meals
+896ac02d-5f0a-5706-bdca-570b747292a5,el,Γύρος,gyros,"gyros, seasoned pork or chicken roasted on a vertical spit",Meat and meat products (including edible offal)
+fc3e04e0-d5b2-54e7-a68c-cd46d9aee035,el,Κοτομπουκιές,chicken nuggets,breaded chicken nuggets/bites,Composite food (including frozen products) → Meat-based meals
+837ad867-10c3-537d-8246-45137ee2a42b,el,Μπιφτέκι,bifteki (burger),"bifteki, grilled minced-meat patty",Meat and meat products (including edible offal)
+584ed683-69ff-5430-b22b-364f6366ff02,el,Πίτσα,pizza,pizza,Composite food (including frozen products) → Cereal-based dishes
+aea48990-28c6-5f3d-81ec-f0a85bfd6480,el,Μυζηθρόπιτα,mizithra cheese pie,mizithra (whey-cheese) pie,Grains and grain-based products → Fine bakery wares
+17cc4a46-cc3b-5354-89e7-1c8857a7fde6,el,Καλιτσούνια,kalitsounia,"kalitsounia, small Cretan cheese- or herb-filled pastries",Grains and grain-based products → Fine bakery wares
+451b02f1-bc62-5829-ae0d-6a93464a1e71,el,Μαραθόπιτα,fennel pie,"marathopita, Cretan pie filled with wild fennel and greens",Composite food (including frozen products) → Cereal-based dishes
+fc415733-9b4e-582e-9a4e-0df2b3d3387a,el,Σφολιάτα,puff pastry,puff pastry sheets,Grains and grain-based products → Fine bakery wares
+a5ceada2-74dd-5488-80c7-7432edb0f3a9,el,Τυρόπιτα,cheese pie,"tyropita, Greek phyllo cheese pie",Grains and grain-based products → Fine bakery wares
+6e16f2ea-a3e3-51ad-900e-f0d4cb57f944,el,Χορτόπιτα,greens pie,"hortopita, pie filled with wild greens",Composite food (including frozen products) → Cereal-based dishes
+2b42610a-c291-55a2-b479-aa7eea6617c8,el,Σπανακοτυρόπιτα,spinach-cheese pie,"spanakotyropita, spinach and cheese phyllo pie",Grains and grain-based products → Fine bakery wares
+65c9145a-8aee-54fb-932f-784abf3804e5,el,Κοτόπιτα,chicken pie,"kotopita, phyllo pie filled with chicken",Composite food (including frozen products) → Cereal-based dishes
+d4e3ed27-c26f-53ec-8a04-0e6fe84939ac,el,Μπουγάτσα,bougatsa,"bougatsa, phyllo pastry with sweet semolina custard or cheese",Grains and grain-based products → Fine bakery wares
+cb347f8d-847a-5dfe-9b11-858ab1ad842b,el,Σφακιανή πίτα,sfakianopita,"sfakianopita, thin Cretan cheese-filled pan pie served with honey",Grains and grain-based products → Fine bakery wares
+e9a8cc08-447f-5ff9-9284-d877b44bd861,el,Φύλλο,phyllo (filo),phyllo (filo) pastry sheets,Grains and grain-based products → Fine bakery wares
+b3bd7c88-61c4-587f-ae7d-3fc397255208,el,Παξιμάδι,paximadi (rusk),"paximadi, hard twice-baked barley or wheat rusk","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
+1b0a4fa9-1f5d-5bea-8b7a-8da7a621e493,el,Ντάκος,dakos,"dakos, round Cretan barley rusk (base of the dakos salad)","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
+f6f1057c-b32a-5f88-85df-8f3fdd77d8c4,el,Εφτάζυμο,eftazymo,"eftazymo, bread or rusk leavened with a chickpea ferment","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
+cf3d2c80-5cdd-5bc0-8f3f-8c93fe65202a,el,Κουλούρα,kouloura,"kouloura, ring-shaped rusk or bread","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
+79012ea7-27d9-5bf6-8350-a37da522dfce,el,Ψωμί,bread,"bread, typically a sourdough wheat loaf",Grains and grain-based products → Bread and rolls
+be1094ea-21a3-524f-a0a2-48a35faa5c27,el,Κριτσίνι,bread sticks (grissini),"kritsinia, crunchy bread sticks",Grains and grain-based products → Bread and rolls
+37b31bc5-ea0c-5538-aa56-3ee0763a95aa,el,Αμυγδαλωτά,almond macaroons,"amygdalota, soft almond macaroons",Grains and grain-based products → Fine bakery wares
+d3ef2466-e6c8-5cdb-8d8c-a26d606535ae,el,Βουτήματα,dunking biscuits,"voutimata, hard biscuits for dunking",Grains and grain-based products → Fine bakery wares
+137cc18e-7563-5eea-a26a-4dfc34c4f609,el,Μουστοκούλουρο,grape-must cookies,"moustokouloura, spiced cookies sweetened with grape-must syrup (petimezi)",Grains and grain-based products → Fine bakery wares
+33c8d7e5-9446-50b4-802a-8667717f9ea3,el,Κουλουράκι,cookies,"koulourakia, traditional Greek butter or olive-oil cookies",Grains and grain-based products → Fine bakery wares
+d1c99253-78e8-5598-b113-86e5ec3beac6,el,Λαδοκούλουρα,olive-oil cookies,"ladokouloura, olive-oil cookies",Grains and grain-based products → Fine bakery wares
+5059bc95-dc55-5944-a2db-956cd9b4dbab,el,Παξιμαδάκι,biscotti,"paximadaki, sweet twice-baked biscotti (almond, orange, cocoa)",Grains and grain-based products → Fine bakery wares
+5ece1cbf-ce48-5dc4-8650-e364663096c0,el,Μπισκότο,biscuit / cookie,biscuits and cookies,Grains and grain-based products → Fine bakery wares
+6d562877-4c77-5729-9f3c-abb55b1182a0,el,Φρυγανιά,melba toast,"frygania, dry toasted bread (melba toast)",Grains and grain-based products → Bread and rolls
+34fe3d1d-30ef-506f-a84f-1dbf2a7e69e4,el,Κρουτόν,croutons,"croutons, dried or toasted bread cubes",Grains and grain-based products → Bread and rolls
+aedc711f-19ef-512e-bb4e-2c8c2556dd26,el,Κρουασάν,croissant,"croissant, often filled with hazelnut praline or chocolate",Grains and grain-based products → Fine bakery wares
+07f98c83-ea9d-5fa3-9a87-ad6737baeb1c,el,Κουλούρι,koulouri (bread ring),"koulouri, sesame-crusted bread ring",Grains and grain-based products → Bread and rolls
+0b2a19d2-382b-5c19-a009-9689f5a462cf,el,Τσουρέκι,tsoureki,"tsoureki, sweet braided brioche flavoured with mahleb and mastic",Grains and grain-based products → Fine bakery wares
+eca546e3-6e9a-522f-aa90-36c2ccec4eab,el,Κέικ,cake,cake (loaf or marble cake),Grains and grain-based products → Fine bakery wares
+54e342e1-3f94-50f9-a754-8bd1b19965dd,el,Ρολό κανέλας,cinnamon roll,cinnamon roll with raisins,Grains and grain-based products → Fine bakery wares
+bb9156db-b6cc-5641-bfbf-aa169d925c3b,el,Γλυκό καρύδας,coconut sweet,"coconut sweet, a coconut-egg-flour cake",Grains and grain-based products → Fine bakery wares
+3ee7e19d-8ba0-5660-b2f4-2ff8bdcefe0b,el,Παστέλι,pasteli,"pasteli, sesame and honey brittle bar",Sugar and confectionary → Confectionery (non-chocolate)
+5c3f4f97-1d41-5517-84d5-30aa91dd134e,el,Μάντολα,mandola,"mandola, caramelised almond confection",Sugar and confectionary → Confectionery (non-chocolate)
+325849c8-7334-5007-a008-98b5fec71e95,el,Μαντολάτο,mandolato (nougat),"mandolato, soft nougat with nuts and honey",Sugar and confectionary → Confectionery (non-chocolate)
+2d3643ce-37eb-5611-9941-1435a84056ba,el,Σισαμόπιτα,sesame brittle,"sisamopita, sesame and honey brittle",Sugar and confectionary → Confectionery (non-chocolate)
+c906dcde-e5bb-5dfb-bf78-8249b252a249,el,Λυχναράκια,lychnarakia,"lychnarakia, sweet Cretan Easter cheese pastries",Grains and grain-based products → Fine bakery wares
+c9ea48c0-809f-5fd8-9d8e-f215fbfac9e0,el,Ξεροτήγανα,xerotigana (diples),"xerotigana (diples), fried dough ribbons drizzled with honey",Grains and grain-based products → Fine bakery wares
+f7418de5-422c-5b51-a91b-de7568fff7da,el,Αλεύρι,flour,wheat flour,Grains and grain-based products → Grain milling products
+879d372e-6b7d-5ea0-a3e3-82322aae02ed,el,Φαρίνα,farina,"farina, self-raising flour",Grains and grain-based products → Grain milling products
+a47ab4c6-e1b6-5e4d-bd5c-c3bcb5b44968,el,Μέλι,honey,"honey; Cretan varieties include thyme, pine/conifer honeydew, heather and wild-herb honey",Sugar and confectionary → Honey
+55e54aa2-ac49-56a7-ab1f-5fff6f2b2210,el,Μαρμελάδα,jam / marmalade,fruit jam or marmalade — fruit preserved with sugar,"Fruit and fruit products → Jam, marmalade and other fruit spreads"
+9dff4f58-14a7-5f10-9dc3-eb5c0753cc5c,el,Πετιμέζι,grape molasses (petimezi),"grape-must syrup, concentrated boiled grape must used as a traditional Greek sweetener",Sugar and confectionary → Molasses and other syrups
+3908f824-fd3e-53d6-9496-58dde0ff530d,el,Χαρουπόμελο,carob syrup (carob honey),boiled-down carob-pod syrup used as a honey substitute,Sugar and confectionary → Molasses and other syrups
+d7d48775-8b66-51ad-a562-92030f5e176b,el,Καφές,coffee,coffee; Greek (finely ground) and French (filter) styles,Vegetables and vegetable products (including fungi) → Coffee beans and coffee products (Solid)
+d46cc7a2-06ed-5929-9530-2721b00bd491,el,Τσάι,tea,"tea — green, black or herbal infusion",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+7047592b-5e81-5b69-80e9-e7dc6f4f9b53,el,Αφέψημα,infusion (afepsima),"afepsima, a herbal infusion or decoction",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+f490fe15-952c-5b50-816e-a509c69e245f,el,Δίκταμος,dittany,"diktamo, Cretan dittany (Origanum dictamnus), an endemic herb brewed as tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+aa0329f1-b841-589d-a94e-003e5f3a7659,el,Φασκόμηλο,sage,"faskomilo, sage brewed as a herbal tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+22cafbcf-ae85-5e62-a666-34b48f4e7375,el,Χαμομήλι,chamomile,chamomile herbal tea,Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+da508c32-7ee0-51aa-894d-cc56658ba2e6,el,Λουίζα,lemon verbena,"louiza, lemon verbena herbal tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+1faadfba-fdf5-5618-8cf4-f841b9720226,el,Μαλοτήρα,mountain tea,"malotira, Cretan mountain tea (Sideritis syriaca)",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+d82af3d8-c407-5490-9b42-11370645a49e,el,Τσάι του βουνού,mountain tea,"tsai tou vounou, Greek mountain tea (Sideritis)",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+dfa5a196-0c2d-5b6f-aa12-09e4b5992981,el,Σαρανταδέντρι,sarantadentri,"sarantadentri, a Cretan aromatic herb used for infusions",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+c0b7b5c3-6f5b-5be9-926b-5e9168a38d2f,el,Βαλεριάνα,valerian,"valerian, a calming herbal infusion",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+ee238a0f-100d-52f6-b46e-e0fb02b72eaa,el,Μελισσόχορτο,lemon balm,"melissochorto, lemon balm herbal tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+127ce8bd-b235-5fec-9751-66ef68e3bfa8,el,Ματζουράνα,marjoram,marjoram herbal tea,Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+0bd9810f-a331-58ac-9220-e84776ab3616,el,Μέντα,mint,mint (spearmint) herbal tea,Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+47ffb486-7adc-5ff0-8f0d-3fbcc88543af,el,Φασόλια,haricot beans,dried haricot (white) beans,"Legumes, nuts and oilseeds → Legumes, beans, dried"
+d7e8e80e-569a-59c0-a04e-f9c687d84e97,el,Φάβα,split peas,"fava, Greek dried yellow split peas (not broad/fava beans)","Legumes, nuts and oilseeds → Legumes, beans, dried"
+4fd27c83-49d8-50d3-af48-3f1ded84eebb,el,Ρεβίθια,chickpeas,dried chickpeas,"Legumes, nuts and oilseeds → Legumes, beans, dried"
+d993e0b9-c076-566b-a2da-558214c4ef3e,el,Φακές,lentils,dried lentils,"Legumes, nuts and oilseeds → Legumes, beans, dried"
+4cfc452e-c01f-5d27-ada7-cd148a03b8f5,el,Ρύζι,rice,"rice; Greek varieties incl. Carolina, glacé, nychaki and parboiled",Grains and grain-based products → Grains for human consumption
+48cde306-8791-50c8-9389-2d6572afe3fd,el,Χυλοπίτες,chylopites (egg noodles),"chylopites, Cretan egg-and-milk ribbon noodles",Grains and grain-based products → Pasta (Raw)
+1de1e921-413d-5de6-828a-2e813f20d73d,el,Κριθαράκι,kritharaki (orzo),"kritharaki (orzo), rice-grain-shaped pasta",Grains and grain-based products → Pasta (Raw)
+d0f9c286-72fe-50d5-bc71-325ba24dfdbd,el,Σκιουφικτό,skioufichto,"skioufichto, hand-twisted Cretan pasta",Grains and grain-based products → Pasta (Raw)
+371ff687-8871-56ef-a7ab-e8e6a1874522,el,Βίδες,fusilli,"vides, short spiral (fusilli) pasta",Grains and grain-based products → Pasta (Raw)
+19826418-fdf7-5e6b-97a8-6b12913b5fb4,el,Μακαρόνια,macaroni,"makaronia, macaroni / long dried pasta",Grains and grain-based products → Pasta (Raw)
+7efe92ea-229b-5e7e-b909-604571dbfe0f,el,Σπαγγετίνη,spaghettini,"spaghettini, thin spaghetti",Grains and grain-based products → Pasta (Raw)
+cfa82b8a-859d-5419-85b0-e53f0c745d80,el,Καλογερικό,kalogeriko,"kalogeriko, large Cretan tube pasta",Grains and grain-based products → Pasta (Raw)
+b1ccc967-c873-50cc-9f49-f55bb7e120b7,el,Χόντρος,chondros,"chondros, coarsely cracked durum wheat (like bulgur)",Grains and grain-based products → Grains for human consumption
+d7a88446-f7ae-5a30-b3fa-f1d1fb853c15,el,Ξινόχοντρος,xinochondros,"xinochondros, cracked wheat fermented with soured sheep's milk",Grains and grain-based products → Grains for human consumption
+9aba83f4-eb33-5015-8d42-679c01a30ce1,el,Τραχανάς,trahana,"trahana, fermented cracked-wheat-and-milk granules for soup (sour or sweet)",Grains and grain-based products → Grains for human consumption
+95482101-48c0-5d9f-b48f-f76cc8fad2ad,el,Ακτινίδιο,kiwi,kiwifruit,Fruit and fruit products → Miscellaneous fruits → Kiwi (Actinidia deliciosa syn. A. chinensis)
+b0964ec5-5340-53fc-84ab-1a6e3ff9ca9b,el,Βερύκοκο,apricot,apricot,Fruit and fruit products → Stone fruits → Apricots (Prunus armeniaca)
+89b4c3a3-35fb-5126-8c86-c31a012d1636,el,Καρπούζι,watermelon,watermelon; a cucurbit — SAFAD files it under fruiting vegetables,Vegetables and vegetable products (including fungi) → Fruiting vegetables → Watermelons (Citrullus lanatus)
+ddd23e14-8726-5cce-87f2-4fbb85a806b1,el,Κεράσι,cherry,sweet cherry,Fruit and fruit products → Stone fruits → Sweet cherry (Prunus avium)
+6e9647a6-8b38-5b74-985d-cdc3022ae7ba,el,Μήλο,apple,apple,Fruit and fruit products → Pome fruits → Apple (Malus domesticus)
+76296cbd-d49a-5b80-a9af-fa632b2c28a8,el,Πορτοκάλι,orange,orange,Fruit and fruit products → Citrus fruits → Oranges (Citrus sinensis)
+1722866b-9cce-592d-afe1-376ae498c2c7,el,Μπανάνα,banana,banana,Fruit and fruit products → Miscellaneous fruits → Bananas (Musa × paradisica)
+a404d7e3-937a-5584-b22b-3afd3bd4b717,el,Πεπόνι,melon,melon; a cucurbit — SAFAD files it under fruiting vegetables,Vegetables and vegetable products (including fungi) → Fruiting vegetables → Melons (Cucumis melo)
+e7de6d67-e4f2-5b67-b387-dbede6bf423d,el,Ροδάκινο,peach,peach,Fruit and fruit products → Stone fruits → Peaches (Prunus persica)
+8e62cabd-8617-520e-b1af-63cf7f92cd62,el,Νεκταρίνι,nectarine,"nectarine, a smooth-skinned peach (Prunus persica)",Fruit and fruit products → Stone fruits → Peaches (Prunus persica)
+c7dbb534-5d44-5870-a80d-33740896cbb6,el,Αγγινάρα,artichoke,globe artichoke,Vegetables and vegetable products (including fungi) → Stem vegetables (Fresh) → Globe artichokes (Cynara scolymus)
+661a2632-45e4-554e-9c4e-2a40245aa3f4,el,Ατζούρι,atzouri (snake melon),"Cretan snake melon (Cucumis melo var. flexuosus), eaten like a cucumber",Vegetables and vegetable products (including fungi) → Fruiting vegetables
+19911880-2a49-54c7-ace2-1abeb3bce8ad,el,Βλήτα,amaranth greens,"amaranth greens (Amaranthus), a summer horta eaten boiled",Vegetables and vegetable products (including fungi) → Leaf vegetables
+60c2eb21-7ba5-5a5a-b0e2-941b411d7fd8,el,Αμπελόφυλλα,vine leaves,"grape/vine leaves, used to wrap dolmades",Vegetables and vegetable products (including fungi) → Leaf vegetables
+61175ed8-827d-50db-af37-29383ce13a3e,el,Δυόσμος,spearmint,"spearmint (Mentha spicata), a culinary herb","Herbs, spices and condiments → Herbs → Mint"
+2e020bef-b9de-5a07-8467-39d476545b82,el,Καρότο,carrot,carrot,Vegetables and vegetable products (including fungi) → Root vegetables → Carrots (Daucus carota)
+d5ccdd4b-2c9c-56a9-b176-75b6d0f968cf,el,Κολοκυθοανθός,courgette blossom,"courgette/zucchini flower (Cucurbita pepo), stuffed or fried",Vegetables and vegetable products (including fungi) → Fruiting vegetables
+9ec29582-bbd0-5ea3-9266-94c5a9fc25d2,el,Κρεμμύδι φρέσκο,spring onion,fresh spring/salad onion; SAFAD groups it with chives,"Herbs, spices and condiments → Herbs"
+18fffee2-c78e-54db-b9f2-c834e4fcb77b,el,Κρεμμύδι,onion,dry bulb onion,"Vegetables and vegetable products (including fungi) → Bulb vegetables → Onions, bulb (Allium cepa)"
+a3422bf1-c329-5ceb-82e4-d2971feafca0,el,Μανιτάρι,mushroom,cultivated white/button mushroom (Agaricus); no cultivated-mushroom archetype in WP3,Vegetables and vegetable products (including fungi)
+36ba1c27-79b8-506e-b3e5-bb61ad1cd13f,el,Πλευρώτος,oyster mushroom,oyster mushroom (Pleurotus ostreatus); no cultivated-mushroom archetype in WP3,Vegetables and vegetable products (including fungi)
+df9bd4cf-8a14-56c0-bb22-918a5d49165b,el,Μαρούλι,lettuce,lettuce; Greek marouli is a cos/romaine type,"Vegetables and vegetable products (including fungi) → Leaf vegetables → Lettuce, excluding Iceberg-type lettuce (Lactuca sativa)"
+90f3b008-27a1-577e-b173-1fcf0295f376,el,Ξυλάγγουρο,xylangouro (Armenian cucumber),"Cretan Armenian cucumber/snake melon (Cucumis melo var. flexuosus), eaten like a cucumber",Vegetables and vegetable products (including fungi) → Fruiting vegetables
+fe262f30-427f-56fb-832d-426b163af6b5,el,Πατάτα,potato,potato; SAFAD files it under starchy roots and tubers,Starchy roots and tubers → Potatoes and potatoes products
+0efce2e6-473b-5b86-ba84-69a1f80157af,el,Πράσο,leek,leek,Vegetables and vegetable products (including fungi) → Stem vegetables (Fresh) → Leek (Allium porrum)
+a31e6926-7a77-54be-aec4-559f2e3f9071,el,Ρόκα,rocket,rocket / arugula,"Vegetables and vegetable products (including fungi) → Leaf vegetables → Rocket, Rucola (Eruca sativa, Diplotaxis spec.)"
+df12b1e2-75a0-5db1-a9ee-f5f2ddf3fac1,el,Σαλιγκάρι,snail,"edible land snail (Helix); an animal, not a vegetable","Fish and other seafood (including amphibians, reptiles, snails and insects) → Amphibians, reptiles, snails, insects → Snail (Helix sp.)"
+1386f1ad-e42e-5002-9537-9d65b46c2fd1,el,Σπανάκι,spinach,spinach,Vegetables and vegetable products (including fungi) → Leaf vegetables → Spinach (fresh) (Spinacia oleracea)
+d0c0f35f-6115-5633-84d1-ac9f1fa0467f,el,Τομάτα,tomato,tomato,Vegetables and vegetable products (including fungi) → Fruiting vegetables → Tomatoes (Lycopersicum esculentum)
+36b6a566-a5e4-5f76-bfb6-674f366c21d1,el,Τσαούλια,flat green beans,Cretan flat-pod fresh green beans (Phaseolus vulgaris),"Legumes, nuts and oilseeds → Legumes, beans, green, without pods → Beans, green, without pods (Phaseolus vulgaris)"
+534254f5-a21e-5626-82dc-d28e7919899f,el,Φασόλια μπαρμπούνια,borlotti beans,fresh borlotti/cranberry shelling beans (Phaseolus vulgaris),"Legumes, nuts and oilseeds → Legumes, beans, green, without pods → Beans, green, without pods (Phaseolus vulgaris)"
+85f25393-1425-5fac-9b40-788742876f64,el,Αλμυρά,glasswort,"glasswort/salicornia (armyra), a coastal halophyte eaten as 'salty greens'",Vegetables and vegetable products (including fungi) → Sea weeds
+6fb1a84c-b09e-5dba-89a0-01baef665f86,el,Τοματίνι,cherry tomato,cherry/cocktail tomato,Vegetables and vegetable products (including fungi) → Fruiting vegetables → Tomatoes (Lycopersicum esculentum)
+8d6a73b7-c724-567d-8a27-b7c9ba3c81e6,el,Αγγούρι,cucumber,cucumber,Vegetables and vegetable products (including fungi) → Fruiting vegetables → Cucumbers (Cucumis sativus)
+4dd40d54-1ddc-559b-b36d-e14f2befafe3,el,Λάχανο,cabbage,white/head cabbage,Vegetables and vegetable products (including fungi) → Brassica vegetables → Head cabbage (Brassica oleracea convar. capitata)
+2c61ecc4-1383-5774-9cf8-efedae6344b8,el,Μελιτζάνα,aubergine,aubergine / eggplant,Vegetables and vegetable products (including fungi) → Fruiting vegetables → Aubergines (egg plants) (Solanum melongena)
+388622d0-ad89-51c8-8f5f-19a5d09e5ad9,el,Παντζάρι,beetroot,beetroot,Vegetables and vegetable products (including fungi) → Root vegetables → Beetroot (Beta vulgaris subsp. vulgaris)
+f1bc00bc-a25d-521b-81b7-8e6f7a1e5f6d,el,Πιπεριά,pepper,sweet pepper (bell / paprika),"Vegetables and vegetable products (including fungi) → Fruiting vegetables → Peppers, paprika (Capsicum annuum, var. grossum and var. longum)"
+e61d4b4e-cc36-561f-88b7-6f38cea60286,el,Καλαμπόκι,sweetcorn,"sweetcorn, fresh on the cob",Vegetables and vegetable products (including fungi) → Fruiting vegetables → Sweet corn (Zea mays var. saccharata)
+74f0230d-5b9a-5b1a-a480-7578c48e97f2,el,Σκόρδο,garlic,garlic,"Vegetables and vegetable products (including fungi) → Bulb vegetables → Garlic, bulb (Allium sativum)"
+76c9a4bf-67d1-536e-9b48-eafb9bfa7ead,el,Άνηθος,dill,"dill, a culinary herb","Herbs, spices and condiments → Herbs → Dill, herb (Anethum graveolens)"
+ad040d2f-1672-5aff-a746-7757948c187e,el,Μαϊντανός,parsley,"parsley, a culinary herb","Herbs, spices and condiments → Herbs → Parsley, herb (Petroselinum crispum)"
+c6cb3812-14e8-5a0b-be63-a0c111effb5a,el,Σέλινο,celery,Greek leaf/soup celery (Apium graveolens),Vegetables and vegetable products (including fungi) → Stem vegetables (Fresh) → Celery (Apium graveolens var. dulce)
