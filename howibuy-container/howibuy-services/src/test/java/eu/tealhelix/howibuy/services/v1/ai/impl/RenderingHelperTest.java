@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
+import eu.tealhelix.howibuy.services.model.ImmutableFoodTerm;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import org.junit.jupiter.api.Test;
 
@@ -57,5 +58,31 @@ class RenderingHelperTest {
 	void treatsAnEmptyOrNullReplyAsMalformed() {
 		assertEquals(new AiSelection.Malformed(""), RenderingHelper.parseSelection("", 4));
 		assertEquals(new AiSelection.Malformed(""), RenderingHelper.parseSelection(null, 4));
+	}
+
+	@Test
+	void renderEnrichmentReturnsEmptyStringForNoTerms() {
+		assertEquals("", RenderingHelper.renderEnrichment(List.of()));
+		assertEquals("", RenderingHelper.renderEnrichment(null));
+	}
+
+	@Test
+	void renderEnrichmentListsEachTermWithItsCanonicalDescriptionAndCategoryPath() {
+		var anthotyros = ImmutableFoodTerm.builder()
+				.term("Ανθότυρος").canonicalEn("anthotyros")
+				.description("Greek whey cheese, similar to ricotta or mizithra")
+				.categoryHint("Milk and dairy products → Cheese").build();
+		assertEquals(
+				"### Recognized terms\n\n- Ανθότυρος → anthotyros: Greek whey cheese, similar to ricotta or mizithra (category: Milk and dairy products → Cheese)\n",
+				RenderingHelper.renderEnrichment(List.of(anthotyros)));
+	}
+
+	@Test
+	void renderEnrichmentOmitsTheCategoryWhenAbsent() {
+		var vlita = ImmutableFoodTerm.builder()
+				.term("Βλήτα").canonicalEn("amaranth greens").description("a leafy green vegetable").build();
+		assertEquals(
+				"### Recognized terms\n\n- Βλήτα → amaranth greens: a leafy green vegetable\n",
+				RenderingHelper.renderEnrichment(List.of(vlita)));
 	}
 }

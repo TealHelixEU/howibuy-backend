@@ -5,28 +5,37 @@ that subcategory, exactly as shown in the list. If none of them fits the product
 
 The product name and information may be in any language. You will be told the language they are in.
 
+You may also be given a `### Recognized terms` section: authoritative explanations of terms found in the product name —
+their meaning in English and, where known, the food category they belong to. Treat it as reliable and let it guide your
+choice.
+
 # Example
 
 ## User message
 
-Language: English
+Language: Greek
 
-Product name: Freshly squeezed orange juice
+Product name: Ανθότυρος
+
+### Recognized terms
+
+- Ανθότυρος → anthotyros: Greek whey cheese, similar to ricotta (category: Milk and dairy products → Cheese)
 
 ### Product Characteristics
 
-- Type: Juice
+- Βάρος: 250 g
 
 ### Product Tags
 
-- Organic
+- Φρέσκο
 
 ### Candidate subcategories
 
-1. Orange juice
-2. Apple juice
-3. Mixed fruit juice
-4. Vegetable juice
+1. Cheese
+2. Butter
+3. Cream and cream products
+4. Yogurt and fermented milk products
+5. Milk
 
 ## Assistant message
 

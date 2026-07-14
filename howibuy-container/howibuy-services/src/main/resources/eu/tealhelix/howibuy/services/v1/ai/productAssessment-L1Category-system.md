@@ -4,17 +4,25 @@ of that category, exactly as shown in the list. If no category matches the produ
 
 The product name and information may be in any language. You will be told the language they are in.
 
+You may also be given a `### Recognized terms` section: authoritative explanations of terms found in the product name —
+their meaning in English and, where known, the food category they belong to. Treat it as reliable and let it guide your
+choice.
+
 # Example
 
 ## User message
 
 Language: Greek
 
-Product name: Φέτα
+Product name: Βλήτα
+
+### Recognized terms
+
+- Βλήτα → amaranth greens: a leafy green vegetable (category: Vegetables and vegetable products (including fungi) → Leaf vegetables)
 
 ### Product Characteristics
 
-- Κατηγορία: Γαλακτοκομικά
+- Βάρος: 500 g
 
 ### Product Tags
 
@@ -45,4 +53,4 @@ Product name: Φέτα
 
 ## Assistant message
 
-14
+20

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -20,10 +22,13 @@ import eu.tealhelix.howibuy.dao.ArchetypeCategoryDao;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
+import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProduct;
+import eu.tealhelix.howibuy.services.model.ImmutableFoodTerm;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
+import eu.tealhelix.howibuy.services.v1.enrichment.FoodTermGlossary;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductData;
@@ -32,6 +37,7 @@ import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
+import org.jboss.weld.junit5.auto.ExcludeBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -82,6 +88,11 @@ public class SingleProductAssessorTest {
 	ProductAssessmentAiFacade productAssessmentAiFacade;
 
 	@Produces
+	@Mock
+	@ExcludeBean
+	FoodTermGlossary foodTermGlossary;
+
+	@Produces
 	@RegisterExtension
 	private MockReactivePersistenceContextFactory mockPersistenceContextFactory = new MockReactivePersistenceContextFactory();
 
@@ -90,6 +101,7 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void descendsAllFourLevelsAndReportsTheMatchedPath() {
+		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -109,7 +121,29 @@ public class SingleProductAssessorTest {
 	}
 
 	@Test
+	void feedsTheGlossaryMatchesForTheProductLanguageIntoEveryLevel() {
+		var vlita = ImmutableFoodTerm.builder()
+				.term("Βλήτα").canonicalEn("amaranth greens").description("a leafy green vegetable").build();
+		mockGlossary(List.of(vlita));
+		mockL1Categories();
+		mockExtractL1(FIRST);
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory(FIRST, FIRST);
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct(FIRST);
+
+		assess();
+
+		verify(foodTermGlossary).match(eq("en"), eq("Freshly squeezed orange juice"));
+		verify(productAssessmentAiFacade).extractL1Category(any(), any(), eq(List.of(vlita)));
+		verify(productAssessmentAiFacade, times(2)).extractSubcategory(any(), any(), eq(List.of(vlita)));
+		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), eq(List.of(vlita)));
+	}
+
+	@Test
 	void reportsFailureToIdentifyWhenAiFindsNoSubcategory() {
+		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -126,6 +160,7 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void reportsFailureToIdentifyWhenAiFindsNoArchetypeProduct() {
+		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -145,6 +180,7 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void reportsFailureOtherWhenAiPicksACategoryOutsideTheCandidates() {
+		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(new AiSelection.Malformed("Confectionery"));
 
@@ -155,6 +191,7 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void reportsFailureOtherWhenAiPicksAProductOutsideTheCandidates() {
+		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -176,6 +213,10 @@ public class SingleProductAssessorTest {
 		return sut.assessOne(PRODUCT).await().atMost(WAIT);
 	}
 
+	private void mockGlossary(List<FoodTerm> matches) {
+		when(foodTermGlossary.match(any(), any())).thenReturn(Uni.createFrom().item(matches));
+	}
+
 	private void mockL1Categories() {
 		when(archetypeCategoryDao.retrieveL1Categories(any())).thenReturn(Uni.createFrom().item(L1_CATEGORIES));
 	}
@@ -189,21 +230,21 @@ public class SingleProductAssessorTest {
 	}
 
 	private void mockExtractL1(AiSelection pick) {
-		when(productAssessmentAiFacade.extractL1Category(any(), any())).thenReturn(Uni.createFrom().item(pick));
+		when(productAssessmentAiFacade.extractL1Category(any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
 	}
 
 	private void mockExtractSubcategory(AiSelection pick) {
-		when(productAssessmentAiFacade.extractSubcategory(any(), any())).thenReturn(Uni.createFrom().item(pick));
+		when(productAssessmentAiFacade.extractSubcategory(any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
 	}
 
 	private void mockExtractSubcategory(AiSelection pick1, AiSelection pick2) {
-		when(productAssessmentAiFacade.extractSubcategory(any(), any()))
+		when(productAssessmentAiFacade.extractSubcategory(any(), any(), any()))
 				.thenReturn(Uni.createFrom().item(pick1))
 				.thenReturn(Uni.createFrom().item(pick2));
 	}
 
 	private void mockExtractArchetypeProduct(AiSelection pick) {
-		when(productAssessmentAiFacade.extractArchetypeProduct(any(), any())).thenReturn(Uni.createFrom().item(pick));
+		when(productAssessmentAiFacade.extractArchetypeProduct(any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
 	}
 
 	private static ArchetypeCategory category(UUID id, String name) {

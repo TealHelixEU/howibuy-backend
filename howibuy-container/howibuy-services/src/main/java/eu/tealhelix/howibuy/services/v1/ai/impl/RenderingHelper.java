@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 
 /**
@@ -20,6 +21,7 @@ import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 class RenderingHelper {
 	public static final String CHARACTERISTICS_HEADER = "### Product Characteristics\n\n";
 	public static final String TAGS_HEADER = "### Product Tags\n\n";
+	public static final String ENRICHMENT_HEADER = "### Recognized terms\n\n";
 
 	static final String NO_MATCH_TOKEN = "NONE";
 	private static final Pattern LEADING_INDEX = Pattern.compile("^\\s*(\\d{1,6})");
@@ -40,6 +42,18 @@ class RenderingHelper {
 		return tags.stream()
 				.map(t -> "- " + t)
 				.collect(Collectors.joining("\n", TAGS_HEADER, "\n"));
+	}
+
+	public static String renderEnrichment(List<FoodTerm> recognizedTerms) {
+		if (recognizedTerms == null || recognizedTerms.isEmpty()) return "";
+		return recognizedTerms.stream()
+				.map(RenderingHelper::renderRecognizedTerm)
+				.collect(Collectors.joining("\n", ENRICHMENT_HEADER, "\n"));
+	}
+
+	private static String renderRecognizedTerm(FoodTerm term) {
+		String category = term.getCategoryHint().map(hint -> " (category: " + hint + ")").orElse("");
+		return "- " + term.getTerm() + " → " + term.getCanonicalEn() + ": " + term.getDescription() + category;
 	}
 
 	public static String renderCandidates(List<String> candidates) {

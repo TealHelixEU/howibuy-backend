@@ -6,23 +6,32 @@ must reply exactly with NONE.
 
 The product name and information may be in any language. You will be told the language they are in.
 
+You may also be given a `### Recognized terms` section: authoritative explanations of terms found in the product name —
+their meaning in English and, where known, the food category they belong to. Treat it as reliable and let it guide your
+choice.
+
 # Example
 
 ## User message
 
-Language: English
+Language: Greek
 
-Product name: Whole milk 3.5% fat
+Product name: Γραβιέρα
+
+### Recognized terms
+
+- Γραβιέρα → graviera: aged hard cheese, Gruyère-style (category: Milk and dairy products → Cheese)
 
 ### Product Characteristics
 
-- Type: Milk
+- Βάρος: 300 g
 
 ### Possible products
 
-1. Whole milk
-2. Semi-skimmed milk
-3. Skimmed milk
+1. Hard cheese
+2. Soft cheese
+3. Fresh cheese
+4. Processed cheese
 
 ## Assistant message
 

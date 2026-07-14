@@ -2,6 +2,8 @@ Language: {lang}
 
 Product name: {name}
 
+{enrichment}
+
 {characteristics}
 
 {tags}

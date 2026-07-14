@@ -9,6 +9,7 @@ import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -17,8 +18,10 @@ import eu.tealhelix.howibuy.dao.ArchetypeCategoryDao;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
+import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
+import eu.tealhelix.howibuy.services.v1.enrichment.FoodTermGlossary;
 import eu.tealhelix.howibuy.v1.model.ImmutableAlternativeForProduct;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcomeDiagnostics;
@@ -46,18 +49,21 @@ public class SingleProductAssessor {
 	private final ProductAssessmentAiFacade productAssessmentAiFacade;
 	private final ArchetypeCategoryDao archetypeCategoryDao;
 	private final ArchetypeProductDao archetypeProductDao;
+	private final FoodTermGlossary foodTermGlossary;
 
 	@Inject
 	public SingleProductAssessor(
 			ReactivePersistenceContextFactory persistenceContextFactory,
 			ProductAssessmentAiFacade productAssessmentAiFacade,
 			ArchetypeCategoryDao archetypeCategoryDao,
-			ArchetypeProductDao archetypeProductDao
+			ArchetypeProductDao archetypeProductDao,
+			FoodTermGlossary foodTermGlossary
 	) {
 		this.persistenceContextFactory = persistenceContextFactory;
 		this.productAssessmentAiFacade = productAssessmentAiFacade;
 		this.archetypeCategoryDao = archetypeCategoryDao;
 		this.archetypeProductDao = archetypeProductDao;
+		this.foodTermGlossary = foodTermGlossary;
 	}
 
 	/**
@@ -73,25 +79,57 @@ public class SingleProductAssessor {
 
 	private Uni<ProductAssessmentOutcome> assessOneWithoutHandlingFailures(ProductData productData) {
 		return forc(
+				recognizedTermsFor(productData),
+				recognizedTerms -> descendCategories(productData, recognizedTerms)
+		);
+	}
+
+	/**
+	 * Looks up the glossary terms occurring in the product name and logs them, so the curated knowledge fed to the
+	 * classifier can be audited from the logs and the dataset corrected. The same enrichment is shown to the AI at every
+	 * level of the descent.
+	 */
+	private Uni<List<FoodTerm>> recognizedTermsFor(ProductData productData) {
+		String language = productData.getLanguage().getLanguage();
+		return foodTermGlossary.match(language, productData.getName())
+				.invoke(recognizedTerms -> logEnrichment(language, productData.getName(), recognizedTerms));
+	}
+
+	private Uni<ProductAssessmentOutcome> descendCategories(ProductData productData, List<FoodTerm> recognizedTerms) {
+		return forc(
 				retrieveL1Categories(),
 				l1categories -> pick(
-						productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories)),
+						productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories), recognizedTerms),
 						l1categories, "category", diagnostics(null, null, null, null)
 				),
 				(_, l1category) -> retrieveSubcategoriesOf(l1category.getId()),
 				(_, l1category, l2categories) -> pick(
-						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories)),
+						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories), recognizedTerms),
 						l2categories, "category", diagnostics(l1category.getName(), null, null, null)
 				),
 				(_, l1category, _, l2category) -> retrieveSubcategoriesOf(l2category.getId()),
 				(_, l1category, _, l2category, l3categories) -> pick(
-						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories)),
+						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories), recognizedTerms),
 						l3categories, "category", diagnostics(l1category.getName(), l2category.getName(), null, null)
 				),
 				(_, l1category, _, l2category, _, l3category) -> retrieveProductsInCategory(l3category.getId()),
 				(_, l1category, _, l2category, _, l3category, products) ->
-						extractProduct(productData, l1category.getName(), l2category.getName(), l3category.getName(), products)
+						extractProduct(productData, l1category.getName(), l2category.getName(), l3category.getName(), products, recognizedTerms)
 		);
+	}
+
+	private static void logEnrichment(String language, String name, List<FoodTerm> recognizedTerms) {
+		if (recognizedTerms.isEmpty()) {
+			LOG.debug("Product enrichment found no glossary terms, language: {}, name: '{}'", language, name);
+		} else {
+			LOG.info("Product enrichment glossary matches, language: {}, name: '{}', matches: {}", language, name, describeMatches(recognizedTerms));
+		}
+	}
+
+	private static String describeMatches(List<FoodTerm> recognizedTerms) {
+		return recognizedTerms.stream()
+				.map(term -> term.getTerm() + " → " + term.getCanonicalEn() + term.getCategoryHint().map(hint -> " (" + hint + ")").orElse(""))
+				.collect(Collectors.joining("; ", "[", "]"));
 	}
 
 	private ProductAssessmentOutcome outcomeFor(ProductData productData, ProductNotAssessedException failure) {
@@ -123,9 +161,9 @@ public class SingleProductAssessor {
 		});
 	}
 
-	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products) {
+	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products, List<FoodTerm> recognizedTerms) {
 		ProductAssessmentOutcomeDiagnostics diagnostics = diagnostics(l1name, l2name, l3name, null);
-		return pick(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products)), products, "product", diagnostics)
+		return pick(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products), recognizedTerms), products, "product", diagnostics)
 				.flatMap(product -> successfulAssessment(productData, diagnostics(l1name, l2name, l3name, product.getName())));
 	}
 
