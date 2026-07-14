@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -207,6 +208,52 @@ public class SingleProductAssessorTest {
 		assertEquals("Juices", outcome.getDiagnostics().getL2Category());
 		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category());
 		assertNull(outcome.getDiagnostics().getProduct());
+	}
+
+	@Test
+	void resolvesEachCategoryLevelFromTheGlossaryHintWithoutCallingTheAi() {
+		var term = ImmutableFoodTerm.builder()
+				.term("orange").canonicalEn("orange").description("a citrus fruit")
+				.categoryHint("Beverages → Juices → Orange juice")
+				.build();
+		mockGlossary(List.of(term));
+		mockL1Categories();
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct(FIRST);
+
+		var outcome = assess();
+
+		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType());
+		assertEquals("Beverages", outcome.getDiagnostics().getL1Category());
+		assertEquals("Juices", outcome.getDiagnostics().getL2Category());
+		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category());
+		assertEquals("Tropicana", outcome.getDiagnostics().getProduct());
+		verify(productAssessmentAiFacade, never()).extractL1Category(any(), any(), any());
+		verify(productAssessmentAiFacade, never()).extractSubcategory(any(), any(), any());
+		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), any());
+	}
+
+	@Test
+	void fallsBackToTheAiForALevelWhereRecognizedTermsHintConflictingCandidates() {
+		var juice = ImmutableFoodTerm.builder()
+				.term("juice").canonicalEn("juice").description("a drink").categoryHint("Beverages").build();
+		var milk = ImmutableFoodTerm.builder()
+				.term("milk").canonicalEn("milk").description("a dairy drink").categoryHint("Dairy").build();
+		mockGlossary(List.of(juice, milk));
+		mockL1Categories();
+		mockExtractL1(FIRST);
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory(FIRST, FIRST);
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct(FIRST);
+
+		var outcome = assess();
+
+		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType());
+		verify(productAssessmentAiFacade).extractL1Category(any(), any(), any());
 	}
 
 	private ProductAssessmentOutcome assess() {

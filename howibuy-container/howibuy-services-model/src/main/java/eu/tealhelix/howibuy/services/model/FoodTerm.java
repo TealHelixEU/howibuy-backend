@@ -1,5 +1,7 @@
 package eu.tealhelix.howibuy.services.model;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import org.immutables.value.Value;
@@ -25,4 +27,17 @@ public interface FoodTerm {
 	 * the classification descent.
 	 */
 	Optional<String> getCategoryHint();
+
+	/**
+	 * The {@link #getCategoryHint() category hint} split into its node names, top-level first, or an empty list when no
+	 * hint is set. E.g. {@code "Milk and dairy products → Cheese"} yields {@code ["Milk and dairy products", "Cheese"]}.
+	 */
+	default List<String> getCategoryHintPath() {
+		return getCategoryHint()
+				.map(hint -> Arrays.stream(hint.split("→"))
+						.map(String::trim)
+						.filter(node -> !node.isEmpty())
+						.toList())
+				.orElseGet(List::of);
+	}
 }

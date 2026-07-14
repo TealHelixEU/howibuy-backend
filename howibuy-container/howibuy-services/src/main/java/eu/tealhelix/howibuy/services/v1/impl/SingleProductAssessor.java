@@ -8,7 +8,10 @@ import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -98,24 +101,56 @@ public class SingleProductAssessor {
 	private Uni<ProductAssessmentOutcome> descendCategories(ProductData productData, List<FoodTerm> recognizedTerms) {
 		return forc(
 				retrieveL1Categories(),
-				l1categories -> pick(
-						productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories), recognizedTerms),
-						l1categories, "category", diagnostics(null, null, null, null)
+				l1categories -> resolveCategory(0, l1categories, recognizedTerms,
+						() -> productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories), recognizedTerms),
+						diagnostics(null, null, null, null)
 				),
 				(_, l1category) -> retrieveSubcategoriesOf(l1category.getId()),
-				(_, l1category, l2categories) -> pick(
-						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories), recognizedTerms),
-						l2categories, "category", diagnostics(l1category.getName(), null, null, null)
+				(_, l1category, l2categories) -> resolveCategory(1, l2categories, recognizedTerms,
+						() -> productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories), recognizedTerms),
+						diagnostics(l1category.getName(), null, null, null)
 				),
 				(_, l1category, _, l2category) -> retrieveSubcategoriesOf(l2category.getId()),
-				(_, l1category, _, l2category, l3categories) -> pick(
-						productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories), recognizedTerms),
-						l3categories, "category", diagnostics(l1category.getName(), l2category.getName(), null, null)
+				(_, l1category, _, l2category, l3categories) -> resolveCategory(2, l3categories, recognizedTerms,
+						() -> productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories), recognizedTerms),
+						diagnostics(l1category.getName(), l2category.getName(), null, null)
 				),
 				(_, l1category, _, l2category, _, l3category) -> retrieveProductsInCategory(l3category.getId()),
 				(_, l1category, _, l2category, _, l3category, products) ->
 						extractProduct(productData, l1category.getName(), l2category.getName(), l3category.getName(), products, recognizedTerms)
 		);
+	}
+
+	/**
+	 * Chooses the category for one level of the descent. When the recognized glossary terms unambiguously point to one
+	 * of the candidates (see {@link #glossaryHintedCategory}), that candidate is taken directly and the AI is not
+	 * consulted for this level; otherwise the choice is delegated to the AI via {@code aiCall}.
+	 */
+	private Uni<ArchetypeCategory> resolveCategory(
+			int level, List<ArchetypeCategory> candidates, List<FoodTerm> recognizedTerms,
+			Supplier<Uni<AiSelection>> aiCall, ProductAssessmentOutcomeDiagnostics diagnosticsSoFar) {
+		return glossaryHintedCategory(level, candidates, recognizedTerms)
+				.map(category -> Uni.createFrom().item(category))
+				.orElseGet(() -> pick(aiCall.get(), candidates, "category", diagnosticsSoFar));
+	}
+
+	/**
+	 * The candidate uniquely named by the recognized terms' category hints at this level, if any. Each hint is a
+	 * category path from L1 downward; the node at position {@code level} is the category it prescribes here. The choice
+	 * is left to the AI (empty result) unless exactly one candidate is named — so a level with no hint, or with hints
+	 * naming more than one candidate, still goes to the AI.
+	 */
+	private static Optional<ArchetypeCategory> glossaryHintedCategory(
+			int level, List<ArchetypeCategory> candidates, List<FoodTerm> recognizedTerms) {
+		Set<String> hintedNames = recognizedTerms.stream()
+				.map(FoodTerm::getCategoryHintPath)
+				.filter(path -> path.size() > level)
+				.map(path -> path.get(level))
+				.collect(Collectors.toSet());
+		List<ArchetypeCategory> named = candidates.stream()
+				.filter(candidate -> hintedNames.contains(candidate.getName()))
+				.toList();
+		return named.size() == 1 ? Optional.of(named.get(0)) : Optional.empty();
 	}
 
 	private static void logEnrichment(String language, String name, List<FoodTerm> recognizedTerms) {
