@@ -1,15 +1,15 @@
-id,lang,term,canonical_en,description,category_hint
-d7d48775-8b66-51ad-a562-92030f5e176b,el,Καφές,coffee,coffee; Greek (finely ground) and French (filter) styles,Vegetables and vegetable products (including fungi) → Coffee beans and coffee products (Solid)
-d46cc7a2-06ed-5929-9530-2721b00bd491,el,Τσάι,tea,"tea — green, black or herbal infusion",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-7047592b-5e81-5b69-80e9-e7dc6f4f9b53,el,Αφέψημα,infusion (afepsima),"afepsima, a herbal infusion or decoction",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-f490fe15-952c-5b50-816e-a509c69e245f,el,Δίκταμος,dittany,"diktamo, Cretan dittany (Origanum dictamnus), an endemic herb brewed as tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-aa0329f1-b841-589d-a94e-003e5f3a7659,el,Φασκόμηλο,sage,"faskomilo, sage brewed as a herbal tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-22cafbcf-ae85-5e62-a666-34b48f4e7375,el,Χαμομήλι,chamomile,chamomile herbal tea,Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-da508c32-7ee0-51aa-894d-cc56658ba2e6,el,Λουίζα,lemon verbena,"louiza, lemon verbena herbal tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-1faadfba-fdf5-5618-8cf4-f841b9720226,el,Μαλοτήρα,mountain tea,"malotira, Cretan mountain tea (Sideritis syriaca)",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-d82af3d8-c407-5490-9b42-11370645a49e,el,Τσάι του βουνού,mountain tea,"tsai tou vounou, Greek mountain tea (Sideritis)",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-dfa5a196-0c2d-5b6f-aa12-09e4b5992981,el,Σαρανταδέντρι,sarantadentri,"sarantadentri, a Cretan aromatic herb used for infusions",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-c0b7b5c3-6f5b-5be9-926b-5e9168a38d2f,el,Βαλεριάνα,valerian,"valerian, a calming herbal infusion",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-ee238a0f-100d-52f6-b46e-e0fb02b72eaa,el,Μελισσόχορτο,lemon balm,"melissochorto, lemon balm herbal tea",Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-127ce8bd-b235-5fec-9751-66ef68e3bfa8,el,Ματζουράνα,marjoram,marjoram herbal tea,Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
-0bd9810f-a331-58ac-9220-e84776ab3616,el,Μέντα,mint,mint (spearmint) herbal tea,Non-alcoholic beverages (excepting milk based beverages) → Tea (Infusion)
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+d7d48775-8b66-51ad-a562-92030f5e176b,el,Καφές,coffee,coffee; Greek (finely ground) and French (filter) styles,Vegetables and vegetable products (including fungi),Coffee beans and coffee products (Solid),
+d46cc7a2-06ed-5929-9530-2721b00bd491,el,Τσάι,tea,"tea — green, black or herbal infusion",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+7047592b-5e81-5b69-80e9-e7dc6f4f9b53,el,Αφέψημα,infusion (afepsima),"afepsima, a herbal infusion or decoction",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+f490fe15-952c-5b50-816e-a509c69e245f,el,Δίκταμος,dittany,"diktamo, Cretan dittany (Origanum dictamnus), an endemic herb brewed as tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+aa0329f1-b841-589d-a94e-003e5f3a7659,el,Φασκόμηλο,sage,"faskomilo, sage brewed as a herbal tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+22cafbcf-ae85-5e62-a666-34b48f4e7375,el,Χαμομήλι,chamomile,chamomile herbal tea,Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+da508c32-7ee0-51aa-894d-cc56658ba2e6,el,Λουίζα,lemon verbena,"louiza, lemon verbena herbal tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+1faadfba-fdf5-5618-8cf4-f841b9720226,el,Μαλοτήρα,mountain tea,"malotira, Cretan mountain tea (Sideritis syriaca)",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+d82af3d8-c407-5490-9b42-11370645a49e,el,Τσάι του βουνού,mountain tea,"tsai tou vounou, Greek mountain tea (Sideritis)",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+dfa5a196-0c2d-5b6f-aa12-09e4b5992981,el,Σαρανταδέντρι,sarantadentri,"sarantadentri, a Cretan aromatic herb used for infusions",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+c0b7b5c3-6f5b-5be9-926b-5e9168a38d2f,el,Βαλεριάνα,valerian,"valerian, a calming herbal infusion",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+ee238a0f-100d-52f6-b46e-e0fb02b72eaa,el,Μελισσόχορτο,lemon balm,"melissochorto, lemon balm herbal tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+127ce8bd-b235-5fec-9751-66ef68e3bfa8,el,Ματζουράνα,marjoram,marjoram herbal tea,Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+0bd9810f-a331-58ac-9220-e84776ab3616,el,Μέντα,mint,mint (spearmint) herbal tea,Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),

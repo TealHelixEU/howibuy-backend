@@ -1,6 +1,6 @@
-id,lang,term,canonical_en,description,category_hint
-47ffb486-7adc-5ff0-8f0d-3fbcc88543af,el,Φασόλια,haricot beans,dried haricot (white) beans,"Legumes, nuts and oilseeds → Legumes, beans, dried"
-d7e8e80e-569a-59c0-a04e-f9c687d84e97,el,Φάβα,split peas,"fava, Greek dried yellow split peas (not broad/fava beans)","Legumes, nuts and oilseeds → Legumes, beans, dried"
-4fd27c83-49d8-50d3-af48-3f1ded84eebb,el,Ρεβίθια,chickpeas,dried chickpeas,"Legumes, nuts and oilseeds → Legumes, beans, dried"
-d993e0b9-c076-566b-a2da-558214c4ef3e,el,Φακές,lentils,dried lentils,"Legumes, nuts and oilseeds → Legumes, beans, dried"
-4cfc452e-c01f-5d27-ada7-cd148a03b8f5,el,Ρύζι,rice,"rice; Greek varieties incl. Carolina, glacé, nychaki and parboiled",Grains and grain-based products → Grains for human consumption
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+47ffb486-7adc-5ff0-8f0d-3fbcc88543af,el,Φασόλια,haricot beans,dried haricot (white) beans,"Legumes, nuts and oilseeds","Legumes, beans, dried",
+d7e8e80e-569a-59c0-a04e-f9c687d84e97,el,Φάβα,split peas,"fava, Greek dried yellow split peas (not broad/fava beans)","Legumes, nuts and oilseeds","Legumes, beans, dried",
+4fd27c83-49d8-50d3-af48-3f1ded84eebb,el,Ρεβίθια,chickpeas,dried chickpeas,"Legumes, nuts and oilseeds","Legumes, beans, dried",
+d993e0b9-c076-566b-a2da-558214c4ef3e,el,Φακές,lentils,dried lentils,"Legumes, nuts and oilseeds","Legumes, beans, dried",
+4cfc452e-c01f-5d27-ada7-cd148a03b8f5,el,Ρύζι,rice,"rice; Greek varieties incl. Carolina, glacé, nychaki and parboiled",Grains and grain-based products,Grains for human consumption,

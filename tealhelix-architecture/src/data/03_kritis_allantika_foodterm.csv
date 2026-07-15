@@ -1,10 +1,10 @@
-id,lang,term,canonical_en,description,category_hint
-e4fc19c7-8079-5179-9c46-296f4299a783,el,Ζαμπόν,ham,cooked pork ham (deli cold cut),Meat and meat products (including edible offal) → Preserved meat
-743f14d6-84a8-599d-bc99-21050c595eda,el,Σαλάμι,salami,dry-cured sausage (salami),Meat and meat products (including edible offal) → Sausages
-34d968f4-d396-567b-9699-7af519025f2a,el,Λουκάνικο,sausage,"sausage; Greek/Cretan styles, usually pork, often leek- or wine-flavoured",Meat and meat products (including edible offal) → Sausages
-0b418916-555f-5313-b72b-af5d55c60202,el,Φρανκφούρτης,frankfurter,"frankfurter, cooked smoked sausage",Meat and meat products (including edible offal) → Sausages
-1023c9ee-dc9b-5a44-87fb-91ec7b2e484e,el,Πάριζα,parizer / bologna,"parizer, a mortadella/bologna-style cooked sausage",Meat and meat products (including edible offal) → Sausages
-7039a69d-88c9-5955-900a-3e48fe07f8c8,el,Μπέικον,bacon,"bacon, cured and smoked pork",Meat and meat products (including edible offal) → Preserved meat
-6a5d78b5-0d3a-5502-866d-bc5439d6e7eb,el,Πανσέτα,pancetta / pork belly,cured or smoked pork belly,Meat and meat products (including edible offal) → Preserved meat
-f3e25b51-4fa5-5829-b401-02af3e85b94d,el,Απάκι,apaki,"apaki, Cretan lean pork marinated in vinegar and cold-smoked over aromatic herbs",Meat and meat products (including edible offal) → Preserved meat
-e8cf5dcc-f4dc-5fbf-9940-b5b9f6becb77,el,Σύγκλινο,syglino,"syglino (sfakiano), Cretan pork salt-cured, smoked and preserved in fat",Meat and meat products (including edible offal) → Preserved meat
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+e4fc19c7-8079-5179-9c46-296f4299a783,el,Ζαμπόν,ham,cooked pork ham (deli cold cut),Meat and meat products (including edible offal),Preserved meat,
+743f14d6-84a8-599d-bc99-21050c595eda,el,Σαλάμι,salami,dry-cured sausage (salami),Meat and meat products (including edible offal),Sausages,
+34d968f4-d396-567b-9699-7af519025f2a,el,Λουκάνικο,sausage,"sausage; Greek/Cretan styles, usually pork, often leek- or wine-flavoured",Meat and meat products (including edible offal),Sausages,
+0b418916-555f-5313-b72b-af5d55c60202,el,Φρανκφούρτης,frankfurter,"frankfurter, cooked smoked sausage",Meat and meat products (including edible offal),Sausages,
+1023c9ee-dc9b-5a44-87fb-91ec7b2e484e,el,Πάριζα,parizer / bologna,"parizer, a mortadella/bologna-style cooked sausage",Meat and meat products (including edible offal),Sausages,
+7039a69d-88c9-5955-900a-3e48fe07f8c8,el,Μπέικον,bacon,"bacon, cured and smoked pork",Meat and meat products (including edible offal),Preserved meat,
+6a5d78b5-0d3a-5502-866d-bc5439d6e7eb,el,Πανσέτα,pancetta / pork belly,cured or smoked pork belly,Meat and meat products (including edible offal),Preserved meat,
+f3e25b51-4fa5-5829-b401-02af3e85b94d,el,Απάκι,apaki,"apaki, Cretan lean pork marinated in vinegar and cold-smoked over aromatic herbs",Meat and meat products (including edible offal),Preserved meat,
+e8cf5dcc-f4dc-5fbf-9940-b5b9f6becb77,el,Σύγκλινο,syglino,"syglino (sfakiano), Cretan pork salt-cured, smoked and preserved in fat",Meat and meat products (including edible offal),Preserved meat,

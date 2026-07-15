@@ -25,7 +25,9 @@ public class FoodTermDaoImpl implements FoodTermDao {
 						root.get(FoodTermEntity_.term),
 						root.get(FoodTermEntity_.canonicalEn),
 						root.get(FoodTermEntity_.description),
-						root.get(FoodTermEntity_.categoryHint)))
+						root.get(FoodTermEntity_.categoryHintL1),
+						root.get(FoodTermEntity_.categoryHintL2),
+						root.get(FoodTermEntity_.categoryHintL3)))
 				.where(cb.equal(root.get(FoodTermEntity_.lang), language));
 		return em.createQuery(q).getResultList().map(list -> toFoodTerms(list, root));
 	}
@@ -39,7 +41,13 @@ public class FoodTermDaoImpl implements FoodTermDao {
 				.term(tuple.get(root.get(FoodTermEntity_.term)))
 				.canonicalEn(tuple.get(root.get(FoodTermEntity_.canonicalEn)))
 				.description(tuple.get(root.get(FoodTermEntity_.description)))
-				.categoryHint(Optional.ofNullable(tuple.get(root.get(FoodTermEntity_.categoryHint))))
+				.categoryHintL1(hintLevel(tuple.get(root.get(FoodTermEntity_.categoryHintL1))))
+				.categoryHintL2(hintLevel(tuple.get(root.get(FoodTermEntity_.categoryHintL2))))
+				.categoryHintL3(hintLevel(tuple.get(root.get(FoodTermEntity_.categoryHintL3))))
 				.build();
+	}
+
+	private static Optional<String> hintLevel(String value) {
+		return Optional.ofNullable(value).filter(node -> !node.isBlank());
 	}
 }

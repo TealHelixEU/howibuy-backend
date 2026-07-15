@@ -1,9 +1,9 @@
-id,lang,term,canonical_en,description,category_hint
-df1cc4cb-c414-5cb7-9a6a-4263ef1e1daa,el,Κεφτεδάκια,meatballs,"keftedes, fried Greek meatballs",Composite food (including frozen products) → Meat-based meals
-2e2fdb69-4a74-59ec-9df8-add8c273c726,el,Σουτζουκάκια,soutzoukakia,"soutzoukakia, spiced minced-meat rolls in tomato sauce",Composite food (including frozen products) → Meat-based meals
-ae21312e-13c2-552c-8956-bdc6a8d581f2,el,Ντολμαδάκια,dolmades,"dolmades, vine leaves stuffed with rice (sometimes meat)",Composite food (including frozen products) → Meat-based meals
-238aa32a-dcf9-5059-9b63-eb54ff9295e7,el,Ανθοί κολοκυθιού,stuffed courgette flowers,courgette/zucchini blossoms stuffed with rice or meat,Composite food (including frozen products) → Meat-based meals
-896ac02d-5f0a-5706-bdca-570b747292a5,el,Γύρος,gyros,"gyros, seasoned pork or chicken roasted on a vertical spit",Meat and meat products (including edible offal)
-fc3e04e0-d5b2-54e7-a68c-cd46d9aee035,el,Κοτομπουκιές,chicken nuggets,breaded chicken nuggets/bites,Composite food (including frozen products) → Meat-based meals
-837ad867-10c3-537d-8246-45137ee2a42b,el,Μπιφτέκι,bifteki (burger),"bifteki, grilled minced-meat patty",Meat and meat products (including edible offal)
-584ed683-69ff-5430-b22b-364f6366ff02,el,Πίτσα,pizza,pizza,Composite food (including frozen products) → Cereal-based dishes
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+df1cc4cb-c414-5cb7-9a6a-4263ef1e1daa,el,Κεφτεδάκια,meatballs,"keftedes, fried Greek meatballs",Composite food (including frozen products),Meat-based meals,
+2e2fdb69-4a74-59ec-9df8-add8c273c726,el,Σουτζουκάκια,soutzoukakia,"soutzoukakia, spiced minced-meat rolls in tomato sauce",Composite food (including frozen products),Meat-based meals,
+ae21312e-13c2-552c-8956-bdc6a8d581f2,el,Ντολμαδάκια,dolmades,"dolmades, vine leaves stuffed with rice (sometimes meat)",Composite food (including frozen products),Meat-based meals,
+238aa32a-dcf9-5059-9b63-eb54ff9295e7,el,Ανθοί κολοκυθιού,stuffed courgette flowers,courgette/zucchini blossoms stuffed with rice or meat,Composite food (including frozen products),Meat-based meals,
+896ac02d-5f0a-5706-bdca-570b747292a5,el,Γύρος,gyros,"gyros, seasoned pork or chicken roasted on a vertical spit",Meat and meat products (including edible offal),,
+fc3e04e0-d5b2-54e7-a68c-cd46d9aee035,el,Κοτομπουκιές,chicken nuggets,breaded chicken nuggets/bites,Composite food (including frozen products),Meat-based meals,
+837ad867-10c3-537d-8246-45137ee2a42b,el,Μπιφτέκι,bifteki (burger),"bifteki, grilled minced-meat patty",Meat and meat products (including edible offal),,
+584ed683-69ff-5430-b22b-364f6366ff02,el,Πίτσα,pizza,pizza,Composite food (including frozen products),Cereal-based dishes,

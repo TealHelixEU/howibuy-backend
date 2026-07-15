@@ -1,5 +1,5 @@
-id,lang,term,canonical_en,description,category_hint
-b3bd7c88-61c4-587f-ae7d-3fc397255208,el,Παξιμάδι,paximadi (rusk),"paximadi, hard twice-baked barley or wheat rusk","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
-1b0a4fa9-1f5d-5bea-8b7a-8da7a621e493,el,Ντάκος,dakos,"dakos, round Cretan barley rusk (base of the dakos salad)","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
-f6f1057c-b32a-5f88-85df-8f3fdd77d8c4,el,Εφτάζυμο,eftazymo,"eftazymo, bread or rusk leavened with a chickpea ferment","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
-cf3d2c80-5cdd-5bc0-8f3f-8c93fe65202a,el,Κουλούρα,kouloura,"kouloura, ring-shaped rusk or bread","Grains and grain-based products → Bread and rolls → Unleavened bread, crisp bread and rusk"
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+b3bd7c88-61c4-587f-ae7d-3fc397255208,el,Παξιμάδι,paximadi (rusk),"paximadi, hard twice-baked barley or wheat rusk",Grains and grain-based products,Bread and rolls,"Unleavened bread, crisp bread and rusk"
+1b0a4fa9-1f5d-5bea-8b7a-8da7a621e493,el,Ντάκος,dakos,"dakos, round Cretan barley rusk (base of the dakos salad)",Grains and grain-based products,Bread and rolls,"Unleavened bread, crisp bread and rusk"
+f6f1057c-b32a-5f88-85df-8f3fdd77d8c4,el,Εφτάζυμο,eftazymo,"eftazymo, bread or rusk leavened with a chickpea ferment",Grains and grain-based products,Bread and rolls,"Unleavened bread, crisp bread and rusk"
+cf3d2c80-5cdd-5bc0-8f3f-8c93fe65202a,el,Κουλούρα,kouloura,"kouloura, ring-shaped rusk or bread",Grains and grain-based products,Bread and rolls,"Unleavened bread, crisp bread and rusk"

@@ -31,11 +31,25 @@ public class FoodTermEntity {
 	private String description;
 
 	/**
-	 * Optional SAFAD taxonomy path locating the term, from L1 downward, node names separated by {@code " → "} (U+2192),
-	 * e.g. {@code "Milk and dairy products → Cheese"}. Written as deep as known; null when unknown.
+	 * The L1 (top-level) node of the SAFAD taxonomy path locating the term, e.g. {@code "Milk and dairy products"};
+	 * null when unknown.
 	 */
-	@Column(name = "category_hint")
-	private String categoryHint;
+	@Column(name = "category_hint_l1")
+	private String categoryHintL1;
+
+	/**
+	 * The L2 node of the SAFAD taxonomy path, e.g. {@code "Cheese"}; null when the term is not located that deep. Set
+	 * only when {@link #categoryHintL1 L1} is set.
+	 */
+	@Column(name = "category_hint_l2")
+	private String categoryHintL2;
+
+	/**
+	 * The L3 node of the SAFAD taxonomy path; null when the term is not located that deep. Set only when
+	 * {@link #categoryHintL2 L2} is set.
+	 */
+	@Column(name = "category_hint_l3")
+	private String categoryHintL3;
 
 	public UUID getId() {
 		return id;
@@ -77,11 +91,27 @@ public class FoodTermEntity {
 		this.description = description;
 	}
 
-	public String getCategoryHint() {
-		return categoryHint;
+	public String getCategoryHintL1() {
+		return categoryHintL1;
 	}
 
-	public void setCategoryHint(String categoryHint) {
-		this.categoryHint = categoryHint;
+	public void setCategoryHintL1(String categoryHintL1) {
+		this.categoryHintL1 = categoryHintL1;
+	}
+
+	public String getCategoryHintL2() {
+		return categoryHintL2;
+	}
+
+	public void setCategoryHintL2(String categoryHintL2) {
+		this.categoryHintL2 = categoryHintL2;
+	}
+
+	public String getCategoryHintL3() {
+		return categoryHintL3;
+	}
+
+	public void setCategoryHintL3(String categoryHintL3) {
+		this.categoryHintL3 = categoryHintL3;
 	}
 }

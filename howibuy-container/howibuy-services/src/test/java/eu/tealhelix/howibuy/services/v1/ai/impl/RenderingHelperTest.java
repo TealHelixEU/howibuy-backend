@@ -71,7 +71,7 @@ class RenderingHelperTest {
 		var anthotyros = ImmutableFoodTerm.builder()
 				.term("Ανθότυρος").canonicalEn("anthotyros")
 				.description("Greek whey cheese, similar to ricotta or mizithra")
-				.categoryHint("Milk and dairy products → Cheese").build();
+				.categoryHintL1("Milk and dairy products").categoryHintL2("Cheese").build();
 		assertEquals(
 				"### Recognized terms\n\n- Ανθότυρος → anthotyros: Greek whey cheese, similar to ricotta or mizithra (category: Milk and dairy products → Cheese)\n",
 				RenderingHelper.renderEnrichment(List.of(anthotyros)));

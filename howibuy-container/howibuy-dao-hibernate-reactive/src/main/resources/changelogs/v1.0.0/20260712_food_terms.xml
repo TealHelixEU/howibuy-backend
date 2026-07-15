@@ -23,9 +23,18 @@
 			<column name="description" type="VARCHAR(1024)" remarks="English description with an explicit category anchor, injected to enrich classification">
 				<constraints nullable="false" notNullConstraintName="NL_TH_FOOD_TERM__DESCRIPTION" />
 			</column>
-			<column name="category_hint" type="VARCHAR(255)" remarks="Optional SAFAD taxonomy path locating the term, from L1 downward, node names separated by ' → ' (U+2192); written as deep as known, e.g. 'Milk and dairy products → Cheese'; null if unknown" />
+			<column name="category_hint_l1" type="VARCHAR(255)" remarks="L1 (top-level) node of the SAFAD taxonomy path locating the term, e.g. 'Milk and dairy products'; null if unknown" />
+			<column name="category_hint_l2" type="VARCHAR(255)" remarks="L2 node of the SAFAD taxonomy path, e.g. 'Cheese'; null if not located that deep; set only when L1 is set" />
+			<column name="category_hint_l3" type="VARCHAR(255)" remarks="L3 node of the SAFAD taxonomy path; null if not located that deep; set only when L2 is set" />
 		</createTable>
 		<addUniqueConstraint tableName="TH_FOOD_TERM" columnNames="lang, term" constraintName="UQ_TH_FOOD_TERM__LANG_TERM" />
+	</changeSet>
+
+	<changeSet id="food_terms_hint_contiguity" author="nikospara">
+		<sql>ALTER TABLE TH_FOOD_TERM ADD CONSTRAINT CK_TH_FOOD_TERM__HINT_CONTIGUOUS CHECK ((NULLIF(category_hint_l1, '') IS NOT NULL OR NULLIF(category_hint_l2, '') IS NULL) AND (NULLIF(category_hint_l2, '') IS NOT NULL OR NULLIF(category_hint_l3, '') IS NULL))</sql>
+		<rollback>
+			<sql>ALTER TABLE TH_FOOD_TERM DROP CONSTRAINT CK_TH_FOOD_TERM__HINT_CONTIGUOUS</sql>
+		</rollback>
 	</changeSet>
 
 	<changeSet id="food_terms_data_gr" author="nikospara" context="appdata">
@@ -35,7 +44,9 @@
 			<column name="term" type="STRING" />
 			<column name="canonical_en" type="STRING" />
 			<column name="description" type="STRING" />
-			<column name="category_hint" type="STRING" />
+			<column name="category_hint_l1" type="STRING" />
+			<column name="category_hint_l2" type="STRING" />
+			<column name="category_hint_l3" type="STRING" />
 		</loadData>
 		<rollback>
 			<delete tableName="TH_FOOD_TERM" />

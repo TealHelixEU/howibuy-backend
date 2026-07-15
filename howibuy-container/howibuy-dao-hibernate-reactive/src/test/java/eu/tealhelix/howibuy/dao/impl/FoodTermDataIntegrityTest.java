@@ -55,7 +55,7 @@ public class FoodTermDataIntegrityTest {
 
 		var vlita = byTerm.get("Βλήτα");
 		assertEquals("amaranth greens", vlita.getCanonicalEn(), "Βλήτα canonical English name");
-		assertEquals("amaranth greens, a leafy green vegetable", vlita.getDescription(), "quoted description with comma parsed intact");
+		assertEquals("amaranth greens (Amaranthus), a summer horta eaten boiled", vlita.getDescription(), "quoted description with comma parsed intact");
 		assertEquals(Optional.of("Vegetables and vegetable products (including fungi) → Leaf vegetables"), vlita.getCategoryHint(), "Βλήτα category-hint path");
 
 		var anthotyros = byTerm.get("Ανθότυρος");

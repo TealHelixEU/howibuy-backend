@@ -214,7 +214,7 @@ public class SingleProductAssessorTest {
 	void resolvesEachCategoryLevelFromTheGlossaryHintWithoutCallingTheAi() {
 		var term = ImmutableFoodTerm.builder()
 				.term("orange").canonicalEn("orange").description("a citrus fruit")
-				.categoryHint("Beverages → Juices → Orange juice")
+				.categoryHintL1("Beverages").categoryHintL2("Juices").categoryHintL3("Orange juice")
 				.build();
 		mockGlossary(List.of(term));
 		mockL1Categories();
@@ -238,9 +238,9 @@ public class SingleProductAssessorTest {
 	@Test
 	void fallsBackToTheAiForALevelWhereRecognizedTermsHintConflictingCandidates() {
 		var juice = ImmutableFoodTerm.builder()
-				.term("juice").canonicalEn("juice").description("a drink").categoryHint("Beverages").build();
+				.term("juice").canonicalEn("juice").description("a drink").categoryHintL1("Beverages").build();
 		var milk = ImmutableFoodTerm.builder()
-				.term("milk").canonicalEn("milk").description("a dairy drink").categoryHint("Dairy").build();
+				.term("milk").canonicalEn("milk").description("a dairy drink").categoryHintL1("Dairy").build();
 		mockGlossary(List.of(juice, milk));
 		mockL1Categories();
 		mockExtractL1(FIRST);

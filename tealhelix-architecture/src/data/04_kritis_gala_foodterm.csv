@@ -1,9 +1,9 @@
-id,lang,term,canonical_en,description,category_hint
-2337dc8f-d29b-547f-90d1-091c2cee64b7,el,Γάλα,milk,"milk from cow, sheep or goat",Milk and dairy products → Liquid milk
-b04c3593-0206-5eaf-8e89-af2b0176bd2c,el,Κεφίρ,kefir,"kefir, a fermented milk drink",Milk and dairy products → Fermented milk products
-447ed36b-ac73-5a68-911e-aed7a2cd134a,el,Ξυνόγαλο,soured milk,"xinogalo, soured milk / buttermilk drink",Milk and dairy products → Fermented milk products
-13151e7c-07ff-53b7-a594-9ebc272cb2f0,el,Αριάνι,ayran,"ayran, a salted diluted-yogurt drink",Milk and dairy products → Fermented milk products
-f10b892b-be2b-5b29-8b42-f8122736c755,el,Γιαούρτι,yogurt,"yogurt; Greek-style strained varieties from cow, sheep or goat milk",Milk and dairy products → Fermented milk products
-75a3d0df-7099-5c26-861e-e77e0d693225,el,Κρέμα,custard,"custard-style milk dessert (crème), vanilla or chocolate","Snacks, desserts, and other foods → Ices and desserts"
-601d2ea1-ea7a-5c09-9072-106352a611fc,el,Ρυζόγαλο,rice pudding,"rice pudding, rice simmered in milk","Snacks, desserts, and other foods → Ices and desserts"
-2fc50502-bb28-5701-8dc0-e9255c56ad97,el,Μουσταλευριά,moustalevria,"moustalevria, pudding of grape must thickened with flour or semolina","Snacks, desserts, and other foods → Ices and desserts"
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+2337dc8f-d29b-547f-90d1-091c2cee64b7,el,Γάλα,milk,"milk from cow, sheep or goat",Milk and dairy products,Liquid milk,
+b04c3593-0206-5eaf-8e89-af2b0176bd2c,el,Κεφίρ,kefir,"kefir, a fermented milk drink",Milk and dairy products,Fermented milk products,
+447ed36b-ac73-5a68-911e-aed7a2cd134a,el,Ξυνόγαλο,soured milk,"xinogalo, soured milk / buttermilk drink",Milk and dairy products,Fermented milk products,
+13151e7c-07ff-53b7-a594-9ebc272cb2f0,el,Αριάνι,ayran,"ayran, a salted diluted-yogurt drink",Milk and dairy products,Fermented milk products,
+f10b892b-be2b-5b29-8b42-f8122736c755,el,Γιαούρτι,yogurt,"yogurt; Greek-style strained varieties from cow, sheep or goat milk",Milk and dairy products,Fermented milk products,
+75a3d0df-7099-5c26-861e-e77e0d693225,el,Κρέμα,custard,"custard-style milk dessert (crème), vanilla or chocolate","Snacks, desserts, and other foods",Ices and desserts,
+601d2ea1-ea7a-5c09-9072-106352a611fc,el,Ρυζόγαλο,rice pudding,"rice pudding, rice simmered in milk","Snacks, desserts, and other foods",Ices and desserts,
+2fc50502-bb28-5701-8dc0-e9255c56ad97,el,Μουσταλευριά,moustalevria,"moustalevria, pudding of grape must thickened with flour or semolina","Snacks, desserts, and other foods",Ices and desserts,

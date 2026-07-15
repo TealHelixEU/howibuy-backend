@@ -1,5 +1,5 @@
-id,lang,term,canonical_en,description,category_hint
-a47ab4c6-e1b6-5e4d-bd5c-c3bcb5b44968,el,Μέλι,honey,"honey; Cretan varieties include thyme, pine/conifer honeydew, heather and wild-herb honey",Sugar and confectionary → Honey
-55e54aa2-ac49-56a7-ab1f-5fff6f2b2210,el,Μαρμελάδα,jam / marmalade,fruit jam or marmalade — fruit preserved with sugar,"Fruit and fruit products → Jam, marmalade and other fruit spreads"
-9dff4f58-14a7-5f10-9dc3-eb5c0753cc5c,el,Πετιμέζι,grape molasses (petimezi),"grape-must syrup, concentrated boiled grape must used as a traditional Greek sweetener",Sugar and confectionary → Molasses and other syrups
-3908f824-fd3e-53d6-9496-58dde0ff530d,el,Χαρουπόμελο,carob syrup (carob honey),boiled-down carob-pod syrup used as a honey substitute,Sugar and confectionary → Molasses and other syrups
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+a47ab4c6-e1b6-5e4d-bd5c-c3bcb5b44968,el,Μέλι,honey,"honey; Cretan varieties include thyme, pine/conifer honeydew, heather and wild-herb honey",Sugar and confectionary,Honey,
+55e54aa2-ac49-56a7-ab1f-5fff6f2b2210,el,Μαρμελάδα,jam / marmalade,fruit jam or marmalade — fruit preserved with sugar,Fruit and fruit products,"Jam, marmalade and other fruit spreads",
+9dff4f58-14a7-5f10-9dc3-eb5c0753cc5c,el,Πετιμέζι,grape molasses (petimezi),"grape-must syrup, concentrated boiled grape must used as a traditional Greek sweetener",Sugar and confectionary,Molasses and other syrups,
+3908f824-fd3e-53d6-9496-58dde0ff530d,el,Χαρουπόμελο,carob syrup (carob honey),boiled-down carob-pod syrup used as a honey substitute,Sugar and confectionary,Molasses and other syrups,
