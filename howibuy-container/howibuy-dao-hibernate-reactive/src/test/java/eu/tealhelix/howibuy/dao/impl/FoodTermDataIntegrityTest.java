@@ -61,6 +61,25 @@ public class FoodTermDataIntegrityTest {
 		var anthotyros = byTerm.get("Ανθότυρος");
 		assertEquals("anthotyros", anthotyros.getCanonicalEn(), "Ανθότυρος canonical English name");
 		assertEquals("Greek whey cheese, similar to ricotta or mizithra", anthotyros.getDescription(), "quoted description with comma parsed intact");
-		assertEquals(Optional.of("Milk and dairy products → Cheese"), anthotyros.getCategoryHint(), "Ανθότυρος category-hint path");
+		assertEquals(Optional.of("Milk and dairy products → Cheese"), anthotyros.getCategoryHint(), "Ανθότυρος (whey cheese) hint stops at L2 — no SAFAD archetype");
+	}
+
+	@Test
+	void resolvesCheeseTermsToTheirL3CategoryHint(Mutiny.SessionFactory sessionFactory) {
+		var sut = new FoodTermDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+
+		var byTerm = factory.withoutTransaction(em -> sut.retrieveByLanguage(em, "el"))
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitItem(WAIT).getItem()
+				.stream().collect(toMap(FoodTerm::getTerm, Function.identity()));
+
+		var graviera = byTerm.get("Γραβιέρα");
+		assertEquals(Optional.of("Cheese, Manchego"), graviera.getCategoryHintL3(), "Γραβιέρα (Cretan ewe cheese) L3 hint");
+		assertEquals(Optional.of("Milk and dairy products → Cheese → Cheese, Manchego"), graviera.getCategoryHint(), "Γραβιέρα full hint path");
+
+		assertEquals(Optional.of("Cheese, Manchego"), byTerm.get("Κεφαλοτύρι").getCategoryHintL3(), "Κεφαλοτύρι L3 hint");
+		assertEquals(Optional.of("Cheese, Edam"), byTerm.get("Edam").getCategoryHintL3(), "Edam L3 hint");
+		assertEquals(Optional.of("Fresh uncured cheese"), byTerm.get("Τυρί Κρέμα").getCategoryHintL3(), "cream cheese L3 hint");
 	}
 }

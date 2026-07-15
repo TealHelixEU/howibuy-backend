@@ -1,20 +1,20 @@
 id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
 f9640921-c508-5165-acba-7f2202c14f61,el,Ανθότυρος,anthotyros,"Greek whey cheese, similar to ricotta or mizithra",Milk and dairy products,Cheese,
-3ca3ad0b-bf27-5caf-8d03-15cd08a5e6ea,el,Γραβιέρα,graviera,"aged hard cheese, Gruyère-style",Milk and dairy products,Cheese,
+3ca3ad0b-bf27-5caf-8d03-15cd08a5e6ea,el,Γραβιέρα,graviera,"aged hard cheese, Gruyère-style",Milk and dairy products,Cheese,"Cheese, Manchego"
 e4db3a6f-4e42-5353-9dbd-edc42100f787,el,Μυζήθρα,mizithra,"fresh whey cheese, soft and mild",Milk and dairy products,Cheese,
 77166524-0451-5259-85e2-4e4fdef78ea3,el,Ξινομυζήθρα,xinomizithra,"aged sour whey cheese, tangy and salty",Milk and dairy products,Cheese,
 2515ff5e-034e-50b0-944e-f7b9f1ac1cfa,el,Γαλομυζήθρα,galomizithra,"fresh whey cheese enriched with milk, soft and mild",Milk and dairy products,Cheese,
-a58d2442-8645-5dfa-8a94-ed31ff130dc2,el,Κεφαλοτύρι,kefalotyri,"hard, salty yellow cheese",Milk and dairy products,Cheese,
-37c96ea7-e451-596a-9e4a-1e502143fe3b,el,Τυροζούλι,tyrozouli,Cretan fresh soft cheese,Milk and dairy products,Cheese,
-bc62d639-c09e-5f2d-bf2c-2fd4dc2752e2,el,Τυρομάλαμα,tyromalama,"Cretan soft, mild cheese",Milk and dairy products,Cheese,
-0d3b08d6-fa46-5dc6-a358-ea8e0bdc2e36,el,Πηχτόγαλο,pichtogalo,"Pichtogalo Chanion, soft creamy PDO cheese from Chania, Crete",Milk and dairy products,Cheese,
-52879f82-c6f7-5fee-86ed-cb7f2ce9103b,el,Ξύγαλο,xygalo,"Xygalo Siteias, soft spreadable sour PDO cheese from Sitia, Crete",Milk and dairy products,Cheese,
-dc06124c-89a8-5a85-a16e-b5c1269f5aa7,el,Κατσοχοίρι,katsochoiri,Cretan semi-hard cheese,Milk and dairy products,Cheese,
-d0c831ee-9717-5fe3-bf7e-daa3bf978eb1,el,Τυρί Κρέμα,cream cheese,"fresh cream cheese, soft and spreadable",Milk and dairy products,Cheese,
+a58d2442-8645-5dfa-8a94-ed31ff130dc2,el,Κεφαλοτύρι,kefalotyri,"hard, salty yellow cheese",Milk and dairy products,Cheese,"Cheese, Manchego"
+37c96ea7-e451-596a-9e4a-1e502143fe3b,el,Τυροζούλι,tyrozouli,Cretan fresh soft cheese,Milk and dairy products,Cheese,"Cheese, Manchego"
+bc62d639-c09e-5f2d-bf2c-2fd4dc2752e2,el,Τυρομάλαμα,tyromalama,"Cretan soft, mild cheese",Milk and dairy products,Cheese,"Cheese, Manchego"
+0d3b08d6-fa46-5dc6-a358-ea8e0bdc2e36,el,Πηχτόγαλο,pichtogalo,"Pichtogalo Chanion, soft creamy PDO cheese from Chania, Crete",Milk and dairy products,Cheese,"Cheese, Manchego"
+52879f82-c6f7-5fee-86ed-cb7f2ce9103b,el,Ξύγαλο,xygalo,"Xygalo Siteias, soft spreadable sour PDO cheese from Sitia, Crete",Milk and dairy products,Cheese,"Cheese, Manchego"
+dc06124c-89a8-5a85-a16e-b5c1269f5aa7,el,Κατσοχοίρι,katsochoiri,Cretan semi-hard cheese,Milk and dairy products,Cheese,"Cheese, Manchego"
+d0c831ee-9717-5fe3-bf7e-daa3bf978eb1,el,Τυρί Κρέμα,cream cheese,"fresh cream cheese, soft and spreadable",Milk and dairy products,Cheese,Fresh uncured cheese
 6d6490e2-9e7e-56ef-a219-babd73ac1efe,el,Στάκα,staka,"Cretan clotted-cream fat skimmed from sheep/goat milk, cooked into a rich spread",Milk and dairy products,Cream and cream products,
 c1d0ca83-8dfa-5719-9517-4ecb6c7c3bd1,el,Στακοβούτυρο,stakovoutyro,Cretan butter rendered from staka,Animal and vegetable fats and oils,Animal fat,
-60c91ecb-8729-57d4-ba9d-a7a349e474fe,el,Edam,edam,Dutch semi-hard cow's-milk cheese,Milk and dairy products,Cheese,
-7ef61105-11a2-5b48-849f-3453a2c398b9,el,Gouda,gouda,Dutch semi-hard cow's-milk cheese,Milk and dairy products,Cheese,
-f45945c6-fe91-5f9c-b2b7-f4757d04496b,el,Emmental,emmental,Swiss hard cow's-milk cheese with holes,Milk and dairy products,Cheese,
-57a3f0bb-de1b-5023-bd27-76f25fc1210b,el,Mozzarella,mozzarella,Italian fresh soft cow's-milk cheese,Milk and dairy products,Cheese,
-4efb1d12-3e88-5bab-93a7-24eb4e2670a7,el,Regato,regato,"hard grating cheese, Regato style",Milk and dairy products,Cheese,
+60c91ecb-8729-57d4-ba9d-a7a349e474fe,el,Edam,edam,Dutch semi-hard cow's-milk cheese,Milk and dairy products,Cheese,"Cheese, Edam"
+7ef61105-11a2-5b48-849f-3453a2c398b9,el,Gouda,gouda,Dutch semi-hard cow's-milk cheese,Milk and dairy products,Cheese,"Cheese, Gouda"
+f45945c6-fe91-5f9c-b2b7-f4757d04496b,el,Emmental,emmental,Swiss hard cow's-milk cheese with holes,Milk and dairy products,Cheese,"Cheese, Emmental"
+57a3f0bb-de1b-5023-bd27-76f25fc1210b,el,Mozzarella,mozzarella,Italian fresh soft cow's-milk cheese,Milk and dairy products,Cheese,"Cheese, Mozzarella"
+4efb1d12-3e88-5bab-93a7-24eb4e2670a7,el,Regato,regato,"hard grating cheese, Regato style",Milk and dairy products,Cheese,"Cheese, Gouda"
