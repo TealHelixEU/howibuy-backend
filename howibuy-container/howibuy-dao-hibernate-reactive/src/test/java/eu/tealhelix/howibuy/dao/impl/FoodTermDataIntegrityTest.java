@@ -82,4 +82,31 @@ public class FoodTermDataIntegrityTest {
 		assertEquals(Optional.of("Cheese, Edam"), byTerm.get("Edam").getCategoryHintL3(), "Edam L3 hint");
 		assertEquals(Optional.of("Fresh uncured cheese"), byTerm.get("Τυρί Κρέμα").getCategoryHintL3(), "cream cheese L3 hint");
 	}
+
+	@Test
+	void resolvesBakeryTermsToTheirL3CategoryHint(Mutiny.SessionFactory sessionFactory) {
+		var sut = new FoodTermDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+
+		var byTerm = factory.withoutTransaction(em -> sut.retrieveByLanguage(em, "el"))
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitItem(WAIT).getItem()
+				.stream().collect(toMap(FoodTerm::getTerm, Function.identity()));
+
+		// breadsticks: the singular is deepened and the plural forms are added, both to "Other bread"
+		assertEquals(Optional.of("Other bread"), byTerm.get("Κριτσίνι").getCategoryHintL3(), "Κριτσίνι (breadstick) L3 hint");
+		assertEquals(Optional.of("Other bread"), byTerm.get("Κριτσίνια").getCategoryHintL3(), "Κριτσίνια (breadsticks) L3 hint");
+
+		// rusks: singular and plural diminutive both classify as rusk (unified with Παξιμάδι)
+		assertEquals(Optional.of("Unleavened bread, crisp bread and rusk"), byTerm.get("Παξιμαδάκι").getCategoryHintL3(), "Παξιμαδάκι (rusk) L3 hint");
+		assertEquals(Optional.of("Unleavened bread, crisp bread and rusk"), byTerm.get("Παξιμαδάκια").getCategoryHintL3(), "Παξιμαδάκια (rusks) L3 hint");
+
+		// cheese pies: existing terms deepened, diminutive-plural forms added, both to "Pastries and cakes"
+		assertEquals(Optional.of("Pastries and cakes"), byTerm.get("Μυζηθρόπιτα").getCategoryHintL3(), "Μυζηθρόπιτα L3 hint");
+		assertEquals(Optional.of("Pastries and cakes"), byTerm.get("Μυζηθροπιτάκια").getCategoryHintL3(), "Μυζηθροπιτάκια L3 hint");
+
+		// biscuits: existing term deepened, plural form added, both to "Biscuits (cookies)"
+		assertEquals(Optional.of("Biscuits (cookies)"), byTerm.get("Μπισκότο").getCategoryHintL3(), "Μπισκότο L3 hint");
+		assertEquals(Optional.of("Biscuits (cookies)"), byTerm.get("Μπισκότα").getCategoryHintL3(), "Μπισκότα L3 hint");
+	}
 }
