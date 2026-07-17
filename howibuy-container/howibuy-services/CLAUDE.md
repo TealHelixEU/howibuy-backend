@@ -25,7 +25,10 @@ directly — it goes through a paired `*AiFacade`, which owns three jobs:
 - **Never leak persistence entities into the facade.** Candidate categories arrive as `List<String>` (names), not
   `List<ArchetypeCategoryEntity>` — the entity is a JPA type from the DAO impl module and must not cross into the
   service/AI layer. The caller flattens (`entities.stream().map(...::getName).toList()`) before calling.
-- **Keep the shape uniform across levels.** Each step method — `extractL1Category`, `extractSubcategory` (shared by
-  both the L2 and L3 subcategory levels), and `extractArchetypeProduct` — takes `(ProductData, List<String>
-  candidateNames)` and returns `Uni<String>`. One `extractSubcategory` serves both subcategory levels because the
-  classification task is identical there; split it only if a level needs a distinct prompt.
+- **Each level takes the shape its prompt needs — no more, no less.** The category levels share one shape:
+  `extractL1Category` and `extractSubcategory` both take `(ProductData, List<String> candidateNames, recognizedTerms)`
+  and one `extractSubcategory` serves both the L2 and L3 subcategory levels because the classification task is identical
+  there. The leaf level, `extractArchetypeProduct`, additionally takes a `categoryGuidance` string: the archetype
+  prompt is steered per taxonomy branch (see `ProductClassificationGuidance`), so its system prompt carries a slot the
+  category prompts don't. Give a level extra parameters when its prompt genuinely differs; keep levels sharing a method
+  only while their task is the same.

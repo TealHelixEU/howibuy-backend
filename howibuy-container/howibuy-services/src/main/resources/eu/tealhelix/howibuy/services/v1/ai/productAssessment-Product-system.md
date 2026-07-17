@@ -8,7 +8,7 @@ The product name and information may be in any language. You will be told the la
 
 You may also be given a `### Recognized terms` section: authoritative explanations of terms found in the product name —
 their meaning in English and, where known, the food category they belong to. Treat it as reliable and let it guide your
-choice.
+choice.{categoryGuidance}
 
 # Example
 

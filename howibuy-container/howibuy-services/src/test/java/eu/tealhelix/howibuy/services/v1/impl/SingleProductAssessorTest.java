@@ -46,7 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @EnableAutoWeld
-@AddBeanClasses(SingleProductAssessor.class)
+@AddBeanClasses({SingleProductAssessor.class, ProductClassificationGuidance.class})
 @ExtendWith(MockitoExtension.class)
 public class SingleProductAssessorTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
@@ -139,7 +139,7 @@ public class SingleProductAssessorTest {
 		verify(foodTermGlossary).match(eq("en"), eq("Freshly squeezed orange juice"));
 		verify(productAssessmentAiFacade).extractL1Category(any(), any(), eq(List.of(vlita)));
 		verify(productAssessmentAiFacade, times(2)).extractSubcategory(any(), any(), eq(List.of(vlita)));
-		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), eq(List.of(vlita)));
+		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), eq(List.of(vlita)), any());
 	}
 
 	@Test
@@ -232,7 +232,7 @@ public class SingleProductAssessorTest {
 		assertEquals("Tropicana", outcome.getDiagnostics().getProduct());
 		verify(productAssessmentAiFacade, never()).extractL1Category(any(), any(), any());
 		verify(productAssessmentAiFacade, never()).extractSubcategory(any(), any(), any());
-		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), any());
+		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), any(), any());
 	}
 
 	@Test
@@ -291,7 +291,7 @@ public class SingleProductAssessorTest {
 	}
 
 	private void mockExtractArchetypeProduct(AiSelection pick) {
-		when(productAssessmentAiFacade.extractArchetypeProduct(any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
+		when(productAssessmentAiFacade.extractArchetypeProduct(any(), any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
 	}
 
 	private static ArchetypeCategory category(UUID id, String name) {

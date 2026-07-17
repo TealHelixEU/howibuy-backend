@@ -28,23 +28,27 @@ public class ProductAssessmentAiFacadeImpl implements ProductAssessmentAiFacade 
 
 	@Override
 	public Uni<AiSelection> extractL1Category(ProductData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
-		return classify(productData, categories, recognizedTerms, aiService::extractL1Category);
+		return classify(productData, categories, recognizedTerms,
+				p -> aiService.extractL1Category(p.lang(), p.name(), p.enrichment(), p.characteristics(), p.tags(), p.candidates()));
 	}
 
 	@Override
 	public Uni<AiSelection> extractSubcategory(ProductData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
-		return classify(productData, categories, recognizedTerms, aiService::extractSubcategory);
+		return classify(productData, categories, recognizedTerms,
+				p -> aiService.extractSubcategory(p.lang(), p.name(), p.enrichment(), p.characteristics(), p.tags(), p.candidates()));
 	}
 
 	@Override
-	public Uni<AiSelection> extractArchetypeProduct(ProductData productData, List<String> products, List<FoodTerm> recognizedTerms) {
-		return classify(productData, products, recognizedTerms, aiService::extractArchetypeProduct);
+	public Uni<AiSelection> extractArchetypeProduct(ProductData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance) {
+		return classify(productData, products, recognizedTerms,
+				p -> aiService.extractArchetypeProduct(p.lang(), p.name(), p.enrichment(), p.characteristics(), p.tags(), p.candidates(), categoryGuidance));
 	}
 
 	/**
 	 * Renders the product, the recognized glossary terms and the candidate names to the flat strings the AI templates
 	 * expect, invokes the guarded (blocking) AI call off the event loop, parses the reply into an {@link AiSelection},
-	 * and re-emits the result on the caller's Vert.x context.
+	 * and re-emits the result on the caller's Vert.x context. Each level supplies {@code aiCall}, which picks the AI
+	 * service method and passes any extra, level-specific fields (the leaf level adds its category guidance).
 	 */
 	private Uni<AiSelection> classify(ProductData productData, List<String> candidates, List<FoodTerm> recognizedTerms, AiCall aiCall) {
 		String lang = Objects.requireNonNull(productData.getLanguage()).getDisplayLanguage(Locale.ENGLISH);
@@ -52,16 +56,19 @@ public class ProductAssessmentAiFacadeImpl implements ProductAssessmentAiFacade 
 		String characteristics = RenderingHelper.renderTheProductCharacteristics(Objects.requireNonNull(productData.getCharacteristics()));
 		String tags = RenderingHelper.renderTheProductTags(Objects.requireNonNull(productData.getTags()));
 		String candidatesStr = RenderingHelper.renderCandidates(candidates);
+		var rendered = new RenderedPrompt(lang, productData.getName(), enrichment, characteristics, tags, candidatesStr);
 		Context callerContext = Vertx.currentContext();
-		Uni<AiSelection> resultUni = Uni.createFrom().item(() -> aiCircuitBreaker.guard(() -> aiCall.call(lang, productData.getName(), enrichment, characteristics, tags, candidatesStr)))
+		Uni<AiSelection> resultUni = Uni.createFrom().item(() -> aiCircuitBreaker.guard(() -> aiCall.call(rendered)))
 				.map(reply -> RenderingHelper.parseSelection(reply, candidates.size()))
 				.runSubscriptionOn(Infrastructure.getDefaultExecutor());
 		if (callerContext == null) return resultUni;
 		return resultUni.emitOn(command -> callerContext.runOnContext(_ -> command.run()));
 	}
 
+	private record RenderedPrompt(String lang, String name, String enrichment, String characteristics, String tags, String candidates) {}
+
 	@FunctionalInterface
 	private interface AiCall {
-		String call(String lang, String name, String enrichment, String characteristics, String tags, String candidates);
+		String call(RenderedPrompt prompt);
 	}
 }

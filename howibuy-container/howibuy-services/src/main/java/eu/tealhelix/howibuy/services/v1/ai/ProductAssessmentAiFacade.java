@@ -26,5 +26,5 @@ public interface ProductAssessmentAiFacade {
 
 	Uni<AiSelection> extractSubcategory(ProductData productData, List<String> categories, List<FoodTerm> recognizedTerms);
 
-	Uni<AiSelection> extractArchetypeProduct(ProductData productData, List<String> products, List<FoodTerm> recognizedTerms);
+	Uni<AiSelection> extractArchetypeProduct(ProductData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance);
 }

@@ -53,6 +53,7 @@ public class SingleProductAssessor {
 	private final ArchetypeCategoryDao archetypeCategoryDao;
 	private final ArchetypeProductDao archetypeProductDao;
 	private final FoodTermGlossary foodTermGlossary;
+	private final ProductClassificationGuidance productClassificationGuidance;
 
 	@Inject
 	public SingleProductAssessor(
@@ -60,13 +61,15 @@ public class SingleProductAssessor {
 			ProductAssessmentAiFacade productAssessmentAiFacade,
 			ArchetypeCategoryDao archetypeCategoryDao,
 			ArchetypeProductDao archetypeProductDao,
-			FoodTermGlossary foodTermGlossary
+			FoodTermGlossary foodTermGlossary,
+			ProductClassificationGuidance productClassificationGuidance
 	) {
 		this.persistenceContextFactory = persistenceContextFactory;
 		this.productAssessmentAiFacade = productAssessmentAiFacade;
 		this.archetypeCategoryDao = archetypeCategoryDao;
 		this.archetypeProductDao = archetypeProductDao;
 		this.foodTermGlossary = foodTermGlossary;
+		this.productClassificationGuidance = productClassificationGuidance;
 	}
 
 	/**
@@ -198,7 +201,9 @@ public class SingleProductAssessor {
 
 	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products, List<FoodTerm> recognizedTerms) {
 		ProductAssessmentOutcomeDiagnostics diagnostics = diagnostics(l1name, l2name, l3name, null);
-		return pick(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products), recognizedTerms), products, "product", diagnostics)
+		String categoryGuidance = productClassificationGuidance.forCategoryPath(
+				productData.getLanguage().getLanguage(), List.of(l1name, l2name, l3name));
+		return pick(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products), recognizedTerms, categoryGuidance), products, "product", diagnostics)
 				.flatMap(product -> successfulAssessment(productData, diagnostics(l1name, l2name, l3name, product.getName())));
 	}
 

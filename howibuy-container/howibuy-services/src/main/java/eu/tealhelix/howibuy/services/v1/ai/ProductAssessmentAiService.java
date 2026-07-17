@@ -19,5 +19,5 @@ public interface ProductAssessmentAiService {
 
 	@SystemMessage(fromResource = "eu/tealhelix/howibuy/services/v1/ai/productAssessment-Product-system.md")
 	@UserMessage(fromResource = "eu/tealhelix/howibuy/services/v1/ai/productAssessment-Product-user.md")
-	String extractArchetypeProduct(String lang, String name, String enrichment, String characteristics, String tags, String products);
+	String extractArchetypeProduct(String lang, String name, String enrichment, String characteristics, String tags, String products, String categoryGuidance);
 }
