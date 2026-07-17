@@ -9,7 +9,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { scoreRow, looksLikeNormalizationArtifact } = require('./assessment-eval.js');
+const { scoreRow, looksLikeNormalizationArtifact, nutriScoreGrade, isFunctionallyCorrect } = require('./assessment-eval.js');
 
 const EXPECTED = {
 	l1: 'Milk and dairy products',
@@ -64,4 +64,34 @@ test('normalization-artifact detector flags case/whitespace-only differences', (
 	assert.equal(looksLikeNormalizationArtifact('Cheese', 'cheese'), true);
 	assert.equal(looksLikeNormalizationArtifact('Cheese,  Manchego', 'Cheese, Manchego'), true);
 	assert.equal(looksLikeNormalizationArtifact('Cheese', 'Feta'), false);
+});
+
+test('nutriScoreGrade extracts the A-E grade and treats 0/blank/unknown as no grade', () => {
+	assert.equal(nutriScoreGrade('Nutriscore_A'), 'A');
+	assert.equal(nutriScoreGrade('Nutriscore_E'), 'E');
+	assert.equal(nutriScoreGrade('  Nutriscore_C  '), 'C');
+	assert.equal(nutriScoreGrade('0'), null);
+	assert.equal(nutriScoreGrade(''), null);
+	assert.equal(nutriScoreGrade(null), null);
+	assert.equal(nutriScoreGrade('Nutriscore_F'), null);
+});
+
+test('an exact archetype match (score 4) is always functionally correct', () => {
+	assert.equal(isFunctionallyCorrect(4, 'B', 'B'), true);
+	// Even an archetype that carries no grade: an exact match is a success by definition.
+	assert.equal(isFunctionallyCorrect(4, null, null), true);
+});
+
+test('a near-miss is functionally correct only with the same recommendation pool (score>=2) and the same grade', () => {
+	// score 3: right L3, wrong archetype, same grade -> same recommendation and same displayed score.
+	assert.equal(isFunctionallyCorrect(3, 'C', 'C'), true);
+	// score 2: right L2, wrong L3 -> still the same substitution pool; same grade keeps the score too.
+	assert.equal(isFunctionallyCorrect(2, 'A', 'A'), true);
+	// different grade -> the displayed sustainability score would move.
+	assert.equal(isFunctionallyCorrect(3, 'C', 'D'), false);
+	// L2 diverged (score < 2) -> the recommendation pool differs, grade agreement is not enough.
+	assert.equal(isFunctionallyCorrect(1, 'A', 'A'), false);
+	assert.equal(isFunctionallyCorrect(0, 'A', 'A'), false);
+	// no grade on either side is not a match (a missing grade cannot vouch for the score).
+	assert.equal(isFunctionallyCorrect(3, null, null), false);
 });

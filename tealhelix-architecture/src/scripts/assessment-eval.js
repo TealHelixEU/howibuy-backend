@@ -4,11 +4,20 @@
 // /assessment/single endpoint with the product name, then scores how far the classifier's diagnostics
 // (L1/L2/L3 category + archetype product) agree with the hand-matched ground truth.
 //
-// The output CSV is the input CSV verbatim plus six columns:
-//   Assessed L1 cat, Assessed L2 cat, Assessed L3 cat, Assessed product, Outcome type, Score
+// The output CSV is the input CSV verbatim plus nine columns:
+//   Assessed L1 cat, Assessed L2 cat, Assessed L3 cat, Assessed product, Outcome type, Score,
+//   Expected Nutri-Score, Assessed Nutri-Score, Functionally correct
 // so inputs, outputs and score sit in one file. Score is the length of the correct prefix of the descent
 // (L1, then L2, then L3, then product): counting stops at the first mismatch, so 4 means a full match and
 // anything less pinpoints the level at which the classifier first diverged.
+//
+// "Functionally correct" is a softer tier than the exact-archetype Score: a near-miss is counted when it
+// would drive the same two user-facing outputs as the ground truth -- the recommended alternative and the
+// displayed sustainability score. The substitution search is seeded by the SAFAD L2 category, so an
+// identical recommendation pool needs L1 and L2 to match (score >= 2); the displayed score is derived from
+// the archetype's Nutri-Score grade, so the two must share a grade. The grade per archetype is read from
+// the imported archetype data (--archetypes). The Expected/Assessed Nutri-Score columns show the two grades
+// so the verdict can be eyeballed.
 //
 // Authentication mirrors the manual flow: this script shells out to the sibling keycloak-auth-service.js
 // (service-account client-credentials token) and correlation-id.js (impersonation token), and re-acquires
@@ -20,6 +29,8 @@
 // Options:
 //   -i, --input <csv>        ground-truth CSV (default: ../data/test_data_kritis_filled.csv)
 //   -o, --output <csv>       results CSV (default: <input dir>/<input name>-results.csv)
+//       --archetypes <csv>   archetype data providing the Nutri-Score grade per archetype
+//                            (default: the imported howibuy archetype_product.csv)
 //       --base <url>         howibuy v1 base URL (default: http://localhost:8180/api/howibuy/v1)
 //       --keycloak <url>     Keycloak base URL (default: http://localhost:8280)
 //   -u, --client <id>        service-account client id (default: lime_fresh)
@@ -56,6 +67,23 @@ function scoreRow(expected, assessed) {
 		score++;
 	}
 	return score;
+}
+
+// The Nutri-Score letter grade (A-E) an archetype resolves to, or null when it carries none. The imported
+// archetype data stores the grade as "Nutriscore_A".."Nutriscore_E"; a "0" or blank means no grade.
+function nutriScoreGrade(rawValue) {
+	const match = /^Nutriscore_([A-E])$/.exec(norm(rawValue));
+	return match ? match[1] : null;
+}
+
+// Whether a row would drive the same two user-facing outputs as the ground truth -- the recommended
+// alternative and the displayed sustainability score. The substitution search is seeded by the SAFAD L2
+// category, so an identical recommendation pool needs L1 and L2 to match (score >= 2); the displayed score
+// is derived from the Nutri-Score grade, so the expected and assessed archetypes must share a grade. An
+// exact archetype match (score 4) is functionally correct by definition.
+function isFunctionallyCorrect(score, expectedGrade, assessedGrade) {
+	if (score === 4) return true;
+	return score >= 2 && expectedGrade != null && expectedGrade === assessedGrade;
 }
 
 // True when two strings differ only by letter case or by whitespace -- i.e. a "mismatch" that is really a
@@ -157,6 +185,8 @@ function parseArgs(argv) {
 	const cfg = {
 		input: path.resolve(__dirname, '..', 'data', 'test_data_kritis_filled.csv'),
 		output: null,
+		archetypes: path.resolve(__dirname, '..', '..', '..', 'howibuy-container', 'howibuy-dao-hibernate-reactive',
+			'src', 'main', 'resources', 'db', 'archetype', 'archetype_product.csv'),
 		base: 'http://localhost:8180/api/howibuy/v1',
 		keycloak: 'http://localhost:8280',
 		client: 'lime_fresh',
@@ -170,6 +200,7 @@ function parseArgs(argv) {
 		switch (arg) {
 			case '-i': case '--input': cfg.input = argv[++i]; break;
 			case '-o': case '--output': cfg.output = argv[++i]; break;
+			case '--archetypes': cfg.archetypes = argv[++i]; break;
 			case '--base': cfg.base = argv[++i]; break;
 			case '--keycloak': cfg.keycloak = argv[++i]; break;
 			case '-u': case '--client': cfg.client = argv[++i]; break;
@@ -213,6 +244,23 @@ function extractDiagnostics(json) {
 	return { l1: d.l1Category ?? null, l2: d.l2Category ?? null, l3: d.l3Category ?? null, product: d.product ?? null };
 }
 
+// Reads the archetype data and returns a map from archetype product name to its Nutri-Score grade
+// (A-E, or null when it carries none) -- used to judge whether a near-miss is functionally harmless.
+function loadNutriScoreGrades(csvPath) {
+	const rows = parseCsv(fs.readFileSync(csvPath, 'utf8'));
+	if (rows.length < 2) fail(`no archetype rows in ${csvPath}`);
+	const header = rows[0];
+	const nameIndex = header.indexOf('name');
+	const gradeIndex = header.indexOf('nutri_score');
+	if (nameIndex < 0 || gradeIndex < 0) fail(`archetype CSV is missing a name or nutri_score column: ${csvPath}`);
+	const grades = new Map();
+	for (const row of rows.slice(1)) {
+		if (row.length <= Math.max(nameIndex, gradeIndex)) continue;
+		grades.set(norm(row[nameIndex]), nutriScoreGrade(row[gradeIndex]));
+	}
+	return grades;
+}
+
 async function main() {
 	const cfg = parseArgs(process.argv.slice(2));
 	const assessmentUrl = `${cfg.base}/assessment/single`;
@@ -231,16 +279,20 @@ async function main() {
 	const dataRows = rows.slice(1).filter((r) => r.length > 1 || (r.length === 1 && r[0] !== ''));
 	const total = Math.min(dataRows.length, cfg.limit);
 
+	const nutriScoreGrades = loadNutriScoreGrades(cfg.archetypes);
+
 	console.error(`Input:      ${cfg.input} (${dataRows.length} products${cfg.limit < dataRows.length ? `, limited to ${total}` : ''})`);
+	console.error(`Archetypes: ${cfg.archetypes} (${nutriScoreGrades.size} Nutri-Score grades)`);
 	console.error(`Assessment: ${assessmentUrl}`);
 	console.error(`Language:   ${cfg.language}`);
 	console.error('Acquiring impersonation token...');
 	let token = acquireImpersonationToken(cfg);
 
 	const out = fs.createWriteStream(cfg.output, { encoding: 'utf8' });
-	out.write(toCsvLine([...header, 'Assessed L1 cat', 'Assessed L2 cat', 'Assessed L3 cat', 'Assessed product', 'Outcome type', 'Score']) + '\n');
+	out.write(toCsvLine([...header, 'Assessed L1 cat', 'Assessed L2 cat', 'Assessed L3 cat', 'Assessed product', 'Outcome type', 'Score', 'Expected Nutri-Score', 'Assessed Nutri-Score', 'Functionally correct']) + '\n');
 
 	const scoreHistogram = [0, 0, 0, 0, 0];
+	const functionalHistogram = [0, 0, 0, 0, 0]; // functionally-correct rows, keyed by their exact-match Score
 	const byReliability = new Map(); // reliability -> { count, scoreSum, successes }
 	const byType = new Map();        // outcome type -> count
 	let firstResponseLogged = false;
@@ -293,20 +345,26 @@ async function main() {
 		const score = scoreRow(expected, assessed);
 		reportArtifacts(name, expected, assessed, score);
 
+		const expectedGrade = nutriScoreGrades.get(norm(expected.product)) ?? null;
+		const assessedGrade = nutriScoreGrades.get(norm(assessed.product)) ?? null;
+		const functional = isFunctionallyCorrect(score, expectedGrade, assessedGrade);
+
 		scoreHistogram[score]++;
+		if (functional) functionalHistogram[score]++;
 		const reliability = norm(r[col.reliability]) || '(none)';
 		const rel = byReliability.get(reliability) ?? { count: 0, scoreSum: 0, successes: 0 };
 		rel.count++; rel.scoreSum += score; rel.successes += score === 4 ? 1 : 0;
 		byReliability.set(reliability, rel);
 		byType.set(type, (byType.get(type) ?? 0) + 1);
 
-		out.write(toCsvLine([...r, assessed.l1, assessed.l2, assessed.l3, assessed.product, type, String(score)]) + '\n');
+		out.write(toCsvLine([...r, assessed.l1, assessed.l2, assessed.l3, assessed.product, type, String(score),
+			expectedGrade ?? '', assessedGrade ?? '', functional ? 'yes' : 'no']) + '\n');
 		const successes = scoreHistogram[4];
 		console.error(`[${n + 1}/${total}] score ${score} (${type})  ${successes}/${n + 1} full so far  ${name}`);
 	}
 
 	await new Promise((resolve) => out.end(resolve));
-	printSummary(cfg.output, total, scoreHistogram, byReliability, byType);
+	printSummary(cfg.output, total, scoreHistogram, functionalHistogram, byReliability, byType);
 }
 
 async function postAssessment(url, token, body) {
@@ -334,8 +392,9 @@ function reportArtifacts(name, expected, assessed, score) {
 	}
 }
 
-function printSummary(outputPath, total, scoreHistogram, byReliability, byType) {
+function printSummary(outputPath, total, scoreHistogram, functionalHistogram, byReliability, byType) {
 	const successes = scoreHistogram[4];
+	const functional = functionalHistogram.reduce((a, b) => a + b, 0);
 	console.error('');
 	console.error(`Wrote ${outputPath}`);
 	console.error(`Products assessed: ${total}`);
@@ -344,6 +403,8 @@ function printSummary(outputPath, total, scoreHistogram, byReliability, byType) 
 	for (let s = 0; s <= 4; s++) {
 		console.error(`  ${s}: ${scoreHistogram[s]} (${pct(scoreHistogram[s], total)})`);
 	}
+	console.error(`Functionally correct (same recommendation pool + same Nutri-Score grade): ${functional} (${pct(functional, total)})`);
+	console.error(`  = ${functionalHistogram[4]} exact + ${functionalHistogram[3]} same-grade at score 3 + ${functionalHistogram[2]} same-grade at score 2`);
 	console.error('By match reliability (mean score / archetype hit-rate):');
 	for (const reliability of [...byReliability.keys()].sort()) {
 		const r = byReliability.get(reliability);
@@ -366,4 +427,4 @@ if (require.main === module) {
 	});
 }
 
-module.exports = { scoreRow, norm, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics };
+module.exports = { scoreRow, norm, nutriScoreGrade, isFunctionallyCorrect, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics };
