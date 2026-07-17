@@ -22,7 +22,8 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 		var q = cb.createTupleQuery();
 		var root = q.from(ArchetypeProductEntity.class);
 		q.select(cb.tuple(root.get(ArchetypeProductEntity_.id), root.get(ArchetypeProductEntity_.name)))
-				.where(cb.equal(root.get(ArchetypeProductEntity_.category).get(ArchetypeCategoryEntity_.id), categoryId));
+				.where(cb.equal(root.get(ArchetypeProductEntity_.category).get(ArchetypeCategoryEntity_.id), categoryId))
+				.orderBy(cb.asc(root.get(ArchetypeProductEntity_.name)), cb.asc(root.get(ArchetypeProductEntity_.id)));
 		return em.createQuery(q).getResultList().map(ArchetypeProductDaoImpl::toArchetypeProducts);
 	}
 

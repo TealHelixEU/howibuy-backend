@@ -109,4 +109,33 @@ public class FoodTermDataIntegrityTest {
 		assertEquals(Optional.of("Biscuits (cookies)"), byTerm.get("Μπισκότο").getCategoryHintL3(), "Μπισκότο L3 hint");
 		assertEquals(Optional.of("Biscuits (cookies)"), byTerm.get("Μπισκότα").getCategoryHintL3(), "Μπισκότα L3 hint");
 	}
+
+	@Test
+	void resolvesMeatCutTermsToTheirEnrichment(Mutiny.SessionFactory sessionFactory) {
+		var sut = new FoodTermDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+
+		var byTerm = factory.withoutTransaction(em -> sut.retrieveByLanguage(em, "el"))
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitItem(WAIT).getItem()
+				.stream().collect(toMap(FoodTerm::getTerm, Function.identity()));
+
+		// A species-qualified cut (a two-token term, disambiguating the species) carries that species' L3 hint.
+		var beefEye = byTerm.get("Βόειο Ελιά");
+		assertEquals("eye of round", beefEye.getCanonicalEn(), "Βόειο Ελιά canonical English name");
+		assertEquals(Optional.of("Beef meat (Bos spp.)"), beefEye.getCategoryHintL3(), "Βόειο Ελιά L3 hint (beef)");
+		assertEquals("chop", byTerm.get("Χοιρινό Μπριζόλα").getCanonicalEn(), "Χοιρινό Μπριζόλα (pork chop) canonical English name");
+		assertEquals(Optional.of("Pork / piglet meat (Sus scrofa)"), byTerm.get("Χοιρινό Μπριζόλα").getCategoryHintL3(), "Χοιρινό Μπριζόλα L3 hint (pork)");
+
+		// A single-species butcher word carries that species' L3 hint on its own.
+		assertEquals(Optional.of("Pork / piglet meat (Sus scrofa)"), byTerm.get("Ψαρονέφρι").getCategoryHintL3(), "Ψαρονέφρι (pork tenderloin) L3 hint");
+		assertEquals("wings", byTerm.get("Φτερούγες").getCanonicalEn(), "Φτερούγες canonical English name");
+		assertEquals(Optional.of("Chicken meat (Gallus domesticus)"), byTerm.get("Φτερούγες").getCategoryHintL3(), "Φτερούγες (chicken wings) L3 hint");
+
+		// A cut shared across livestock species: the word alone does not imply the species, so the hint stops at L2.
+		var shoulder = byTerm.get("Σπάλα");
+		assertEquals("shoulder", shoulder.getCanonicalEn(), "Σπάλα canonical English name");
+		assertEquals(Optional.of("Livestock meat"), shoulder.getCategoryHintL2(), "Σπάλα L2 hint");
+		assertEquals(Optional.empty(), shoulder.getCategoryHintL3(), "Σπάλα carries no L3 hint (species not implied by the word)");
+	}
 }

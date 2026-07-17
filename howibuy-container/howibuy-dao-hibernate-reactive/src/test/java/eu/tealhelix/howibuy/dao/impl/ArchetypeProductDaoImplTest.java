@@ -88,8 +88,27 @@ public class ArchetypeProductDaoImplTest {
 				"only Juices' products: Milks' products, including the identically-named 'Generic', are excluded");
 	}
 
+	@Test
+	void retrievesProductsOrderedByName(Mutiny.SessionFactory sessionFactory) {
+		var sut = new ArchetypeProductDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+
+		var products = factory.withoutTransaction(em -> sut.retrieveProductsInCategory(em, L3_JUICES))
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitItem(WAIT).getItem();
+
+		assertEquals(
+				List.of("Generic", "Orange juice"),
+				names(products),
+				"candidates are ordered by name so the classifier prompt is deterministic (seeded reverse-alphabetically)");
+	}
+
 	private static Map<UUID, String> byIdAndName(List<ArchetypeProduct> products) {
 		return products.stream().collect(toMap(ArchetypeProduct::getId, ArchetypeProduct::getName));
+	}
+
+	private static List<String> names(List<ArchetypeProduct> products) {
+		return products.stream().map(ArchetypeProduct::getName).toList();
 	}
 
 	private static ArchetypeCategoryEntity category(UUID id, String name) {

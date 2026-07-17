@@ -23,7 +23,8 @@ public class ArchetypeCategoryDaoImpl implements ArchetypeCategoryDao {
 		var q = cb.createTupleQuery();
 		var root = q.from(ArchetypeCategoryEntity.class);
 		q.select(cb.tuple(root.get(ArchetypeCategoryEntity_.id), root.get(ArchetypeCategoryEntity_.name)))
-				.where(cb.equal(root.get(ArchetypeCategoryEntity_.level), L1_LEVEL));
+				.where(cb.equal(root.get(ArchetypeCategoryEntity_.level), L1_LEVEL))
+				.orderBy(cb.asc(root.get(ArchetypeCategoryEntity_.name)), cb.asc(root.get(ArchetypeCategoryEntity_.id)));
 		return em.createQuery(q).getResultList().map(ArchetypeCategoryDaoImpl::toArchetypeCategories);
 	}
 
@@ -33,7 +34,8 @@ public class ArchetypeCategoryDaoImpl implements ArchetypeCategoryDao {
 		var q = cb.createTupleQuery();
 		var root = q.from(ArchetypeCategoryEntity.class);
 		q.select(cb.tuple(root.get(ArchetypeCategoryEntity_.id), root.get(ArchetypeCategoryEntity_.name)))
-				.where(cb.equal(root.get(ArchetypeCategoryEntity_.parent).get(ArchetypeCategoryEntity_.id), parentId));
+				.where(cb.equal(root.get(ArchetypeCategoryEntity_.parent).get(ArchetypeCategoryEntity_.id), parentId))
+				.orderBy(cb.asc(root.get(ArchetypeCategoryEntity_.name)), cb.asc(root.get(ArchetypeCategoryEntity_.id)));
 		return em.createQuery(q).getResultList().map(ArchetypeCategoryDaoImpl::toArchetypeCategories);
 	}
 
