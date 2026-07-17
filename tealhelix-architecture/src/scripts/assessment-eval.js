@@ -6,18 +6,23 @@
 //
 // The output CSV is the input CSV verbatim plus nine columns:
 //   Assessed L1 cat, Assessed L2 cat, Assessed L3 cat, Assessed product, Outcome type, Score,
-//   Expected Nutri-Score, Assessed Nutri-Score, Functionally correct
+//   Expected Nutri-Score, Assessed Nutri-Score, Miss severity
 // so inputs, outputs and score sit in one file. Score is the length of the correct prefix of the descent
 // (L1, then L2, then L3, then product): counting stops at the first mismatch, so 4 means a full match and
-// anything less pinpoints the level at which the classifier first diverged.
+// anything less pinpoints the level at which the classifier first diverged. The exact-archetype Score (4)
+// is the metric.
 //
-// "Functionally correct" is a softer tier than the exact-archetype Score: a near-miss is counted when it
-// would drive the same two user-facing outputs as the ground truth -- the recommended alternative and the
-// displayed sustainability score. The substitution search is seeded by the SAFAD L2 category, so an
-// identical recommendation pool needs L1 and L2 to match (score >= 2); the displayed score is derived from
-// the archetype's Nutri-Score grade, so the two must share a grade. The grade per archetype is read from
-// the imported archetype data (--archetypes). The Expected/Assessed Nutri-Score columns show the two grades
-// so the verdict can be eyeballed.
+// "Miss severity" is a per-miss triage annotation. It is filled only for answers the classifier committed
+// to (Outcome type SUCCESS) that are nonetheless wrong -- the "confidently wrong" false positives, which
+// matter more than an honest decline (a FAILURE_ outcome). It is one of, worst first:
+//   identity    -- the two archetypes name a conflicting animal/milk species, or one is raw and the other
+//                  cooked: the label is materially wrong whatever score it would display.
+//   category    -- L1 or L2 is wrong (score <= 1): the recommendation pool itself is wrong.
+//   grade-shift -- right pool, wrong leaf, and the Nutri-Score grade differs: the displayed sustainability
+//                  score would move.
+//   cosmetic    -- right pool, wrong leaf, same grade and no identity conflict: near-equivalent output.
+// The grade per archetype is read from the imported archetype data (--archetypes); the Expected/Assessed
+// Nutri-Score columns show the two grades behind the grade-shift/cosmetic split.
 //
 // Authentication mirrors the manual flow: this script shells out to the sibling keycloak-auth-service.js
 // (service-account client-credentials token) and correlation-id.js (impersonation token), and re-acquires
@@ -76,14 +81,41 @@ function nutriScoreGrade(rawValue) {
 	return match ? match[1] : null;
 }
 
-// Whether a row would drive the same two user-facing outputs as the ground truth -- the recommended
-// alternative and the displayed sustainability score. The substitution search is seeded by the SAFAD L2
-// category, so an identical recommendation pool needs L1 and L2 to match (score >= 2); the displayed score
-// is derived from the Nutri-Score grade, so the expected and assessed archetypes must share a grade. An
-// exact archetype match (score 4) is functionally correct by definition.
-function isFunctionallyCorrect(score, expectedGrade, assessedGrade) {
-	if (score === 4) return true;
-	return score >= 2 && expectedGrade != null && expectedGrade === assessedGrade;
+const SPECIES_PATTERNS = [/\b(cow|bovine)\b/i, /\b(ewe|sheep|ovine)\b/i, /\b(goat|caprine)\b/i, /\bbuffalo\b/i];
+const COOKED_PATTERN = /\b(roast|roasted|baked|grilled|fried|boiled|cooked|braised|smoked|steamed|stewed)\b/i;
+const RAW_PATTERN = /\braw\b/i;
+
+function speciesMentioned(text) {
+	const mentioned = new Set();
+	SPECIES_PATTERNS.forEach((pattern, i) => { if (pattern.test(text)) mentioned.add(i); });
+	return mentioned;
+}
+
+// True when the expected and assessed archetypes disagree on a defining attribute that makes the label
+// materially wrong however close its displayed score: the animal/milk species (both name a species and the
+// sets are disjoint) or the raw-vs-cooked state (one is raw, the other a cooked preparation). A mere
+// named-variety or cut difference is not an identity conflict.
+function identityConflict(expectedProduct, assessedProduct) {
+	const expectedSpecies = speciesMentioned(expectedProduct);
+	const assessedSpecies = speciesMentioned(assessedProduct);
+	if (expectedSpecies.size && assessedSpecies.size) {
+		const shared = [...expectedSpecies].some((s) => assessedSpecies.has(s));
+		if (!shared) return true;
+	}
+	const rawVsCooked = (RAW_PATTERN.test(expectedProduct) && COOKED_PATTERN.test(assessedProduct)) ||
+		(COOKED_PATTERN.test(expectedProduct) && RAW_PATTERN.test(assessedProduct));
+	return rawVsCooked;
+}
+
+// Triages a miss by how much it costs, worst first (see the header comment). Returns '' for an exact match
+// (score 4), which is not a miss. Callers fill this only for committed answers (Outcome type SUCCESS); an
+// honest decline is not a false positive and carries no severity.
+function missSeverity(score, expectedGrade, assessedGrade, expectedProduct, assessedProduct) {
+	if (score === 4) return '';
+	if (score <= 1) return 'category';
+	if (identityConflict(expectedProduct, assessedProduct)) return 'identity';
+	if (expectedGrade == null || assessedGrade == null || expectedGrade !== assessedGrade) return 'grade-shift';
+	return 'cosmetic';
 }
 
 // True when two strings differ only by letter case or by whitespace -- i.e. a "mismatch" that is really a
@@ -289,10 +321,10 @@ async function main() {
 	let token = acquireImpersonationToken(cfg);
 
 	const out = fs.createWriteStream(cfg.output, { encoding: 'utf8' });
-	out.write(toCsvLine([...header, 'Assessed L1 cat', 'Assessed L2 cat', 'Assessed L3 cat', 'Assessed product', 'Outcome type', 'Score', 'Expected Nutri-Score', 'Assessed Nutri-Score', 'Functionally correct']) + '\n');
+	out.write(toCsvLine([...header, 'Assessed L1 cat', 'Assessed L2 cat', 'Assessed L3 cat', 'Assessed product', 'Outcome type', 'Score', 'Expected Nutri-Score', 'Assessed Nutri-Score', 'Miss severity']) + '\n');
 
 	const scoreHistogram = [0, 0, 0, 0, 0];
-	const functionalHistogram = [0, 0, 0, 0, 0]; // functionally-correct rows, keyed by their exact-match Score
+	const bySeverity = new Map();    // miss severity -> count (only for confidently-wrong SUCCESS rows)
 	const byReliability = new Map(); // reliability -> { count, scoreSum, successes }
 	const byType = new Map();        // outcome type -> count
 	let firstResponseLogged = false;
@@ -347,10 +379,12 @@ async function main() {
 
 		const expectedGrade = nutriScoreGrades.get(norm(expected.product)) ?? null;
 		const assessedGrade = nutriScoreGrades.get(norm(assessed.product)) ?? null;
-		const functional = isFunctionallyCorrect(score, expectedGrade, assessedGrade);
+		// Severity is a false-positive annotation: only a committed answer (SUCCESS) that is wrong can be
+		// confidently wrong; an honest decline carries none.
+		const severity = type === 'SUCCESS' ? missSeverity(score, expectedGrade, assessedGrade, norm(expected.product), norm(assessed.product)) : '';
 
 		scoreHistogram[score]++;
-		if (functional) functionalHistogram[score]++;
+		if (severity) bySeverity.set(severity, (bySeverity.get(severity) ?? 0) + 1);
 		const reliability = norm(r[col.reliability]) || '(none)';
 		const rel = byReliability.get(reliability) ?? { count: 0, scoreSum: 0, successes: 0 };
 		rel.count++; rel.scoreSum += score; rel.successes += score === 4 ? 1 : 0;
@@ -358,13 +392,13 @@ async function main() {
 		byType.set(type, (byType.get(type) ?? 0) + 1);
 
 		out.write(toCsvLine([...r, assessed.l1, assessed.l2, assessed.l3, assessed.product, type, String(score),
-			expectedGrade ?? '', assessedGrade ?? '', functional ? 'yes' : 'no']) + '\n');
+			expectedGrade ?? '', assessedGrade ?? '', severity]) + '\n');
 		const successes = scoreHistogram[4];
 		console.error(`[${n + 1}/${total}] score ${score} (${type})  ${successes}/${n + 1} full so far  ${name}`);
 	}
 
 	await new Promise((resolve) => out.end(resolve));
-	printSummary(cfg.output, total, scoreHistogram, functionalHistogram, byReliability, byType);
+	printSummary(cfg.output, total, scoreHistogram, bySeverity, byReliability, byType);
 }
 
 async function postAssessment(url, token, body) {
@@ -392,9 +426,8 @@ function reportArtifacts(name, expected, assessed, score) {
 	}
 }
 
-function printSummary(outputPath, total, scoreHistogram, functionalHistogram, byReliability, byType) {
+function printSummary(outputPath, total, scoreHistogram, bySeverity, byReliability, byType) {
 	const successes = scoreHistogram[4];
-	const functional = functionalHistogram.reduce((a, b) => a + b, 0);
 	console.error('');
 	console.error(`Wrote ${outputPath}`);
 	console.error(`Products assessed: ${total}`);
@@ -403,8 +436,11 @@ function printSummary(outputPath, total, scoreHistogram, functionalHistogram, by
 	for (let s = 0; s <= 4; s++) {
 		console.error(`  ${s}: ${scoreHistogram[s]} (${pct(scoreHistogram[s], total)})`);
 	}
-	console.error(`Functionally correct (same recommendation pool + same Nutri-Score grade): ${functional} (${pct(functional, total)})`);
-	console.error(`  = ${functionalHistogram[4]} exact + ${functionalHistogram[3]} same-grade at score 3 + ${functionalHistogram[2]} same-grade at score 2`);
+	const falsePositives = [...bySeverity.values()].reduce((a, b) => a + b, 0);
+	console.error(`Confidently wrong (committed a wrong archetype): ${falsePositives} (${pct(falsePositives, total)})`);
+	for (const severity of ['identity', 'category', 'grade-shift', 'cosmetic']) {
+		console.error(`  ${severity}: ${bySeverity.get(severity) ?? 0}`);
+	}
 	console.error('By match reliability (mean score / archetype hit-rate):');
 	for (const reliability of [...byReliability.keys()].sort()) {
 		const r = byReliability.get(reliability);
@@ -427,4 +463,4 @@ if (require.main === module) {
 	});
 }
 
-module.exports = { scoreRow, norm, nutriScoreGrade, isFunctionallyCorrect, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics };
+module.exports = { scoreRow, norm, nutriScoreGrade, identityConflict, missSeverity, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics };

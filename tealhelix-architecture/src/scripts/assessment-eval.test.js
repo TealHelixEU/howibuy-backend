@@ -9,7 +9,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { scoreRow, looksLikeNormalizationArtifact, nutriScoreGrade, isFunctionallyCorrect } = require('./assessment-eval.js');
+const { scoreRow, looksLikeNormalizationArtifact, nutriScoreGrade, identityConflict, missSeverity } = require('./assessment-eval.js');
 
 const EXPECTED = {
 	l1: 'Milk and dairy products',
@@ -76,22 +76,42 @@ test('nutriScoreGrade extracts the A-E grade and treats 0/blank/unknown as no gr
 	assert.equal(nutriScoreGrade('Nutriscore_F'), null);
 });
 
-test('an exact archetype match (score 4) is always functionally correct', () => {
-	assert.equal(isFunctionallyCorrect(4, 'B', 'B'), true);
-	// Even an archetype that carries no grade: an exact match is a success by definition.
-	assert.equal(isFunctionallyCorrect(4, null, null), true);
+test('identityConflict flags a species swap or a raw<->cooked flip, but not a mere variety change', () => {
+	// animal / milk-species disagreement between the two archetypes
+	assert.equal(identityConflict("Cheese, from goat's milk", "Feta-type cheese from cow's milk"), true);
+	assert.equal(identityConflict("Semi-hard cheese, from ewe's milk", "Semi-hard cheese, from cow's milk"), true);
+	// same species, different named variety -> not an identity conflict (a grade shift, at most)
+	assert.equal(identityConflict("Semi-hard cheese, from ewe's milk", "Ossau-Iraty cheese, from ewe's milk"), false);
+	// raw classified as a cooked preparation (and vice versa)
+	assert.equal(identityConflict('Beef, round, raw', 'Beef, roast beef, roasted/baked'), true);
+	assert.equal(identityConflict('Pork, chop, raw', 'Pork, chop, grilled'), true);
+	// both raw, different cut -> a leaf error, not a prep conflict
+	assert.equal(identityConflict('Beef, round, raw', 'Beef, shoulder, raw'), false);
+	// neither side carries a species or prep token -> no conflict
+	assert.equal(identityConflict('Biscuit (cookie), plain', 'Biscuit (cookie), reduced sugar'), false);
 });
 
-test('a near-miss is functionally correct only with the same recommendation pool (score>=2) and the same grade', () => {
-	// score 3: right L3, wrong archetype, same grade -> same recommendation and same displayed score.
-	assert.equal(isFunctionallyCorrect(3, 'C', 'C'), true);
-	// score 2: right L2, wrong L3 -> still the same substitution pool; same grade keeps the score too.
-	assert.equal(isFunctionallyCorrect(2, 'A', 'A'), true);
-	// different grade -> the displayed sustainability score would move.
-	assert.equal(isFunctionallyCorrect(3, 'C', 'D'), false);
-	// L2 diverged (score < 2) -> the recommendation pool differs, grade agreement is not enough.
-	assert.equal(isFunctionallyCorrect(1, 'A', 'A'), false);
-	assert.equal(isFunctionallyCorrect(0, 'A', 'A'), false);
-	// no grade on either side is not a match (a missing grade cannot vouch for the score).
-	assert.equal(isFunctionallyCorrect(3, null, null), false);
+test('missSeverity: an exact archetype match (score 4) is not a miss', () => {
+	assert.equal(missSeverity(4, 'A', 'A', 'X', 'X'), '');
+});
+
+test('missSeverity: a wrong L1 or L2 is a category miss -- the recommendation pool itself is wrong', () => {
+	assert.equal(missSeverity(0, 'E', null, "Feta cheese, from ewe's milk", 'Wine, red'), 'category');
+	assert.equal(missSeverity(1, 'E', 'B', "Feta cheese, from ewe's milk", 'Milk, semi-skimmed, UHT'), 'category');
+});
+
+test('missSeverity: a species/prep conflict is an identity miss even when the Nutri-Score grade matches', () => {
+	// line 13: goat-ewe cheese classified as cow feta, both grade E -> identity, NOT cosmetic
+	assert.equal(missSeverity(2, 'E', 'E', "Semi-hard cheese, from ewe's milk", "Feta-type cheese from cow's milk"), 'identity');
+	assert.equal(missSeverity(3, 'A', 'A', 'Beef, round, raw', 'Beef, roast beef, roasted/baked'), 'identity');
+});
+
+test('missSeverity: within the right pool, a grade change is grade-shift and a matching grade is cosmetic', () => {
+	// same species, grade moves E->D (the Ossau-Iraty attractor): the displayed score would move
+	assert.equal(missSeverity(3, 'E', 'D', "Semi-hard cheese, from ewe's milk", "Ossau-Iraty cheese, from ewe's milk"), 'grade-shift');
+	// a missing grade cannot vouch for the displayed score -> treat as a shift
+	assert.equal(missSeverity(3, 'C', null, 'X', 'Y'), 'grade-shift');
+	// same grade, no identity conflict -> near-equivalent output
+	assert.equal(missSeverity(3, 'C', 'C', "Emmental cheese, from cow's milk", "Emmental cheese, grated, from cow's milk"), 'cosmetic');
+	assert.equal(missSeverity(2, 'E', 'E', 'Butter oil or concentrated butter', 'Butter, 80% fat, lightly salted'), 'cosmetic');
 });
