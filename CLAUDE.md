@@ -18,6 +18,11 @@ Treat `tealhelix-architecture/src/site/markdown/CodingConventions.md` as authori
 tealhelix/
 ├── tealhelix-architecture/        Pure domain model (entities, value types). No framework deps.
 │   └── howibuy-model/            HowiBuy domain entities
+│   └── howibuy-model-json/       Map the HowiBuy model to JSON with Jackson
+│   └── src
+│       └── site
+│           └── markdown
+│               └── adr           The directory to put Architecture Decision Records
 ├── tealhelix-common/              Cross-microservice infrastructure. No Quarkus deps outside deployment modules.
 │   ├── tealhelix-common-types/    Shared value types (Email, UserId, ...)
 │   ├── tealhelix-common-dao-reactive/         Persistence abstraction interfaces (ReactivePersistenceContext, ...)
