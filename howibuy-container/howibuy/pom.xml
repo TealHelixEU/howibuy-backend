@@ -18,6 +18,58 @@
 	</properties>
 
 	<dependencies>
+		<!-- PROJECT -->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>howibuy-dao-hibernate-reactive</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>howibuy-jaxrs</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>howibuy-model-json</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>howibuy-services</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>sfc-dao-hibernate-reactive</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>sfc-jaxrs</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>sfc-services</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-dao-reactive-hibernate</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-services-impl</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-web</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<!-- FRAMEWORK -->
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -85,47 +137,10 @@
 			<artifactId>quarkus-langchain4j-ollama</artifactId>
 		</dependency>
 
-		<!-- FRAMEWORK TEST -->
+		<!-- OTHER -->
 		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-junit</artifactId>
-		</dependency>
-
-		<!-- PROJECT -->
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>howibuy-dao-hibernate-reactive</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>howibuy-jaxrs</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>howibuy-model-json</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>howibuy-services</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>tealhelix-common-dao-reactive-hibernate</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>tealhelix-common-services-impl</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>tealhelix-common-web</artifactId>
-			<version>${project.version}</version>
+			<groupId>org.jboss.slf4j</groupId>
+			<artifactId>slf4j-jboss-logmanager</artifactId>
 		</dependency>
 
 		<!-- PROJECT TEST -->
@@ -150,10 +165,10 @@
 			<type>pom</type>
 		</dependency>
 
-		<!-- OTHER -->
+		<!-- FRAMEWORK TEST -->
 		<dependency>
-			<groupId>org.jboss.slf4j</groupId>
-			<artifactId>slf4j-jboss-logmanager</artifactId>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-junit</artifactId>
 		</dependency>
 
 		<!-- TEST -->
@@ -204,6 +219,34 @@
 						<configuration>
 							<debug>5105</debug>
 						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>dbupdate-howibuy</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.liquibase</groupId>
+						<artifactId>liquibase-maven-plugin</artifactId>
+						<version>${version.liquibase}</version>
+						<configuration>
+							<changeLogFile>db.changelog.xml</changeLogFile>
+							<promptOnNonLocalDatabase>false</promptOnNonLocalDatabase>
+							<url>${database.howibuy.jdbc.url}</url>
+							<username>${database.howibuy.username}</username>
+							<password>${database.howibuy.password}</password>
+						</configuration>
+						<executions>
+							<execution>
+								<id>liquibase-update</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>update</goal>
+								</goals>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>

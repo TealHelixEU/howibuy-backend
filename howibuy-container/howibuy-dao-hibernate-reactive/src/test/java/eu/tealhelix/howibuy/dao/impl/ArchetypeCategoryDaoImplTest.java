@@ -40,7 +40,7 @@ public class ArchetypeCategoryDaoImplTest {
 	@RegisterExtension
 	@SuppressWarnings("unused")
 	private static final LiquibaseExtension liquibaseExtension =
-			LiquibaseExtension.withContexts(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "test");
+			new LiquibaseExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "howibuy.db.changelog.xml", "test");
 
 	@RegisterExtension
 	@SuppressWarnings("unused")

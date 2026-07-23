@@ -24,5 +24,10 @@
 		<module>howibuy-services</module>
 		<module>howibuy-services-model</module>
 		<module>howibuy-testutils</module>
+		<module>sfc-dao</module>
+		<module>sfc-dao-hibernate-reactive</module>
+		<module>sfc-jaxrs</module>
+		<module>sfc-service-interfaces</module>
+		<module>sfc-services</module>
 	</modules>
 </project>

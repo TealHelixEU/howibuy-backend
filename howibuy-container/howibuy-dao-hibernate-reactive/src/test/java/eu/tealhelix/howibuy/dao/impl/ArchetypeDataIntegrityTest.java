@@ -37,7 +37,7 @@ public class ArchetypeDataIntegrityTest {
 	@RegisterExtension
 	@SuppressWarnings("unused")
 	private static final LiquibaseExtension liquibaseExtension =
-			LiquibaseExtension.withContexts(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "appdata");
+			new LiquibaseExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "howibuy.db.changelog.xml", "appdata");
 
 	@RegisterExtension
 	@SuppressWarnings("unused")

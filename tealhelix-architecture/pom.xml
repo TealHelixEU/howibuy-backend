@@ -18,5 +18,6 @@
 	<modules>
 		<module>howibuy-model</module>
 		<module>howibuy-model-json</module>
+		<module>sfc-model</module>
 	</modules>
 </project>

@@ -91,6 +91,10 @@ mvn package -Pdocker # to build the docker images too
 
 ### Creating/updating the DB
 
+The aggregating changelog root now lives in the `howibuy` deployable and `<include>`s per-module changelogs that
+ship inside the DAO-impl artifacts, so Liquibase resolves them from the classpath. Build/install the reactor first
+(`mvn install`) so those artifacts are on the plugin classpath.
+
 Assuming that the properties are defined through a Maven profile e.g., like the `th-local-postgres` in
 `~/.m2/settings.xml` that was described above, run the following:
 
@@ -108,8 +112,10 @@ mvn process-resources -Pdbupdate-howibuy -Ddatabase.howibuy.jdbc.url=... -Ddatab
 
 #### Rolling back changes
 
-Occasionally you may want to roll back some changes. Switch to the appropriate migration project and run
-(example is for HowiBuy/HowiBuy):
+Occasionally you may want to roll back some changes. The aggregating changelog root lives in the `howibuy` deployable
+module (`howibuy-container/howibuy`); its per-module changelogs live in the DAO-impl modules, so build/install the
+modules first (`mvn install`) for them to resolve. Switch to the deployable module and run
+(example is for HowiBuy):
 
 ```shell
 mvn org.liquibase:liquibase-maven-plugin:rollback \

@@ -65,8 +65,15 @@ bundle together.
 
 ## Liquibase
 
-- Changelog root: `howibuy-container/howibuy-dao-hibernate-reactive/src/main/resources/db.changelog.xml`, including
-  per-version files under `changelogs/v1.0.0/`.
+- The aggregating changelog root lives in the `howibuy` deployable
+  (`howibuy-container/howibuy/src/main/resources/db.changelog.xml`) because Quarkus runs one changelog per datasource
+  and SFC shares HowiBuy's datasource. It `<include>`s one per-module changelog per bounded context, each owned by its
+  own DAO-impl module:
+  - `howibuy.db.changelog.xml` (in `howibuy-dao-hibernate-reactive`) includes the HowiBuy per-version files under
+    `changelogs/v1.0.0/`.
+  - `sfc.db.changelog.xml` (in `sfc-dao-hibernate-reactive`) owns the Sustainable Food Compass changesets.
+  - Each module owns only its own changesets; add new SFC/HowiBuy changesets to the respective per-module changelog,
+    never to the deployable's root.
 - **For changes that belong to the same epic/ticket, merge new changesets into the existing per-epic file rather than
   creating a new one.** Minimize the number of new changeset files.
 - The `dev` context loads development seed data — activate with `-Dliquibase.contexts=dev` on the `dbupdate-howibuy` profile.
