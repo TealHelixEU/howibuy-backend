@@ -7,4 +7,5 @@
 	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
 >
 	<!-- Sustainable Food Compass changesets, owned by sfc-dao-hibernate-reactive. -->
+	<include relativeToChangelogFile="true" file="changelogs/v1.0.0/20260723_sfc_categories_questions.xml" />
 </databaseChangeLog>

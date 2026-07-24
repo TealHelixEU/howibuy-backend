@@ -1,0 +1,44 @@
+question_id,lang,text
+35ccf5f2-2446-56cd-9f29-427c309a5049,et,"Fossiilkütuste kasutamine: Toidutootmiseks vajalik fossiilkütuste (nt kivisöe, nafta ja maagaasi) kogus."
+03722d78-3c6a-5b83-9229-bec43ee67f73,et,Mineraalide ja metallide kasutamine: Toidutootmises kasutatavate mineraalide (nt väetiste tootmiseks) ja metallide (nt põllumajandusseadmete jaoks vajaliku alumiiniumi tootmiseks) kogus.
+4975aade-fd21-5a9b-8a31-7408b6094dc0,et,Vee kasutamine: Toidutootmiseks vajalik vee kogus.
+03a3037a-442e-5251-8233-90f6a016050c,et,Maa kasutamine: Toidutootmiseks vajalik maa-ala.
+5ae98e6f-939f-578d-b31c-e5e64ec34552,et,Bioloogiline mitmekesisus: Toidutootmise mõju Maa elurikkusele ning taime- ja loomaliikide väljasuremisele.
+40a17846-9f33-56a3-9ded-42e423b8cbdf,et,Toksiline veereostus: Toidutootmisest pärinevate toksiliste kemikaalide põhjustatud veereostus.
+4c702395-b20a-5c47-adef-a08377941651,et,"Üleväetamine: Toidutootmisest tulenev toitainereostus pinnases ja vees, mis mõjutab negatiivselt taimi ja loomi."
+b0ed8dee-ca8f-5a96-a554-fbea07173771,et,"Hapestumine (pH taseme langus): Vihma, pinnase ja vee happesuse suurenemine toidutootmisest tuleneva saaste tõttu, mis mõjutab negatiivselt taimi ja loomi."
+284d1894-4d78-57e3-a433-e19c42ee5a78,et,Osoonikihi kahanemine: Toidutootmisest pärinevate kemikaalide põhjustatud osoonikihi kahjustumine.
+14329c24-e163-5712-aec9-52d3fffca0ec,et,"Õhusaaste: Toidutootmisest õhku paiskuvad saasteained, mis halvendavad õhukvaliteeti ja soodustavad sudu teket."
+c4682787-22e2-5992-b024-2103b408e0d8,et,"Kliimamuutused: Toidutootmisest pärinevad kasvuhoonegaaside heitmed, mis soojendavad planeeti."
+24e57a41-25e6-595c-b8be-7c9c4276e361,et,"Mineraalisisaldus: Mikrotoitained, nagu kaltsium, raud, tsink ja kaalium, mis on vajalikud keha elutähtsate funktsioonide jaoks, sh luude arenguks ning närvi- ja lihastalitluse toetamiseks."
+1ac7e0c2-87e5-5f3b-adfc-bf3328aa4600,et,"Vitamiinisisaldus: Mikrotoitained, mida keha vajab mitmesuguste füsioloogiliste funktsioonide, sh ainevahetuse, kasvu ja immuunsuse tagamiseks."
+d90a441b-b432-56ef-a266-4caee20122e9,et,"Kalorsus: Energiaühikud, mida keha vajab põhifunktsioonideks, nagu hingamine ja liikumine, ning mis võivad alatarbimisel põhjustada toitainete puudust või liigtarbimisel kaasa tuua kaalutõusu."
+dd032e00-c343-5b8f-9fad-261669604343,et,"Suhkrusisaldus: Süsivesikuliik, mis annab kiiret energiat, kuid võib liigtarbimisel soodustada terviseprobleeme, nagu rasvumine või suhkruhaigus."
+45050437-23ec-5f8f-843a-52c8cfd5f56a,et,"Soolasisaldus: Naatriumiallikas, mis täidab kehas olulisi funktsioone, nagu vedelikutasakaalu hoidmine ja lihaste kokkutõmmete toetamine, kuid mille liigtarbimine on seotud kõrgenenud vererõhu ja südame suurema koormusega."
+06323a02-d640-5ca6-896b-51dafef82648,et,"Küllastunud rasvhapete sisaldus: Rasvatüüp, mis võib liigtarbimisel suurendada südamehaiguste riski."
+ac9a19a1-cef4-5683-9c93-916c733e66ee,et,"Kiudainesisaldus: Süsivesikuliik, mida leidub nt puu- ja köögiviljades ning täisteratoodetes, mis toetab seedimist ja aitab reguleerida südame-veresoonkonna talitlust."
+9cbcada1-ea45-5a0b-bc39-24ea418a08b0,et,"Proteiinisisaldus: Aminohappeahelad, mis täidavad kehas olulist rolli paljudes funktsioonides, sh kudede taastamises."
+cdb86f6c-9d32-51bc-ba84-eed95f46b913,et,"Sotsiaalne kontakt: Põllumajandustavad, mis võimaldavad loomadele sotsiaalset kontakti liigikaaslastega."
+40bddc30-4749-5c8e-8a39-487c1c28ea2c,et,"Piisav ruum: Põllumajandustavad, mis ei hoia loomi kinnistes või kitsastes sulgudes."
+43761d6a-6bf8-55ef-9998-150e979d6a96,et,"Vabapidamine: Põllumajandustavad, mis võimaldavad loomadel viibida vabas õhus karjamaal või muus looduslikus keskkonnas."
+af533cc7-625d-55a7-9f61-33bd352c607f,et,"Ema-järglase suhe: Põllumajandustavad, mis ei eralda emaslooma tema järglasest, vaid võimaldavad ema-järglase sideme kujunemist (nt veiste puhul)."
+7c7b33a3-29a9-57b0-8f8e-b0e9a338c40c,et,"Keha muutvate või moonutavate protseduuride vältimine: Põllumajandustavad, mis ei hõlma loomade keha muutvaid protseduure, nagu noka kärpimine või saba lühendamine."
+44bd89db-c803-57dc-9e29-b5114be2dad6,et,"Liigikohane toitmine: Põllumajandustavad, mis pakuvad loomadele nende loomupärasele toidule võimalikult lähedast söötmist."
+593f749c-1f90-53e3-85fd-28938798c283,et,"Veterinaarravimite liig- või väärkasutuse vältimine: Põllumajandustavad, mis ei kasuta veterinaarravimeid ülemäära ega ilma selge meditsiinilise vajaduseta haiguste ennetamise eesmärgil."
+f451af17-67ee-5376-bb34-24e3a947b09e,et,"Minimaalsed loomade veoteekonnad: Põllumajandustavad, mis veavad loomi vaid võimalikult lühikestel vahemaadel."
+25d878a3-5bb4-561f-8085-c2094b06741a,et,"Vähendatud stressiga hukkamine: Põllumajandustavad, mis tagavad loomade võimalikult vähese hirmu ja valuga hukkamise (sh anesteesia nõuetekohane kasutamine)."
+055ea8e2-57c9-5fa1-97ed-a6440270bc2b,et,"Kognitiivne hooldus: Põllumajandustavad, mis pakuvad loomadele kognitiivset stimulatsiooni igavuse ja alakoormuse vältimiseks (nt närimislelud)."
+c7e098ca-a947-5d49-8047-9fda760baaa1,et,"Loomade tööjõu mittekasutamine: Põllumajandustavad, mis ei kasuta loomi tööjõuna konkreetsete ülesannete täitmisel (nt kookospähklite korjamiseks aheldatud ahvid)."
+9d6a72f2-31f4-5b33-a6bb-57de39bfbe98,et,"Kaasatus ja võrdsus tööl: Toidusektori töötajate õiglane kohtlemine sõltumata soost, päritolust, vanusest või puudest."
+e4ee07e4-ba89-56cb-849d-85b1f6e773e8,et,"Tervishoid ja ohutus tööl: Toidusektori töötajate kaitse füüsiliste ohtude eest (nt kokkupuude pestitsiididega, äärmuslikud ilmastikutingimused või kiirgus)."
+e9f52320-ae2c-51bd-8735-febb0a67c76e,et,"Läbipaistvad töötingimused: Töötajatele töötingimuste (nt töötasu, tööaeg ja tööülesanded) avalikustamine enne töölepingu sõlmimist toidusektoris."
+ffb879e9-1674-5f65-b49a-97a364c96ff7,et,"Õiglane töötasu: Toidusektori töötajate, sh hooajatöötajate, õiglane tasustamine nende töö eest."
+0995693a-b5d8-5598-8c68-0d4b36f202bd,et,Õiglane sissetulek: Põllumajandustootjate ja teiste toidusektori füüsilisest isikust ettevõtjate õiglane tasustamine nende töö eest.
+efd267d0-3c2c-5bb5-9b07-d10fb517c736,et,"Töö- ja eraelu tasakaal: Tööhõivepõhimõtted, mis võimaldavad toidusektori töötajatel tasakaalustada töö- ja puhkeaega."
+434a1b35-f100-5012-885e-cd0830f0a8c4,et,"Ametiühinguõigused: Tööõigus, mis võimaldab toidusektori töötajatel moodustada ja kasutada ametiühinguid, et ühiselt läbi rääkida paremate töötingimuste ja õiglasema töötasu nimel."
+fb27bacc-5bbe-5dfc-b5b6-39112f09be6e,et,"Tervisekindlustus: Tervisekindlustuse pakkumine toidusektori töötajatele nende tervise ja heaolu toetamiseks (eriti riikides, kus kohustuslikku tervisekindlustust ei ole)."
+ff141150-9b35-559a-9cd9-30c3126f3ca8,et,Ebaeetiliste ettevõtlustavade vältimine: eksitava reklaami ja muude väärpraktikate vältimine toidusektoris.
+0182e0ef-c981-5d86-bdc5-9f663425c2ac,et,"Õiglane majutus: Nõuetekohase majutuse tagamine toidusektori töötajatele, keda majutatakse tööandja territooriumil, sh hooajatöölised."
+537b177f-5236-5f1e-b308-e76352b1403f,et,"Toidu taskukohasus: Toiduhinnad, mis on enamiku tarbijate jaoks taskukohased ega koorma nende eelarvet liigselt."
+f4b33224-fcc2-5326-81eb-37ae9d81d7ce,et,"Piirkondlik majanduslik heaolu: See, mil määral toidutootmine panustab konkreetse piirkonna majanduslikku arengusse, näiteks töökohtade säilitamise või loomise kaudu."
+8716c708-7106-5317-998e-e818a354a951,et,"Toiduohutus: Piirkondlike toidusüsteemide majanduslik suutlikkus kriisidele (nt pandeemiad, sõjad või looduskatastroofid) vastu pidada ja tagada inimeste pidev varustamine toiduga"

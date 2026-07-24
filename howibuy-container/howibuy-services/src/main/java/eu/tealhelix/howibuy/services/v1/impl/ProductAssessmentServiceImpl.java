@@ -6,9 +6,9 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
-import eu.tealhelix.howibuy.services.v1.authz.HowiBuyAuthorization;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductData;
 import io.smallrye.mutiny.Multi;
@@ -20,12 +20,12 @@ import org.slf4j.LoggerFactory;
 public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	private static final Logger LOG = LoggerFactory.getLogger(ProductAssessmentServiceImpl.class);
 
-	private final HowiBuyAuthorization authorization;
+	private final TealHelixAuthorization authorization;
 	private final SingleProductAssessor singleProductAssessor;
 
 	@Inject
 	public ProductAssessmentServiceImpl(
-			HowiBuyAuthorization authorization,
+			TealHelixAuthorization authorization,
 			SingleProductAssessor singleProductAssessor
 	) {
 		this.authorization = authorization;

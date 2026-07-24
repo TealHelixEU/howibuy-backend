@@ -1,15 +1,15 @@
-package eu.tealhelix.howibuy.services.v1.authz.impl;
+package eu.tealhelix.common.services.authz.impl;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.model.User;
-import eu.tealhelix.howibuy.services.v1.authz.HowiBuyAuthorization;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
-public class HowiBuyAuthorizationImpl implements HowiBuyAuthorization {
+public class TealHelixAuthorizationImpl implements TealHelixAuthorization {
 
 	public static final String REQUIRES_VALID_AUTHENTICATED_USER = "This operation requires a valid, authenticated user";
 

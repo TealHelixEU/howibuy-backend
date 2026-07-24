@@ -9,6 +9,7 @@ import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.common.types.validation.RequiredInputMissingException;
@@ -19,7 +20,6 @@ import eu.tealhelix.howibuy.dao.CorrelationIdDao;
 import eu.tealhelix.howibuy.dao.RetailerDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
-import eu.tealhelix.howibuy.services.v1.authz.HowiBuyAuthorization;
 import eu.tealhelix.howibuy.v1.types.RetailerId;
 import eu.tealhelix.howibuy.v1.types.impl.GenericRetailerId;
 import io.smallrye.mutiny.Uni;
@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 public class UserImpersonationServiceImpl implements UserImpersonationService {
 	private static final Logger LOG = LoggerFactory.getLogger(UserImpersonationServiceImpl.class);
 
-	private final HowiBuyAuthorization authorization;
+	private final TealHelixAuthorization authorization;
 	private final CorrelationIdDao correlationIdDao;
 	private final ConsentDao consentDao;
 	private final UserProfileDao userProfileDao;
@@ -39,7 +39,7 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 
 	@Inject
 	public UserImpersonationServiceImpl(
-			HowiBuyAuthorization authorization,
+			TealHelixAuthorization authorization,
 			CorrelationIdDao correlationIdDao,
 			ConsentDao consentDao,
 			UserProfileDao userProfileDao,

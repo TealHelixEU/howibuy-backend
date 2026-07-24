@@ -23,6 +23,11 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>sfc-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>sfc-service-interfaces</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -43,11 +48,22 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-types</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-utils</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
 		<!-- PROJECT TEST -->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-services-impl</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-testutils</artifactId>
@@ -63,6 +79,10 @@
 		<dependency>
 			<groupId>jakarta.enterprise</groupId>
 			<artifactId>jakarta.enterprise.cdi-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.microprofile.config</groupId>
+			<artifactId>microprofile-config-api</artifactId>
 		</dependency>
 
 		<!-- OTHER -->

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="sfc_categories_questions_schema" author="nikospara">
+		<createTable tableName="TH_SFC_CATEGORY" remarks="A compass category addressing one sustainability dimension; deliberately thin, all human-facing fields are localized in TH_SFC_CATEGORY_TEXT">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_SFC_CATEGORY" />
+			</column>
+			<column name="dimension" type="VARCHAR(32)" remarks="The sustainability dimension the category addresses (SustainabilityDimension enum name); not unique — several categories per dimension are allowed">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_CATEGORY__DIMENSION" />
+			</column>
+		</createTable>
+
+		<createTable tableName="TH_SFC_CATEGORY_TEXT" remarks="Per-language text of a compass category">
+			<column name="category_id" type="UUID" remarks="The category this text localizes; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_CATEGORY_TEXT__CATEGORY_ID" primaryKey="true" primaryKeyName="PK_TH_SFC_CATEGORY_TEXT" />
+			</column>
+			<column name="lang" type="VARCHAR(8)" remarks="ISO 639-1 language code, e.g. 'en', 'el'; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_CATEGORY_TEXT__LANG" primaryKey="true" primaryKeyName="PK_TH_SFC_CATEGORY_TEXT" />
+			</column>
+			<column name="name" type="VARCHAR(255)" remarks="The category name">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_CATEGORY_TEXT__NAME" />
+			</column>
+			<column name="description" type="TEXT" remarks="The rich-text category description">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_CATEGORY_TEXT__DESCRIPTION" />
+			</column>
+			<column name="video_url" type="VARCHAR(1024)" remarks="Link to the category's introductory video; nullable — absent until authored" />
+			<column name="detail_url" type="VARCHAR(1024)" remarks="Link to the category's detailed description; nullable — absent until authored" />
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_SFC_CATEGORY_TEXT" baseColumnNames="category_id" constraintName="FK_SFC_CATEGORY_TEXT__CATEGORY_ID__SFC_CATEGORY__ID" referencedTableName="TH_SFC_CATEGORY" referencedColumnNames="id" />
+
+		<createTable tableName="TH_SFC_QUESTION" remarks="A compass question, ordered within its category by position">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_SFC_QUESTION" />
+			</column>
+			<column name="category_id" type="UUID" remarks="The category this question belongs to">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_QUESTION__CATEGORY_ID" />
+			</column>
+			<column name="position" type="SMALLINT" remarks="The 1-based order of the question within its category">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_QUESTION__POSITION" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_SFC_QUESTION" baseColumnNames="category_id" constraintName="FK_SFC_QUESTION__CATEGORY_ID__SFC_CATEGORY__ID" referencedTableName="TH_SFC_CATEGORY" referencedColumnNames="id" />
+		<addUniqueConstraint tableName="TH_SFC_QUESTION" columnNames="category_id, position" constraintName="UQ_TH_SFC_QUESTION__CATEGORY_ID_POSITION" />
+
+		<createTable tableName="TH_SFC_QUESTION_TEXT" remarks="Per-language prompt of a compass question">
+			<column name="question_id" type="UUID" remarks="The question this text localizes; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_QUESTION_TEXT__QUESTION_ID" primaryKey="true" primaryKeyName="PK_TH_SFC_QUESTION_TEXT" />
+			</column>
+			<column name="lang" type="VARCHAR(8)" remarks="ISO 639-1 language code, e.g. 'en', 'el'; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_QUESTION_TEXT__LANG" primaryKey="true" primaryKeyName="PK_TH_SFC_QUESTION_TEXT" />
+			</column>
+			<column name="text" type="TEXT" remarks="The question prompt">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_QUESTION_TEXT__TEXT" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_SFC_QUESTION_TEXT" baseColumnNames="question_id" constraintName="FK_SFC_QUESTION_TEXT__QUESTION_ID__SFC_QUESTION__ID" referencedTableName="TH_SFC_QUESTION" referencedColumnNames="id" />
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_categories" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_CATEGORY" file="db/sfc/sfc_category.csv" relativeToChangelogFile="false">
+			<column name="id" type="UUID" />
+			<column name="dimension" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_CATEGORY" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_category_text_en" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_CATEGORY_TEXT" file="db/sfc/sfc_category_text_en.csv" relativeToChangelogFile="false">
+			<column name="category_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="name" type="STRING" />
+			<column name="description" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_CATEGORY_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_category_text_el" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_CATEGORY_TEXT" file="db/sfc/sfc_category_text_el.csv" relativeToChangelogFile="false">
+			<column name="category_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="name" type="STRING" />
+			<column name="description" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_CATEGORY_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_category_text_nl" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_CATEGORY_TEXT" file="db/sfc/sfc_category_text_nl.csv" relativeToChangelogFile="false">
+			<column name="category_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="name" type="STRING" />
+			<column name="description" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_CATEGORY_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_category_text_et" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_CATEGORY_TEXT" file="db/sfc/sfc_category_text_et.csv" relativeToChangelogFile="false">
+			<column name="category_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="name" type="STRING" />
+			<column name="description" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_CATEGORY_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_category_text_de" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_CATEGORY_TEXT" file="db/sfc/sfc_category_text_de.csv" relativeToChangelogFile="false">
+			<column name="category_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="name" type="STRING" />
+			<column name="description" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_CATEGORY_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_questions" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_QUESTION" file="db/sfc/sfc_question.csv" relativeToChangelogFile="false">
+			<column name="id" type="UUID" />
+			<column name="category_id" type="UUID" />
+			<column name="position" type="NUMERIC" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_QUESTION" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_question_text_en" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_QUESTION_TEXT" file="db/sfc/sfc_question_text_en.csv" relativeToChangelogFile="false">
+			<column name="question_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="text" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_QUESTION_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_question_text_el" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_QUESTION_TEXT" file="db/sfc/sfc_question_text_el.csv" relativeToChangelogFile="false">
+			<column name="question_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="text" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_QUESTION_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_question_text_nl" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_QUESTION_TEXT" file="db/sfc/sfc_question_text_nl.csv" relativeToChangelogFile="false">
+			<column name="question_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="text" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_QUESTION_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_question_text_et" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_QUESTION_TEXT" file="db/sfc/sfc_question_text_et.csv" relativeToChangelogFile="false">
+			<column name="question_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="text" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_QUESTION_TEXT" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="sfc_categories_questions_data_question_text_de" author="nikospara" context="appdata">
+		<loadData tableName="TH_SFC_QUESTION_TEXT" file="db/sfc/sfc_question_text_de.csv" relativeToChangelogFile="false">
+			<column name="question_id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="text" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_SFC_QUESTION_TEXT" />
+		</rollback>
+	</changeSet>
+</databaseChangeLog>

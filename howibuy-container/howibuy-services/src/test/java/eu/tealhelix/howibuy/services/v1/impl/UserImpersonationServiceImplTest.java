@@ -18,10 +18,10 @@ import eu.tealhelix.howibuy.dao.ConsentDao;
 import eu.tealhelix.howibuy.dao.CorrelationIdDao;
 import eu.tealhelix.howibuy.dao.RetailerDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
-import eu.tealhelix.howibuy.services.v1.authz.impl.HowiBuyAuthorizationImpl;
 import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
@@ -41,7 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @EnableAutoWeld
-@AddBeanClasses(HowiBuyAuthorizationImpl.class)
+@AddBeanClasses(TealHelixAuthorizationImpl.class)
 @ExtendWith(MockitoExtension.class)
 public class UserImpersonationServiceImplTest {
 	private static final long ASYNC_WAIT_SECONDS = 300;

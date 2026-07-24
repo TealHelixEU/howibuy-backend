@@ -67,6 +67,12 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-services-impl</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-testutils</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>

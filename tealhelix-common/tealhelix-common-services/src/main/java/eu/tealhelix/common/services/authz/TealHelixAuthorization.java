@@ -1,12 +1,12 @@
-package eu.tealhelix.howibuy.services.v1.authz;
+package eu.tealhelix.common.services.authz;
 
 import eu.tealhelix.common.v1.model.User;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Module-specific methods for authorizing the access to the services of HowiBuy.
+ * Methods for authorizing access to the services of TealHelix.
  */
-public interface HowiBuyAuthorization {
+public interface TealHelixAuthorization {
 	void requireLogin(User user);
 
 	void requireUserNotService(User user);

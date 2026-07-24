@@ -15,11 +15,11 @@ import java.util.Locale;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
-import eu.tealhelix.howibuy.services.v1.authz.impl.HowiBuyAuthorizationImpl;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @EnableAutoWeld
-@AddBeanClasses(HowiBuyAuthorizationImpl.class)
+@AddBeanClasses(TealHelixAuthorizationImpl.class)
 @ExtendWith(MockitoExtension.class)
 public class ProductAssessmentServiceImplTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);

@@ -1,0 +1,44 @@
+question_id,lang,text
+35ccf5f2-2446-56cd-9f29-427c309a5049,nl,"Gebruik van fossiele brandstoffen: De hoeveelheid fossiele brandstoffen (zoals steenkool, olie en aardgas) die nodig is voor voedselproductie."
+03722d78-3c6a-5b83-9229-bec43ee67f73,nl,Gebruik van mineralen en metalen: De hoeveelheid mineralen (bijv. voor de productie van meststoffen) en metalen (bijv. voor de productie van aluminium voor landbouwmachines) die worden gebruikt in voedselproductie.
+4975aade-fd21-5a9b-8a31-7408b6094dc0,nl,Watergebruik: De hoeveelheid water die nodig is voor voedselproductie.
+03a3037a-442e-5251-8233-90f6a016050c,nl,Landgebruik: De hoeveelheid land die nodig is voor voedselproductie.
+5ae98e6f-939f-578d-b31c-e5e64ec34552,nl,Biodiversiteit: De impact van voedselproductie op de diversiteit aan leven op aarde en het uitsterven van planten- en diersoorten.
+40a17846-9f33-56a3-9ded-42e423b8cbdf,nl,Toxische watervervuiling: De vervuiling van water door toxische chemicaliën uit voedselproductie.
+4c702395-b20a-5c47-adef-a08377941651,nl,"Overbemesting: Voedingsstoffenvervuiling van bodem en water door voedselproductie, wat planten en dieren negatief beïnvloedt."
+b0ed8dee-ca8f-5a96-a554-fbea07173771,nl,"Verzuring (daling van de pH): Een toename van de zuurgraad van regen, bodem en water door vervuiling door voedselproductie, wat planten en dieren negatief beïnvloedt."
+284d1894-4d78-57e3-a433-e19c42ee5a78,nl,Ozonafbraak: De vernietiging van de ozonlaag veroorzaakt door chemicaliën uit voedselproductie.
+14329c24-e163-5712-aec9-52d3fffca0ec,nl,"Luchtvervuiling: Verontreinigende stoffen in de lucht die vrijkomen bij voedselproductie, waardoor de luchtkwaliteit verslechtert en smog ontstaat."
+c4682787-22e2-5992-b024-2103b408e0d8,nl,Klimaatverandering: De uitstoot van broeikasgassen uit voedselproductie die de planeet warmer maken.
+24e57a41-25e6-595c-b8be-7c9c4276e361,nl,"Mineralengehalte: Microvoedingsstoffen zoals calcium, ijzer, zink en kalium die het lichaam nodig heeft voor vitale functies, waaronder het opbouwen van botten en het ondersteunen van zenuw- en spierwerking."
+1ac7e0c2-87e5-5f3b-adfc-bf3328aa4600,nl,"Vitaminegehalte: Microvoedingsstoffen die het lichaam nodig heeft voor het behoud van verschillende fysiologische functies, zoals metabolisme, groei en afweer."
+d90a441b-b432-56ef-a266-4caee20122e9,nl,"Caloriegehalte: Eenheden energie die het lichaam nodig heeft voor basisfuncties zoals ademhaling en beweging, en die kunnen leiden tot voedingstekorten bij te kleine inname of tot gewichtstoename bij overmatige inname."
+dd032e00-c343-5b8f-9fad-261669604343,nl,"Suikergehalte: Een type koolhydraat dat snelle energie levert, maar kan bijdragen aan gezondheidsproblemen zoals obesitas of diabetes bij overmatige inname."
+45050437-23ec-5f8f-843a-52c8cfd5f56a,nl,"Zoutgehalte: Een bron van natrium die een vitale rol speelt in lichaamsfuncties zoals hydratatie en spiercontracties, maar een hoge inname wordt in verband gebracht met verhoogde bloeddruk en hartbelasting."
+06323a02-d640-5ca6-896b-51dafef82648,nl,Verzadigd vetgehalte: Een type vet dat het risico op hartziekten kan verhogen bij overmatige inname.
+ac9a19a1-cef4-5683-9c93-916c733e66ee,nl,"Vezelgehalt: Een type koolhydraat dat bijvoorbeeld voorkomt in fruit, groenten of volkorenproducten, de spijsvertering ondersteunt en helpt het cardiovasculaire systeem te reguleren."
+9cbcada1-ea45-5a0b-bc39-24ea418a08b0,nl,"Eiwitgehalte: Aminozuurketens die een sleutelrol spelen in veel lichaamsfuncties, zoals weefselherstel."
+cdb86f6c-9d32-51bc-ba84-eed95f46b913,nl,Sociaal contact: Landbouwpraktijken die dieren in staat stellen sociaal contact te hebben met soortgenoten.
+40bddc30-4749-5c8e-8a39-487c1c28ea2c,nl,Voldoende ruimte: Landbouwpraktijken die dieren niet vasthouden in krappe hokken.
+43761d6a-6bf8-55ef-9998-150e979d6a96,nl,Vrije uitloop: Landbouwpraktijken die dieren toestaan buiten rond te lopen op weilanden of ander natuurlijk terrein.
+af533cc7-625d-55a7-9f61-33bd352c607f,nl,"Moeder-jong relatie: Landbouwpraktijken die het moederdier niet van haar jongen scheidt, maar wel moeder-jongbinding toestaan (bijv. bij runderen)."
+7c7b33a3-29a9-57b0-8f8e-b0e9a338c40c,nl,"Vermijding van lichaam-veranderende ingrepen: Landbouwpraktijken die geen veranderingen aan het lichaam van een dier omvatten, zoals het trimmen van snavels of het couperen van staarten."
+44bd89db-c803-57dc-9e29-b5114be2dad6,nl,Soort-specifiek dieet: Landbouwpraktijken die dieren een dieet aanbieden dat sterk lijkt op wat ze van nature zouden eten.
+593f749c-1f90-53e3-85fd-28938798c283,nl,Geen overmatig of misbruik van diergeneeskundige middelen: Landbouwpraktijken waarbij geen medicijnen aan dieren worden toegediend in overmaat of zonder duidelijke medische noodzaak als vorm van ziektepreventie.
+f451af17-67ee-5376-bb34-24e3a947b09e,nl,Minimale transportroutes: Landbouwpraktijken waarbij dieren alleen over de kortst mogelijke afstanden worden vervoerd.
+25d878a3-5bb4-561f-8085-c2094b06741a,nl,Slachten met verminderde stress: landbouwpraktijken die dieren slachten op een manier die angst en pijn vermindert (bijv. met het correct gebruik van verdoving).
+055ea8e2-57c9-5fa1-97ed-a6440270bc2b,nl,Cognitieve zorg: Landbouwpraktijken die dieren cognitieve stimulatie bieden om verveling en onderprikkeling te voorkomen (bijv. kauwspeelgoed).
+c7e098ca-a947-5d49-8047-9fda760baaa1,nl,Geen uitbuiting van dierenarbeid: landbouwpraktijken waarbij dieren niet als arbeidskracht worden gebruikt om specifieke taken uit te voeren (bijv. apen die aan kettingen worden gehouden om kokosnoten te oogsten).
+9d6a72f2-31f4-5b33-a6bb-57de39bfbe98,nl,"Inclusie en gelijkheid op het werk: Eerlijke behandeling van werknemers in de voedingssector op basis van factoren zoals geslacht, afkomst, leeftijd of beperking."
+e4ee07e4-ba89-56cb-849d-85b1f6e773e8,nl,"Gezondheid en veiligheid op het werk: Bescherming van werknemers in de voedingssector tegen lichamelijk letsel (bijv. blootstelling aan pesticiden, extreme weersomstandigheden of straling)."
+e9f52320-ae2c-51bd-8735-febb0a67c76e,nl,"Transparante arbeidsvoorwaarden: Openbaarmaking van arbeidsvoorwaarden in de voedingssector, zoals loon, werktijden en verantwoordelijkheden vóór het ondertekenen van het contract."
+ffb879e9-1674-5f65-b49a-97a364c96ff7,nl,Eerlijke lonen: Eerlijke vergoeding van werknemers (bijv. seizoenarbeiders) in de voedingssector voor hun werk.
+0995693a-b5d8-5598-8c68-0d4b36f202bd,nl,Eerlijk inkomen: Eerlijke vergoeding van boeren en andere zelfstandigen in de voedselsector voor hun werk.
+efd267d0-3c2c-5bb5-9b07-d10fb517c736,nl,Compatibiliteit tussen werk en privéleven: Een arbeidsovereenkomst die ervoor zorgt dat werknemers in de voedingssector hun werk en hun vrije tijd kunnen balanceren.
+434a1b35-f100-5012-885e-cd0830f0a8c4,nl,Vakbondsrechten: Een arbeidsrecht dat werknemers in de voedingssector in staat stelt vakbonden te vormen en zich erbij te aan te sluiten om collectief te onderhandelen over betere werkomstandigheden en lonen.
+fb27bacc-5bbe-5dfc-b5b6-39112f09be6e,nl,Gezondheidszorgdekking: Verstrekken van medische verzekering om de gezondheid en het welzijn van werknemers in de voedingssector te verbeteren (vooral in landen die geen verplichte verzekeringspraktijken hebben).
+ff141150-9b35-559a-9cd9-30c3126f3ca8,nl,"Vermijden van bedrijfswanpraktijken: het vermijden van onethische bedrijfsactiviteiten in de voedingssector, zoals misleidende reclame."
+0182e0ef-c981-5d86-bdc5-9f663425c2ac,nl,"Eerlijke huisvesting: Het voorzien van degelijke huisvesting voor werknemers in de voedingssector die op het terrein van hun werkgever worden ondergebracht, zoals bijv. seizoenarbeiders op boerderijen."
+537b177f-5236-5f1e-b308-e76352b1403f,nl,Betaalbaarheid van voedingsmiddelen: Voedselprijzen die toegankelijk zijn voor de meeste consumenten en hun budget niet zwaar belasten.
+f4b33224-fcc2-5326-81eb-37ae9d81d7ce,nl,"Regionale economische welvaart: De mate waarin voedselproductie bijdraagt aan de economische ontwikkeling van een specifieke regio, bijv. door het behoud of de creatie van werkgelegenheid."
+8716c708-7106-5317-998e-e818a354a951,nl,"Voedselzekerheid: Het economische vermogen van regionale voedselsystemen om crisissen (bijv. pandemieën, oorlogen of natuurrampen) te weerstaan en mensen continu van voedingsmiddelen te voorzien."

@@ -1,0 +1,44 @@
+question_id,lang,text
+35ccf5f2-2446-56cd-9f29-427c309a5049,de,"Einsatz von fossilen Brennstoffen: Die Menge an fossilen Brennstoffen (wie Kohle, Öl und Erdgas), die für die Lebensmittelproduktion benötigt wird."
+03722d78-3c6a-5b83-9229-bec43ee67f73,de,Einsatz von Mineralien und Metallen: Die Verwendung von Mineralien (z.B. für die Herstellung von Dünger) und Metallen (z.B. für die Herstellung von Aluminium für landwirtschaftliche Geräte) in der Lebensmittelproduktion.
+4975aade-fd21-5a9b-8a31-7408b6094dc0,de,"Wasserverbrauch: Die Menge an Wasser, die für die Lebensmittelproduktion benötigt wird."
+03a3037a-442e-5251-8233-90f6a016050c,de,"Flächennutzung: Die Fläche an Land, die für die Lebensmittelproduktion benötigt wird."
+5ae98e6f-939f-578d-b31c-e5e64ec34552,de,Biodiversität: Die Auswirkungen der Lebensmittelproduktion auf die Artenvielfalt und das Aussterben von Pflanzen- und Tierarten.
+40a17846-9f33-56a3-9ded-42e423b8cbdf,de,Toxische Wasserverschmutzung: Die Verschmutzung von Gewässern durch giftige Chemikalien aus der Lebensmittelproduktion.
+4c702395-b20a-5c47-adef-a08377941651,de,Überdüngung: Die Nährstoffbelastung von Böden und Gewässern durch die Lebensmittelproduktion mit negativen Folgen für die Pflanzen- und Tierwelt.
+b0ed8dee-ca8f-5a96-a554-fbea07173771,de,"Versauerung (ph-Abnahme): Der Anstieg des Säuregehalts von Regen, Böden und Gewässern aufgrund von Umweltverschmutzung aus der Lebensmittelproduktion mit negativen Folgen für die Pflanzen- und Tierwelt."
+284d1894-4d78-57e3-a433-e19c42ee5a78,de,Abbau der Ozonschicht: Die Zerstörung der Ozonschicht durch Chemikalien aus der Lebensmittelproduktion.
+14329c24-e163-5712-aec9-52d3fffca0ec,de,"Luftverschmutzung: Schadstoffe, die durch die Lebensmittelproduktion freigesetzt werden, die Luftqualität verschlechtern und zur Smogbildung beitragen."
+c4682787-22e2-5992-b024-2103b408e0d8,de,"Klimawandel: Der Ausstoß von Treibhausgasen durch die Lebensmittelproduktion, die den Planeten erhitzen."
+24e57a41-25e6-595c-b8be-7c9c4276e361,de,"Mineralstoffgehalt: Mikronährstoffe wie Kalzium, Eisen, Zink und Kalium, die der Körper für lebenswichtige Funktionen benötigt, wie den Knochenaufbau oder die Unterstützung von Nerven- und Muskelfunktionen."
+1ac7e0c2-87e5-5f3b-adfc-bf3328aa4600,de,"Vitamingehalt: Mikronährstoffe, die der Körper für die Aufrechterhaltung verschiedener physiologischer Funktionen wie Stoffwechsel, Wachstum und Immunität benötigt."
+d90a441b-b432-56ef-a266-4caee20122e9,de,"Kaloriengehalt: Energieeinheiten, die der Körper für grundlegende Funktionen wie Atmung und Bewegung benötigt und die bei zu geringer Aufnahme zu einem Nährstoffmangel bzw. bei zu hoher Aufnahme zu einer Gewichtszunahme führen können."
+dd032e00-c343-5b8f-9fad-261669604343,de,"Zuckergehalt: Eine Art Kohlenhydrat, das schnelle Energie liefert, aber bei übermäßigem Konsum zu Gesundheitsproblemen wie Fettleibigkeit oder Diabetes führen kann."
+45050437-23ec-5f8f-843a-52c8cfd5f56a,de,"Salzgehalt: Eine Natriumquelle, die eine wichtige Rolle bei Körperfunktionen wie Hydration und Muskelkontraktionen spielt, aber bei zu hohem Konsum zu erhöhtem Blutdruck und Herzbelastung führen kann."
+06323a02-d640-5ca6-896b-51dafef82648,de,"Gehalt an gesättigten Fettsäuren: Eine Art von Fett, das das Risiko für Herzkrankheiten erhöhen kann, wenn es im Übermaß konsumiert wird."
+ac9a19a1-cef4-5683-9c93-916c733e66ee,de,"Ballaststoffgehalt: Eine Art von Kohlenhydraten, die z.B. in Obst, Gemüse oder Vollkornprodukten vorkommen, eine verdauungsfördernde Wirkung haben und das Herz-Kreislauf-System regulieren."
+9cbcada1-ea45-5a0b-bc39-24ea418a08b0,de,"Proteingehalt: Aminosäureketten, die eine Schlüsselrolle bei vielen Körperfunktionen, wie z.B. der Gewebereparatur, spielen."
+cdb86f6c-9d32-51bc-ba84-eed95f46b913,de,"Sozialer Kontakt: Eine Tierhaltungsform, die es Nutztieren ermöglicht, mit Artgenossen sozialen Kontakt zu haben."
+40bddc30-4749-5c8e-8a39-487c1c28ea2c,de,"Ausreichend Platz: Eine Tierhaltungsform, bei der Nutztiere nicht in überfüllten Ställen auf engstem Raum gehalten werden."
+43761d6a-6bf8-55ef-9998-150e979d6a96,de,"Freilandhaltung: Eine Tierhaltungsform, die Nutztieren erlaubt, sich im Freien auf Weideland oder anderem natürlichen Gelände zu bewegen."
+af533cc7-625d-55a7-9f61-33bd352c607f,de,"Mutter-Kind-Beziehung: Eine Tierhaltungsform, bei der Muttertiere nicht von ihrem Nachwuchs getrennt werden, sondern eine Mutter-Kind-Bindung ermöglicht wird (z.B. bei Rindern)."
+7c7b33a3-29a9-57b0-8f8e-b0e9a338c40c,de,"Vermeidung von körperlichen Eingriffen: Eine Tierhaltungsform, bei der keine Veränderungen am Körper von Nutztieren vorgenommen werden, wie das Kürzen von Schnäbeln oder das Kupieren von Schwänzen."
+44bd89db-c803-57dc-9e29-b5114be2dad6,de,"Artgerechte Ernährung: Eine Tierhaltungsform, die Nutztieren eine Ernährung bietet, die ihrer natürlichen Nahrung möglichst nahekommt."
+593f749c-1f90-53e3-85fd-28938798c283,de,"Kein Über- oder Fehlgebrauch von Tierarzneimitteln: Eine Tierhaltungsform, bei der Nutztieren Medikamente nicht übermäßig oder ohne klare medizinische Notwendigkeit verabreicht werden, um Krankheiten vorzubeugen."
+f451af17-67ee-5376-bb34-24e3a947b09e,de,"Minimale Transportwege: Eine Tierhaltungsform, bei der Nutztiere nur über die kürzt möglichsten Strecken transportiert werden."
+25d878a3-5bb4-561f-8085-c2094b06741a,de,"Stressreduzierte Schlachtung: Eine Tierhaltungsform, bei der Nutztiere auf eine Weise geschlachtet werden, die Angst und Schmerzen reduziert (z. B. durch den fachgerechten Einsatz von Betäubungsmitteln)."
+055ea8e2-57c9-5fa1-97ed-a6440270bc2b,de,"Kognitive Beschäftigung: Eine Tierhaltungsform, die Nutztieren kognitive Anreize bietet, um Langeweile und Unterforderung zu vermeiden (z.B. mittels Kauspielzeug)."
+c7e098ca-a947-5d49-8047-9fda760baaa1,de,"Keine Ausbeutung von Nutztieren als Arbeitskräfte: Eine Tierhaltungsform, bei der Tiere nicht als Arbeitskräfte eingesetzt werden, um bestimmte Aufgaben zu erfüllen (z. B. Affen, die an Ketten gehalten werden, um Kokosnüsse zu ernten)."
+9d6a72f2-31f4-5b33-a6bb-57de39bfbe98,de,"Inklusion und Gleichheit am Arbeitsplatz: Die faire Behandlung von Beschäftigten im Lebensmittelsektor unabhängig von Faktoren wie Geschlecht, Herkunft, Alter oder Behinderung."
+e4ee07e4-ba89-56cb-849d-85b1f6e773e8,de,"Gesundheit und Sicherheit am Arbeitsplatz: Der Schutz von Beschäftigten im Lebensmittelsektor vor körperlichen Schäden (z.B. Pestizide, Extremwetter oder Strahlung)."
+e9f52320-ae2c-51bd-8735-febb0a67c76e,de,"Transparente Arbeitsbedingungen: Das Offenlegen von Arbeitsbedingungen im Lebensmittelsektor wie Bezahlung, Arbeitszeiten und Aufgaben vor Vertragsabschluss."
+ffb879e9-1674-5f65-b49a-97a364c96ff7,de,Faire Löhne: Eine faire Vergütung von Beschäftigten (z.B. Saisonarbeiter:innen) im Lebensmittelsektor für ihre Arbeit.
+0995693a-b5d8-5598-8c68-0d4b36f202bd,de,Faires Einkommen: Eine faire Vergütung von Landwirt:innen und anderen Selbständigen im Lebensmittelsektor für ihre Arbeit.
+efd267d0-3c2c-5bb5-9b07-d10fb517c736,de,"Vereinbarkeit von Beruf und Privatleben: Ein Beschäftigungsansatz, der sicherstellt, dass Beschäftigte im Lebensmittelsektor ihre Arbeit und ihre Freizeit in Einklang bringen können."
+434a1b35-f100-5012-885e-cd0830f0a8c4,de,"Gewerkschaftsrechte: Ein Arbeitsrecht, das es Beschäftigten im Lebensmittelsektor erlaubt, Gewerkschaften zu gründen bzw. ihnen beizutreten, um gemeinsam für bessere Arbeitsbedingungen und Löhne einzutreten."
+fb27bacc-5bbe-5dfc-b5b6-39112f09be6e,de,"Krankenversicherungsübernahme: Die Bereitstellung einer Krankenversicherung zur Verbesserung der Gesundheit und des Wohlbefindens von Beschäftigten im Lebensmittelsektor (insbesondere in Ländern, in denen es keine Pflichtversicherung gibt)."
+ff141150-9b35-559a-9cd9-30c3126f3ca8,de,"Vermeidung von Unternehmensfehlverhalten: Die Vermeidung unethischer Unternehmensaktivitäten im Lebensmittelsektor, wie z.B. irreführende Werbung."
+0182e0ef-c981-5d86-bdc5-9f663425c2ac,de,"Faire Wohnmöglichkeiten: Die Bereitstellung angemessener Wohnmöglichkeiten für Beschäftigte im Lebensmittelsektor, die in den Lokalitäten ihrer Arbeitsgeber:innen untergebracht sind, wie z.B. saisonale Landarbeiter:innen."
+537b177f-5236-5f1e-b308-e76352b1403f,de,"Leistbarkeit von Lebensmitteln: Lebensmittelpreise, die für die meisten Menschen erschwinglich sind und ihr Budget nicht stark belasten."
+f4b33224-fcc2-5326-81eb-37ae9d81d7ce,de,"Wirtschaftlicher Wohlstand in der Region: Das Ausmaß, in dem die Lebensmittelproduktion zur wirtschaftlichen Entwicklung einer bestimmten Region beiträgt, beispielsweise durch den Erhalt oder die Schaffung von Arbeitsplätzen."
+8716c708-7106-5317-998e-e818a354a951,de,"Versorgungssicherheit von Lebensmitteln: Die wirtschaftliche Fähigkeit von regionalen Lebensmittelsystemen, Krisen standzuhalten (z.B. Pandemien, Kriege oder Naturkatastrophen) und die Bevölkerung kontinuierlich mit Lebensmitteln zu versorgen."

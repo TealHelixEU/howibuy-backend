@@ -10,11 +10,11 @@ half-translated content.
 
 **Blocked by:** 01.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Schema exists for categories and questions with their localized text split into `*_TEXT` tables keyed by `(entity, lang)`: category text carries name, description (rich text) and both links; question text carries the prompt. Questions are ordered by position within a category (unique per category). Naming/constraint conventions are followed.
-- [ ] The `SustainabilityDimension` enum (the five fixed dimensions) exists in `sfc-model`; every category carries its dimension, with no unique constraint on dimension.
-- [ ] The fixed content is seeded via Liquibase `loadData` from CSV under the `appdata` context — a base CSV per table plus one text CSV per supported language.
-- [ ] A read returns all categories localized for `?lang`; a read returns a category's ordered questions localized; a read returns all questions across all categories localized.
-- [ ] Omitting `?lang` returns the configured default language; a language outside `sfc.languages` returns 400 with no partial content.
-- [ ] Behaviour is covered at the DB-detail seam (Postgres-only test resource): localized reads and the unsupported-language 400.
+- [x] Schema exists for categories and questions with their localized text split into `*_TEXT` tables keyed by `(entity, lang)`: category text carries name, description (rich text) and both links; question text carries the prompt. Questions are ordered by position within a category (unique per category). Naming/constraint conventions are followed.
+- [x] The `SustainabilityDimension` enum (the five fixed dimensions) exists in `sfc-model`; every category carries its dimension, with no unique constraint on dimension.
+- [x] The fixed content is seeded via Liquibase `loadData` from CSV under the `appdata` context — a base CSV per table plus one text CSV per supported language.
+- [x] A read returns all categories localized for `?lang`; a read returns a category's ordered questions localized; a read returns all questions across all categories localized.
+- [x] Omitting `?lang` returns the configured default language; a language outside `sfc.languages` returns 400 with no partial content.
+- [x] Behaviour is covered at the DB-detail seam (Postgres-only test resource): localized reads and the unsupported-language 400.

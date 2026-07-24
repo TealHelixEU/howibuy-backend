@@ -1,5 +1,7 @@
 package eu.tealhelix.howibuy.jaxrs.v1.assessment;
 
+import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -10,7 +12,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductData;
@@ -28,8 +29,7 @@ public class ProductAssessmentResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<Response> assessSingleProduct(@Context ContainerRequestContext crc, ProductData productData) {
-		var user = (User) crc.getSecurityContext().getUserPrincipal();
-		return productAssessmentService.assessSingleProduct(user, productData)
+		return productAssessmentService.assessSingleProduct(currentUser(crc), productData)
 				.map(t -> Response.ok(t).build());
 	}
 
@@ -38,8 +38,7 @@ public class ProductAssessmentResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<Response> assessMultipleProductsSync(@Context ContainerRequestContext crc, MultiProductAssessmentRequest request) {
-		var user = (User) crc.getSecurityContext().getUserPrincipal();
-		return productAssessmentService.assessMultipleProductsSync(user, request.products())
+		return productAssessmentService.assessMultipleProductsSync(currentUser(crc), request.products())
 				.map(t -> Response.ok(new MultiProductAssessmentResponse(t)).build());
 	}
 
@@ -48,8 +47,7 @@ public class ProductAssessmentResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Multi<ProductAssessmentOutcome> assessMultipleProductsAsync(@Context ContainerRequestContext crc, MultiProductAssessmentRequest request) {
-		var user = (User) crc.getSecurityContext().getUserPrincipal();
-		return RestMulti.fromMultiData(productAssessmentService.assessMultipleProductsAsync(user, request.products()))
+		return RestMulti.fromMultiData(productAssessmentService.assessMultipleProductsAsync(currentUser(crc), request.products()))
 				.encodeAsJsonArray(false).build();
 	}
 }

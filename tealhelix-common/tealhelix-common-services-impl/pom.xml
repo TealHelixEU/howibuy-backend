@@ -30,6 +30,10 @@
 
 		<!-- SPECS -->
 		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>mutiny</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>jakarta.enterprise</groupId>
 			<artifactId>jakarta.enterprise.cdi-api</artifactId>
 		</dependency>
