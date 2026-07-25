@@ -49,7 +49,7 @@ public class QuestionDaoImplTest {
 	@RegisterExtension
 	@SuppressWarnings("unused")
 	private static final LiquibaseExtension liquibaseExtension =
-			new LiquibaseExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "sfc.db.changelog.xml", "test");
+			new LiquibaseExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword(), "test.db.changelog.xml", "test");
 
 	@RegisterExtension
 	@SuppressWarnings("unused")

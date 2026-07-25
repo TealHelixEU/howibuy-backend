@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="sfc_attempts_answers_schema" author="nikospara">
+		<createTable tableName="TH_SFC_ATTEMPT" remarks="A user's round of the compass; answers hang off it and it freezes immutably once completed">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_SFC_ATTEMPT" />
+			</column>
+			<column name="user_id" type="UUID" remarks="The user this attempt belongs to; a raw reference to TH_USER_PROFILE (no JPA association) keeping SFC free of HowiBuy persistence code">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_ATTEMPT__USER_ID" />
+			</column>
+			<column name="status" type="VARCHAR(16)" remarks="The lifecycle state (AttemptStatus enum name): IN_PROGRESS or COMPLETED">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_ATTEMPT__STATUS" />
+			</column>
+			<column name="completed_at" type="TIMESTAMP" remarks="When the attempt was locked; null while IN_PROGRESS" />
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_SFC_ATTEMPT" baseColumnNames="user_id" constraintName="FK_SFC_ATTEMPT__USER_ID__USER_PROFILE__ID" referencedTableName="TH_USER_PROFILE" referencedColumnNames="id" />
+
+		<createTable tableName="TH_SFC_ANSWER" remarks="One user's answer to one question within an attempt">
+			<column name="attempt_id" type="UUID" remarks="The attempt this answer belongs to; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_ANSWER__ATTEMPT_ID" primaryKey="true" primaryKeyName="PK_TH_SFC_ANSWER" />
+			</column>
+			<column name="question_id" type="UUID" remarks="The question being answered; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_ANSWER__QUESTION_ID" primaryKey="true" primaryKeyName="PK_TH_SFC_ANSWER" />
+			</column>
+			<column name="value" type="SMALLINT" remarks="The chosen scale option's ordinal, 1–5 (ScaleOption)">
+				<constraints nullable="false" notNullConstraintName="NL_TH_SFC_ANSWER__VALUE" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_SFC_ANSWER" baseColumnNames="attempt_id" constraintName="FK_SFC_ANSWER__ATTEMPT_ID__SFC_ATTEMPT__ID" referencedTableName="TH_SFC_ATTEMPT" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="TH_SFC_ANSWER" baseColumnNames="question_id" constraintName="FK_SFC_ANSWER__QUESTION_ID__SFC_QUESTION__ID" referencedTableName="TH_SFC_QUESTION" referencedColumnNames="id" />
+	</changeSet>
+
+	<changeSet id="sfc_attempts_answers_indexes" author="nikospara">
+		<comment>At most one in-progress attempt per user: a partial unique index, since only IN_PROGRESS rows are constrained (completed attempts accumulate freely).</comment>
+		<sql>CREATE UNIQUE INDEX UQ_TH_SFC_ATTEMPT__ONE_IN_PROGRESS ON TH_SFC_ATTEMPT (user_id) WHERE status = 'IN_PROGRESS'</sql>
+		<sql>ALTER TABLE TH_SFC_ANSWER ADD CONSTRAINT CK_TH_SFC_ANSWER__VALUE_RANGE CHECK (value BETWEEN 1 AND 5)</sql>
+		<rollback>
+			<sql>DROP INDEX UQ_TH_SFC_ATTEMPT__ONE_IN_PROGRESS</sql>
+			<sql>ALTER TABLE TH_SFC_ANSWER DROP CONSTRAINT CK_TH_SFC_ANSWER__VALUE_RANGE</sql>
+		</rollback>
+	</changeSet>
+</databaseChangeLog>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<!--
+		The SFC changelog references the HowiBuy-owned TH_USER_PROFILE (the TH_SFC_ATTEMPT.user_id foreign key). In the
+		real deployable HowiBuy's changelog creates that table before SFC's runs; this stub stands in for it so the SFC
+		changelog applies in isolation for the DAO tests of this module, which must not depend on HowiBuy.
+	-->
+	<changeSet id="test_user_profile_stub" author="test">
+		<createTable tableName="TH_USER_PROFILE">
+			<column name="id" type="UUID">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_USER_PROFILE" />
+			</column>
+		</createTable>
+	</changeSet>
+
+	<include relativeToChangelogFile="true" file="sfc.db.changelog.xml" />
+</databaseChangeLog>

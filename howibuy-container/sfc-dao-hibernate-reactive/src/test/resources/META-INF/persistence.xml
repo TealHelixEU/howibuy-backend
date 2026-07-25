@@ -10,6 +10,8 @@
 		<class>eu.tealhelix.sfc.dao.jpa.CategoryTextEntity</class>
 		<class>eu.tealhelix.sfc.dao.jpa.QuestionEntity</class>
 		<class>eu.tealhelix.sfc.dao.jpa.QuestionTextEntity</class>
+		<class>eu.tealhelix.sfc.dao.jpa.AttemptEntity</class>
+		<class>eu.tealhelix.sfc.dao.jpa.AnswerEntity</class>
 
 		<properties>
 			<!-- The DB connection properties are overridden in the code -->
