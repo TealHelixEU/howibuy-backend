@@ -26,13 +26,13 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<version.quarkus.platform>3.36.1</version.quarkus.platform>
+		<version.quarkus.platform>3.37.4</version.quarkus.platform>
 
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
 		<version.assertj>3.27.7</version.assertj>
-		<version.hibernate-validator-cdi>9.1.0.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? - Anyway, it relates to quarkus-bom hibernate-validator -->
+		<version.hibernate-validator-cdi>9.1.2.Final</version.hibernate-validator-cdi><!-- TODO: Check if needed; for tests maybe? - Anyway, it relates to quarkus-bom hibernate-validator -->
 		<version.jakarta-el>4.0.2</version.jakarta-el>
-		<version.junit.jupiter>6.1.0</version.junit.jupiter>
+		<version.junit.jupiter>6.1.2</version.junit.jupiter>
 		<version.kafka>3.2.0</version.kafka><!-- When changing this, also check KafkaTestResource.java -->
 		<version.kafka.scala>2.13</version.kafka.scala>
 		<version.keycloak>26.6.3</version.keycloak>
@@ -40,8 +40,8 @@
 		<version.mockito>5.23.0</version.mockito>
 		<version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
 		<version.org.immutables>2.12.2</version.org.immutables>
-		<version.postgres>42.7.11</version.postgres><!-- Defined in quarkus-bom, search for org.postgresql; keep here, needed by the build scripts -->
-		<version.quarkus-langchain4j>1.11.2</version.quarkus-langchain4j>
+		<version.postgres>42.7.13</version.postgres><!-- Defined in quarkus-bom, search for org.postgresql; keep here, needed by the build scripts -->
+		<version.quarkus-langchain4j>1.12.0</version.quarkus-langchain4j>
 		<version.slf4j>2.0.18</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - needed for the slf4j-jdk14 dependency -->
 		<version.swagger-annotations>1.6.5</version.swagger-annotations>
 		<version.weld-junit5>5.0.3.Final</version.weld-junit5>
@@ -273,34 +273,13 @@
 					<artifactId>maven-deploy-plugin</artifactId>
 					<version>3.1.4</version>
 				</plugin>
-				<!-- TODO The plugin and configuration is from Quarkus. Double check if it is needed, and if the configuration applies at this level, or just in the Quarkus modules.
-				<plugin>
-					<artifactId>maven-failsafe-plugin</artifactId>
-					<version>3.5.3</version>
-					<executions>
-						<execution>
-							<goals>
-								<goal>integration-test</goal>
-								<goal>verify</goal>
-							</goals>
-						</execution>
-					</executions>
-					<configuration>
-						<systemPropertyVariables>
-							<native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-							<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-							<maven.home>${maven.home}</maven.home>
-						</systemPropertyVariables>
-					</configuration>
-				</plugin>
-				-->
 				<plugin>
 					<artifactId>maven-install-plugin</artifactId>
 					<version>3.1.4</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.5.0</version>
+					<version>3.5.1</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
@@ -321,7 +300,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>3.5.5</version>
+					<version>3.5.6</version>
 					<!-- TODO The configuration is from Quarkus. Double check if it is needed at this level, or just in the Quarkus modules. -->
 					<configuration>
 						<systemPropertyVariables>
@@ -330,20 +309,6 @@
 						</systemPropertyVariables>
 					</configuration>
 				</plugin>
-				<!--
-				<plugin>
-					<artifactId>maven-war-plugin</artifactId>
-					<version>3.3.2</version>
-					<configuration>
-						<failOnMissingWebXml>false</failOnMissingWebXml>
-					</configuration>
-				</plugin>
-				<plugin>
-					<groupId>org.jboss.jandex</groupId>
-					<artifactId>jandex-maven-plugin</artifactId>
-					<version>1.2.0</version>
-				</plugin>
-				-->
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>versions-maven-plugin</artifactId>
@@ -407,7 +372,7 @@
 						<plugin>
 							<groupId>org.jacoco</groupId>
 							<artifactId>jacoco-maven-plugin</artifactId>
-							<version>0.8.14</version>
+							<version>0.8.15</version>
 						</plugin>
 					</plugins>
 				</pluginManagement>
