@@ -13,8 +13,8 @@ import eu.tealhelix.common.test.quarkus.InjectKeycloak;
 import eu.tealhelix.common.test.quarkus.InjectPostgres;
 import eu.tealhelix.common.test.quarkus.PostgresAndKeycloakTestResource;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.MethodOrderer;
@@ -25,7 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @QuarkusTest
-@QuarkusTestResource(value = PostgresAndKeycloakTestResource.class, initArgs = {
+@WithTestResource(value = PostgresAndKeycloakTestResource.class, initArgs = {
 		@ResourceArg(name = "pgContexts", value = "dev"),
 		@ResourceArg(name = "pgConnectionDbUser", value = "th_howibuy"),
 		@ResourceArg(name = "pgConnectionDbPassword", value = "th_howibuy"),

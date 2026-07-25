@@ -113,6 +113,12 @@ Ports (see [PORTS.md](PORTS.md)): HowiBuy HTTP 8180 / test 8181 / debug 5105; Ke
   real Keycloak container). Use this style when the DB interactions are non-trivial. Example: `CorrelationIdWorkflowTest`.
 - `@InjectPostgres` / `@InjectKeycloak` inject the running containers when you need to talk to them directly (e.g., to
   fetch a real access token from Keycloak before hitting the app).
+- Declare Testcontainers resources with `@WithTestResource`, not the deprecated `@QuarkusTestResource` (which is
+  **global by default** and lets one test's resources leak into every other test). Its default scope
+  `MATCHING_RESOURCES` groups tests requesting the same resource + args onto one Quarkus instance — fewer restarts —
+  while keeping unrelated resources (e.g. Keycloak) out. To share a resource across several tests, wrap it in a
+  composed meta-annotation so the args stay identical and grouping holds — e.g. `@WithCompassDb` (Postgres + `appdata`
+  seed) on the SFC tests. Never use `GLOBAL`; avoid `RESTRICTED_TO_CLASS` (it restarts Quarkus per class).
 - Don't mock the DB when the test's purpose is to verify DB behavior, even though Mockito is faster — accuracy beats
   speed in those cases.
 

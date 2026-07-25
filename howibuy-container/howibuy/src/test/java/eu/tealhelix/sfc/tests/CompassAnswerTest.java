@@ -13,15 +13,12 @@ import java.util.UUID;
 import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
-import eu.tealhelix.common.test.quarkus.PostgresTestResource;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.common.web.authentication.jwt.TokenHelper;
 import eu.tealhelix.common.web.authentication.jwt.TokenHelperImpl;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -40,9 +37,7 @@ import org.junit.jupiter.api.Test;
  * the anonymous {@code 401} by {@code CompassAccessControlTest}.
  */
 @QuarkusTest
-@QuarkusTestResource(value = PostgresTestResource.class, initArgs = {
-		@ResourceArg(name = "contexts", value = "appdata")
-})
+@WithCompassDb
 public class CompassAnswerTest {
 	private static final String BASE = "/api/howibuy/v1/sfc";
 	private static final String BEARER_USER = "Bearer user";
