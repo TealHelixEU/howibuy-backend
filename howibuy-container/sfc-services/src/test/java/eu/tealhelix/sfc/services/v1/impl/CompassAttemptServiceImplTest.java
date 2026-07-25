@@ -24,7 +24,9 @@ import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.sfc.dao.AnswerDao;
 import eu.tealhelix.sfc.dao.AttemptDao;
+import eu.tealhelix.sfc.v1.types.QuestionId;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
+import eu.tealhelix.sfc.v1.types.impl.QuestionIdImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
@@ -52,7 +54,7 @@ public class CompassAttemptServiceImplTest {
 	private static final User SERVICE_USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, true);
 	private static final User UNAUTHENTICATED = new UserImpl(null, null, null, false, false);
 
-	private static final UUID QUESTION_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
+	private static final QuestionId QUESTION_ID = new QuestionIdImpl("22222222-2222-2222-2222-222222222222");
 	private static final UUID EXISTING_ATTEMPT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 	private static final UUID NEW_ATTEMPT_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
 

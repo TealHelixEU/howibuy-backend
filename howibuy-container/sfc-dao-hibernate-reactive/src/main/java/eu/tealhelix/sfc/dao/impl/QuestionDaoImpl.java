@@ -1,7 +1,6 @@
 package eu.tealhelix.sfc.dao.impl;
 
 import java.util.List;
-import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.Path;
@@ -16,12 +15,15 @@ import eu.tealhelix.sfc.dao.jpa.QuestionTextEntity;
 import eu.tealhelix.sfc.dao.jpa.QuestionTextEntity_;
 import eu.tealhelix.sfc.v1.model.ImmutableQuestion;
 import eu.tealhelix.sfc.v1.model.Question;
+import eu.tealhelix.sfc.v1.types.CategoryId;
+import eu.tealhelix.sfc.v1.types.impl.CategoryIdImpl;
+import eu.tealhelix.sfc.v1.types.impl.QuestionIdImpl;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class QuestionDaoImpl implements QuestionDao {
 	@Override
-	public Uni<List<Question>> retrieveByCategoryAndLanguage(ReactivePersistenceContext em, UUID categoryId, String language) {
+	public Uni<List<Question>> retrieveByCategoryAndLanguage(ReactivePersistenceContext em, CategoryId categoryId, String language) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createTupleQuery();
 		var root = q.from(QuestionTextEntity.class);
@@ -34,7 +36,7 @@ public class QuestionDaoImpl implements QuestionDao {
 						root.get(QuestionTextEntity_.text)))
 				.where(cb.and(
 						cb.equal(root.get(QuestionTextEntity_.lang), language),
-						cb.equal(category.get(CategoryEntity_.id), categoryId)))
+						cb.equal(category.get(CategoryEntity_.id), categoryId.asUuid())))
 				.orderBy(cb.asc(question.get(QuestionEntity_.position)), cb.asc(question.get(QuestionEntity_.id)));
 		return em.createQuery(q).getResultList().map(list -> toQuestions(question, category, root, list));
 	}
@@ -65,8 +67,8 @@ public class QuestionDaoImpl implements QuestionDao {
 
 	private static Question toQuestion(Path<QuestionEntity> question, Path<CategoryEntity> category, Path<QuestionTextEntity> text, Tuple tuple) {
 		return ImmutableQuestion.builder()
-				.id(tuple.get(question.get(QuestionEntity_.id)))
-				.categoryId(tuple.get(category.get(CategoryEntity_.id)))
+				.id(new QuestionIdImpl(tuple.get(question.get(QuestionEntity_.id)).toString()))
+				.categoryId(new CategoryIdImpl(tuple.get(category.get(CategoryEntity_.id)).toString()))
 				.position(tuple.get(question.get(QuestionEntity_.position)))
 				.text(tuple.get(text.get(QuestionTextEntity_.text)))
 				.build();

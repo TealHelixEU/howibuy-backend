@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -27,7 +26,10 @@ import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.ImmutableCategory;
 import eu.tealhelix.sfc.v1.model.ImmutableQuestion;
 import eu.tealhelix.sfc.v1.model.Question;
+import eu.tealhelix.sfc.v1.types.CategoryId;
 import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
+import eu.tealhelix.sfc.v1.types.impl.CategoryIdImpl;
+import eu.tealhelix.sfc.v1.types.impl.QuestionIdImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
@@ -52,7 +54,7 @@ public class CompassStructureServiceImplTest {
 	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false);
 	private static final User SERVICE_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true);
 
-	private static final UUID CATEGORY_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+	private static final CategoryId CATEGORY_ID = new CategoryIdImpl("11111111-1111-1111-1111-111111111111");
 	private static final List<Category> CATEGORIES = List.of(ImmutableCategory.builder()
 			.id(CATEGORY_ID)
 			.dimension(SustainabilityDimension.HEALTH)
@@ -60,7 +62,7 @@ public class CompassStructureServiceImplTest {
 			.description("Health description")
 			.build());
 	private static final List<Question> QUESTIONS = List.of(ImmutableQuestion.builder()
-			.id(UUID.fromString("22222222-2222-2222-2222-222222222222"))
+			.id(new QuestionIdImpl("22222222-2222-2222-2222-222222222222"))
 			.categoryId(CATEGORY_ID)
 			.position((short) 1)
 			.text("A prompt")

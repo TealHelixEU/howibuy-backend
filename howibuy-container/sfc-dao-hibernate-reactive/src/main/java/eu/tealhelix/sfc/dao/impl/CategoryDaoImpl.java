@@ -13,6 +13,7 @@ import eu.tealhelix.sfc.dao.jpa.CategoryTextEntity;
 import eu.tealhelix.sfc.dao.jpa.CategoryTextEntity_;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.ImmutableCategory;
+import eu.tealhelix.sfc.v1.types.impl.CategoryIdImpl;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -41,7 +42,7 @@ public class CategoryDaoImpl implements CategoryDao {
 
 	private static Category toCategory(Path<CategoryEntity> category, Path<CategoryTextEntity> text, Tuple tuple) {
 		return ImmutableCategory.builder()
-				.id(tuple.get(category.get(CategoryEntity_.id)))
+				.id(new CategoryIdImpl(tuple.get(category.get(CategoryEntity_.id)).toString()))
 				.dimension(tuple.get(category.get(CategoryEntity_.dimension)))
 				.name(tuple.get(text.get(CategoryTextEntity_.name)))
 				.description(tuple.get(text.get(CategoryTextEntity_.description)))

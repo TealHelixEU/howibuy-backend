@@ -19,6 +19,7 @@ import eu.tealhelix.sfc.dao.jpa.QuestionEntity;
 import eu.tealhelix.sfc.v1.types.AttemptStatus;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
 import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
+import eu.tealhelix.sfc.v1.types.impl.QuestionIdImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -87,7 +88,7 @@ public class AnswerDaoImplTest {
 	@Order(2)
 	void insertsANewAnswer(Mutiny.SessionFactory sessionFactory) {
 		factory(sessionFactory).withTransaction(tx ->
-				sut.upsert(tx, ATTEMPT_ID, QUESTION_1_ID, ScaleOption.MODERATELY_IMPORTANT)).await().atMost(WAIT);
+				sut.upsert(tx, ATTEMPT_ID, new QuestionIdImpl(QUESTION_1_ID.toString()), ScaleOption.MODERATELY_IMPORTANT)).await().atMost(WAIT);
 
 		assertEquals(ScaleOption.MODERATELY_IMPORTANT.getValue(), answerValue(sessionFactory, QUESTION_1_ID),
 				"the chosen option's ordinal was persisted");
@@ -98,7 +99,7 @@ public class AnswerDaoImplTest {
 	@Order(3)
 	void overwritesAnExistingAnswerInPlace(Mutiny.SessionFactory sessionFactory) {
 		factory(sessionFactory).withTransaction(tx ->
-				sut.upsert(tx, ATTEMPT_ID, QUESTION_1_ID, ScaleOption.EXTREMELY_IMPORTANT)).await().atMost(WAIT);
+				sut.upsert(tx, ATTEMPT_ID, new QuestionIdImpl(QUESTION_1_ID.toString()), ScaleOption.EXTREMELY_IMPORTANT)).await().atMost(WAIT);
 
 		assertEquals(ScaleOption.EXTREMELY_IMPORTANT.getValue(), answerValue(sessionFactory, QUESTION_1_ID), "the latest choice won");
 		assertEquals(1L, answerCount(sessionFactory), "re-answering overwrote rather than adding a row");
@@ -108,7 +109,7 @@ public class AnswerDaoImplTest {
 	@Order(4)
 	void keepsAnswersToDifferentQuestionsApart(Mutiny.SessionFactory sessionFactory) {
 		factory(sessionFactory).withTransaction(tx ->
-				sut.upsert(tx, ATTEMPT_ID, QUESTION_2_ID, ScaleOption.NOT_IMPORTANT)).await().atMost(WAIT);
+				sut.upsert(tx, ATTEMPT_ID, new QuestionIdImpl(QUESTION_2_ID.toString()), ScaleOption.NOT_IMPORTANT)).await().atMost(WAIT);
 
 		assertEquals(ScaleOption.NOT_IMPORTANT.getValue(), answerValue(sessionFactory, QUESTION_2_ID), "the second question's answer");
 		assertEquals(ScaleOption.EXTREMELY_IMPORTANT.getValue(), answerValue(sessionFactory, QUESTION_1_ID), "the first question's answer is untouched");

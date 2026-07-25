@@ -1,7 +1,6 @@
 package eu.tealhelix.sfc.services.v1.impl;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.function.BiFunction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,6 +14,7 @@ import eu.tealhelix.sfc.dao.QuestionDao;
 import eu.tealhelix.sfc.services.v1.CompassStructureService;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.Question;
+import eu.tealhelix.sfc.v1.types.CategoryId;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -47,7 +47,7 @@ public class CompassStructureServiceImpl implements CompassStructureService {
 	}
 
 	@Override
-	public Uni<List<Question>> findCategoryQuestions(User user, String language, UUID categoryId) {
+	public Uni<List<Question>> findCategoryQuestions(User user, String language, CategoryId categoryId) {
 		authorization.requireUserNotService(user);
 		return localized(language, (em, lang) -> questionDao.retrieveByCategoryAndLanguage(em, categoryId, lang));
 	}

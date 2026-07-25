@@ -15,6 +15,7 @@ import eu.tealhelix.sfc.dao.jpa.QuestionEntity;
 import eu.tealhelix.sfc.dao.jpa.QuestionTextEntity;
 import eu.tealhelix.sfc.v1.model.Question;
 import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
+import eu.tealhelix.sfc.v1.types.impl.CategoryIdImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -86,14 +87,14 @@ public class QuestionDaoImplTest {
 	@Order(2)
 	void retrievesOnlyTheRequestedCategorysQuestionsInPositionOrder(Mutiny.SessionFactory sessionFactory) {
 		var questions = factory(sessionFactory)
-				.withoutTransaction(em -> sut.retrieveByCategoryAndLanguage(em, ECOLOGICAL_ID, "en")).await().atMost(WAIT);
+				.withoutTransaction(em -> sut.retrieveByCategoryAndLanguage(em, new CategoryIdImpl(ECOLOGICAL_ID.toString()), "en")).await().atMost(WAIT);
 
-		assertEquals(List.of(ECOLOGICAL_Q1_ID, ECOLOGICAL_Q2_ID), questions.stream().map(Question::getId).toList(),
+		assertEquals(List.of(ECOLOGICAL_Q1_ID, ECOLOGICAL_Q2_ID), questions.stream().map(q -> q.getId().asUuid()).toList(),
 				"only the ecological category's questions, in position order");
 		assertEquals(List.of((short) 1, (short) 2), questions.stream().map(Question::getPosition).toList(), "position order");
 		assertEquals(List.of("Ecological Q1, in English", "Ecological Q2, in English"),
 				questions.stream().map(Question::getText).toList(), "prompts resolved for English");
-		questions.forEach(q -> assertEquals(ECOLOGICAL_ID, q.getCategoryId(), "carries its category id"));
+		questions.forEach(q -> assertEquals(ECOLOGICAL_ID, q.getCategoryId().asUuid(), "carries its category id"));
 	}
 
 	@Test
@@ -102,9 +103,9 @@ public class QuestionDaoImplTest {
 		var questions = factory(sessionFactory)
 				.withoutTransaction(em -> sut.retrieveByLanguage(em, "en")).await().atMost(WAIT);
 
-		assertEquals(List.of(ECOLOGICAL_Q1_ID, ECOLOGICAL_Q2_ID, HEALTH_Q1_ID), questions.stream().map(Question::getId).toList(),
+		assertEquals(List.of(ECOLOGICAL_Q1_ID, ECOLOGICAL_Q2_ID, HEALTH_Q1_ID), questions.stream().map(q -> q.getId().asUuid()).toList(),
 				"ecological (by position) before health");
-		assertEquals(List.of(ECOLOGICAL_ID, ECOLOGICAL_ID, HEALTH_ID), questions.stream().map(Question::getCategoryId).toList(),
+		assertEquals(List.of(ECOLOGICAL_ID, ECOLOGICAL_ID, HEALTH_ID), questions.stream().map(q -> q.getCategoryId().asUuid()).toList(),
 				"grouped by category");
 	}
 

@@ -18,6 +18,8 @@ import jakarta.ws.rs.core.MediaType;
 
 import eu.tealhelix.sfc.services.v1.CompassStructureService;
 import eu.tealhelix.sfc.v1.model.Question;
+import eu.tealhelix.sfc.v1.types.CategoryId;
+import eu.tealhelix.sfc.v1.types.impl.CategoryIdImpl;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -42,7 +44,7 @@ public class CompassResource {
 	@Path("categories/{categoryId}/questions")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<List<QuestionResponse>> categoryQuestions(@Context ContainerRequestContext crc, @PathParam("categoryId") UUID categoryId, @QueryParam("lang") String lang) {
-		return compassStructureService.findCategoryQuestions(currentUser(crc), lang, categoryId)
+		return compassStructureService.findCategoryQuestions(currentUser(crc), lang, new CategoryIdImpl(categoryId.toString()))
 				.map(questions -> questions.stream().map(QuestionResponse::from).toList());
 	}
 
@@ -54,7 +56,7 @@ public class CompassResource {
 	}
 
 	private static List<CategoryQuestionsResponse> groupByCategory(List<Question> questions) {
-		var byCategory = new LinkedHashMap<UUID, List<QuestionResponse>>();
+		var byCategory = new LinkedHashMap<CategoryId, List<QuestionResponse>>();
 		for (var question : questions) {
 			byCategory.computeIfAbsent(question.getCategoryId(), k -> new ArrayList<>()).add(QuestionResponse.from(question));
 		}

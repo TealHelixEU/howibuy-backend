@@ -16,6 +16,7 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.sfc.dao.AnswerDao;
 import eu.tealhelix.sfc.dao.AttemptDao;
 import eu.tealhelix.sfc.services.v1.CompassAttemptService;
+import eu.tealhelix.sfc.v1.types.QuestionId;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
 import io.smallrye.mutiny.Uni;
 
@@ -40,7 +41,7 @@ public class CompassAttemptServiceImpl implements CompassAttemptService {
 	}
 
 	@Override
-	public Uni<Void> answer(User user, UUID questionId, ScaleOption option) {
+	public Uni<Void> answer(User user, QuestionId questionId, ScaleOption option) {
 		authorization.requireUserNotService(user);
 		if (option == null) {
 			throw RequiredInputMissingException.fromRequiredInputName("option");
@@ -48,7 +49,7 @@ public class CompassAttemptServiceImpl implements CompassAttemptService {
 		return persistenceContextFactory.withTransaction(tx -> answerInTx(tx, user, questionId, option));
 	}
 
-	private Uni<Void> answerInTx(ReactivePersistenceTxContext tx, User user, UUID questionId, ScaleOption option) {
+	private Uni<Void> answerInTx(ReactivePersistenceTxContext tx, User user, QuestionId questionId, ScaleOption option) {
 		UUID userId = user.getId().asUuid();
 		return forc(
 				attemptDao.findInProgressId(tx, userId),

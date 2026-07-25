@@ -1,6 +1,7 @@
 package eu.tealhelix.sfc.v1.model;
 
-import java.util.UUID;
+import eu.tealhelix.sfc.v1.types.CategoryId;
+import eu.tealhelix.sfc.v1.types.QuestionId;
 
 import org.immutables.value.Value;
 
@@ -11,9 +12,9 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 public interface Question {
-	UUID getId();
+	QuestionId getId();
 
-	UUID getCategoryId();
+	CategoryId getCategoryId();
 
 	short getPosition();
 

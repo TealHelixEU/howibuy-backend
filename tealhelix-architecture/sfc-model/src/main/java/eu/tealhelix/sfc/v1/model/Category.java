@@ -1,8 +1,7 @@
 package eu.tealhelix.sfc.v1.model;
 
-import java.util.UUID;
-
 import eu.tealhelix.common.types.Nullable;
+import eu.tealhelix.sfc.v1.types.CategoryId;
 import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
 import org.immutables.value.Value;
 
@@ -14,7 +13,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 public interface Category {
-	UUID getId();
+	CategoryId getId();
 
 	SustainabilityDimension getDimension();
 

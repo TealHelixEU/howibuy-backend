@@ -1,11 +1,11 @@
 package eu.tealhelix.sfc.services.v1;
 
 import java.util.List;
-import java.util.UUID;
 
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.Question;
+import eu.tealhelix.sfc.v1.types.CategoryId;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -23,7 +23,7 @@ public interface CompassStructureService {
 	/**
 	 * The questions of one category in position order, localized for {@code language}.
 	 */
-	Uni<List<Question>> findCategoryQuestions(User user, String language, UUID categoryId);
+	Uni<List<Question>> findCategoryQuestions(User user, String language, CategoryId categoryId);
 
 	/**
 	 * Every question across all categories, localized for {@code language}, ordered so questions of the same category

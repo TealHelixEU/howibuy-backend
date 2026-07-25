@@ -1,8 +1,7 @@
 package eu.tealhelix.sfc.services.v1;
 
-import java.util.UUID;
-
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.sfc.v1.types.QuestionId;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
 import io.smallrye.mutiny.Uni;
 
@@ -16,5 +15,5 @@ public interface CompassAttemptService {
 	 * Sets the user's answer to {@code questionId} to {@code option} on their in-progress attempt, creating that
 	 * attempt if they have none yet, and persists it immediately.
 	 */
-	Uni<Void> answer(User user, UUID questionId, ScaleOption option);
+	Uni<Void> answer(User user, QuestionId questionId, ScaleOption option);
 }

@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
 import eu.tealhelix.sfc.services.v1.CompassAttemptService;
+import eu.tealhelix.sfc.v1.types.impl.QuestionIdImpl;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -29,6 +30,6 @@ public class CompassAttemptResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Uni<Void> answer(@Context ContainerRequestContext crc, @PathParam("questionId") UUID questionId, AnswerRequest request) {
 		var option = request == null ? null : request.option();
-		return compassAttemptService.answer(currentUser(crc), questionId, option);
+		return compassAttemptService.answer(currentUser(crc), new QuestionIdImpl(questionId.toString()), option);
 	}
 }
