@@ -25,4 +25,18 @@ public enum ScaleOption {
 	public short getValue() {
 		return value;
 	}
+
+	/**
+	 * The scale point whose stored ordinal is {@code value}.
+	 *
+	 * @throws IllegalArgumentException if {@code value} is not one of the 1–5 ordinals
+	 */
+	public static ScaleOption fromValue(short value) {
+		for (var option : values()) {
+			if (option.value == value) {
+				return option;
+			}
+		}
+		throw new IllegalArgumentException("No scale option for ordinal value: " + value);
+	}
 }

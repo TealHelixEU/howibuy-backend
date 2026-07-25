@@ -2,10 +2,12 @@ package eu.tealhelix.sfc.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
 
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
@@ -33,9 +35,10 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 /**
  * The answer DAO against a real database: {@code upsert} inserts a new answer, overwrites an existing one in place (the
  * {@code (attempt, question)} primary key means re-answering never adds a row), and keeps answers to different
- * questions on the same attempt apart. The schema is created from the SFC changelog via the test stub that supplies the
- * cross-module {@code TH_USER_PROFILE}; the owning user is seeded over JDBC since the profile is not a JPA entity in
- * this module, and its category, questions and in-progress attempt over the reactive session.
+ * questions on the same attempt apart; {@code retrieveByAttempt} reads them all back keyed by question. The schema is
+ * created from the SFC changelog via the test stub that supplies the cross-module {@code TH_USER_PROFILE}; the owning
+ * user is seeded over JDBC since the profile is not a JPA entity in this module, and its category, questions and
+ * in-progress attempt over the reactive session.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Testcontainers
@@ -114,6 +117,27 @@ public class AnswerDaoImplTest {
 		assertEquals(ScaleOption.NOT_IMPORTANT.getValue(), answerValue(sessionFactory, QUESTION_2_ID), "the second question's answer");
 		assertEquals(ScaleOption.EXTREMELY_IMPORTANT.getValue(), answerValue(sessionFactory, QUESTION_1_ID), "the first question's answer is untouched");
 		assertEquals(2L, answerCount(sessionFactory), "both answers are kept");
+	}
+
+	@Test
+	@Order(5)
+	void retrievesAllAnswersOnTheAttemptKeyedByQuestion(Mutiny.SessionFactory sessionFactory) {
+		var answers = factory(sessionFactory)
+				.withoutTransaction(em -> sut.retrieveByAttempt(em, ATTEMPT_ID)).await().atMost(WAIT);
+
+		assertEquals(Map.of(
+				new QuestionIdImpl(QUESTION_1_ID.toString()), ScaleOption.EXTREMELY_IMPORTANT,
+				new QuestionIdImpl(QUESTION_2_ID.toString()), ScaleOption.NOT_IMPORTANT), answers,
+				"both answers come back keyed by their question");
+	}
+
+	@Test
+	@Order(6)
+	void retrievesNoAnswersForAnAttemptThatHasNone(Mutiny.SessionFactory sessionFactory) {
+		var answers = factory(sessionFactory)
+				.withoutTransaction(em -> sut.retrieveByAttempt(em, UUID.randomUUID())).await().atMost(WAIT);
+
+		assertTrue(answers.isEmpty(), "an attempt with no answers yields an empty map");
 	}
 
 	private short answerValue(Mutiny.SessionFactory sessionFactory, UUID questionId) {

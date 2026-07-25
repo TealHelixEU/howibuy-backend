@@ -49,6 +49,13 @@ stays framework-agnostic so the artifacts remain reusable. When upgrading a depe
 Quarkus, look for the XML comment marker next to its `version.*` property in the root [pom.xml](pom.xml) and bump the
 bundle together.
 
+## Reactive programming style
+
+- The class `UniComprehensions` contains many overloads of two basic functions, `forc` and `forcm`, that try to imitate
+  Scala's for comprehensions. Use these methods in preference over `Uni.flatMap` chains. Do not hesitate to add missing
+  overloads, using the existing ones as templates. `forc` for chains of `Uni.flatMap`, `forcm` for the same chains that
+  require a simple `map` operation at the end.
+
 ## Persistence
 
 - All persistence goes through `ReactivePersistenceContextFactory.withTransaction(tx -> ...)` or

@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
  * bearer token into a user — so the filter, authorization, resource, DAOs and JSON mapping all run for real.
  * <p>
  * The anonymous {@code 401} path is covered by {@code CompassAccessControlTest}; the orchestration logic (authorization
- * and language resolution) by {@code CompassStructureServiceImplTest}; the localized joins by the DAO tests.
+ * and language resolution) by {@code CompassReadServiceImplTest}; the localized joins by the DAO tests.
  */
 @QuarkusTest
 @WithCompassDb
