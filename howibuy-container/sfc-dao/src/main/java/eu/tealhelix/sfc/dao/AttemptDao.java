@@ -1,5 +1,6 @@
 package eu.tealhelix.sfc.dao;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,7 +16,19 @@ public interface AttemptDao {
 	Uni<Optional<UUID>> findInProgressId(ReactivePersistenceContext em, UUID userId);
 
 	/**
+	 * The completion time of the user's most recently completed attempt, or empty if they have never completed one.
+	 * Used to decide, on read, whether the stability window has elapsed and a new attempt may start.
+	 */
+	Uni<Optional<LocalDateTime>> findLatestCompletedAt(ReactivePersistenceContext em, UUID userId);
+
+	/**
 	 * Starts a fresh in-progress attempt for the user and returns its id.
 	 */
 	Uni<UUID> startInProgress(ReactivePersistenceTxContext tx, UUID userId);
+
+	/**
+	 * Freezes an in-progress attempt: sets its status to completed and stamps the given completion time. The attempt is
+	 * an immutable record thereafter.
+	 */
+	Uni<Void> complete(ReactivePersistenceTxContext tx, UUID attemptId, LocalDateTime completedAt);
 }

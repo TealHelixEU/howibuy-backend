@@ -1,6 +1,7 @@
 package eu.tealhelix.sfc.dao.impl;
 
 import java.util.List;
+import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.Path;
@@ -16,6 +17,7 @@ import eu.tealhelix.sfc.dao.jpa.QuestionTextEntity_;
 import eu.tealhelix.sfc.v1.model.ImmutableQuestion;
 import eu.tealhelix.sfc.v1.model.Question;
 import eu.tealhelix.sfc.v1.types.CategoryId;
+import eu.tealhelix.sfc.v1.types.QuestionId;
 import eu.tealhelix.sfc.v1.types.impl.CategoryIdImpl;
 import eu.tealhelix.sfc.v1.types.impl.QuestionIdImpl;
 import io.smallrye.mutiny.Uni;
@@ -59,6 +61,18 @@ public class QuestionDaoImpl implements QuestionDao {
 						cb.asc(category.get(CategoryEntity_.id)),
 						cb.asc(question.get(QuestionEntity_.position)));
 		return em.createQuery(q).getResultList().map(list -> toQuestions(question, category, root, list));
+	}
+
+	@Override
+	public Uni<List<QuestionId>> retrieveAllIds(ReactivePersistenceContext em) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(UUID.class);
+		var root = q.from(QuestionEntity.class);
+		var category = root.get(QuestionEntity_.category);
+		q.select(root.get(QuestionEntity_.id))
+				.orderBy(cb.asc(category.get(CategoryEntity_.id)), cb.asc(root.get(QuestionEntity_.position)));
+		return em.createQuery(q).getResultList()
+				.map(ids -> ids.stream().map(id -> (QuestionId) new QuestionIdImpl(id.toString())).toList());
 	}
 
 	private static List<Question> toQuestions(Path<QuestionEntity> question, Path<CategoryEntity> category, Path<QuestionTextEntity> text, List<Tuple> tuples) {

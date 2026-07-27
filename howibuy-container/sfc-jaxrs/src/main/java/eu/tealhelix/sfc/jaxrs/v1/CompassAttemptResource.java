@@ -5,6 +5,7 @@ import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
 import java.util.UUID;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -18,7 +19,7 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Writes to the user's Sustainable Food Compass attempt — recording (or overwriting) the answer to a question, saved
- * immediately. Requires an authenticated end-user.
+ * immediately, and completing the attempt (freezing it as an immutable record). Requires an authenticated end-user.
  */
 @Path("sfc")
 public class CompassAttemptResource {
@@ -31,5 +32,11 @@ public class CompassAttemptResource {
 	public Uni<Void> answer(@Context ContainerRequestContext crc, @PathParam("questionId") UUID questionId, AnswerRequest request) {
 		var option = request == null ? null : request.option();
 		return compassAttemptService.answer(currentUser(crc), new QuestionIdImpl(questionId.toString()), option);
+	}
+
+	@POST
+	@Path("attempts/current/completion")
+	public Uni<Void> complete(@Context ContainerRequestContext crc) {
+		return compassAttemptService.complete(currentUser(crc));
 	}
 }

@@ -4,6 +4,10 @@
 
 1. TAB for indentation.
 2. 2 TABs for line continuation.
+3. Balanced return branches: when a function has more than one outcomes, e.g. `oneThing` and `anotherThing` depending on
+   a `condition`, prefer `if (condition) return oneThing; else return anotherThing` over
+   `if (condition) return oneThing; return anotherThing`. Keep the `return` statement at the same depth in branches.
+   - EXCEPTION: Fast-fail tests at the beginning of the method: `if (arg == null) return null; if (condition) ...`
 
 ## For pom.xml
 

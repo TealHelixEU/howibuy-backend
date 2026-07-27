@@ -121,6 +121,15 @@ public class QuestionDaoImplTest {
 				"prompts resolved for Greek");
 	}
 
+	@Test
+	@Order(5)
+	void retrieveAllIdsReturnsEveryQuestionOrderedByCategoryThenPosition(Mutiny.SessionFactory sessionFactory) {
+		var ids = factory(sessionFactory).withoutTransaction(sut::retrieveAllIds).await().atMost(WAIT);
+
+		assertEquals(List.of(ECOLOGICAL_Q1_ID, ECOLOGICAL_Q2_ID, HEALTH_Q1_ID), ids.stream().map(id -> id.asUuid()).toList(),
+				"every question id, grouped by category then position, language-independent");
+	}
+
 	private static ReactivePersistenceContextFactoryImpl factory(Mutiny.SessionFactory sessionFactory) {
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory);
 	}
