@@ -1,10 +1,14 @@
 package eu.tealhelix.sfc.services.v1.impl;
 
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toSet;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -13,6 +17,7 @@ import jakarta.inject.Inject;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
+import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.sfc.dao.AnswerDao;
 import eu.tealhelix.sfc.dao.AttemptDao;
@@ -20,8 +25,12 @@ import eu.tealhelix.sfc.dao.CategoryDao;
 import eu.tealhelix.sfc.dao.QuestionDao;
 import eu.tealhelix.sfc.services.v1.CompassReadService;
 import eu.tealhelix.sfc.services.v1.types.AnsweredQuestion;
+import eu.tealhelix.sfc.services.v1.types.CategoryOverview;
+import eu.tealhelix.sfc.services.v1.types.CompassOverview;
+import eu.tealhelix.sfc.services.v1.types.Progress;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.Question;
+import eu.tealhelix.sfc.v1.types.AttemptStatus;
 import eu.tealhelix.sfc.v1.types.CategoryId;
 import eu.tealhelix.sfc.v1.types.QuestionId;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
@@ -36,6 +45,10 @@ public class CompassReadServiceImpl implements CompassReadService {
 	private final AnswerDao answerDao;
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
 	private final SfcLanguages languages;
+	private final CompletionEstimator completionEstimator;
+	private final ScaleOptionLabels scaleOptionLabels;
+	private final StabilityWindow stabilityWindow;
+	private final DateTimeService dateTimeService;
 
 	@Inject
 	public CompassReadServiceImpl(
@@ -45,7 +58,11 @@ public class CompassReadServiceImpl implements CompassReadService {
 			AttemptDao attemptDao,
 			AnswerDao answerDao,
 			ReactivePersistenceContextFactory persistenceContextFactory,
-			SfcLanguages languages
+			SfcLanguages languages,
+			CompletionEstimator completionEstimator,
+			ScaleOptionLabels scaleOptionLabels,
+			StabilityWindow stabilityWindow,
+			DateTimeService dateTimeService
 	) {
 		this.authorization = authorization;
 		this.categoryDao = categoryDao;
@@ -54,6 +71,10 @@ public class CompassReadServiceImpl implements CompassReadService {
 		this.answerDao = answerDao;
 		this.persistenceContextFactory = persistenceContextFactory;
 		this.languages = languages;
+		this.completionEstimator = completionEstimator;
+		this.scaleOptionLabels = scaleOptionLabels;
+		this.stabilityWindow = stabilityWindow;
+		this.dateTimeService = dateTimeService;
 	}
 
 	@Override
@@ -96,6 +117,62 @@ public class CompassReadServiceImpl implements CompassReadService {
 		));
 	}
 
+	@Override
+	public Uni<CompassOverview> retrieveOverview(User user, String language) {
+		authorization.requireUserNotService(user);
+		var userId = user.getId().asUuid();
+		return localized(language, (em, lang) -> forcm(
+				categoryDao.retrieveByLanguage(em, lang),
+				_ -> questionDao.retrieveByLanguage(em, lang),
+				_ -> attemptState(em, userId),
+				(categories, questions, state) -> assemble(lang, categories, questions, state)));
+	}
+
+	/**
+	 * The user's current attempt reduced to what the overview needs: its status, the questions it counts as answered and
+	 * start-a-new-attempt eligibility. The in-progress attempt if there is one (with its actual answers); otherwise the
+	 * latest completed attempt (which, being complete, counts every question as answered, and whose stability window
+	 * decides eligibility); otherwise no attempt at all.
+	 */
+	private Uni<AttemptState> attemptState(ReactivePersistenceContext em, UUID userId) {
+		return attemptDao.findInProgressId(em, userId).flatMap(inProgress -> inProgress
+				.map(attemptId -> answerDao.retrieveByAttempt(em, attemptId).map(answers -> AttemptState.inProgress(answers.keySet())))
+				.orElseGet(() -> attemptDao.findLatestCompletedAt(em, userId).map(this::stateFromLatestCompletion)));
+	}
+
+	private AttemptState stateFromLatestCompletion(Optional<LocalDateTime> completedAt) {
+		return completedAt
+				.map(at -> AttemptState.completed(stabilityWindow.endsAfter(at), stabilityWindow.elapsedSince(at, dateTimeService.getNow())))
+				.orElseGet(AttemptState::none);
+	}
+
+	private CompassOverview assemble(String language, List<Category> categories, List<Question> questions, AttemptState state) {
+		var answered = state.coversAll()
+				? questions.stream().map(Question::getId).collect(toSet())
+				: state.answeredIds();
+		var questionsByCategory = questions.stream().collect(groupingBy(Question::getCategoryId));
+		var categoryOverviews = categories.stream()
+				.map(category -> categoryOverview(category, questionsByCategory.getOrDefault(category.getId(), List.of()), answered))
+				.toList();
+		return new CompassOverview(
+				progressOf(questions, answered),
+				completionEstimator.secondsFor(questions.size()),
+				categoryOverviews,
+				scaleOptionLabels.forLanguage(language),
+				state.status(),
+				state.eligibleToStartNewAttempt(),
+				state.eligibleAt());
+	}
+
+	private CategoryOverview categoryOverview(Category category, List<Question> categoryQuestions, Set<QuestionId> answered) {
+		return new CategoryOverview(category, progressOf(categoryQuestions, answered), completionEstimator.secondsFor(categoryQuestions.size()));
+	}
+
+	private static Progress progressOf(List<Question> questions, Set<QuestionId> answered) {
+		var answeredCount = (int) questions.stream().filter(question -> answered.contains(question.getId())).count();
+		return Progress.of(answeredCount, questions.size());
+	}
+
 	/**
 	 * The answers on the user's in-progress attempt, keyed by question, or an empty map if they have no attempt yet.
 	 */
@@ -130,5 +207,31 @@ public class CompassReadServiceImpl implements CompassReadService {
 	private <T> Uni<T> localized(String language, BiFunction<ReactivePersistenceContext, String, Uni<T>> read) {
 		return Uni.createFrom().item(() -> languages.resolve(language))
 				.flatMap(lang -> persistenceContextFactory.withoutTransaction(em -> read.apply(em, lang)));
+	}
+
+	/**
+	 * The overview's view of the user's current attempt: its {@link #status} (empty when none has ever been started),
+	 * which questions it counts as {@link #answeredIds answered} — or {@link #coversAll every} question, for a completed
+	 * attempt — and whether a new attempt may be started now ({@link #eligibleToStartNewAttempt}), with {@link #eligibleAt
+	 * when} a re-take becomes possible, set only when the current attempt is a completed one.
+	 */
+	private record AttemptState(
+			Optional<AttemptStatus> status,
+			Set<QuestionId> answeredIds,
+			boolean coversAll,
+			boolean eligibleToStartNewAttempt,
+			Optional<LocalDateTime> eligibleAt
+	) {
+		static AttemptState none() {
+			return new AttemptState(Optional.empty(), Set.of(), false, true, Optional.empty());
+		}
+
+		static AttemptState inProgress(Set<QuestionId> answeredIds) {
+			return new AttemptState(Optional.of(AttemptStatus.IN_PROGRESS), answeredIds, false, false, Optional.empty());
+		}
+
+		static AttemptState completed(LocalDateTime windowEnds, boolean eligible) {
+			return new AttemptState(Optional.of(AttemptStatus.COMPLETED), Set.of(), true, eligible, Optional.of(windowEnds));
+		}
 	}
 }

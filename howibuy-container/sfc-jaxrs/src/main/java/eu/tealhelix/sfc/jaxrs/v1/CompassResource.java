@@ -34,6 +34,13 @@ public class CompassResource {
 	CompassReadService compassReadService;
 
 	@GET
+	@Path("overview")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<OverviewResponse> overview(@Context ContainerRequestContext crc, @QueryParam("lang") String lang) {
+		return compassReadService.retrieveOverview(currentUser(crc), lang).map(OverviewResponse::from);
+	}
+
+	@GET
 	@Path("categories")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<List<CategoryResponse>> categories(@Context ContainerRequestContext crc, @QueryParam("lang") String lang) {

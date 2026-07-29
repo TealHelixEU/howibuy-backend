@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.sfc.services.v1.types.AnsweredQuestion;
+import eu.tealhelix.sfc.services.v1.types.CompassOverview;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.Question;
 import eu.tealhelix.sfc.v1.types.CategoryId;
@@ -43,4 +44,12 @@ public interface CompassReadService {
 	 * nothing, so the frontier is the category's first question.
 	 */
 	Uni<Optional<Question>> findNextQuestion(User user, String language, CategoryId categoryId);
+
+	/**
+	 * A single overview of where the user stands, localized for {@code language}: every category with overall and
+	 * per-category progress and estimated completion time, the five localized scale labels, the current attempt's status
+	 * and whether a new attempt may be started now. Progress is measured against the user's current attempt — the one in
+	 * progress, or their latest completed one (which, being complete, reads as fully answered), or none.
+	 */
+	Uni<CompassOverview> retrieveOverview(User user, String language);
 }

@@ -1,14 +1,19 @@
 package eu.tealhelix.sfc.services.v1.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,6 +23,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
+import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
@@ -29,10 +35,12 @@ import eu.tealhelix.sfc.dao.AttemptDao;
 import eu.tealhelix.sfc.dao.CategoryDao;
 import eu.tealhelix.sfc.dao.QuestionDao;
 import eu.tealhelix.sfc.services.v1.types.AnsweredQuestion;
+import eu.tealhelix.sfc.services.v1.types.Progress;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.ImmutableCategory;
 import eu.tealhelix.sfc.v1.model.ImmutableQuestion;
 import eu.tealhelix.sfc.v1.model.Question;
+import eu.tealhelix.sfc.v1.types.AttemptStatus;
 import eu.tealhelix.sfc.v1.types.CategoryId;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
 import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
@@ -56,10 +64,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * real attempt by {@code CompassNavigationTest}.
  */
 @EnableAutoWeld
-@AddBeanClasses(TealHelixAuthorizationImpl.class)
+@AddBeanClasses({TealHelixAuthorizationImpl.class, ScaleOptionLabels.class})
 @ExtendWith(MockitoExtension.class)
 public class CompassReadServiceImplTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
+
+	private static final LocalDateTime PRIOR_COMPLETION = LocalDateTime.of(2026, 1, 1, 12, 0, 0);
+	private static final LocalDateTime WINDOW_ENDS = PRIOR_COMPLETION.plusDays(30);
+	private static final LocalDateTime WITHIN_WINDOW = PRIOR_COMPLETION.plusDays(10);
+	private static final LocalDateTime AFTER_WINDOW = PRIOR_COMPLETION.plusDays(31);
 
 	private static final String USER_ID = "2e788895-0503-4777-a7bd-24e5d61db5b1";
 	private static final UUID USER_UUID = UUID.fromString(USER_ID);
@@ -81,6 +94,21 @@ public class CompassReadServiceImplTest {
 	private static final Question Q3 = question("22222222-2222-2222-2222-222222222203", (short) 3);
 	private static final List<Question> QUESTIONS = List.of(Q1, Q2, Q3);
 
+	/**
+	 * A second category so the overview's per-category breakdown and its overall aggregation are distinguishable.
+	 */
+	private static final CategoryId CATEGORY_B_ID = new CategoryIdImpl("11111111-1111-1111-1111-111111111112");
+	private static final Category CATEGORY_B = ImmutableCategory.builder()
+			.id(CATEGORY_B_ID)
+			.dimension(SustainabilityDimension.ECOLOGICAL)
+			.name("Ecological")
+			.description("Ecological description")
+			.build();
+	private static final Question Q4 = question("22222222-2222-2222-2222-222222222204", CATEGORY_B_ID, (short) 1);
+	private static final Question Q5 = question("22222222-2222-2222-2222-222222222205", CATEGORY_B_ID, (short) 2);
+	private static final List<Category> OVERVIEW_CATEGORIES = List.of(CATEGORIES.getFirst(), CATEGORY_B);
+	private static final List<Question> OVERVIEW_QUESTIONS = List.of(Q1, Q2, Q3, Q4, Q5);
+
 	@Produces
 	@Mock
 	CategoryDao categoryDao;
@@ -100,6 +128,18 @@ public class CompassReadServiceImplTest {
 	@Produces
 	@ExcludeBean
 	SfcLanguages languages = new SfcLanguages(Set.of("en", "el"), "en");
+
+	@Produces
+	@ExcludeBean
+	StabilityWindow stabilityWindow = new StabilityWindow(Duration.ofDays(30));
+
+	@Produces
+	@ExcludeBean
+	CompletionEstimator completionEstimator = new CompletionEstimator(20);
+
+	@Produces
+	@Mock
+	DateTimeService dateTimeService;
 
 	@Produces
 	@RegisterExtension
@@ -237,10 +277,97 @@ public class CompassReadServiceImplTest {
 		verifyNoInteractions(categoryDao);
 	}
 
+	@Test
+	void findOverviewForAUserWithNoAttemptReportsZeroProgressAndEligibleToStart() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedAt(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(categoryDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_CATEGORIES));
+		when(questionDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_QUESTIONS));
+
+		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
+
+		assertEquals(Optional.empty(), overview.attemptStatus(), "no attempt has been started");
+		assertTrue(overview.eligibleToStartNewAttempt(), "a user with no attempt may start one");
+		assertEquals(Optional.empty(), overview.eligibleAt(), "there is no completed attempt to wait on");
+		assertEquals(new Progress(0, 5, 0), overview.overallProgress());
+		assertEquals(20L * 5, overview.overallEstimatedSeconds());
+		assertEquals(new Progress(0, 3, 0), overview.categories().get(0).progress());
+		assertEquals(20L * 3, overview.categories().get(0).estimatedSeconds());
+		assertEquals(new Progress(0, 2, 0), overview.categories().get(1).progress());
+		assertEquals(20L * 2, overview.categories().get(1).estimatedSeconds());
+		assertEquals(5, overview.scaleLabels().size(), "all five scale labels are served");
+		assertEquals("Not important", overview.scaleLabels().get(ScaleOption.NOT_IMPORTANT), "labels localized for the resolved language");
+		verifyNoInteractions(answerDao);
+	}
+
+	@Test
+	void findOverviewForAnInProgressAttemptCountsTheAnswersPerCategory() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), ScaleOption.VERY_IMPORTANT,
+				Q4.getId(), ScaleOption.NOT_IMPORTANT)));
+		when(categoryDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_CATEGORIES));
+		when(questionDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_QUESTIONS));
+
+		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
+
+		assertEquals(Optional.of(AttemptStatus.IN_PROGRESS), overview.attemptStatus());
+		assertFalse(overview.eligibleToStartNewAttempt(), "an attempt is already in progress");
+		assertEquals(Optional.empty(), overview.eligibleAt());
+		assertEquals(new Progress(2, 5, 40), overview.overallProgress());
+		assertEquals(new Progress(1, 3, 33), overview.categories().get(0).progress(), "one of three answered in the first category");
+		assertEquals(new Progress(1, 2, 50), overview.categories().get(1).progress(), "one of two answered in the second category");
+		verify(attemptDao, never()).findLatestCompletedAt(any(), any());
+	}
+
+	@Test
+	void findOverviewForACompletedAttemptWithinTheWindowIsFullyAnsweredButNotYetEligible() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedAt(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(PRIOR_COMPLETION)));
+		when(dateTimeService.getNow()).thenReturn(WITHIN_WINDOW);
+		when(categoryDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_CATEGORIES));
+		when(questionDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_QUESTIONS));
+
+		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
+
+		assertEquals(Optional.of(AttemptStatus.COMPLETED), overview.attemptStatus());
+		assertEquals(new Progress(5, 5, 100), overview.overallProgress(), "a completed attempt reads as fully answered");
+		assertEquals(new Progress(3, 3, 100), overview.categories().get(0).progress());
+		assertEquals(new Progress(2, 2, 100), overview.categories().get(1).progress());
+		assertFalse(overview.eligibleToStartNewAttempt(), "still inside the stability window");
+		assertEquals(Optional.of(WINDOW_ENDS), overview.eligibleAt(), "told when a re-take becomes possible");
+		verifyNoInteractions(answerDao);
+	}
+
+	@Test
+	void findOverviewForACompletedAttemptAfterTheWindowIsEligibleToStartAgain() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedAt(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(PRIOR_COMPLETION)));
+		when(dateTimeService.getNow()).thenReturn(AFTER_WINDOW);
+		when(categoryDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_CATEGORIES));
+		when(questionDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_QUESTIONS));
+
+		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
+
+		assertEquals(Optional.of(AttemptStatus.COMPLETED), overview.attemptStatus());
+		assertTrue(overview.eligibleToStartNewAttempt(), "the stability window has elapsed");
+		assertEquals(Optional.of(WINDOW_ENDS), overview.eligibleAt());
+		verifyNoInteractions(answerDao);
+	}
+
+	@Test
+	void findOverviewRejectsAServiceUser() {
+		assertThrows(NotAuthorizedException.class, () -> sut.retrieveOverview(SERVICE_USER, "en"));
+	}
+
 	private static Question question(String id, short position) {
+		return question(id, CATEGORY_ID, position);
+	}
+
+	private static Question question(String id, CategoryId categoryId, short position) {
 		return ImmutableQuestion.builder()
 				.id(new QuestionIdImpl(id))
-				.categoryId(CATEGORY_ID)
+				.categoryId(categoryId)
 				.position(position)
 				.text("prompt " + position)
 				.build();

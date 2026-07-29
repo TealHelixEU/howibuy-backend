@@ -11,8 +11,8 @@ new attempt. This is the capstone slice; it also carries the one end-to-end happ
 
 **Status:** ready-for-agent
 
-- [ ] One overview read (honouring `?lang`) returns the categories with overall and per-category progress (answered/total and percentage) measured against the user's current attempt.
-- [ ] The overview returns an estimated completion time overall and per category, computed as `sfc.seconds-per-question` × the relevant question count; `sfc.seconds-per-question` is configurable.
-- [ ] The overview returns the five scale option labels localized for `?lang`, served from a resource bundle keyed by the scale enum; the bundle's languages stay in sync with `sfc.languages`.
-- [ ] The overview reports the current attempt status and whether the user is eligible to start a new attempt.
-- [ ] The single Keycloak-backed end-to-end `@QuarkusTest` covers the main happy path only — fetch the localized structure, answer through a category via next-question, complete, then observe the locked state and the overview — and is kept lean because Keycloak startup is slow; finer cases stay at the faster seams.
+- [x] One overview read (honouring `?lang`) returns the categories with overall and per-category progress (answered/total and percentage) measured against the user's current attempt.
+- [x] The overview returns an estimated completion time overall and per category, computed as `sfc.seconds-per-question` × the relevant question count; `sfc.seconds-per-question` is configurable.
+- [x] The overview returns the five scale option labels localized for `?lang`, served from a resource bundle keyed by the scale enum; the bundle's languages stay in sync with `sfc.languages`.
+- [x] The overview reports the current attempt status and whether the user is eligible to start a new attempt.
+- [x] The single Keycloak-backed end-to-end `@QuarkusTest` covers the main happy path only — fetch the localized structure, answer through a category via next-question, complete, then observe the locked state and the overview — and is kept lean because Keycloak startup is slow; finer cases stay at the faster seams.
