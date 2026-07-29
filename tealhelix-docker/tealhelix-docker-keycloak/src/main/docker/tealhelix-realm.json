@@ -47,6 +47,7 @@
   "quickLoginCheckMilliSeconds" : 1000,
   "maxDeltaTimeSeconds" : 43200,
   "failureFactor" : 30,
+  "maxSecondaryAuthFailures" : 0,
   "roles" : {
     "realm" : [ {
       "id" : "cbcf5b67-1c89-4101-ae60-9ee1853fc449",
@@ -248,7 +249,6 @@
         "containerId" : "1df23a22-8b7b-4162-9e4f-2d71e5894918",
         "attributes" : { }
       } ],
-      "howibuy" : [ ],
       "lime_fresh" : [ ],
       "security-admin-console" : [ ],
       "admin-cli" : [ ],
@@ -263,6 +263,7 @@
         "containerId" : "d1323173-1944-4007-ac71-52a73b542c59",
         "attributes" : { }
       } ],
+      "howibuy" : [ ],
       "account" : [ {
         "id" : "8805ae35-217b-4eaf-8622-0f532c8853f8",
         "name" : "manage-account",
@@ -388,8 +389,8 @@
     "lastName" : "Squarepants",
     "email" : "bob@krusty-krab.com",
     "emailVerified" : true,
-    "createdTimestamp" : 1748713391704,
     "enabled" : true,
+    "createdTimestamp" : 1748713391704,
     "totp" : false,
     "credentials" : [ {
       "id" : "255ec05a-fe72-4f2a-a850-d88b35938b6e",
@@ -408,8 +409,8 @@
     "id" : "dc73176c-7069-4a4f-a74f-d60c4a5ec1ee",
     "username" : "service-account-lime_fresh",
     "emailVerified" : false,
-    "createdTimestamp" : 1748712338812,
     "enabled" : true,
+    "createdTimestamp" : 1748712338812,
     "totp" : false,
     "serviceAccountClientId" : "lime_fresh",
     "credentials" : [ ],
@@ -531,46 +532,6 @@
     "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "basic", "email" ],
     "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
   }, {
-    "id" : "701c8c68-84fe-4dea-87d4-d188e1e78b3a",
-    "clientId" : "howibuy",
-    "name" : "HowiBuy",
-    "description" : "",
-    "rootUrl" : "",
-    "adminUrl" : "",
-    "baseUrl" : "",
-    "surrogateAuthRequired" : false,
-    "enabled" : true,
-    "alwaysDisplayInConsole" : false,
-    "clientAuthenticatorType" : "client-secret",
-    "redirectUris" : [ "http://localhost:8180/howibuy/" ],
-    "webOrigins" : [ "/*" ],
-    "notBefore" : 0,
-    "bearerOnly" : false,
-    "consentRequired" : false,
-    "standardFlowEnabled" : true,
-    "implicitFlowEnabled" : false,
-    "directAccessGrantsEnabled" : false,
-    "serviceAccountsEnabled" : false,
-    "publicClient" : true,
-    "frontchannelLogout" : true,
-    "protocol" : "openid-connect",
-    "attributes" : {
-      "realm_client" : "false",
-      "oidc.ciba.grant.enabled" : "false",
-      "backchannel.logout.session.required" : "true",
-      "standard.token.exchange.enabled" : "false",
-      "frontchannel.logout.session.required" : "true",
-      "post.logout.redirect.uris" : "+",
-      "display.on.consent.screen" : "false",
-      "oauth2.device.authorization.grant.enabled" : "false",
-      "backchannel.logout.revoke.offline.tokens" : "false"
-    },
-    "authenticationFlowBindingOverrides" : { },
-    "fullScopeAllowed" : true,
-    "nodeReRegistrationTimeout" : -1,
-    "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "basic", "email" ],
-    "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
-  }, {
     "id" : "d1323173-1944-4007-ac71-52a73b542c59",
     "clientId" : "broker",
     "name" : "${client_broker}",
@@ -646,6 +607,50 @@
       "display.on.consent.screen" : "false",
       "request.object.encryption.enc" : "any",
       "token.response.type.bearer.lower-case" : "false"
+    },
+    "authenticationFlowBindingOverrides" : { },
+    "fullScopeAllowed" : true,
+    "nodeReRegistrationTimeout" : -1,
+    "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "basic", "email" ],
+    "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
+  }, {
+    "id" : "701c8c68-84fe-4dea-87d4-d188e1e78b3a",
+    "clientId" : "howibuy",
+    "name" : "HowiBuy",
+    "description" : "",
+    "rootUrl" : "",
+    "adminUrl" : "",
+    "baseUrl" : "",
+    "surrogateAuthRequired" : false,
+    "enabled" : true,
+    "alwaysDisplayInConsole" : false,
+    "clientAuthenticatorType" : "client-secret",
+    "redirectUris" : [ "http://localhost:5175/*", "http://localhost:8180/howibuy/" ],
+    "webOrigins" : [ "+" ],
+    "notBefore" : 0,
+    "bearerOnly" : false,
+    "consentRequired" : false,
+    "standardFlowEnabled" : true,
+    "implicitFlowEnabled" : false,
+    "directAccessGrantsEnabled" : false,
+    "serviceAccountsEnabled" : false,
+    "publicClient" : true,
+    "frontchannelLogout" : true,
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "logout.confirmation.enabled" : "false",
+      "standard.token.exchange.enabled" : "false",
+      "oauth2.jwt.authorization.grant.enabled" : "false",
+      "frontchannel.logout.session.required" : "true",
+      "post.logout.redirect.uris" : "+",
+      "oauth2.device.authorization.grant.enabled" : "false",
+      "backchannel.logout.revoke.offline.tokens" : "false",
+      "realm_client" : "false",
+      "oidc.ciba.grant.enabled" : "false",
+      "backchannel.logout.session.required" : "true",
+      "display.on.consent.screen" : "false",
+      "pkce.code.challenge.method" : "S256",
+      "dpop.bound.access.tokens" : "false"
     },
     "authenticationFlowBindingOverrides" : { },
     "fullScopeAllowed" : true,
@@ -1423,7 +1428,7 @@
       "subType" : "authenticated",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "saml-role-list-mapper", "saml-user-attribute-mapper", "oidc-full-name-mapper", "oidc-usermodel-attribute-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-address-mapper", "saml-user-property-mapper", "oidc-usermodel-property-mapper" ]
+        "allowed-protocol-mapper-types" : [ "oidc-full-name-mapper", "saml-user-attribute-mapper", "oidc-usermodel-attribute-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-usermodel-property-mapper", "saml-user-property-mapper", "saml-role-list-mapper", "oidc-address-mapper" ]
       }
     }, {
       "id" : "97a942c6-a59d-4a40-bf4d-14379907113f",
@@ -1458,7 +1463,7 @@
       "subType" : "anonymous",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "saml-user-property-mapper", "oidc-usermodel-attribute-mapper", "oidc-address-mapper", "oidc-sha256-pairwise-sub-mapper", "saml-user-attribute-mapper", "oidc-usermodel-property-mapper", "oidc-full-name-mapper", "saml-role-list-mapper" ]
+        "allowed-protocol-mapper-types" : [ "saml-user-property-mapper", "saml-user-attribute-mapper", "oidc-full-name-mapper", "oidc-address-mapper", "oidc-usermodel-attribute-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-usermodel-property-mapper", "saml-role-list-mapper" ]
       }
     }, {
       "id" : "54d27851-1a27-48a3-997e-5fa7cf93146a",
@@ -1533,7 +1538,6 @@
     } ]
   },
   "internationalizationEnabled" : false,
-  "supportedLocales" : [ ],
   "authenticationFlows" : [ {
     "id" : "844d5e31-2890-4f89-a7b5-d04e1d816721",
     "alias" : "Account verification options",
@@ -2142,6 +2146,14 @@
     "priority" : 100,
     "config" : { }
   }, {
+    "alias" : "idp_link",
+    "name" : "Linking Identity Provider",
+    "providerId" : "idp_link",
+    "enabled" : true,
+    "defaultAction" : false,
+    "priority" : 120,
+    "config" : { }
+  }, {
     "alias" : "update_user_locale",
     "name" : "Update User Locale",
     "providerId" : "update_user_locale",
@@ -2174,11 +2186,12 @@
     "frontendUrl" : "",
     "acr.loa.map" : "{}"
   },
-  "keycloakVersion" : "26.2.5",
+  "keycloakVersion" : "26.6.3",
   "userManagedAccessAllowed" : false,
   "organizationsEnabled" : false,
   "verifiableCredentialsEnabled" : false,
   "adminPermissionsEnabled" : false,
+  "scimApiEnabled" : false,
   "clientProfiles" : {
     "profiles" : [ ]
   },

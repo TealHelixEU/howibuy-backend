@@ -42,15 +42,19 @@ Create a new client in the Realm:
 	- Client authentication: Off
 	- Authorization: Off
 	- Authentication flow: Check *only* "Standard flow"
-	- Require PKCE: Not yet; must be enabled when we have standalone accounts
+	- Require PKCE: On
+	- PKCE Method: S256
 - Login settings:
-	- Root URL: **TODO**
-	- Home URL: **TODO**
 	- Valid redirect URIs:
 		- `http://localhost:8180/howibuy/` (also specified in `keycloak-auth.sh`)
+		- http://localhost:5175/*
 		- **TODO**
-	- Valid post logout redirect URIs: **TODO**
-	- Web origins: **TODO**
+	- Valid post logout redirect URIs:
+		- A plain plus sign: `+`
+		- **TODO**
+	- Web origins:
+		- A plain plus sign: `+`
+		- **TODO**
 - Save & finish the new client wizard
 
 ### Create a client for Claims Buster
@@ -146,10 +150,10 @@ Test:
 Exporting from the UI does not include users in the export file; you have to use the CLI:
 
 ```bash
-docker exec -it tealhelix_keycloak_1 bash
+docker exec -it tealhelix-keycloak-1 bash
 # in the container
 /opt/keycloak/bin/kc.sh export --dir /opt/keycloak/data/import --users realm_file --realm tealhelix
 exit # return to host
 # in the host
-docker cp tealhelix_keycloak_1:/opt/keycloak/data/import/tealhelix-realm.json tealhelix-docker/tealhelix-docker-keycloak/src/main/docker/
+docker cp tealhelix-keycloak-1:/opt/keycloak/data/import/tealhelix-realm.json tealhelix-docker/tealhelix-docker-keycloak/src/main/docker/
 ```
