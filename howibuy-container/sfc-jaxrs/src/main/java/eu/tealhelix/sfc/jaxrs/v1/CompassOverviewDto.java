@@ -15,20 +15,20 @@ import eu.tealhelix.sfc.v1.types.ScaleOption;
  * has never started an attempt; {@code eligibleAt} is {@code null} until they have a completed attempt, after which it is
  * the moment its stability window ends (so the client can tell the user when a re-take becomes possible).
  */
-public record OverviewResponse(
+public record CompassOverviewDto(
 		Progress overallProgress,
 		long overallEstimatedSeconds,
-		List<CategoryOverviewResponse> categories,
+		List<CategoryOverviewDto> categories,
 		Map<ScaleOption, String> scaleLabels,
 		AttemptStatus attemptStatus,
 		boolean eligibleToStartNewAttempt,
 		LocalDateTime eligibleAt
 ) {
-	static OverviewResponse from(CompassOverview overview) {
-		return new OverviewResponse(
+	static CompassOverviewDto from(CompassOverview overview) {
+		return new CompassOverviewDto(
 				overview.overallProgress(),
 				overview.overallEstimatedSeconds(),
-				overview.categories().stream().map(CategoryOverviewResponse::from).toList(),
+				overview.categories().stream().map(CategoryOverviewDto::from).toList(),
 				overview.scaleLabels(),
 				overview.attemptStatus().orElse(null),
 				overview.eligibleToStartNewAttempt(),

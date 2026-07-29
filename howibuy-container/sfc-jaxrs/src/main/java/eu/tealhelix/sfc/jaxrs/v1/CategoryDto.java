@@ -7,7 +7,7 @@ import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
 /**
  * A compass category with its text resolved for the requested language.
  */
-public record CategoryResponse(
+public record CategoryDto(
 		CategoryId id,
 		SustainabilityDimension dimension,
 		String name,
@@ -15,8 +15,8 @@ public record CategoryResponse(
 		String videoUrl,
 		String detailUrl
 ) {
-	static CategoryResponse from(Category category) {
-		return new CategoryResponse(
+	static CategoryDto from(Category category) {
+		return new CategoryDto(
 				category.getId(),
 				category.getDimension(),
 				category.getName(),

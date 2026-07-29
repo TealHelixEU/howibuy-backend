@@ -49,13 +49,23 @@
    types that are input to business logic, even if they do not correspond to domain types.
 3. **INCOMPLETE** Name concrete implementations of domain objects that act as arguments to the APIs after the domain with the `-Param`
    suffix, e.g. `UserParam`
-4. **INCOMPLETE** Name classes that are (more or less) full representations of a domain object to an external API with the `-Dto` suffix, e.g. `UserSearchResultDto`
-    - **What is the difference between `-Param` and `-Dto`?**
-        1. `-Param` is *input* to an API, when the data differ significantly from the domain object
-        2. `-Dto` can be *both input and output*, both when there is no relevant domain object for the transferred data, or when the information we need to transfer closely matches the structure of the domain object.
-5. Classes used as inputs/outputs of endpoints and are not part of the main model have the `-Request`/`-Response`
-   suffix respectively.
-6. Classes used as inputs/outputs of services and are not part of the main model have the `-Param`/`-Result`
+4. **A data type crossing the JAX-RS boundary gets its own type; do not serialize a domain or service type
+   directly.** This keeps the wire contract and the in-code model free to change independently, and keeps framework
+   (Jackson) concerns out of the deliberately framework-free model. One exception: a small, flat, framework-free value
+   type that is already exactly the wire shape and has no plausible divergence (an id value type, `Progress`) may be
+   used on the wire directly instead of being copied.
+5. Name a boundary type by whether it has an in-code twin:
+    - If it is the wire representation of an in-code type — a core-model type, a service-interface `v1.types` type, or
+      a services-model carrier — name it after that counterpart with the `-Dto` suffix, e.g. `CategoryDto` for
+      `Category`, `CompassOverviewDto` for `CompassOverview`. (`-Dto` names the pattern rather than the domain; it is
+      used here deliberately, because the suffix communicates that a corresponding in-code type exists to read.)
+    - If it is a wire-only shape with no such twin — a request/response envelope, an error body — name it
+      `<Thing>Request` / `<Thing>Response`, e.g. `AnswerRequest`, `NextQuestionResponse`, `StabilityWindowResponse`.
+    - Accept two consequences knowingly: (a) the suffix mixes axes — `-Request`/`-Response` name a type by its HTTP
+      *direction*, while `-Dto` names it by *kind*, so a `-Dto` name does not tell you request-vs-response (which is in
+      fact more honest for a twin sent in both directions); (b) the name is relative to the model, so introducing or
+      removing an in-code twin flips a type between `-Dto` and `-Response`.
+6. **TBD or phased out** Classes used as inputs/outputs of services and are not part of the main model have the `-Param`/`-Result`
    suffix respectively.
 7. When a word component of a Java identifier is all capitals, de-capitalize it, e.g. "DTO" &rarr; "SomethingDto", "DAO" &rarr; "SomethingDao".
 

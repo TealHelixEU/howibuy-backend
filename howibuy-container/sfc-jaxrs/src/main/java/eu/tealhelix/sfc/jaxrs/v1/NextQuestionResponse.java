@@ -9,10 +9,10 @@ import eu.tealhelix.sfc.v1.model.Question;
  * {@link #complete} {@code false}), or, when every question in the category is answered, {@code complete = true} and no
  * question. Navigation never crosses into another category.
  */
-public record NextQuestionResponse(boolean complete, QuestionResponse question) {
+public record NextQuestionResponse(boolean complete, QuestionDto question) {
 	static NextQuestionResponse of(Optional<Question> frontier) {
 		return frontier
-				.map(question -> new NextQuestionResponse(false, QuestionResponse.from(question)))
+				.map(question -> new NextQuestionResponse(false, QuestionDto.from(question)))
 				.orElseGet(() -> new NextQuestionResponse(true, null));
 	}
 }

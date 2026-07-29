@@ -36,24 +36,24 @@ public class CompassResource {
 	@GET
 	@Path("overview")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Uni<OverviewResponse> overview(@Context ContainerRequestContext crc, @QueryParam("lang") String lang) {
-		return compassReadService.retrieveOverview(currentUser(crc), lang).map(OverviewResponse::from);
+	public Uni<CompassOverviewDto> overview(@Context ContainerRequestContext crc, @QueryParam("lang") String lang) {
+		return compassReadService.retrieveOverview(currentUser(crc), lang).map(CompassOverviewDto::from);
 	}
 
 	@GET
 	@Path("categories")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Uni<List<CategoryResponse>> categories(@Context ContainerRequestContext crc, @QueryParam("lang") String lang) {
+	public Uni<List<CategoryDto>> categories(@Context ContainerRequestContext crc, @QueryParam("lang") String lang) {
 		return compassReadService.findCategories(currentUser(crc), lang)
-				.map(categories -> categories.stream().map(CategoryResponse::from).toList());
+				.map(categories -> categories.stream().map(CategoryDto::from).toList());
 	}
 
 	@GET
 	@Path("categories/{categoryId}/questions")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Uni<List<QuestionResponse>> categoryQuestions(@Context ContainerRequestContext crc, @PathParam("categoryId") UUID categoryId, @QueryParam("lang") String lang) {
+	public Uni<List<QuestionDto>> categoryQuestions(@Context ContainerRequestContext crc, @PathParam("categoryId") UUID categoryId, @QueryParam("lang") String lang) {
 		return compassReadService.findCategoryQuestions(currentUser(crc), lang, new CategoryIdImpl(categoryId.toString()))
-				.map(questions -> questions.stream().map(QuestionResponse::from).toList());
+				.map(questions -> questions.stream().map(QuestionDto::from).toList());
 	}
 
 	@GET
@@ -72,9 +72,9 @@ public class CompassResource {
 	}
 
 	private static List<CategoryQuestionsResponse> groupByCategory(List<AnsweredQuestion> questions) {
-		var byCategory = new LinkedHashMap<CategoryId, List<QuestionResponse>>();
+		var byCategory = new LinkedHashMap<CategoryId, List<QuestionDto>>();
 		for (var answered : questions) {
-			byCategory.computeIfAbsent(answered.question().getCategoryId(), k -> new ArrayList<>()).add(QuestionResponse.from(answered));
+			byCategory.computeIfAbsent(answered.question().getCategoryId(), k -> new ArrayList<>()).add(QuestionDto.from(answered));
 		}
 		return byCategory.entrySet().stream()
 				.map(entry -> new CategoryQuestionsResponse(entry.getKey(), entry.getValue()))
