@@ -15,10 +15,15 @@
 
 	<dependencies>
 		<!-- PROJECT -->
-		<!-- These are here to make the dependency explicit to Maven and ensure that the migrations are built before this -->
+		<!-- These are here to make the dependencies explicit to Maven and ensure that the migrations are built before this -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
 			<artifactId>howibuy-dao-hibernate-reactive</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>sfc-dao-hibernate-reactive</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
@@ -96,6 +101,19 @@
 									<artifactId>howibuy-dao-hibernate-reactive</artifactId>
 									<version>${project.version}</version>
 									<outputFileName>migrations-howibuy.jar</outputFileName>
+								</configuration>
+							</execution>
+							<execution>
+								<id>download-migrations-sfc</id>
+								<phase>package</phase>
+								<goals>
+									<goal>artifact</goal>
+								</goals>
+								<configuration>
+									<groupId>eu.tealhelix</groupId>
+									<artifactId>sfc-dao-hibernate-reactive</artifactId>
+									<version>${project.version}</version>
+									<outputFileName>migrations-sfc.jar</outputFileName>
 								</configuration>
 							</execution>
 						</executions>

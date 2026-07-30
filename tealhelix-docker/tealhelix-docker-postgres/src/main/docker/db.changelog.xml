@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<!--
+		This file is a copy of howibuy-container/howibuy/src/main/resources/db.changelog.xml.
+		It is kept here to bootstrap the Liquibase of the Docker database, without creating a dependency from
+		the tealhelix-docker-postgres module to howibuy-container, which is the inverse of what is intended.
+
+		The structure is expected to change rarely, so the overhead and risk is minimal.
+	-->
+	<include relativeToChangelogFile="true" file="howibuy.db.changelog.xml"/>
+	<include relativeToChangelogFile="true" file="sfc.db.changelog.xml"/>
+</databaseChangeLog>
