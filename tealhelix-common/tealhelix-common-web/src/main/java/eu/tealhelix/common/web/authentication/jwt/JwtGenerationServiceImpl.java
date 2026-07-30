@@ -59,15 +59,19 @@ public class JwtGenerationServiceImpl implements JwtGenerationService {
 	@Override
 	public TokenForImpersonationResult toTokenForImpersonation(User user) {
 		var expiresInSeconds = tokenAuthenticationConfig.getJwtSessionTimeInSeconds();
-		var expirationTime = dateTimeService.currentTimeMillis() + expiresInSeconds * 1000;
-		SignedJWT signedJWT = makeSignedJWTForImpersonation(user.getName(), user.getId().asString(), new Date(expirationTime));
+		var expirationTime = dateTimeService.currentTimeMillis() + expiresInSeconds * 1000L;
+		SignedJWT signedJWT = makeSignedJWTForImpersonation(user.getId().asString(), new Date(expirationTime));
 		return new TokenForImpersonationResult(signedJWT.serialize(), expiresInSeconds);
 	}
 
-	private SignedJWT makeSignedJWTForImpersonation(String subject, String uuid, Date expirationTime) {
+	/**
+	 * The token names the user by id and says nothing else about them: the id is all that the validation of an
+	 * impersonation token reads, and the token is held by a retailer, so anything more would be telling the retailer
+	 * something it did not ask for.
+	 */
+	private SignedJWT makeSignedJWTForImpersonation(String userId, Date expirationTime) {
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-				.subject(subject)
-				.claim(tokenAuthenticationConfig.getUserIdFieldInJwt(), uuid)
+				.claim(tokenAuthenticationConfig.getUserIdFieldInJwt(), userId)
 				.claim(CLAIM_IMPERSONATED, true)
 				.expirationTime(expirationTime)
 				.build();
