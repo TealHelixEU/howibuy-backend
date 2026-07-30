@@ -1,6 +1,7 @@
 package eu.tealhelix.common.web.authentication.jwt;
 
 import java.net.URL;
+import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -19,6 +20,8 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 	public static final String JWT_SECRET_KEY = "config.jwt.secret";
 	public static final String INTERNAL_KEY_ID = "config.jwt.internalKeyId";
 	public static final String JWT_SESSION_TIME_KEY = "config.jwt.sessionTimeInSeconds";
+	public static final String EXPECTED_ISSUER_KEY = "config.jwt.expectedIssuer";
+	public static final String ALLOWED_USER_CLIENTS_KEY = "config.jwt.allowedUserClients";
 
 	@ConfigProperty(name = USERNAME_FIELD_IN_JWT_KEY)
 	String usernameFieldInJwt;
@@ -44,9 +47,25 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 	@ConfigProperty(name = JWK_URL_KEY)
 	URL jwkUrl;
 
+	@ConfigProperty(name = EXPECTED_ISSUER_KEY)
+	String expectedIssuer;
+
+	@ConfigProperty(name = ALLOWED_USER_CLIENTS_KEY)
+	List<String> allowedUserClients;
+
 	@Override
 	public URL getJwkUrl() {
 		return jwkUrl;
+	}
+
+	@Override
+	public String getExpectedIssuer() {
+		return expectedIssuer;
+	}
+
+	@Override
+	public List<String> getAllowedUserClients() {
+		return allowedUserClients;
 	}
 
 	@Override

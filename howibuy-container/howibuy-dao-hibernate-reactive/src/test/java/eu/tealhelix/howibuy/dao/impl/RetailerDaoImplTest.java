@@ -2,6 +2,7 @@ package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -29,6 +30,7 @@ public class RetailerDaoImplTest {
 	private static final long ASYNC_WAIT_SECONDS = 300;
 
 	private static final UUID RETAILER_ID = UUID.fromString("518cae6a-f2b2-4454-b74d-f2404feab2f5");
+	private static final UUID INACTIVE_RETAILER_ID = UUID.fromString("d3f8a1c2-8b41-4a1e-9b3c-6f2e5d4c7a80");
 
 	@Container
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
@@ -49,28 +51,48 @@ public class RetailerDaoImplTest {
 		var sut = new RetailerDaoImpl();
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
 		var subscriber = factory.withoutTransaction(em ->
-				sut.exists(em, new GenericRetailerId(RETAILER_ID.toString()))
+				sut.findActiveFlag(em, new GenericRetailerId(RETAILER_ID.toString()))
 		).subscribe().withSubscriber(UniAssertSubscriber.create());
-		var exists = subscriber.awaitItem(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getItem();
-		assertFalse(exists);
+		var activeFlag = subscriber.awaitItem(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getItem();
+		assertNull(activeFlag);
 	}
 
 	@Test
 	@Order(2)
-	void testWhenRetailerPresent(Mutiny.SessionFactory sessionFactory) {
+	void testWhenRetailerActive(Mutiny.SessionFactory sessionFactory) {
 		var sut = new RetailerDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		persistRetailer(sessionFactory, RETAILER_ID, "Retailer 1", true);
+
+		var subscriber = factory.withoutTransaction(em ->
+				sut.findActiveFlag(em, new GenericRetailerId(RETAILER_ID.toString()))
+		).subscribe().withSubscriber(UniAssertSubscriber.create());
+		var activeFlag = subscriber.awaitItem(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getItem();
+		assertTrue(activeFlag);
+	}
+
+	@Test
+	@Order(3)
+	void testWhenRetailerInactive(Mutiny.SessionFactory sessionFactory) {
+		var sut = new RetailerDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		persistRetailer(sessionFactory, INACTIVE_RETAILER_ID, "Retailer 2", false);
+
+		var subscriber = factory.withoutTransaction(em ->
+				sut.findActiveFlag(em, new GenericRetailerId(INACTIVE_RETAILER_ID.toString()))
+		).subscribe().withSubscriber(UniAssertSubscriber.create());
+		var activeFlag = subscriber.awaitItem(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getItem();
+		assertFalse(activeFlag);
+	}
+
+	private void persistRetailer(Mutiny.SessionFactory sessionFactory, UUID id, String name, boolean active) {
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
 		factory.withTransaction(tx -> {
 			var retailer = new RetailerEntity();
-			retailer.setId(RETAILER_ID);
-			retailer.setName("Retailer 1");
+			retailer.setId(id);
+			retailer.setName(name);
+			retailer.setActive(active);
 			return tx.persist(retailer);
 		}).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
-
-		var subscriber = factory.withoutTransaction(em ->
-				sut.exists(em, new GenericRetailerId(RETAILER_ID.toString()))
-		).subscribe().withSubscriber(UniAssertSubscriber.create());
-		var exists = subscriber.awaitItem(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getItem();
-		assertTrue(exists);
 	}
 }

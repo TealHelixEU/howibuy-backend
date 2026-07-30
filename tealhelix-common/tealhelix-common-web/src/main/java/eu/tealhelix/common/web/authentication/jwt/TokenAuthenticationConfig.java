@@ -1,6 +1,7 @@
 package eu.tealhelix.common.web.authentication.jwt;
 
 import java.net.URL;
+import java.util.List;
 
 /**
  * Configuration for token authentication.
@@ -21,6 +22,25 @@ public interface TokenAuthenticationConfig {
 	 * Unused in the current configuration.
 	 */
 	URL getJwkUrl();
+
+	/**
+	 * The issuer that a token from the IDM must declare in its {@code iss} claim. This refers to the same IDM realm
+	 * that serves {@link #getJwkUrl()}; the two are configured separately and must be kept in agreement.
+	 *
+	 * @return The expected issuer of IDM tokens
+	 */
+	String getExpectedIssuer();
+
+	/**
+	 * The IDM clients through which an end user may reach this application, matched against the {@code azp} claim. A
+	 * token the IDM issued for a user to any other client of the same realm is rejected, so that registering a client in
+	 * the realm does not by itself let that client act as one of this application's users. Tokens the IDM issued to a
+	 * client acting on its own behalf are not matched against this list; what such a client may do is decided by the
+	 * application's own records of it.
+	 *
+	 * @return The client ids through which users may reach this application
+	 */
+	List<String> getAllowedUserClients();
 
 	/**
 	 * The field of the JWT that maps to the user name.

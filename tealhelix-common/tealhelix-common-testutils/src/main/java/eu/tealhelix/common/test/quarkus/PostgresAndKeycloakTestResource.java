@@ -41,7 +41,9 @@ public class PostgresAndKeycloakTestResource implements QuarkusTestResourceLifec
 		var result = new HashMap<>(postgresStartMap);
 		var host = keycloak.getHost();
 		var port = keycloak.getMappedPort(KEYCLOAK_PORT);
-		result.put("config.jwk.url", "http://" + host + ":" + port + "/realms/tealhelix/protocol/openid-connect/certs");
+		var realmUrl = "http://" + host + ":" + port + "/realms/tealhelix";
+		result.put("config.jwk.url", realmUrl + "/protocol/openid-connect/certs");
+		result.put("config.jwt.expectedIssuer", realmUrl);
 		return result;
 	}
 

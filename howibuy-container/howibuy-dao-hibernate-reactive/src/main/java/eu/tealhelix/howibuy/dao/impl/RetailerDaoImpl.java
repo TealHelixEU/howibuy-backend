@@ -1,6 +1,5 @@
 package eu.tealhelix.howibuy.dao.impl;
 
-import java.util.Objects;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import eu.tealhelix.howibuy.dao.RetailerDao;
@@ -12,7 +11,8 @@ import io.smallrye.mutiny.Uni;
 @ApplicationScoped
 public class RetailerDaoImpl implements RetailerDao {
 	@Override
-	public Uni<Boolean> exists(ReactivePersistenceContext em, RetailerId retailerId) {
-		return em.find(RetailerEntity.class, retailerId.asUuid()).map(Objects::nonNull);
+	public Uni<Boolean> findActiveFlag(ReactivePersistenceContext em, RetailerId retailerId) {
+		return em.find(RetailerEntity.class, retailerId.asUuid())
+				.map(retailer -> retailer == null ? null : retailer.isActive());
 	}
 }

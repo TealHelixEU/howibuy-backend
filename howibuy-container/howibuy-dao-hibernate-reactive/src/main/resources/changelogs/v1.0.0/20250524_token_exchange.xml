@@ -31,6 +31,9 @@
 						unique="true" uniqueConstraintName="UQ_TH_RETAILER__NAME"
 				/>
 			</column>
+			<column name="active" type="BOOLEAN" defaultValueBoolean="true" remarks="Whether this retailer may act on behalf of users">
+				<constraints nullable="false" notNullConstraintName="NL_TH_RETAILER__ACTIVE" />
+			</column>
 		</createTable>
 
 		<createTable tableName="TH_CONSENT" remarks="Consent of a user to a retailer to allow integration">

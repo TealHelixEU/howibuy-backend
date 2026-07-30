@@ -63,7 +63,7 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 						persistenceContextFactory.withTransaction(tx -> {
 							LOG.info("Impersonating user as retailer {} -> correlationId: {}", currentUser.getId().asString(), correlationId);
 							var retailerId = new GenericRetailerId(currentUser.getId().asString());
-							return requireRetailerExists(tx, retailerId)
+							return requireActiveRetailer(tx, retailerId)
 									.chain(() -> correlationIdDao.requireByRetailerAndCorrelationId(tx, retailerId, correlationId)
 											.flatMap(user -> checkConsent(tx, user.getId(), retailerId))
 											.map(userId -> createUserObjectForExistingCorrelationId(userId, retailerId, correlationId))
@@ -73,12 +73,19 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 				);
 	}
 
-	private Uni<Void> requireRetailerExists(ReactivePersistenceContext em, RetailerId retailerId) {
-		return retailerDao.exists(em, retailerId)
-				.invoke(exists -> {
-					if (!TRUE.equals(exists)) {
+	/**
+	 * The IDM authenticates a client of the realm; whether that client is a retailer of this application, and whether it
+	 * is still allowed to act, is decided here.
+	 */
+	private Uni<Void> requireActiveRetailer(ReactivePersistenceContext em, RetailerId retailerId) {
+		return retailerDao.findActiveFlag(em, retailerId)
+				.invoke(active -> {
+					if (active == null) {
 						LOG.error("Retailer {} is authenticated but absent from the database; IDM replication is out of sync", retailerId.asString());
-						throw new IllegalStateException("Retailer not found in the database: " + retailerId.asString());
+						throw new NotAuthorizedException("Not a retailer of this application");
+					} else if (!active) {
+						LOG.warn("Impersonation refused to a deactivated retailer: {}", retailerId.asString());
+						throw new NotAuthorizedException("Retailer is not active");
 					}
 				})
 				.replaceWithVoid();
