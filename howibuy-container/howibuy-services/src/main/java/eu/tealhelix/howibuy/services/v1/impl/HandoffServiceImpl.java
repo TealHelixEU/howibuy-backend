@@ -16,7 +16,10 @@ import jakarta.inject.Inject;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.services.generic.DateTimeService;
+import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.types.HasUserId;
+import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.dao.HandoffTicketDao;
 import eu.tealhelix.howibuy.services.v1.HandoffService;
 import eu.tealhelix.howibuy.services.v1.types.IssuedTicket;
@@ -73,6 +76,26 @@ public class HandoffServiceImpl implements HandoffService {
 					return new IssuedTicket(ticket, ticketTimeInSeconds);
 				}
 		);
+	}
+
+	@Override
+	public Uni<UserId> redeemTicket(String ticket) {
+		RequiredInputMissingException.throwIfRequiredInputMissing("ticket", ticket);
+		var ticketHash = hash(ticket);
+		var now = dateTimeService.getNow();
+		return persistenceContextFactory.withTransaction(tx -> handoffTicketDao.consumeTicket(tx, ticketHash, now))
+				.onItem().ifNull().failWith(() -> refuseTicket(ticketHash))
+				.invoke(userId -> LOG.info("Redeemed a handoff ticket for user {}", userId.asString()));
+	}
+
+	/**
+	 * The application names a refused ticket by its hash, the only handle it has on one and not a thing anyone can present:
+	 * one hash appearing again and again is a ticket being replayed, many hashes once each are guesses. Whoever presented
+	 * it is told none of this, only that it did not work.
+	 */
+	private static NotAuthenticatedException refuseTicket(String ticketHash) {
+		LOG.warn("Refused a handoff ticket that could not be redeemed, hash: {}", ticketHash);
+		return new NotAuthenticatedException("the ticket cannot be redeemed");
 	}
 
 	/**

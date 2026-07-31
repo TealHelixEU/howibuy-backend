@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.common.web.authentication.jwt.JwtGenerationService;
 import eu.tealhelix.howibuy.services.v1.HandoffService;
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
 import io.smallrye.mutiny.Uni;
@@ -21,6 +22,9 @@ public class HandoffResource {
 
 	@Inject
 	HandoffService handoffService;
+
+	@Inject
+	JwtGenerationService jwtGenerationService;
 
 	/**
 	 * Hand a retailer a ticket for one of its users, to send that user over to the single-page application with. The
@@ -35,6 +39,22 @@ public class HandoffResource {
 		return userImpersonationService.impersonateUserAsRetailer(user, request.correlationId())
 				.flatMap(handoffService::mintTicket)
 				.map(t -> new HandoffResponse(t.ticket(), t.expiresInSeconds()))
+				.map(t -> Response.ok(t).build());
+	}
+
+	/**
+	 * Redeem a ticket for the first token of the session it opens. This is the one operation of the application that asks
+	 * for no token of its own, because the single-page application holds none yet: the ticket is the credential, which is
+	 * why it is worth so little for so short a time. Nothing here reads the security context, so nothing here can be
+	 * reached by presenting anything other than the ticket.
+	 */
+	@POST
+	@Path("redeem")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<Response> redeemTicket(RedeemRequest request) {
+		return handoffService.redeemTicket(request.ticket())
+				.map(jwtGenerationService::toTokenForHandoff)
+				.map(t -> new RedeemResponse(t.accessToken(), t.expiresInSeconds()))
 				.map(t -> Response.ok(t).build());
 	}
 }

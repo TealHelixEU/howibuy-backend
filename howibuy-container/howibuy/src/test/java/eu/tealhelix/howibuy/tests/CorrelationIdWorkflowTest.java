@@ -1,10 +1,8 @@
 package eu.tealhelix.howibuy.tests;
 
 import static io.restassured.http.ContentType.JSON;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
-import java.util.regex.Pattern;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.common.services.generic.UserService;
@@ -54,21 +52,7 @@ public class CorrelationIdWorkflowTest {
 				.extract()
 				.path("access_token");
 
-		String responseBody = RestAssured
-				.given()
-				.header("Authorization", "Bearer " + impersonationToken)
-				.header("Accepts", "text/html")
-				.when()
-				.get("/api/howibuy/v1/greeting")
-				.then()
-				.statusCode(200)
-				.extract()
-				.body()
-				.asString();
-
-		var m = Pattern.compile("<h1>Hello (.*)!</h1>", Pattern.MULTILINE).matcher(responseBody);
-		assertTrue(m.find());
-		String userId = m.group(1);
+		String userId = GreetingPage.userId(impersonationToken);
 
 		userService.requireUserWithId(new UserIdImpl(userId), "name", false)
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
