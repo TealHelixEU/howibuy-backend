@@ -49,6 +49,6 @@ if [[ "$PRINT_TOKEN_RESPONSE" = "y" ]]; then
 	echo
 fi
 
-ACCESS_TOKEN=`echo $TOKEN_RESPONSE | jq -r ".access_token"`
+IMPERSONATION_TOKEN=`echo $TOKEN_RESPONSE | jq -r ".access_token"`
 
-echo $ACCESS_TOKEN
+echo $IMPERSONATION_TOKEN

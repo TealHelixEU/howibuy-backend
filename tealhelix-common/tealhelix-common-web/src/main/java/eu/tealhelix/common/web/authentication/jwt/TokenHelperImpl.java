@@ -1,5 +1,7 @@
 package eu.tealhelix.common.web.authentication.jwt;
 
+import static eu.tealhelix.common.utils.UniComprehensions.forc;
+
 import java.text.ParseException;
 import java.time.ZoneId;
 import java.util.Date;
@@ -91,11 +93,7 @@ public class TokenHelperImpl implements TokenHelper {
 	 */
 	@Override
 	public Uni<User> processToken(String token) {
-		return parse(token)
-				.flatMap(this::requireExpectedAlgorithm)
-				.flatMap(jwt -> verify(jwt, token))
-				.flatMap(jwt -> extractJWTClaimsSet(token, jwt)
-						.flatMap(jwtClaimsSet -> validateClaims(jwt, jwtClaimsSet)))
+		return validatedClaims(token)
 				.flatMap(jwtClaimsSet -> {
 					var clientIdObj = jwtClaimsSet.getClaim(tokenAuthenticationConfig.getClientIdFieldInJwt());
 					var userNameObj = jwtClaimsSet.getClaim(tokenAuthenticationConfig.getUsernameFieldInJwt());
@@ -120,6 +118,26 @@ public class TokenHelperImpl implements TokenHelper {
 						}
 					}
 				});
+	}
+
+	@Override
+	public Uni<IssuedToken> renewHandoffToken(String token) {
+		return validatedClaims(token).map(jwtClaimsService::renewHandoffToken);
+	}
+
+	/**
+	 * The claims of a token this application is prepared to act on: parsed, signed by a key of its family with that
+	 * family's algorithm, and carrying the claims that family must carry. Renewal asks a token for exactly this before it
+	 * will extend it, so a token that could not authenticate a request cannot be renewed either.
+	 */
+	private Uni<JWTClaimsSet> validatedClaims(String token) {
+		return forc(
+				parse(token),
+				this::requireExpectedAlgorithm,
+				jwt -> verify(jwt, token),
+				jwt -> extractJWTClaimsSet(token, jwt),
+				this::validateClaims
+		);
 	}
 
 	/**

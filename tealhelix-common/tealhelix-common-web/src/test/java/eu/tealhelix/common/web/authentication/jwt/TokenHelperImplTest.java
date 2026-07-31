@@ -10,6 +10,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.text.ParseException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -32,6 +33,7 @@ import com.nimbusds.jwt.util.DateUtils;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.EmailAddress;
+import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
@@ -63,6 +65,7 @@ public class TokenHelperImplTest {
 	private static final String RETAILER_CLIENT = "lime_fresh";
 	private static final String UNRELATED_CLIENT = "claimsbuster";
 	private static final String ACCESS_TOKEN_TYPE = "Bearer";
+	private static final int HANDOFF_SESSION_TIME_SECONDS = 900;
 
 	private static final String USERNAME_FIELD = "preferred_username";
 	private static final String USERID_FIELD = "sub";
@@ -110,8 +113,10 @@ public class TokenHelperImplTest {
 		lenient().when(tokenAuthenticationConfig.getJwtSecret()).thenReturn(JWT_SECRET);
 		lenient().when(tokenAuthenticationConfig.getExpectedIssuer()).thenReturn(EXPECTED_ISSUER);
 		lenient().when(tokenAuthenticationConfig.getAllowedUserClients()).thenReturn(List.of(SPA_CLIENT));
+		lenient().when(tokenAuthenticationConfig.getHandoffSessionTimeInSeconds()).thenReturn(HANDOFF_SESSION_TIME_SECONDS);
 
 		lenient().when(dateTimeService.getNow()).thenReturn(NOW);
+		lenient().when(dateTimeService.currentTimeMillis()).thenReturn(minutesFromNow(0).getTime());
 
 		lenient().when(jwsVerifierMapper.get(IDM_KID)).thenReturn(new RSASSAVerifier(idmKey));
 		lenient().when(jwsVerifierMapper.get(INTERNAL_KID)).thenReturn(new MACVerifier(secretBytes()));
@@ -309,6 +314,62 @@ public class TokenHelperImplTest {
 	}
 
 	// ----------------------------------------------------------------------------------------------
+	// Renewal of a handoff session
+	// ----------------------------------------------------------------------------------------------
+
+	@Test
+	@DisplayName("A live handoff token is renewed into another token of the same session")
+	void testLiveHandoffTokenIsRenewed() throws JOSEException, ParseException {
+		var renewed = renew(signWithInternalKey(handoffClaims().build()));
+
+		var claims = claimsOf(renewed.accessToken());
+		assertEquals(HANDOFF_SESSION_TIME_SECONDS, renewed.expiresInSeconds(), "another handoff session time");
+		assertEquals(INTERNAL_USER_ID, claims.getClaim(USERID_FIELD), "the user of the session");
+		assertEquals(true, claims.getClaim("handoff"), "still a token of a handed-over session");
+		assertEquals(minutesFromNow(15), claims.getExpirationTime(), "expiring a handoff session time from now");
+		assertEquals(minutesFromNow(8 * 60), claims.getDateClaim("handoff_exp"), "the same end of session as the token it renews");
+	}
+
+	/**
+	 * The strict reading of renewal: a token that could not authenticate a request cannot be renewed either, so the
+	 * single-page application has to renew ahead of expiry rather than after it. That the session still has hours to run
+	 * does not help a token that has expired.
+	 */
+	@Test
+	@DisplayName("An expired handoff token is not renewed, although the session it belongs to has not ended")
+	void testExpiredHandoffTokenIsNotRenewed() throws JOSEException {
+		var token = signWithInternalKey(handoffClaims().expirationTime(minutesFromNow(-1)).build());
+
+		assertInstanceOf(TokenHelperException.class, renewalFailureOf(token));
+	}
+
+	@Test
+	@DisplayName("A handoff token is not renewed once the session it belongs to has ended")
+	void testHandoffTokenAfterTheEndOfItsSessionIsNotRenewed() throws JOSEException {
+		var token = signWithInternalKey(handoffClaims()
+				.claim("handoff_exp", DateUtils.toSecondsSinceEpoch(minutesFromNow(-1)))
+				.build());
+
+		assertInstanceOf(TokenHelperException.class, renewalFailureOf(token));
+	}
+
+	@Test
+	@DisplayName("The token a retailer keeps for itself is not renewable, however valid it is")
+	void testImpersonationTokenIsNotRenewed() throws JOSEException {
+		var token = signWithInternalKey(impersonationClaims().build());
+
+		assertInstanceOf(NotAuthorizedException.class, renewalFailureOf(token));
+	}
+
+	@Test
+	@DisplayName("A token the IDM issued is not renewable; only a handed-over session is this application's to extend")
+	void testIdmTokenIsNotRenewed() throws JOSEException {
+		var token = signWithIdmKey(idmUserClaims().build());
+
+		assertInstanceOf(NotAuthorizedException.class, renewalFailureOf(token));
+	}
+
+	// ----------------------------------------------------------------------------------------------
 	// Helpers
 	// ----------------------------------------------------------------------------------------------
 
@@ -363,6 +424,21 @@ public class TokenHelperImplTest {
 
 	private User await(String token) {
 		return sut.processToken(token).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private IssuedToken renew(String token) {
+		return sut.renewHandoffToken(token).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private Throwable renewalFailureOf(String token) {
+		return sut.renewHandoffToken(token)
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS))
+				.getFailure();
+	}
+
+	private static JWTClaimsSet claimsOf(String token) throws ParseException {
+		return SignedJWT.parse(token).getJWTClaimsSet();
 	}
 
 	private Throwable failureOf(String token) {

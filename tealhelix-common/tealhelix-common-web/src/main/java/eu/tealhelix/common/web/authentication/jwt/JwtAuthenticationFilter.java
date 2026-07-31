@@ -1,7 +1,5 @@
 package eu.tealhelix.common.web.authentication.jwt;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response;
@@ -24,9 +22,6 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
  */
 @SuppressWarnings("unused")
 public class JwtAuthenticationFilter {
-	public static final String AUTHORIZATION_HEADER = "Authorization";
-	private static final Pattern AUTH_HEADER_RE = Pattern.compile("^Bearer (.*)$", Pattern.CASE_INSENSITIVE);
-
 	private final TokenHelper tokenHelper;
 
 	public JwtAuthenticationFilter(TokenHelper tokenHelper) {
@@ -35,7 +30,7 @@ public class JwtAuthenticationFilter {
 
 	@ServerRequestFilter(nonBlocking = true)
 	public Uni<Void> filter(ContainerRequestContext requestContext) {
-		String token = extractRawToken(requestContext);
+		String token = BearerToken.of(requestContext);
 		if (token != null) {
 			return tokenHelper.processToken(token)
 					.onItem()
@@ -52,18 +47,6 @@ public class JwtAuthenticationFilter {
 			requestContext.setSecurityContext(securityCtx);
 			return Uni.createFrom().voidItem();
 		}
-	}
-
-	private String extractRawToken(ContainerRequestContext requestContext) {
-		String authenticationHeaderValue = requestContext.getHeaders().getFirst(AUTHORIZATION_HEADER);
-		String result = null;
-		if (authenticationHeaderValue != null) {
-			Matcher m = AUTH_HEADER_RE.matcher(authenticationHeaderValue.trim());
-			if (m.matches()) {
-				result = m.group(1);
-			}
-		}
-		return result;
 	}
 
 	private static Response unauthorized() {

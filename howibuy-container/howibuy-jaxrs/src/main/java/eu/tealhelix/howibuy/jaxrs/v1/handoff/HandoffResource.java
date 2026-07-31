@@ -9,8 +9,12 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.common.web.authentication.jwt.BearerToken;
 import eu.tealhelix.common.web.authentication.jwt.JwtGenerationService;
+import eu.tealhelix.common.web.authentication.jwt.TokenHelper;
+import eu.tealhelix.common.web.authentication.jwt.TokenHelperException;
 import eu.tealhelix.howibuy.services.v1.HandoffService;
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
 import io.smallrye.mutiny.Uni;
@@ -25,6 +29,9 @@ public class HandoffResource {
 
 	@Inject
 	JwtGenerationService jwtGenerationService;
+
+	@Inject
+	TokenHelper tokenHelper;
 
 	/**
 	 * Hand a retailer a ticket for one of its users, to send that user over to the single-page application with. The
@@ -54,7 +61,30 @@ public class HandoffResource {
 	public Uni<Response> redeemTicket(RedeemRequest request) {
 		return handoffService.redeemTicket(request.ticket())
 				.map(jwtGenerationService::toTokenForHandoff)
-				.map(t -> new RedeemResponse(t.accessToken(), t.expiresInSeconds()))
+				.map(t -> new SessionTokenResponse(t.accessToken(), t.expiresInSeconds()))
+				.map(t -> Response.ok(t).build());
+	}
+
+	/**
+	 * Exchange the token a handed-over session runs on for the next one. The session slides for as long as the user keeps
+	 * working and ends at the point the first token named, which no renewal moves.
+	 * <p>
+	 * The token presented has to be unexpired, so the single-page application renews ahead of its expiry: a session whose
+	 * token has died is over, however far the end of it still was. The request carries nothing but that token — there is
+	 * nothing to say about a renewal that the token does not already say.
+	 */
+	@POST
+	@Path("renew")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<Response> renewToken(@Context ContainerRequestContext crc) {
+		var token = BearerToken.of(crc);
+		if (token == null) {
+			return Uni.createFrom().failure(new NotAuthenticatedException("no token to renew"));
+		}
+		return tokenHelper.renewHandoffToken(token)
+				.onFailure(TokenHelperException.class)
+				.transform(e -> new NotAuthenticatedException("the token cannot be renewed", e))
+				.map(t -> new SessionTokenResponse(t.accessToken(), t.expiresInSeconds()))
 				.map(t -> Response.ok(t).build());
 	}
 }

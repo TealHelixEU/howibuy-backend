@@ -17,5 +17,17 @@ public interface TokenHelper {
 	 */
 	Uni<User> processToken(String token);
 
+	/**
+	 * Mint the next token of the handed-over session that the given token belongs to. The token presented has to be one
+	 * this application would accept to authenticate a request, so an expired token cannot be renewed: whoever holds one
+	 * renews it ahead of its expiry or starts a new session.
+	 *
+	 * @param token The current token of the session, cannot be {@code null}
+	 * @return The next token of the session; a failure with {@code TokenHelperException} if the token presented is not one
+	 *         this application would accept, or with {@code NotAuthorizedException} if it is not a token of a handed-over
+	 *         session or that session has ended
+	 */
+	Uni<IssuedToken> renewHandoffToken(String token);
+
 	User makeUnauthenticated();
 }
