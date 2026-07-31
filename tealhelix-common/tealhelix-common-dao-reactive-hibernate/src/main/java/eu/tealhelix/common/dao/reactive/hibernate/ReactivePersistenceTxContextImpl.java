@@ -1,5 +1,6 @@
 package eu.tealhelix.common.dao.reactive.hibernate;
 
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -55,5 +56,10 @@ class ReactivePersistenceTxContextImpl extends ReactivePersistenceContextImpl im
 	@Override
 	public <R> ReactiveUpdate createUpdate(CriteriaUpdate<R> criteriaUpdate) {
 		return new ReactiveUpdateImpl(session.createQuery(criteriaUpdate));
+	}
+
+	@Override
+	public <R> ReactiveUpdate createDelete(CriteriaDelete<R> criteriaDelete) {
+		return new ReactiveUpdateImpl(session.createQuery(criteriaDelete));
 	}
 }

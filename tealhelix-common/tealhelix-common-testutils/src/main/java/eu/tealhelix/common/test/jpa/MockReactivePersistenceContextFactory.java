@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
@@ -148,6 +149,12 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 
 		@Override
 		public <R> ReactiveUpdate createUpdate(CriteriaUpdate<R> criteriaUpdate) {
+			ReactiveUpdate m = mock(ReactiveUpdate.class, RETURNS_DEEP_STUBS);
+			return m;
+		}
+
+		@Override
+		public <R> ReactiveUpdate createDelete(CriteriaDelete<R> criteriaDelete) {
 			ReactiveUpdate m = mock(ReactiveUpdate.class, RETURNS_DEEP_STUBS);
 			return m;
 		}

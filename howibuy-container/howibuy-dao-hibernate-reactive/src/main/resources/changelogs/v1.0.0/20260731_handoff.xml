@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="handoff_ticket" author="nikospara">
+		<createTable tableName="TH_HANDOFF_TICKET" remarks="Single-use tickets, each carrying one user's session from a retailer application over to the single-page application">
+			<column name="ticket_hash" type="VARCHAR(64)" remarks="The SHA-256 of the ticket, hex encoded; the ticket itself is never stored, so whoever reads this table cannot redeem what it lists">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_HANDOFF_TICKET" />
+			</column>
+			<column name="user_id" type="UUID" remarks="The user whose session the ticket opens">
+				<constraints nullable="false" notNullConstraintName="NL_TH_HANDOFF_TICKET__USER_ID" />
+			</column>
+			<column name="expires_at" type="TIMESTAMP" remarks="The moment the ticket expires; it may be redeemed strictly before this and swept from this point on">
+				<constraints nullable="false" notNullConstraintName="NL_TH_HANDOFF_TICKET__EXPIRES_AT" />
+			</column>
+			<column name="consumed_at" type="TIMESTAMP" remarks="When the ticket was redeemed; null until then, and set exactly once, which is what makes the ticket single-use" />
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_HANDOFF_TICKET" baseColumnNames="user_id" constraintName="FK_HANDOFF_TICKET__USER_ID__USER_PROFILE__ID" referencedTableName="TH_USER_PROFILE" referencedColumnNames="id" />
+	</changeSet>
+</databaseChangeLog>

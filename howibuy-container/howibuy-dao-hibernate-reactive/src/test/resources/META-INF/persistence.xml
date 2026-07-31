@@ -11,6 +11,7 @@
 		<class>eu.tealhelix.howibuy.dao.jpa.ConsentEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.FoodTermEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.CorrelationIdEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.HandoffTicketEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.UserProfileEntity</class>
 
@@ -20,8 +21,8 @@
 			<property name="jakarta.persistence.jdbc.user" value="INTENTIONALLY_BAD_VALUE" />
 			<property name="jakarta.persistence.jdbc.password" value="INTENTIONALLY_BAD_VALUE" />
 
-			<!-- The Vert.x SQL Client connection pool size -->
-			<property name="hibernate.connection.pool_size" value="1" />
+			<!-- The Vert.x SQL Client connection pool size; two transactions have to be able to contend for the same row -->
+			<property name="hibernate.connection.pool_size" value="2" />
 
 			<!-- Automatic schema export -->
 			<property name="jakarta.persistence.schema-generation.database.action" value="none" />

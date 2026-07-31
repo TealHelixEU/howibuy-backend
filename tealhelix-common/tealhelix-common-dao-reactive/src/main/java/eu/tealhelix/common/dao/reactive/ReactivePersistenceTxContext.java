@@ -1,5 +1,6 @@
 package eu.tealhelix.common.dao.reactive;
 
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
 import io.smallrye.mutiny.Uni;
@@ -29,4 +30,10 @@ public interface ReactivePersistenceTxContext extends ReactivePersistenceContext
 	void markForRollback();
 
 	<R> ReactiveUpdate createUpdate(CriteriaUpdate<R> criteriaUpdate);
+
+	/**
+	 * A delete changes the stored data just as an update does, and is issued and executed the same way, hence the
+	 * {@link ReactiveUpdate}.
+	 */
+	<R> ReactiveUpdate createDelete(CriteriaDelete<R> criteriaDelete);
 }
