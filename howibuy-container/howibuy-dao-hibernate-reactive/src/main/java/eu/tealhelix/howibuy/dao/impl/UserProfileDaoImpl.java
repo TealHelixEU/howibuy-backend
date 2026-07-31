@@ -5,9 +5,6 @@ import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.criteria.Root;
 
-import eu.tealhelix.howibuy.dao.UserProfileDao;
-import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
-import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity_;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.types.EmailAddress;
@@ -16,6 +13,9 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.dao.UserProfileDao;
+import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
+import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity_;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -40,8 +40,9 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	@Override
 	public Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name, boolean serviceFlag) {
 		Objects.requireNonNull(userId);
-		return em.find(UserProfileEntity.class, userId.asUuid()).map(profile -> toUser(profile, name, serviceFlag))
-				.onItem().ifNull().failWith(() -> new NotFoundException(userId));
+		return em.find(UserProfileEntity.class, userId.asUuid())
+				.onItem().ifNull().failWith(() -> new NotFoundException(userId))
+				.map(profile -> toUser(profile, name, serviceFlag));
 	}
 
 	@Override

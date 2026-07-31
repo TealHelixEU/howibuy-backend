@@ -14,7 +14,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
-import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.impl.EmailAddressImpl;
@@ -112,12 +111,10 @@ public class TokenHelperImpl implements TokenHelper {
 					} else {
 						if (jwtGenerationService.isImpersonated(jwtClaimsSet)) {
 							return userService.requireUserWithId(new UserIdImpl(userIdFromIdm), userName, false)
-									.flatMap(user -> checkEmailAndUser(user, email, userName, userIdFromIdm))
 									.onFailure(NotFoundException.class)
 									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm));
 						} else {
 							return userService.requireUserFromValidIdmId(userIdFromIdm, userName, false)
-									.flatMap(user -> checkEmailAndUser(user, email, userName, userIdFromIdm))
 									.onFailure(NotFoundException.class)
 									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm));
 						}
@@ -272,18 +269,6 @@ public class TokenHelperImpl implements TokenHelper {
 		} catch (ParseException e) {
 			return Uni.createFrom().failure(new TokenHelperException("failed to extract claims:" + token, e));
 		}
-	}
-
-	private Uni<User> checkEmailAndUser(User user, EmailAddress email, String userName, String userIdFromIdm) {
-		if (!Objects.equals(user.getEmail(), email)) {
-			LOG.error("Emails in IDM and DB do not match, user {} (IDM) {} (DB)", userIdFromIdm, user.getId().asString());
-			return Uni.createFrom().failure(new NotAuthorizedException("invalid data"));
-		}
-		if (!Objects.equals(user.getName(), userName)) {
-			LOG.error("Names in IDM and DB do not match, user {} (IDM) {} (DB)", userIdFromIdm, user.getId().asString());
-			return Uni.createFrom().failure(new NotAuthorizedException("invalid data"));
-		}
-		return Uni.createFrom().item(user);
 	}
 
 	private NotAuthorizedException logAndMapToNotAuthorizedException(NotFoundException nfe, String userIdFromIdm) {

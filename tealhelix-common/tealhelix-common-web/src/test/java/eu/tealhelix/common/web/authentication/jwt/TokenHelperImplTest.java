@@ -72,6 +72,7 @@ public class TokenHelperImplTest {
 	private static final String INTERNAL_USER_ID = "518cae6a-f2b2-4454-b74d-f2404feab2f5";
 	private static final String USER_NAME = "bob@krusty-krab.com";
 	private static final EmailAddress USER_EMAIL = EmailAddress.of("bob@krusty-krab.com");
+	private static final EmailAddress ANOTHER_EMAIL = EmailAddress.of("plankton@chum-bucket.com");
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 1, 1, 12, 0, 0);
 
 	/** A 512-bit secret, the shape {@code config.jwt.secret} has; only ever used by this test. */
@@ -196,6 +197,18 @@ public class TokenHelperImplTest {
 	}
 
 	@Test
+	@DisplayName("A user token is accepted although its email differs from the one on record")
+	void testUserTokenWithDifferentEmailIsAccepted() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, ANOTHER_EMAIL, false, false);
+		lenient().when(userService.requireUserFromValidIdmId(IDM_SUB, USER_NAME, false))
+				.thenReturn(Uni.createFrom().item(dbUser));
+
+		var user = await(signWithIdmKey(idmUserClaims().build()));
+
+		assertEquals(INTERNAL_USER_ID, user.getId().asString());
+	}
+
+	@Test
 	@DisplayName("A token issued for a user to a client that users may not sign in through is rejected")
 	void testUserTokenFromRetailerClientIsRejected() throws JOSEException {
 		var token = signWithIdmKey(idmUserClaims().claim("azp", RETAILER_CLIENT).build());
@@ -233,6 +246,18 @@ public class TokenHelperImplTest {
 
 		assertEquals(INTERNAL_USER_ID, user.getId().asString());
 		verify(userService, never()).requireUserFromValidIdmId(any(), any(), anyBoolean());
+	}
+
+	@Test
+	@DisplayName("An impersonation token is accepted for a user who has an email address on record")
+	void testImpersonationTokenIsAcceptedForUserWithEmail() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, USER_EMAIL, false, false);
+		lenient().when(userService.requireUserWithId(any(), any(), anyBoolean()))
+				.thenReturn(Uni.createFrom().item(dbUser));
+
+		var user = await(signWithInternalKey(impersonationClaims().build()));
+
+		assertEquals(INTERNAL_USER_ID, user.getId().asString());
 	}
 
 	@Test
@@ -304,11 +329,14 @@ public class TokenHelperImplTest {
 		return sut.processToken(token).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
-	private void assertRejected(String token) {
-		var failure = sut.processToken(token)
+	private Throwable failureOf(String token) {
+		return sut.processToken(token)
 				.subscribe().withSubscriber(UniAssertSubscriber.create())
 				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS))
 				.getFailure();
-		assertInstanceOf(TokenHelperException.class, failure);
+	}
+
+	private void assertRejected(String token) {
+		assertInstanceOf(TokenHelperException.class, failureOf(token));
 	}
 }
