@@ -92,6 +92,23 @@ public interface TokenAuthenticationConfig {
 	Integer getJwtSessionTimeInSeconds();
 
 	/**
+	 * How long a single token of a handed-over session stays valid. It is short because the single-page application
+	 * renews it for as long as the user keeps working, and a token that is renewed on demand need not outlive the work
+	 * it is doing.
+	 *
+	 * @return The validity time of one handoff token, in seconds
+	 */
+	Integer getHandoffSessionTimeInSeconds();
+
+	/**
+	 * How long a handed-over session may last in total, counted from the moment it started. Renewal cannot move this
+	 * point, so it is what makes a chain of renewals finite: past it the user starts a new session from the retailer.
+	 *
+	 * @return The longest a handoff session may last, in seconds
+	 */
+	Integer getHandoffMaxSessionTimeInSeconds();
+
+	/**
 	 * The maximum time to live for the cached JWK; if last retrieval is before this time,
 	 * the cache is discarded, and the JWK fetched anew. This minimizes the window within
 	 * which compromised keys are valid for an attack.

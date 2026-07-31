@@ -28,6 +28,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.util.DateUtils;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.EmailAddress;
@@ -279,6 +280,34 @@ public class TokenHelperImplTest {
 		assertRejected(jwt.serialize());
 	}
 
+	@Test
+	@DisplayName("A valid handoff token resolves the user through the internal user id")
+	void testValidHandoffTokenIsAccepted() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, false);
+		lenient().when(userService.requireUserWithId(any(), any(), anyBoolean()))
+				.thenReturn(Uni.createFrom().item(dbUser));
+
+		var user = await(signWithInternalKey(handoffClaims().build()));
+
+		assertEquals(INTERNAL_USER_ID, user.getId().asString());
+	}
+
+	@Test
+	@DisplayName("A handoff token that does not name the end of its session is rejected")
+	void testHandoffTokenWithoutTheEndOfItsSessionIsRejected() throws JOSEException {
+		var claims = impersonationClaims().claim("handoff", true).build();
+		assertRejected(signWithInternalKey(claims));
+	}
+
+	@Test
+	@DisplayName("A handoff token presented after the end of its session is rejected, however long it says it lives")
+	void testHandoffTokenAfterTheEndOfItsSessionIsRejected() throws JOSEException {
+		var claims = handoffClaims()
+				.claim("handoff_exp", DateUtils.toSecondsSinceEpoch(minutesFromNow(-1)))
+				.build();
+		assertRejected(signWithInternalKey(claims));
+	}
+
 	// ----------------------------------------------------------------------------------------------
 	// Helpers
 	// ----------------------------------------------------------------------------------------------
@@ -301,6 +330,13 @@ public class TokenHelperImplTest {
 				.claim(USERID_FIELD, INTERNAL_USER_ID)
 				.claim("impersonated", true)
 				.expirationTime(minutesFromNow(15));
+	}
+
+	/** The claims of a valid handoff token, as {@code JwtGenerationService} mints them. */
+	private JWTClaimsSet.Builder handoffClaims() {
+		return impersonationClaims()
+				.claim("handoff", true)
+				.claim("handoff_exp", DateUtils.toSecondsSinceEpoch(minutesFromNow(8 * 60)));
 	}
 
 	private String signWithIdmKey(JWTClaimsSet claims) throws JOSEException {

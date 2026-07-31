@@ -56,7 +56,7 @@ public class TokenHelperImpl implements TokenHelper {
 	private final JWSVerifierMapper jwsVerifierMapper;
 	private final DateTimeService dateTimeService;
 	private final UserService userService;
-	private final JwtGenerationService jwtGenerationService;
+	private final JwtClaimsService jwtClaimsService;
 	private final TokenAuthenticationConfig tokenAuthenticationConfig;
 
 	/**
@@ -65,7 +65,7 @@ public class TokenHelperImpl implements TokenHelper {
 	 * @param jwsVerifierMapper         The map of JWT verifiers
 	 * @param dateTimeService           The date service
 	 * @param userService               The user service
-	 * @param jwtGenerationService      The JWT generation service
+	 * @param jwtClaimsService          The reader of the claims of tokens this application signed
 	 * @param tokenAuthenticationConfig The configuration
 	 */
 	@Inject
@@ -73,13 +73,13 @@ public class TokenHelperImpl implements TokenHelper {
 			JWSVerifierMapper jwsVerifierMapper,
 			DateTimeService dateTimeService,
 			UserService userService,
-			JwtGenerationService jwtGenerationService,
+			JwtClaimsService jwtClaimsService,
 			TokenAuthenticationConfig tokenAuthenticationConfig
 	) {
 		this.jwsVerifierMapper = jwsVerifierMapper;
 		this.dateTimeService = dateTimeService;
 		this.userService = userService;
-		this.jwtGenerationService = jwtGenerationService;
+		this.jwtClaimsService = jwtClaimsService;
 		this.tokenAuthenticationConfig = tokenAuthenticationConfig;
 	}
 
@@ -109,7 +109,7 @@ public class TokenHelperImpl implements TokenHelper {
 						var userImpl = new UserImpl(new UserIdImpl(userIdFromIdm), userName, email, false, true);
 						return Uni.createFrom().item(userImpl);
 					} else {
-						if (jwtGenerationService.isImpersonated(jwtClaimsSet)) {
+						if (jwtClaimsService.isImpersonated(jwtClaimsSet)) {
 							return userService.requireUserWithId(new UserIdImpl(userIdFromIdm), userName, false)
 									.onFailure(NotFoundException.class)
 									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm));
@@ -164,7 +164,8 @@ public class TokenHelperImpl implements TokenHelper {
 	/**
 	 * Applies the claim validation of the token's family. Both families must name a user and must not have expired;
 	 * beyond that, a token from the IDM must come from the expected realm and must be an access token, while a token
-	 * this application issued must carry the impersonation marker that its only current use puts there.
+	 * this application issued must carry the impersonation marker that both of its uses put there, and, where it belongs
+	 * to a session handed over to the single-page application, must name an end of that session that has not passed.
 	 * <p>
 	 * A token the IDM issued for a user must also come from a client that users may reach this application through,
 	 * because such a token carries everything a user is allowed to do. A token the IDM issued to a client acting on its
@@ -177,6 +178,9 @@ public class TokenHelperImpl implements TokenHelper {
 			requireUserId(jwtClaimsSet);
 			if (isInternalToken(jwt)) {
 				requireImpersonationMarker(jwtClaimsSet);
+				if (jwtClaimsService.isHandoff(jwtClaimsSet)) {
+					requireUnendedHandoffSession(jwtClaimsSet);
+				}
 			} else {
 				requireExpectedIssuer(jwtClaimsSet);
 				requireAccessTokenType(jwtClaimsSet);
@@ -195,10 +199,29 @@ public class TokenHelperImpl implements TokenHelper {
 		if (expirationTime == null) {
 			throw new TokenHelperException("JWT carries no expiration time");
 		}
-		var now = Date.from(dateTimeService.getNow().atZone(ZoneId.systemDefault()).toInstant());
-		if (expirationTime.before(now)) {
+		if (expirationTime.before(now())) {
 			throw new TokenHelperException("JWT expired at " + expirationTime);
 		}
+	}
+
+	/**
+	 * A handoff token names the end of the session it belongs to, which the renewal of such a token may not move. Every
+	 * token of the session expires at or before that point, so this only ever refuses a token whose expiration time and
+	 * end of session contradict each other; the end of the session is what bounds a chain of renewals, and checking it
+	 * here does not leave that to the arithmetic of a single mint.
+	 */
+	private void requireUnendedHandoffSession(JWTClaimsSet jwtClaimsSet) {
+		var sessionEnd = jwtClaimsService.getHandoffExpiration(jwtClaimsSet);
+		if (sessionEnd == null) {
+			throw new TokenHelperException("handoff JWT does not name the end of its session");
+		}
+		if (sessionEnd.before(now())) {
+			throw new TokenHelperException("handoff JWT belongs to a session that ended at " + sessionEnd);
+		}
+	}
+
+	private Date now() {
+		return Date.from(dateTimeService.getNow().atZone(ZoneId.systemDefault()).toInstant());
 	}
 
 	private void requireUserId(JWTClaimsSet jwtClaimsSet) {
@@ -209,7 +232,7 @@ public class TokenHelperImpl implements TokenHelper {
 	}
 
 	private void requireImpersonationMarker(JWTClaimsSet jwtClaimsSet) {
-		if (!jwtGenerationService.isImpersonated(jwtClaimsSet)) {
+		if (!jwtClaimsService.isImpersonated(jwtClaimsSet)) {
 			throw new TokenHelperException("JWT signed with the internal key is not marked as impersonated");
 		}
 	}

@@ -20,6 +20,8 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 	public static final String JWT_SECRET_KEY = "config.jwt.secret";
 	public static final String INTERNAL_KEY_ID = "config.jwt.internalKeyId";
 	public static final String JWT_SESSION_TIME_KEY = "config.jwt.sessionTimeInSeconds";
+	public static final String HANDOFF_SESSION_TIME_KEY = "config.jwt.handoff.sessionTimeInSeconds";
+	public static final String HANDOFF_MAX_SESSION_TIME_KEY = "config.jwt.handoff.maxSessionTimeInSeconds";
 	public static final String EXPECTED_ISSUER_KEY = "config.jwt.expectedIssuer";
 	public static final String ALLOWED_USER_CLIENTS_KEY = "config.jwt.allowedUserClients";
 
@@ -43,6 +45,12 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 
 	@ConfigProperty(name = JWT_SESSION_TIME_KEY)
 	Integer jwtSessionTimeInSeconds;
+
+	@ConfigProperty(name = HANDOFF_SESSION_TIME_KEY)
+	Integer handoffSessionTimeInSeconds;
+
+	@ConfigProperty(name = HANDOFF_MAX_SESSION_TIME_KEY)
+	Integer handoffMaxSessionTimeInSeconds;
 
 	@ConfigProperty(name = JWK_URL_KEY)
 	URL jwkUrl;
@@ -101,5 +109,15 @@ public class TokenAuthenticationConfigImpl implements TokenAuthenticationConfig 
 	@Override
 	public Integer getJwtSessionTimeInSeconds() {
 		return jwtSessionTimeInSeconds;
+	}
+
+	@Override
+	public Integer getHandoffSessionTimeInSeconds() {
+		return handoffSessionTimeInSeconds;
+	}
+
+	@Override
+	public Integer getHandoffMaxSessionTimeInSeconds() {
+		return handoffMaxSessionTimeInSeconds;
 	}
 }
