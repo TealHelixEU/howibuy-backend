@@ -13,8 +13,9 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Reads the compass for a user in a requested language: its fixed structure — categories and questions — overlaid with
- * the answers the user has given so far on their in-progress attempt, plus the "next question" that guides them forward
- * through a category. The language argument is the raw request value: {@code null}/blank yields the configured default,
+ * the answers on the user's current attempt (the one in progress, or, once they have completed it, their latest
+ * completed one), plus the "next question" that guides them forward through a category and the "previous question" they
+ * step back to. The language argument is the raw request value: {@code null}/blank yields the configured default,
  * and a language outside the configured supported set is rejected (mapped to HTTP 400) rather than served partially
  * translated. Every read requires an authenticated end-user; a service account or unauthenticated caller is rejected.
  */
@@ -40,8 +41,9 @@ public interface CompassReadService {
 	/**
 	 * The frontier question of a category — the lowest-position question the user has not yet answered, localized for
 	 * {@code language} — or {@link Optional#empty() empty} when every question in the category is answered (the category
-	 * is complete). Navigation never advances into another category. A user with no in-progress attempt has answered
-	 * nothing, so the frontier is the category's first question.
+	 * is complete). Navigation never advances into another category. A user who has never started an attempt has answered
+	 * nothing, so the frontier is the category's first question; a user whose attempt is completed has answered
+	 * everything, so there is no frontier.
 	 */
 	Uni<Optional<Question>> findNextQuestion(User user, String language, CategoryId categoryId);
 

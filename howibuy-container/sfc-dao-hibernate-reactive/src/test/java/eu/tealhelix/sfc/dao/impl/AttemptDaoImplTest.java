@@ -32,8 +32,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * The attempt DAO against a real database: {@code findInProgressId} returns a user's single in-progress attempt, empty
  * when they have none, and ignores completed attempts (and other users' attempts); {@code startInProgress} inserts a
  * fresh in-progress attempt that the finder then locates; {@code complete} freezes it as a completed record; and
- * {@code findLatestCompletedAt} reports the most recent completion (ignoring in-progress attempts) for the stability
- * window. The schema is created from the SFC changelog via the test stub that supplies the cross-module
+ * {@code findLatestCompletedAt} and {@code findLatestCompletedId} report the most recent completion (ignoring in-progress
+ * attempts) — the time for the stability window, the id for reading the answers frozen on it. The schema is created from the SFC changelog via the test stub that supplies the cross-module
  * {@code TH_USER_PROFILE}; users are seeded over JDBC since the profile is not a JPA entity in this module.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -146,6 +146,26 @@ public class AttemptDaoImplTest {
 	void findLatestCompletedAtIsEmptyWhenOnlyAnInProgressAttemptExists(Mutiny.SessionFactory sessionFactory) {
 		var latest = factory(sessionFactory)
 				.withoutTransaction(em -> sut.findLatestCompletedAt(em, USER_TO_START)).await().atMost(WAIT);
+
+		assertTrue(latest.isEmpty(), "an in-progress attempt is not a completion");
+	}
+
+	@Test
+	@Order(8)
+	void findLatestCompletedIdReturnsTheMostRecentlyCompletedAttempt(Mutiny.SessionFactory sessionFactory) {
+		var latest = factory(sessionFactory)
+				.withoutTransaction(em -> sut.findLatestCompletedId(em, USER_WITH_HISTORY)).await().atMost(WAIT);
+
+		var attempt = factory(sessionFactory)
+				.withoutTransaction(em -> em.find(AttemptEntity.class, latest.orElseThrow())).await().atMost(WAIT);
+		assertEquals(LATER_COMPLETION, attempt.getCompletedAt(), "the id of the most recent of the user's completions");
+	}
+
+	@Test
+	@Order(9)
+	void findLatestCompletedIdIsEmptyWhenOnlyAnInProgressAttemptExists(Mutiny.SessionFactory sessionFactory) {
+		var latest = factory(sessionFactory)
+				.withoutTransaction(em -> sut.findLatestCompletedId(em, USER_TO_START)).await().atMost(WAIT);
 
 		assertTrue(latest.isEmpty(), "an in-progress attempt is not a completion");
 	}

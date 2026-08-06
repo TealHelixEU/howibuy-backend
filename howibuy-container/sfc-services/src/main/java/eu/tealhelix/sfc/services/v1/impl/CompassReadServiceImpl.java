@@ -185,13 +185,24 @@ public class CompassReadServiceImpl implements CompassReadService {
 	}
 
 	/**
-	 * The answers on the user's in-progress attempt, keyed by question, or an empty map if they have no attempt yet.
+	 * The answers the user's current attempt holds, keyed by question, or an empty map if they have never started one.
 	 */
 	private Uni<Map<QuestionId, ScaleOption>> currentAnswers(ReactivePersistenceContext em, UUID userId) {
-		return attemptDao.findInProgressId(em, userId)
+		return currentAttemptId(em, userId)
 				.flatMap(attemptId -> attemptId
 						.map(id -> answerDao.retrieveByAttempt(em, id))
 						.orElseGet(() -> Uni.createFrom().item(Map.of())));
+	}
+
+	/**
+	 * The attempt the user's answers are read from: the one in progress, or — once they have completed it — their latest
+	 * completed one, whose answers are frozen but are still the answers they gave. Empty until they start their first
+	 * attempt.
+	 */
+	private Uni<Optional<UUID>> currentAttemptId(ReactivePersistenceContext em, UUID userId) {
+		return attemptDao.findInProgressId(em, userId).flatMap(inProgress -> inProgress.isPresent()
+				? Uni.createFrom().item(inProgress)
+				: attemptDao.findLatestCompletedId(em, userId));
 	}
 
 	private static List<AnsweredQuestion> pairWithAnswers(List<Question> questions, Map<QuestionId, ScaleOption> answers) {

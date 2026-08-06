@@ -22,6 +22,12 @@ public interface AttemptDao {
 	Uni<Optional<LocalDateTime>> findLatestCompletedAt(ReactivePersistenceContext em, UUID userId);
 
 	/**
+	 * The id of the user's most recently completed attempt, or empty if they have never completed one. Used to read the
+	 * answers frozen on it once the user has no attempt in progress.
+	 */
+	Uni<Optional<UUID>> findLatestCompletedId(ReactivePersistenceContext em, UUID userId);
+
+	/**
 	 * Starts a fresh in-progress attempt for the user and returns its id.
 	 */
 	Uni<UUID> startInProgress(ReactivePersistenceTxContext tx, UUID userId);

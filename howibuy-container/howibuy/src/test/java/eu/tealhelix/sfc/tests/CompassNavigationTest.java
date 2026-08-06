@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
  * next question hands back the lowest-position unanswered question and advances as answers are given; a fully-answered
  * category signals complete and never yields a question from another category; asking for the previous question steps
  * back to the last one answered, carrying its answer; reviewing a category — or the whole compass — pairs each question
- * with the user's current answer (or none); and changing an earlier answer leaves the frontier at the earliest remaining
- * unanswered question. Answers are made through the real {@code PUT} endpoint; JWT
+ * with the user's current answer (or none); a completed attempt still reads its own answers back and leaves no frontier;
+ * and changing an earlier answer leaves the frontier at the earliest remaining unanswered question. Answers are made through the real {@code PUT} endpoint; JWT
  * decoding is the only part faked (a stubbed {@link TokenHelper}), so the filter, authorization, resource, DAOs and JSON
  * mapping all run for real.
  * <p>
@@ -143,6 +143,21 @@ public class CompassNavigationTest {
 	}
 
 	@Test
+	void aCompletedAttemptStillReadsBackItsAnswersAndLeavesNoFrontier() {
+		var economic = categoryId("ECONOMIC");
+		answerEveryQuestion();
+		complete();
+
+		assertEquals("MODERATELY_IMPORTANT", reviewCategory(economic).getFirst().get("answer"),
+				"the committed answers are still readable once the attempt is locked");
+		var next = nextQuestion(economic);
+		assertTrue((Boolean) next.get("complete"), "a completed attempt leaves no frontier to route back to");
+		assertNull(next.get("question"));
+		assertEquals(questionIds(economic).getLast(), questionOf(previousQuestion(economic)).get("id"),
+				"stepping back in a complete category lands on its last question");
+	}
+
+	@Test
 	void changingAnEarlierAnswerLeavesTheFrontierAtTheEarliestRemaining() {
 		var economic = categoryId("ECONOMIC");
 		var questions = questionIds(economic);
@@ -200,6 +215,18 @@ public class CompassNavigationTest {
 				.when().get(BASE + "/categories/" + categoryId + "/previous-question")
 				.then().statusCode(200).contentType(JSON)
 				.extract().as(OBJECT);
+	}
+
+	private void answerEveryQuestion() {
+		getCategories().stream()
+				.map(category -> (String) category.get("id"))
+				.forEach(category -> questionIds(category).forEach(question -> putAnswer(question, "MODERATELY_IMPORTANT")));
+	}
+
+	private void complete() {
+		RestAssured.given().header("Authorization", BEARER_USER)
+				.when().post(BASE + "/attempts/current/completion")
+				.then().statusCode(204);
 	}
 
 	private void putAnswer(String questionId, String option) {

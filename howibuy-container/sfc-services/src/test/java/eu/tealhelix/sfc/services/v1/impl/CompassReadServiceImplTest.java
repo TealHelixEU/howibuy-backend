@@ -169,6 +169,7 @@ public class CompassReadServiceImplTest {
 	@Test
 	void findCategoryQuestionsPairsQuestionsWithNoAnswerWhenTheUserHasNoAttempt() {
 		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
 		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(QUESTIONS));
 
 		var result = sut.findCategoryQuestions(USER, "en", CATEGORY_ID).await().atMost(WAIT);
@@ -187,6 +188,20 @@ public class CompassReadServiceImplTest {
 		var result = sut.findCategoryQuestions(USER, "en", CATEGORY_ID).await().atMost(WAIT);
 
 		assertEquals(List.of(answered(Q1, ScaleOption.MODERATELY_IMPORTANT), unanswered(Q2)), result);
+	}
+
+	@Test
+	void findCategoryQuestionsPairsAnswersFromTheLatestCompletedAttemptWhenNoneIsInProgress() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID)))
+				.thenReturn(Uni.createFrom().item(Map.of(Q1.getId(), ScaleOption.EXTREMELY_IMPORTANT)));
+		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(List.of(Q1, Q2)));
+
+		var result = sut.findCategoryQuestions(USER, "en", CATEGORY_ID).await().atMost(WAIT);
+
+		assertEquals(List.of(answered(Q1, ScaleOption.EXTREMELY_IMPORTANT), unanswered(Q2)), result,
+				"a user who has completed their attempt still reads back the answers they committed");
 	}
 
 	@Test
@@ -242,12 +257,28 @@ public class CompassReadServiceImplTest {
 	@Test
 	void findNextQuestionWithNoAttemptReturnsTheFirstQuestion() {
 		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
 		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(QUESTIONS));
 
 		var result = sut.findNextQuestion(USER, "en", CATEGORY_ID).await().atMost(WAIT);
 
 		assertEquals(Optional.of(Q1), result);
 		verifyNoInteractions(answerDao);
+	}
+
+	@Test
+	void findNextQuestionSignalsCompleteWhenTheLatestAttemptIsCompleted() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), ScaleOption.NOT_IMPORTANT,
+				Q2.getId(), ScaleOption.SLIGHTLY_IMPORTANT,
+				Q3.getId(), ScaleOption.VERY_IMPORTANT)));
+		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(QUESTIONS));
+
+		var result = sut.findNextQuestion(USER, "en", CATEGORY_ID).await().atMost(WAIT);
+
+		assertEquals(Optional.empty(), result, "a completed attempt leaves no frontier, rather than routing back to the first question");
 	}
 
 	@Test
@@ -266,6 +297,7 @@ public class CompassReadServiceImplTest {
 	@Test
 	void findPreviousQuestionIsEmptyWhenNothingIsAnsweredYet() {
 		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
 		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(QUESTIONS));
 
 		var result = sut.findPreviousQuestion(USER, "en", CATEGORY_ID).await().atMost(WAIT);

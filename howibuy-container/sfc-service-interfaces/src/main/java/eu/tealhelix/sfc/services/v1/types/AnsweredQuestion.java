@@ -6,9 +6,9 @@ import eu.tealhelix.sfc.v1.model.Question;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
 
 /**
- * A compass question paired with the user's current answer on their in-progress attempt, or {@link Optional#empty()
- * empty} when they have not answered it yet. Carried by the review reads so a user can see a category — or the whole
- * compass — alongside the choices they have made so far.
+ * A compass question paired with the user's answer on their current attempt, or {@link Optional#empty() empty} when they
+ * have not answered it yet. Carried by the review reads so a user can see a category — or the whole compass — alongside
+ * the choices they have made.
  */
 public record AnsweredQuestion(Question question, Optional<ScaleOption> answer) {
 }

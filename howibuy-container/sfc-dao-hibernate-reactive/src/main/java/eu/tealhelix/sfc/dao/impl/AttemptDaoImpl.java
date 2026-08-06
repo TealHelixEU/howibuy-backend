@@ -41,6 +41,19 @@ public class AttemptDaoImpl implements AttemptDao {
 	}
 
 	@Override
+	public Uni<Optional<UUID>> findLatestCompletedId(ReactivePersistenceContext em, UUID userId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(UUID.class);
+		var root = q.from(AttemptEntity.class);
+		q.select(root.get(AttemptEntity_.id))
+				.where(cb.and(
+						cb.equal(root.get(AttemptEntity_.userId), userId),
+						cb.equal(root.get(AttemptEntity_.status), AttemptStatus.COMPLETED)))
+				.orderBy(cb.desc(root.get(AttemptEntity_.completedAt)));
+		return em.createQuery(q).setMaxResults(1).getSingleOptionalResult();
+	}
+
+	@Override
 	public Uni<UUID> startInProgress(ReactivePersistenceTxContext tx, UUID userId) {
 		var attempt = new AttemptEntity();
 		var id = UUID.randomUUID();
