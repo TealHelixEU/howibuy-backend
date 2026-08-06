@@ -118,6 +118,17 @@ public class CompassReadServiceImpl implements CompassReadService {
 	}
 
 	@Override
+	public Uni<Optional<AnsweredQuestion>> findPreviousQuestion(User user, String language, CategoryId categoryId) {
+		authorization.requireUserNotService(user);
+		return persistenceContextFactory.withoutTransaction(em -> forcm(
+				Uni.createFrom().item(languages.resolve(language)),
+				_ -> currentAnswers(em, user.getId().asUuid()),
+				(lang, _) -> questionDao.retrieveByCategoryAndLanguage(em, categoryId, lang),
+				(_, answers, questions) -> lastAnswered(questions, answers)
+		));
+	}
+
+	@Override
 	public Uni<CompassOverview> retrieveOverview(User user, String language) {
 		authorization.requireUserNotService(user);
 		var userId = user.getId().asUuid();
@@ -198,6 +209,18 @@ public class CompassReadServiceImpl implements CompassReadService {
 		return questions.stream()
 				.filter(question -> !answers.containsKey(question.getId()))
 				.findFirst();
+	}
+
+	/**
+	 * The last question in position order the user has answered, paired with that answer, or empty when they have
+	 * answered none of them. The mirror of {@link #frontier}, and defined by the answers alone: a fully answered category
+	 * still has a last answered question.
+	 */
+	private static Optional<AnsweredQuestion> lastAnswered(List<Question> questions, Map<QuestionId, ScaleOption> answers) {
+		return questions.reversed().stream()
+				.filter(question -> answers.containsKey(question.getId()))
+				.findFirst()
+				.map(question -> new AnsweredQuestion(question, Optional.of(answers.get(question.getId()))));
 	}
 
 	/**

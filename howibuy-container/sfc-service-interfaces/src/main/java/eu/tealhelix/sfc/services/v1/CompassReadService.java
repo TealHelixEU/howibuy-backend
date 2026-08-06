@@ -46,6 +46,16 @@ public interface CompassReadService {
 	Uni<Optional<Question>> findNextQuestion(User user, String language, CategoryId categoryId);
 
 	/**
+	 * The question a user steps back to within a category — the highest-position question they have answered, localized
+	 * for {@code language} and paired with that answer so it can be shown as already picked — or
+	 * {@link Optional#empty() empty} when they have answered nothing there and so have nothing to step back to. The
+	 * mirror of {@link #findNextQuestion}: where next is the first unanswered question, this is the last answered one.
+	 * Defined by the answers alone, so a fully answered category still yields its last question. Navigation never
+	 * crosses into another category.
+	 */
+	Uni<Optional<AnsweredQuestion>> findPreviousQuestion(User user, String language, CategoryId categoryId);
+
+	/**
 	 * A single overview of where the user stands, localized for {@code language}: every category with overall and
 	 * per-category progress and estimated completion time, the five localized scale labels, the current attempt's status
 	 * and whether a new attempt may be started now. Progress is measured against the user's current attempt — the one in

@@ -25,8 +25,8 @@ import io.smallrye.mutiny.Uni;
 /**
  * Reads of the Sustainable Food Compass for the authenticated end-user, localized via an optional {@code ?lang} query
  * parameter (defaulting to the configured default language): its categories and questions, each question paired with
- * the user's current answer, and the "next question" that guides them forward through a category. All reads require an
- * authenticated end-user.
+ * the user's current answer, and the "next question" that guides them forward through a category — with its mirror, the
+ * "previous question" they step back to. All reads require an authenticated end-user.
  */
 @Path("sfc")
 public class CompassResource {
@@ -62,6 +62,14 @@ public class CompassResource {
 	public Uni<NextQuestionResponse> nextQuestion(@Context ContainerRequestContext crc, @PathParam("categoryId") UUID categoryId, @QueryParam("lang") String lang) {
 		return compassReadService.findNextQuestion(currentUser(crc), lang, new CategoryIdImpl(categoryId.toString()))
 				.map(NextQuestionResponse::of);
+	}
+
+	@GET
+	@Path("categories/{categoryId}/previous-question")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<PreviousQuestionResponse> previousQuestion(@Context ContainerRequestContext crc, @PathParam("categoryId") UUID categoryId, @QueryParam("lang") String lang) {
+		return compassReadService.findPreviousQuestion(currentUser(crc), lang, new CategoryIdImpl(categoryId.toString()))
+				.map(PreviousQuestionResponse::of);
 	}
 
 	@GET

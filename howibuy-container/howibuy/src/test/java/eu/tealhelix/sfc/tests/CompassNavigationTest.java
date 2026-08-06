@@ -28,9 +28,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Navigation and review against a real (Postgres-only) database seeded from {@code appdata}: asking for a category's
  * next question hands back the lowest-position unanswered question and advances as answers are given; a fully-answered
- * category signals complete and never yields a question from another category; reviewing a category — or the whole
- * compass — pairs each question with the user's current answer (or none); and changing an earlier answer leaves the
- * frontier at the earliest remaining unanswered question. Answers are made through the real {@code PUT} endpoint; JWT
+ * category signals complete and never yields a question from another category; asking for the previous question steps
+ * back to the last one answered, carrying its answer; reviewing a category — or the whole compass — pairs each question
+ * with the user's current answer (or none); and changing an earlier answer leaves the frontier at the earliest remaining
+ * unanswered question. Answers are made through the real {@code PUT} endpoint; JWT
  * decoding is the only part faked (a stubbed {@link TokenHelper}), so the filter, authorization, resource, DAOs and JSON
  * mapping all run for real.
  * <p>
@@ -85,6 +86,30 @@ public class CompassNavigationTest {
 
 		assertTrue((Boolean) next.get("complete"), "a fully-answered category is complete");
 		assertNull(next.get("question"), "no question is handed back — navigation never crosses into another category");
+	}
+
+	@Test
+	void previousQuestionStepsBackToTheLastAnsweredQuestionCarryingItsAnswer() {
+		var economic = categoryId("ECONOMIC");
+		var questions = questionIds(economic);
+		putAnswer(questions.get(0), "NOT_IMPORTANT");
+		putAnswer(questions.get(1), "EXTREMELY_IMPORTANT");
+
+		var previous = previousQuestion(economic);
+
+		assertFalse((Boolean) previous.get("atStart"), "with answers given there is somewhere to step back to");
+		assertEquals(questions.get(1), questionOf(previous).get("id"), "the step back is the last answered question");
+		assertEquals("EXTREMELY_IMPORTANT", questionOf(previous).get("answer"), "carrying the answer already given, to show as picked");
+	}
+
+	@Test
+	void previousQuestionAtTheStartOfACategoryHandsBackNothing() {
+		var economic = categoryId("ECONOMIC");
+
+		var previous = previousQuestion(economic);
+
+		assertTrue((Boolean) previous.get("atStart"), "nothing is answered, so there is nothing to step back to");
+		assertNull(previous.get("question"), "no question is handed back");
 	}
 
 	@Test
@@ -166,6 +191,13 @@ public class CompassNavigationTest {
 	private Map<String, Object> nextQuestion(String categoryId) {
 		return RestAssured.given().header("Authorization", BEARER_USER)
 				.when().get(BASE + "/categories/" + categoryId + "/next-question")
+				.then().statusCode(200).contentType(JSON)
+				.extract().as(OBJECT);
+	}
+
+	private Map<String, Object> previousQuestion(String categoryId) {
+		return RestAssured.given().header("Authorization", BEARER_USER)
+				.when().get(BASE + "/categories/" + categoryId + "/previous-question")
 				.then().statusCode(200).contentType(JSON)
 				.extract().as(OBJECT);
 	}

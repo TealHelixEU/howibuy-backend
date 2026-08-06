@@ -251,6 +251,44 @@ public class CompassReadServiceImplTest {
 	}
 
 	@Test
+	void findPreviousQuestionReturnsTheHighestPositionAnsweredQuestionWithItsAnswer() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), ScaleOption.NOT_IMPORTANT,
+				Q2.getId(), ScaleOption.VERY_IMPORTANT)));
+		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(QUESTIONS));
+
+		var result = sut.findPreviousQuestion(USER, "en", CATEGORY_ID).await().atMost(WAIT);
+
+		assertEquals(Optional.of(answered(Q2, ScaleOption.VERY_IMPORTANT)), result, "the last answered question, carrying the answer to show as picked");
+	}
+
+	@Test
+	void findPreviousQuestionIsEmptyWhenNothingIsAnsweredYet() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(QUESTIONS));
+
+		var result = sut.findPreviousQuestion(USER, "en", CATEGORY_ID).await().atMost(WAIT);
+
+		assertEquals(Optional.empty(), result, "at the start of a category there is nothing to step back to");
+		verifyNoInteractions(answerDao);
+	}
+
+	@Test
+	void findPreviousQuestionInAFullyAnsweredCategoryIsItsLastQuestion() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), ScaleOption.NOT_IMPORTANT,
+				Q2.getId(), ScaleOption.SLIGHTLY_IMPORTANT,
+				Q3.getId(), ScaleOption.VERY_IMPORTANT)));
+		when(questionDao.retrieveByCategoryAndLanguage(any(), eq(CATEGORY_ID), eq("en"))).thenReturn(Uni.createFrom().item(QUESTIONS));
+
+		var result = sut.findPreviousQuestion(USER, "en", CATEGORY_ID).await().atMost(WAIT);
+
+		assertEquals(Optional.of(answered(Q3, ScaleOption.VERY_IMPORTANT)), result, "defined by the answers alone, so a complete category still has a last answered question");
+	}
+
+	@Test
 	void findCategoriesRejectsAServiceUser() {
 		assertThrows(NotAuthorizedException.class, () -> sut.findCategories(SERVICE_USER, "en"));
 	}
@@ -268,6 +306,11 @@ public class CompassReadServiceImplTest {
 	@Test
 	void findNextQuestionRejectsAServiceUser() {
 		assertThrows(NotAuthorizedException.class, () -> sut.findNextQuestion(SERVICE_USER, "en", CATEGORY_ID));
+	}
+
+	@Test
+	void findPreviousQuestionRejectsAServiceUser() {
+		assertThrows(NotAuthorizedException.class, () -> sut.findPreviousQuestion(SERVICE_USER, "en", CATEGORY_ID));
 	}
 
 	@Test
