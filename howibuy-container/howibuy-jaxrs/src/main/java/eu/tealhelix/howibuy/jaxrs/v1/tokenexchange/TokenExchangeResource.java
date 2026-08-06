@@ -7,7 +7,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
 import eu.tealhelix.common.v1.model.User;
@@ -24,11 +23,10 @@ public class TokenExchangeResource {
 
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
-	public Uni<Response> exchangeToken(@Context ContainerRequestContext crc, TokenExchangeRequest request) {
+	public Uni<TokenExchangeResponse> exchangeToken(@Context ContainerRequestContext crc, TokenExchangeRequest request) {
 		var user = (User) crc.getSecurityContext().getUserPrincipal();
 		return userImpersonationService.impersonateUserAsRetailer(user, request.correlationId())
 				.map(impersonatedUser -> jwtGenerationService.toTokenForImpersonation(impersonatedUser.getId()))
-				.map(t -> new TokenExchangeResponse(t.accessToken(), t.expiresInSeconds()))
-				.map(t -> Response.ok(t).build());
+				.map(t -> new TokenExchangeResponse(t.accessToken(), t.expiresInSeconds()));
 	}
 }

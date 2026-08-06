@@ -131,10 +131,20 @@
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-smallrye-fault-tolerance</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-smallrye-openapi</artifactId>
+		</dependency>
 		<!-- Quarkiverse -->
 		<dependency>
 			<groupId>io.quarkiverse.langchain4j</groupId>
 			<artifactId>quarkus-langchain4j-ollama</artifactId>
+		</dependency>
+
+		<!-- SPECS -->
+		<dependency>
+			<groupId>org.eclipse.microprofile.openapi</groupId>
+			<artifactId>microprofile-openapi-api</artifactId>
 		</dependency>
 
 		<!-- OTHER -->

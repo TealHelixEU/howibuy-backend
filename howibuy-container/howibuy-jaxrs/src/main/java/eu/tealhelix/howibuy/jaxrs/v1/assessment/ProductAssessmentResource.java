@@ -10,7 +10,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
@@ -28,18 +27,17 @@ public class ProductAssessmentResource {
 	@Path("single")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Uni<Response> assessSingleProduct(@Context ContainerRequestContext crc, ProductData productData) {
-		return productAssessmentService.assessSingleProduct(currentUser(crc), productData)
-				.map(t -> Response.ok(t).build());
+	public Uni<ProductAssessmentOutcome> assessSingleProduct(@Context ContainerRequestContext crc, ProductData productData) {
+		return productAssessmentService.assessSingleProduct(currentUser(crc), productData);
 	}
 
 	@POST
 	@Path("multi")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Uni<Response> assessMultipleProductsSync(@Context ContainerRequestContext crc, MultiProductAssessmentRequest request) {
+	public Uni<MultiProductAssessmentResponse> assessMultipleProductsSync(@Context ContainerRequestContext crc, MultiProductAssessmentRequest request) {
 		return productAssessmentService.assessMultipleProductsSync(currentUser(crc), request.products())
-				.map(t -> Response.ok(new MultiProductAssessmentResponse(t)).build());
+				.map(MultiProductAssessmentResponse::new);
 	}
 
 	@POST
