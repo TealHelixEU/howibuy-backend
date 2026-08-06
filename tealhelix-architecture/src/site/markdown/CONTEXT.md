@@ -48,6 +48,13 @@ question answered in that attempt; its absence marks it unanswered. Language-ind
 1–5).
 _Avoid_: reply
 
+**Frontier**:
+The question a user is guided to next within a category — the first one, in position order, they have
+not answered. Being defined by the answers rather than by where the user has been, it stays at the
+earliest unanswered question even after an earlier answer is revised, and a fully answered category
+has none. Its mirror, the question a user steps back to, is the last one they have answered.
+_Avoid_: current question, cursor, position
+
 **Stability Window**:
 The configured period after an attempt is completed during which no new attempt may begin, so the
 completed answers stay stable for the external scientific model that consumes them.

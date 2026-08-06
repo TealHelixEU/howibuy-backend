@@ -58,4 +58,17 @@
 			<column name="name">Lime Fresh</column>
 		</insert>
 	</changeSet>
+
+	<changeSet id="dev_user_profile" author="nikospara" context="@dev">
+		<comment>
+			The profile of the realm's development user, bob@krusty-krab.com, whose idm_id is that user's subject in the
+			tealhelix realm. Every end-user endpoint resolves a token's subject to a profile row, so without this row a
+			real login is rejected as an unknown user.
+		</comment>
+		<insert tableName="TH_USER_PROFILE">
+			<column name="id">72fa53e0-50a9-4bc7-b6ae-07ebe1e28a2d</column>
+			<column name="idm_id">72fa53e0-50a9-4bc7-b6ae-07ebe1e28a2d</column>
+			<column name="email">bob@krusty-krab.com</column>
+		</insert>
+	</changeSet>
 </databaseChangeLog>
