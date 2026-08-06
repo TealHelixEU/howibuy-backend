@@ -19,7 +19,8 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Writes to the user's Sustainable Food Compass attempt — recording (or overwriting) the answer to a question, saved
- * immediately, and completing the attempt (freezing it as an immutable record). Requires an authenticated end-user.
+ * immediately, starting a fresh blank attempt for a user taking the compass again, and completing the attempt (freezing
+ * it as an immutable record). Requires an authenticated end-user.
  */
 @Path("sfc")
 public class CompassAttemptResource {
@@ -32,6 +33,12 @@ public class CompassAttemptResource {
 	public Uni<Void> answer(@Context ContainerRequestContext crc, @PathParam("questionId") UUID questionId, AnswerRequest request) {
 		var option = request == null ? null : request.option();
 		return compassAttemptService.answer(currentUser(crc), new QuestionIdImpl(questionId.toString()), option);
+	}
+
+	@POST
+	@Path("attempts")
+	public Uni<Void> startNewAttempt(@Context ContainerRequestContext crc) {
+		return compassAttemptService.startNewAttempt(currentUser(crc));
 	}
 
 	@POST

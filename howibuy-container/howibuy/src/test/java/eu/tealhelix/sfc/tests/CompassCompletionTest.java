@@ -36,8 +36,8 @@ import org.junit.jupiter.api.Test;
  * {@code appdata}, with time controlled through a stubbed {@link DateTimeService} so the window is exercised without
  * sleeping. Completion is refused (422, with the unanswered ids) until every question is answered; once locked the
  * attempt becomes an immutable {@code COMPLETED} record; a further answer inside the window is refused (409) and leaves
- * that record untouched; and once the window has elapsed the next answer starts a fresh, blank attempt while the
- * previous one remains. Answers and completion go through the real endpoints; JWT decoding and the clock are the only
+ * that record untouched; and once the window has elapsed a fresh, blank attempt begins — whether the user asks for one
+ * outright or simply answers — while the previous one remains. Answers and completion go through the real endpoints; JWT decoding and the clock are the only
  * fakes.
  * <p>
  * The frontier/pairing reads are covered by {@code CompassNavigationTest}; the immediate-save path by
@@ -130,6 +130,51 @@ public class CompassCompletionTest {
 		assertEquals(1, completedAttemptCount(), "the previous completed attempt remains as history");
 		assertEquals(1, answerCountForStatus("IN_PROGRESS"), "the fresh attempt starts blank — only the just-given answer");
 		assertEquals(answersInRecord, answerCountForStatus("COMPLETED"), "the previous record carried nothing forward and lost nothing");
+	}
+
+	@Test
+	void onceTheWindowHasElapsedTheUserMayAskForAFreshBlankAttempt() throws SQLException {
+		answerEveryQuestion();
+		complete(204);
+		var answersInRecord = answerCount();
+
+		clock.set(COMPLETED_AT.plus(stabilityWindow).plusDays(1));
+		startNewAttempt(204);
+
+		assertEquals(2, attemptCount(), "the previous completed attempt plus the new one");
+		assertEquals(1, inProgressAttemptCount(), "the fresh attempt is in progress");
+		assertEquals(0, answerCountForStatus("IN_PROGRESS"), "it starts blank — nothing is carried forward");
+		assertEquals(answersInRecord, answerCountForStatus("COMPLETED"), "the previous record lost nothing");
+	}
+
+	@Test
+	void askingForAFreshAttemptInsideTheStabilityWindowIsRefused() throws SQLException {
+		answerEveryQuestion();
+		complete(204);
+
+		clock.set(COMPLETED_AT.plus(stabilityWindow.dividedBy(2)));
+		var eligibleAt = startNewAttempt(409).extract().path("eligibleAt");
+
+		assertNotNull(eligibleAt, "the user is told when a new attempt becomes possible");
+		assertEquals(1, attemptCount(), "no new attempt was started");
+		assertEquals(0, inProgressAttemptCount(), "the completed record is still the only attempt");
+	}
+
+	@Test
+	void askingForAFreshAttemptWhileOneIsInProgressIsRefused() throws SQLException {
+		putAnswer(allQuestionIds().getFirst(), "VERY_IMPORTANT");
+
+		startNewAttempt(409);
+
+		assertEquals(1, attemptCount(), "the attempt already in progress is still the only one");
+		assertEquals(1, answerCount(), "and it kept the answer already given");
+	}
+
+	private ValidatableResponse startNewAttempt(int status) {
+		return RestAssured.given()
+				.header("Authorization", BEARER_USER)
+				.when().post(BASE + "/attempts")
+				.then().statusCode(status);
 	}
 
 	private void answerEveryQuestion() throws SQLException {

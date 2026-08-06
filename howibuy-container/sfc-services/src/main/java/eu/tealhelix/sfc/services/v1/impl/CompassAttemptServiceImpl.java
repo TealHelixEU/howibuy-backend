@@ -19,6 +19,7 @@ import eu.tealhelix.sfc.dao.AnswerDao;
 import eu.tealhelix.sfc.dao.AttemptDao;
 import eu.tealhelix.sfc.dao.QuestionDao;
 import eu.tealhelix.sfc.services.v1.CompassAttemptService;
+import eu.tealhelix.sfc.services.v1.types.AttemptAlreadyInProgressException;
 import eu.tealhelix.sfc.services.v1.types.IncompleteCompassAttemptException;
 import eu.tealhelix.sfc.services.v1.types.NoInProgressAttemptException;
 import eu.tealhelix.sfc.services.v1.types.StabilityWindowActiveException;
@@ -93,6 +94,18 @@ public class CompassAttemptServiceImpl implements CompassAttemptService {
 				return attemptDao.startInProgress(tx, userId);
 			}
 		});
+	}
+
+	@Override
+	public Uni<Void> startNewAttempt(User user) {
+		authorization.requireUserNotService(user);
+		return persistenceContextFactory.withTransaction(tx -> startNewAttemptInTx(tx, user.getId().asUuid()));
+	}
+
+	private Uni<Void> startNewAttemptInTx(ReactivePersistenceTxContext tx, UUID userId) {
+		return attemptDao.findInProgressId(tx, userId).flatMap(inProgress -> inProgress.isPresent()
+				? Uni.createFrom().failure(new AttemptAlreadyInProgressException())
+				: startEligibleAttempt(tx, userId).replaceWithVoid());
 	}
 
 	@Override

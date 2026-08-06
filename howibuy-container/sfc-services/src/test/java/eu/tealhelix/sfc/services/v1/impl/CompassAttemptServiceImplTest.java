@@ -30,6 +30,7 @@ import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.sfc.dao.AnswerDao;
 import eu.tealhelix.sfc.dao.AttemptDao;
 import eu.tealhelix.sfc.dao.QuestionDao;
+import eu.tealhelix.sfc.services.v1.types.AttemptAlreadyInProgressException;
 import eu.tealhelix.sfc.services.v1.types.IncompleteCompassAttemptException;
 import eu.tealhelix.sfc.services.v1.types.NoInProgressAttemptException;
 import eu.tealhelix.sfc.services.v1.types.StabilityWindowActiveException;
@@ -49,8 +50,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /**
  * The service's orchestration with the database mocked: it authorizes the caller, then either starts a fresh attempt
  * (first answer) or reuses the in-progress one and upserts the answer; when a completed attempt is still within its
- * stability window a new attempt is refused, and once elapsed a fresh attempt starts; completion validates every
- * question is answered before locking, else rejects with the unanswered ids. The actual persistence — the immediate
+ * stability window a new attempt is refused, and once elapsed a fresh attempt starts — whether the user asks for one
+ * outright or simply answers; completion validates every question is answered before locking, else rejects with the
+ * unanswered ids. The actual persistence — the immediate
  * save, the overwrite, the one-in-progress and 1–5 constraints, the freeze and the window over real time — is covered
  * against a real database by {@code CompassAnswerTest} and {@code CompassCompletionTest}; the window comparison in
  * isolation by {@code StabilityWindowTest}.
@@ -158,6 +160,47 @@ public class CompassAttemptServiceImplTest {
 
 		verify(attemptDao).startInProgress(any(), eq(USER_UUID));
 		verify(answerDao).upsert(any(), eq(NEW_ATTEMPT_ID), eq(QUESTION_1), eq(ScaleOption.VERY_IMPORTANT));
+	}
+
+	@Test
+	void startNewAttemptStartsABlankAttemptOnceThePriorWindowHasElapsed() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedAt(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(PRIOR_COMPLETION)));
+		when(dateTimeService.getNow()).thenReturn(AFTER_WINDOW);
+		when(attemptDao.startInProgress(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(NEW_ATTEMPT_ID));
+
+		sut.startNewAttempt(USER).await().atMost(WAIT);
+
+		verify(attemptDao).startInProgress(any(), eq(USER_UUID));
+		verifyNoInteractions(answerDao);
+	}
+
+	@Test
+	void startNewAttemptIsRefusedWhileOneIsAlreadyInProgress() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(EXISTING_ATTEMPT_ID)));
+
+		assertThrows(AttemptAlreadyInProgressException.class, () -> sut.startNewAttempt(USER).await().atMost(WAIT));
+
+		verify(attemptDao, never()).startInProgress(any(), any());
+		verify(attemptDao, never()).findLatestCompletedAt(any(), any());
+	}
+
+	@Test
+	void startNewAttemptWithinAPriorAttemptsStabilityWindowIsRefused() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+		when(attemptDao.findLatestCompletedAt(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(PRIOR_COMPLETION)));
+		when(dateTimeService.getNow()).thenReturn(WITHIN_WINDOW);
+
+		var ex = assertThrows(StabilityWindowActiveException.class, () -> sut.startNewAttempt(USER).await().atMost(WAIT));
+
+		assertEquals(PRIOR_COMPLETION.plus(STABILITY_WINDOW), ex.getEligibleAt(), "the caller is told when a new attempt becomes possible");
+		verify(attemptDao, never()).startInProgress(any(), any());
+	}
+
+	@Test
+	void startNewAttemptRejectsAServiceUser() {
+		assertThrows(NotAuthorizedException.class, () -> sut.startNewAttempt(SERVICE_USER));
+		verifyNoInteractions(attemptDao, answerDao, questionDao);
 	}
 
 	@Test
