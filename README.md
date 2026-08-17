@@ -138,7 +138,7 @@ necessary peripheral services (e.g., the database).
 
 ```shell
 cd tealhelix-docker/src/main/docker-compose/
-docker compose -f docker-compose-peripherals.yml -p tealhelix up -d    # the first time
+docker compose -f docker-compose-peripherals.yml -p tealhelix up -d    # the first time, or if the images have changed
 docker compose -f docker-compose-peripherals.yml -p tealhelix start    # to start
 docker compose -f docker-compose-peripherals.yml -p tealhelix stop     # to stop
 docker compose -f docker-compose-peripherals.yml -p tealhelix down     # to remove the containers, without removing the persistent volumes

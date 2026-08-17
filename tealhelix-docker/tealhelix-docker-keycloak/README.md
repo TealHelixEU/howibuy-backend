@@ -29,6 +29,9 @@ Create a new enabled realm, "tealhelix". Configure:
 		- Verify email: **should be On, TODO**
 	- Events: **TODO, for when we implement the user management events**
     - Sessions: Make sure "Offline session settings" -> "Offline Session Idle" is set to something like 30 Days
+	- User profile:
+		- Row `firstName` -> Edit -> "Required field": No -> Save
+		- Row `lastName`, the same
 
 ### Create a client for HowiBuy
 
