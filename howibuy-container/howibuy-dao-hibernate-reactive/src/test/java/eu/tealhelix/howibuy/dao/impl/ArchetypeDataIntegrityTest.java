@@ -2,14 +2,20 @@ package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static java.util.stream.Collectors.toSet;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity_;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity_;
+import eu.tealhelix.howibuy.dao.jpa.ArchetypeSubstitutabilityEntity;
+import eu.tealhelix.howibuy.dao.jpa.ArchetypeSubstitutabilityEntity_;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
@@ -22,7 +28,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * Verifies that the real WP3 dataset (the {@code appdata} Liquibase context) imports correctly: the whole taxonomy
- * is present and a known archetype resolves to its full category path with the expected impacts.
+ * is present, a known archetype resolves to its full category path with the expected impacts, and the
+ * substitutability matrix agrees with the taxonomy it refers to.
  */
 @Testcontainers
 public class ArchetypeDataIntegrityTest {
@@ -77,6 +84,70 @@ public class ArchetypeDataIntegrityTest {
 		var l1 = findCategory(factory, parentIdOf(factory, l2.getId()));
 		assertEquals((short) 1, l1.getLevel());
 		assertEquals("Alcoholic beverages", l1.getName());
+	}
+
+	@Test
+	void loadsTheWholeSubstitutabilityMatrix(Mutiny.SessionFactory sessionFactory) {
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		assertEquals(2634, substitutablePairs(factory).size(), "substitutable pairs");
+	}
+
+	@Test
+	void everySubstitutabilityDegreeIsWithinTheAllowedRange(Mutiny.SessionFactory sessionFactory) {
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var degrees = substitutablePairs(factory).stream().map(SubstitutablePair::degree).distinct().sorted().toList();
+		assertEquals(List.of((short) 1, (short) 2, (short) 3, (short) 4, (short) 5), degrees, "distinct degrees");
+	}
+
+	@Test
+	void everyCategoryIsSubstitutableForItself(Mutiny.SessionFactory sessionFactory) {
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var selfPairs = substitutablePairs(factory).stream().filter(pair -> pair.from().equals(pair.to())).toList();
+		assertEquals(124, selfPairs.size(), "self-substitutable categories");
+		assertTrue(selfPairs.stream().allMatch(pair -> pair.degree() == 5), "the diagonal is the strongest degree");
+	}
+
+	/**
+	 * The matrix and the taxonomy must describe the same 124 L2 categories. A category the matrix never mentions can
+	 * never be assessed, and a category the taxonomy does not have would be a dangling reference. Checking both ends
+	 * catches the two datasets drifting apart when either is regenerated.
+	 */
+	@Test
+	void theMatrixAndTheTaxonomyAgreeOnEveryL2Category(Mutiny.SessionFactory sessionFactory) {
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var taxonomy = l2CategoryIds(factory);
+		var pairs = substitutablePairs(factory);
+
+		assertEquals(124, taxonomy.size(), "L2 categories in the taxonomy");
+		assertEquals(taxonomy, pairs.stream().map(SubstitutablePair::from).collect(toSet()), "categories the matrix can substitute with");
+		assertEquals(taxonomy, pairs.stream().map(SubstitutablePair::to).collect(toSet()), "categories the matrix can substitute for");
+	}
+
+	private record SubstitutablePair(UUID from, UUID to, short degree) {}
+
+	private static List<SubstitutablePair> substitutablePairs(ReactivePersistenceContextFactoryImpl factory) {
+		return factory.withoutTransaction(em -> {
+			var cb = em.getCriteriaBuilder();
+			var q = cb.createTupleQuery();
+			var root = q.from(ArchetypeSubstitutabilityEntity.class);
+			q.select(cb.tuple(
+					root.get(ArchetypeSubstitutabilityEntity_.fromCategory).get(ArchetypeCategoryEntity_.id),
+					root.get(ArchetypeSubstitutabilityEntity_.toCategory).get(ArchetypeCategoryEntity_.id),
+					root.get(ArchetypeSubstitutabilityEntity_.degree)));
+			return em.createQuery(q).getResultList();
+		}).await().atMost(WAIT).stream()
+				.map(t -> new SubstitutablePair(t.get(0, UUID.class), t.get(1, UUID.class), t.get(2, Short.class)))
+				.toList();
+	}
+
+	private static Set<UUID> l2CategoryIds(ReactivePersistenceContextFactoryImpl factory) {
+		return Set.copyOf(factory.withoutTransaction(em -> {
+			var cb = em.getCriteriaBuilder();
+			var q = cb.createQuery(UUID.class);
+			var root = q.from(ArchetypeCategoryEntity.class);
+			q.select(root.get(ArchetypeCategoryEntity_.id)).where(cb.equal(root.get(ArchetypeCategoryEntity_.level), (short) 2));
+			return em.createQuery(q).getResultList();
+		}).await().atMost(WAIT));
 	}
 
 	private static ArchetypeProductEntity findProductByAgbCode(ReactivePersistenceContextFactoryImpl factory, String agbCode) {

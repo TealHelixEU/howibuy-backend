@@ -83,7 +83,7 @@ def main():
 
     written = 0
     with open(args.out, "w", newline="", encoding="utf8") as fh:
-        writer = csv.writer(fh)
+        writer = csv.writer(fh, lineterminator="\n")
         writer.writerow(["from_category_id", "to_category_id", "degree"])
         for source in header:            # stable, matrix order
             for target in header:
