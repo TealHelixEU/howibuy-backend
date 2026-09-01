@@ -25,6 +25,29 @@
    upgrade dependencies with `mvn -N versions:display-property-updates`.
 4. If a project (Maven module) uses artifacts from a dependency directly, it's preferable to declare the dependency
    directly rather than rely on transitive dependencies.
+5. Mutiny (`io.smallrye.mutiny`) is exempt from the rule that keeps frameworks out of the non-deployable modules, and
+   may be declared in any module. It is a datatype library rather than a framework — a handful of small jars over
+   `java.util.concurrent.Flow`, with no CDI, no reflection and no container — so classify it under SPECS and reach for
+   `Uni` and `Multi` without ceremony. The rule is really about CDI, JPA, JAX-RS, Hibernate and Quarkus itself.
+   - The exemption removes a build obstacle; it is not an invitation to make the domain model asynchronous. A service
+     interface returns a `Uni` because the work is genuinely asynchronous. A data type has no reason to, since
+     asynchrony belongs to the code that talks to a database or the network.
+
+## For Java code
+
+1. Balance the branches in a method body: instead of `if (condition) { doSomething(); return x; } doSomethingElse(); return y;`,
+   prefer `if (condition) { doSomething(); return x; } else { doSomethingElse(); return y; }`
+
+### Javadocs
+
+1. Separate paragraphs with a single `<p>` in its own line. No closing tag:
+    ```java
+    /**
+     * Some content.
+     * <p>
+     * Content in a different paragraph.
+     */
+    ```
 
 # Naming conventions
 

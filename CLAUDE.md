@@ -49,6 +49,9 @@ stays framework-agnostic so the artifacts remain reusable. When upgrading a depe
 Quarkus, look for the XML comment marker next to its `version.*` property in the root [pom.xml](pom.xml) and bump the
 bundle together.
 
+Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule 5 in
+[CodingConventions.md](tealhelix-architecture/src/site/markdown/CodingConventions.md).
+
 ## Reactive programming style
 
 - The class `UniComprehensions` contains many overloads of two basic functions, `forc` and `forcm`, that try to imitate
