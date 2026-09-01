@@ -142,4 +142,38 @@
 			<delete tableName="TH_ARCHETYPE_PRODUCT" />
 		</rollback>
 	</changeSet>
+
+	<changeSet id="archetype_substitutability_schema" author="nikospara">
+		<createTable tableName="TH_ARCHETYPE_SUBSTITUTABILITY" remarks="WP3 substitutability matrix over L2 categories, read as: the FROM category may substitute for the TO category. Only substitutable pairs are stored; a missing row means not substitutable.">
+			<column name="from_category_id" type="UUID" remarks="The L2 category that may stand in">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_ARCHETYPE_SUBSTITUTABILITY" />
+			</column>
+			<column name="to_category_id" type="UUID" remarks="The L2 category being substituted for">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_ARCHETYPE_SUBSTITUTABILITY" />
+			</column>
+			<column name="degree" type="SMALLINT" remarks="How readily the substitution may be made, 1 (barely) to 5 (freely)">
+				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_SUBSTITUTABILITY__DEGREE" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_ARCHETYPE_SUBSTITUTABILITY" baseColumnNames="from_category_id" constraintName="FK_ARCHETYPE_SUBSTITUTABILITY__FROM_CATEGORY_ID__ARCHETYPE_CATEGORY__ID" referencedTableName="TH_ARCHETYPE_CATEGORY" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="TH_ARCHETYPE_SUBSTITUTABILITY" baseColumnNames="to_category_id" constraintName="FK_ARCHETYPE_SUBSTITUTABILITY__TO_CATEGORY_ID__ARCHETYPE_CATEGORY__ID" referencedTableName="TH_ARCHETYPE_CATEGORY" referencedColumnNames="id" />
+		<createIndex tableName="TH_ARCHETYPE_SUBSTITUTABILITY" indexName="IX_TH_ARCHETYPE_SUBSTITUTABILITY__TO_CATEGORY_ID">
+			<column name="to_category_id" />
+		</createIndex>
+		<sql>ALTER TABLE TH_ARCHETYPE_SUBSTITUTABILITY ADD CONSTRAINT CK_TH_ARCHETYPE_SUBSTITUTABILITY__DEGREE CHECK (degree &gt; 0 AND degree &lt;= 5)</sql>
+		<rollback>
+			<dropTable tableName="TH_ARCHETYPE_SUBSTITUTABILITY" />
+		</rollback>
+	</changeSet>
+
+	<changeSet id="archetype_data_substitutability" author="nikospara" context="appdata">
+		<loadData tableName="TH_ARCHETYPE_SUBSTITUTABILITY" file="db/archetype/archetype_substitutability.csv" relativeToChangelogFile="false">
+			<column name="from_category_id" type="UUID" />
+			<column name="to_category_id" type="UUID" />
+			<column name="degree" type="NUMERIC" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_ARCHETYPE_SUBSTITUTABILITY" />
+		</rollback>
+	</changeSet>
 </databaseChangeLog>
