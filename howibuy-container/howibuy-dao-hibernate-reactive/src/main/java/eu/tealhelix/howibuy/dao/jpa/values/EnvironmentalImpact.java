@@ -12,14 +12,14 @@ public class EnvironmentalImpact {
 	@Column(name = "e_climate_change")
 	private double climateChange;
 
-	@Column(name = "e_ozon_depletion")
-	private double ozonDepletion;
+	@Column(name = "e_ozone_depletion")
+	private double ozoneDepletion;
 
 	@Column(name = "e_ionizing_radiation")
 	private double ionizingRadiation;
 
-	@Column(name = "e_ozon_formation")
-	private double ozonFormation;
+	@Column(name = "e_ozone_formation")
+	private double ozoneFormation;
 
 	@Column(name = "e_particulate_matter")
 	private double particulateMatter;
@@ -61,16 +61,16 @@ public class EnvironmentalImpact {
 		return climateChange;
 	}
 
-	public double getOzonDepletion() {
-		return ozonDepletion;
+	public double getOzoneDepletion() {
+		return ozoneDepletion;
 	}
 
 	public double getIonizingRadiation() {
 		return ionizingRadiation;
 	}
 
-	public double getOzonFormation() {
-		return ozonFormation;
+	public double getOzoneFormation() {
+		return ozoneFormation;
 	}
 
 	public double getParticulateMatter() {

@@ -39,9 +39,9 @@
 				<constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__AGB_CODE" unique="true" uniqueConstraintName="UQ_TH_ARCHETYPE_PRODUCT__AGB_CODE" />
 			</column>
 			<column name="e_climate_change" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_CLIMATE_CHANGE" /></column>
-			<column name="e_ozon_depletion" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_OZON_DEPLETION" /></column>
+			<column name="e_ozone_depletion" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_OZONE_DEPLETION" /></column>
 			<column name="e_ionizing_radiation" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_IONIZING_RADIATION" /></column>
-			<column name="e_ozon_formation" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_OZON_FORMATION" /></column>
+			<column name="e_ozone_formation" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_OZONE_FORMATION" /></column>
 			<column name="e_particulate_matter" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_PARTICULATE_MATTER" /></column>
 			<column name="e_non_carcinogenic_toxicity" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_NON_CARCINOGENIC_TOXICITY" /></column>
 			<column name="e_carcinogenic_toxicity" type="DOUBLE PRECISION"><constraints nullable="false" notNullConstraintName="NL_TH_ARCHETYPE_PRODUCT__E_CARCINOGENIC_TOXICITY" /></column>
@@ -105,9 +105,9 @@
 			<column name="name" type="STRING" />
 			<column name="agb_code" type="STRING" />
 			<column name="e_climate_change" type="NUMERIC" />
-			<column name="e_ozon_depletion" type="NUMERIC" />
+			<column name="e_ozone_depletion" type="NUMERIC" />
 			<column name="e_ionizing_radiation" type="NUMERIC" />
-			<column name="e_ozon_formation" type="NUMERIC" />
+			<column name="e_ozone_formation" type="NUMERIC" />
 			<column name="e_particulate_matter" type="NUMERIC" />
 			<column name="e_non_carcinogenic_toxicity" type="NUMERIC" />
 			<column name="e_carcinogenic_toxicity" type="NUMERIC" />

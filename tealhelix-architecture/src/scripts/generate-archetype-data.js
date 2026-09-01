@@ -52,9 +52,9 @@ for (let i = 0; i < argv.length; i++) {
 // Computed scores (E_scientific_SS, overall_*, ...) are deliberately excluded; the application recomputes them.
 const IMPACT_COLUMNS = [
 	{ csv: 'E_climate_change', db: 'e_climate_change' },
-	{ csv: 'E_ozon_depletion', db: 'e_ozon_depletion' },
+	{ csv: 'E_ozon_depletion', db: 'e_ozone_depletion' },
 	{ csv: 'E_ionizing_radiation', db: 'e_ionizing_radiation' },
-	{ csv: 'E_ozon_formation', db: 'e_ozon_formation' },
+	{ csv: 'E_ozon_formation', db: 'e_ozone_formation' },
 	{ csv: 'E_particulate_matter', db: 'e_particulate_matter' },
 	{ csv: 'E_non-carcinogenic_toxicity', db: 'e_non_carcinogenic_toxicity' },
 	{ csv: 'E_carcinogenic_toxicity', db: 'e_carcinogenic_toxicity' },
