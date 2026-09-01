@@ -13,8 +13,9 @@ The questionnaire as a whole — the fixed set of categories and questions a use
 _Avoid_: survey, quiz, poll
 
 **Sustainability Dimension**:
-One of the five fixed facets of food sustainability: Ecological, Social, Economic, Health, Animal
-welfare. A closed, fixed set.
+One of the five fixed facets of food sustainability a user is asked about: Ecological, Social,
+Economic, Health, Animal welfare. A closed, fixed set. Not to be confused with the four Scored
+Sustainability Dimensions that product assessment measures — see that entry for the mapping.
 _Avoid_: axis, pillar, aspect
 
 **Category**:
@@ -59,3 +60,83 @@ _Avoid_: current question, cursor, position
 The configured period after an attempt is completed during which no new attempt may begin, so the
 completed answers stay stable for the external scientific model that consumes them.
 _Avoid_: lock period, cooldown
+
+## Product Sustainability Assessment
+
+The bounded context that answers, for a product a user has scanned, how sustainable it is and what
+better thing they could buy instead. It reads the user's compass results but owns none of them.
+
+**SAFAD Taxonomy**:
+The fixed three-level classification of foods the assessment is built on: twenty broad Level 1
+categories, subdividing into Level 2, subdividing into Level 3. Every Archetype Product hangs off a
+Level 3 category. Level 2 is the level at which Substitutability is expressed.
+_Avoid_: food tree, product hierarchy, classification, L1/L2/L3 as standalone nouns
+
+**Archetype Product**:
+A representative food, standing for every real product of its kind, carrying the measured indicator
+values the assessment scores. A scanned product is assessed by matching it to an archetype; it is
+never scored directly. Leaf of the SAFAD Taxonomy.
+_Avoid_: reference food, generic product, proxy, template
+
+**Reference Product**:
+The Archetype Product the scanned product was matched to — the thing an Alternative is offered
+against, and the baseline any improvement is measured from. A role, not a kind: any archetype is the
+reference product of the assessment that matched it.
+_Avoid_: original, source product, input product
+
+**Scored Sustainability Dimension**:
+One of four facets an Archetype Product is measured and scored on: Environment, Animal Welfare,
+Social, Health. Deliberately **not** the compass's five Sustainability Dimensions — the compass
+additionally elicits Economic, which is scored nowhere because no economic indicator exists in the
+product data. Ecological (compass) and Environment (here) name the same facet under two names. The
+two sets are distinct types and must never share one enum without an explicit mapping.
+_Avoid_: sustainability dimension (unqualified — that is the compass's term), axis, pillar, aspect,
+criterion; and never write "the five dimensions" in this context
+
+**Indicator**:
+One measured quantity of an Archetype Product contributing to a single Scored Sustainability
+Dimension — an environmental impact category, an animal welfare index, a social indicator. Health
+has none: it is derived from the product's Nutri-Score.
+_Avoid_: metric, factor, variable, impact (bare)
+
+**Single Score**:
+One Scored Sustainability Dimension of one Archetype Product reduced to a single number, by
+weighting its Indicators and summing. Expressed in the dimension's own units and direction, so
+scores of different dimensions are not comparable and a higher one is not necessarily better.
+_Avoid_: raw score, aggregate, subtotal, sum
+
+**Normalised Score**:
+A Single Score rescaled against the whole corpus of Archetype Products so that the four dimensions
+become comparable, and inverted so that higher always means more sustainable. Only ever meaningful
+relative to the corpus it was computed over, which is why that corpus is always the complete one.
+_Avoid_: scaled score, index, percentage, rating
+
+**Weighting Profile**:
+The set of weights that reduces a product's four Normalised Scores to one overall score. Two exist:
+the **scientific** profile, WP3's expert weights, identical for everyone; and the **personal**
+profile, derived from a user's completed compass Attempt. Every product is scored under both.
+_Avoid_: weights (bare), preference vector, user profile, settings
+
+**Overall Score**:
+An Archetype Product's four Normalised Scores combined under one Weighting Profile — the single
+number products are ranked by. A product has one per profile, so "the overall score" is never said
+without naming the profile.
+_Avoid_: final score, total, sustainability score
+
+**Substitutability**:
+The directional judgement that one Level 2 category's foods may stand in for another's on the
+plate, graded by how readily. Established by WP3 and fixed; not derived from the scores, and not a
+statement that the substitute is better.
+_Avoid_: similarity, compatibility, interchangeability, swappability
+
+**Substitutability Level**:
+How far a substitution is allowed to stray — Small, Medium, or Large — by setting how strong the
+Substitutability must be to qualify. A larger level admits more distant categories.
+_Avoid_: radius, distance, tolerance, strictness, threshold
+
+**Alternative**:
+An Archetype Product offered in place of the Reference Product: substitutable for it, no worse on
+the scientific Overall Score, and the best available under one ranking criterion. Three are
+produced per assessment — best personal, best scientific, and best combined. An Alternative may be
+the Reference Product itself, which is how "what you have is already a good choice" is expressed.
+_Avoid_: substitute, suggestion, recommendation, swap, replacement
