@@ -29,5 +29,6 @@
 		<module>sfc-jaxrs</module>
 		<module>sfc-service-interfaces</module>
 		<module>sfc-services</module>
+		<module>sustainability-scoring</module>
 	</modules>
 </project>
