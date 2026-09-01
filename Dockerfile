@@ -21,6 +21,7 @@ COPY howibuy-container/sfc-dao/pom.xml howibuy-container/sfc-dao/pom.xml
 COPY howibuy-container/sfc-jaxrs/pom.xml howibuy-container/sfc-jaxrs/pom.xml
 COPY howibuy-container/sfc-service-interfaces/pom.xml howibuy-container/sfc-service-interfaces/pom.xml
 COPY howibuy-container/sfc-services/pom.xml howibuy-container/sfc-services/pom.xml
+COPY howibuy-container/sustainability-scoring/pom.xml howibuy-container/sustainability-scoring/pom.xml
 COPY pom.xml pom.xml
 COPY tealhelix-architecture/howibuy-model-json/pom.xml tealhelix-architecture/howibuy-model-json/pom.xml
 COPY tealhelix-architecture/howibuy-model/pom.xml tealhelix-architecture/howibuy-model/pom.xml
