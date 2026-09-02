@@ -52,6 +52,15 @@ public final class ScoredCorpus {
 		return new ScoredCorpus(List.copyOf(scored));
 	}
 
+	/**
+	 * A corpus of products that have already been normalised together, for tests that need to state the scores
+	 * outright. Production goes through {@link #score}, which is what guarantees the products were normalised as one
+	 * set.
+	 */
+	static ScoredCorpus of(List<ScoredProduct> products) {
+		return new ScoredCorpus(List.copyOf(products));
+	}
+
 	public List<ScoredProduct> getProducts() {
 		return products;
 	}
