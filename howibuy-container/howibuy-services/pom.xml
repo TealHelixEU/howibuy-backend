@@ -33,6 +33,16 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>sfc-service-interfaces</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>sustainability-scoring</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-dao-reactive</artifactId>
 			<version>${project.version}</version>
 		</dependency>

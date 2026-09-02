@@ -1,10 +1,12 @@
 package eu.tealhelix.sfc.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
+import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
@@ -128,6 +130,20 @@ public class QuestionDaoImplTest {
 
 		assertEquals(List.of(ECOLOGICAL_Q1_ID, ECOLOGICAL_Q2_ID, HEALTH_Q1_ID), ids.stream().map(id -> id.asUuid()).toList(),
 				"every question id, grouped by category then position, language-independent");
+	}
+
+	@Test
+	@Order(6)
+	void retrievesTheDimensionEachQuestionAddresses(Mutiny.SessionFactory sessionFactory) {
+		var dimensions = factory(sessionFactory).withoutTransaction(sut::retrieveDimensionsByQuestion).await().atMost(WAIT);
+
+		assertEquals(
+				Map.of(
+						ECOLOGICAL_Q1_ID, SustainabilityDimension.ECOLOGICAL,
+						ECOLOGICAL_Q2_ID, SustainabilityDimension.ECOLOGICAL,
+						HEALTH_Q1_ID, SustainabilityDimension.HEALTH),
+				dimensions.entrySet().stream().collect(toMap(entry -> entry.getKey().asUuid(), Map.Entry::getValue)),
+				"each question takes the dimension of the category it belongs to, whatever language it is asked in");
 	}
 
 	private static ReactivePersistenceContextFactoryImpl factory(Mutiny.SessionFactory sessionFactory) {

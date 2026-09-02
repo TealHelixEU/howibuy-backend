@@ -1,6 +1,8 @@
 package eu.tealhelix.sfc.dao.impl;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.Tuple;
@@ -18,6 +20,7 @@ import eu.tealhelix.sfc.v1.model.ImmutableQuestion;
 import eu.tealhelix.sfc.v1.model.Question;
 import eu.tealhelix.sfc.v1.types.CategoryId;
 import eu.tealhelix.sfc.v1.types.QuestionId;
+import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
 import eu.tealhelix.sfc.v1.types.impl.CategoryIdImpl;
 import eu.tealhelix.sfc.v1.types.impl.QuestionIdImpl;
 import io.smallrye.mutiny.Uni;
@@ -61,6 +64,24 @@ public class QuestionDaoImpl implements QuestionDao {
 						cb.asc(category.get(CategoryEntity_.id)),
 						cb.asc(question.get(QuestionEntity_.position)));
 		return em.createQuery(q).getResultList().map(list -> toQuestions(question, category, root, list));
+	}
+
+	@Override
+	public Uni<Map<QuestionId, SustainabilityDimension>> retrieveDimensionsByQuestion(ReactivePersistenceContext em) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createTupleQuery();
+		var root = q.from(QuestionEntity.class);
+		var category = root.get(QuestionEntity_.category);
+		q.select(cb.tuple(root.get(QuestionEntity_.id), category.get(CategoryEntity_.dimension)));
+		return em.createQuery(q).getResultList().map(QuestionDaoImpl::toDimensionsByQuestion);
+	}
+
+	private static Map<QuestionId, SustainabilityDimension> toDimensionsByQuestion(List<Tuple> tuples) {
+		var dimensions = new LinkedHashMap<QuestionId, SustainabilityDimension>();
+		for (var tuple : tuples) {
+			dimensions.put(new QuestionIdImpl(tuple.get(0, UUID.class).toString()), tuple.get(1, SustainabilityDimension.class));
+		}
+		return dimensions;
 	}
 
 	@Override

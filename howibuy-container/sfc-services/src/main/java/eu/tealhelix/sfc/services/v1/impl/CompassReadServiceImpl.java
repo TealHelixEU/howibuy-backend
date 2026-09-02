@@ -1,10 +1,12 @@
 package eu.tealhelix.sfc.services.v1.impl;
 
-import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
+import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +29,7 @@ import eu.tealhelix.sfc.services.v1.CompassReadService;
 import eu.tealhelix.sfc.services.v1.types.AnsweredQuestion;
 import eu.tealhelix.sfc.services.v1.types.CategoryOverview;
 import eu.tealhelix.sfc.services.v1.types.CompassOverview;
+import eu.tealhelix.sfc.services.v1.types.CompletedCompassAnswers;
 import eu.tealhelix.sfc.services.v1.types.Progress;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.Question;
@@ -34,6 +37,7 @@ import eu.tealhelix.sfc.v1.types.AttemptStatus;
 import eu.tealhelix.sfc.v1.types.CategoryId;
 import eu.tealhelix.sfc.v1.types.QuestionId;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
+import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -241,6 +245,38 @@ public class CompassReadServiceImpl implements CompassReadService {
 	private <T> Uni<T> localized(String language, BiFunction<ReactivePersistenceContext, String, Uni<T>> read) {
 		return Uni.createFrom().item(() -> languages.resolve(language))
 				.flatMap(lang -> persistenceContextFactory.withoutTransaction(em -> read.apply(em, lang)));
+	}
+
+	@Override
+	public Uni<Optional<CompletedCompassAnswers>> findLatestCompletedAnswers(User user) {
+		authorization.requireUserNotService(user);
+		return persistenceContextFactory.withoutTransaction(em ->
+				attemptDao.findLatestCompletedId(em, user.getId().asUuid())
+						.flatMap(attemptId -> attemptId
+								.map(id -> answersByDimension(em, id).map(Optional::of))
+								.orElseGet(() -> Uni.createFrom().item(Optional.empty()))));
+	}
+
+	private Uni<CompletedCompassAnswers> answersByDimension(ReactivePersistenceContext em, UUID attemptId) {
+		return forcm(
+				answerDao.retrieveByAttempt(em, attemptId),
+				_ -> questionDao.retrieveDimensionsByQuestion(em),
+				(answers, dimensions) -> new CompletedCompassAnswers(attemptId, groupByDimension(answers, dimensions)));
+	}
+
+	/**
+	 * Questions the compass no longer asks may still have answers on an old attempt; they carry no dimension and are
+	 * left out rather than gathered under a dimension they no longer belong to.
+	 */
+	private static Map<SustainabilityDimension, List<ScaleOption>> groupByDimension(
+			Map<QuestionId, ScaleOption> answers, Map<QuestionId, SustainabilityDimension> dimensions) {
+		var byDimension = new EnumMap<SustainabilityDimension, List<ScaleOption>>(SustainabilityDimension.class);
+		for (var answer : answers.entrySet()) {
+			var dimension = dimensions.get(answer.getKey());
+			if (dimension == null) continue;
+			byDimension.computeIfAbsent(dimension, _ -> new ArrayList<>()).add(answer.getValue());
+		}
+		return byDimension;
 	}
 
 	/**
