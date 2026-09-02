@@ -6,6 +6,7 @@ import java.util.Optional;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.sfc.services.v1.types.AnsweredQuestion;
 import eu.tealhelix.sfc.services.v1.types.CompassOverview;
+import eu.tealhelix.sfc.services.v1.types.CompletedCompassAnswers;
 import eu.tealhelix.sfc.v1.model.Category;
 import eu.tealhelix.sfc.v1.model.Question;
 import eu.tealhelix.sfc.v1.types.CategoryId;
@@ -64,4 +65,13 @@ public interface CompassReadService {
 	 * progress, or their latest completed one (which, being complete, reads as fully answered), or none.
 	 */
 	Uni<CompassOverview> retrieveOverview(User user, String language);
+
+	/**
+	 * The answers of the user's most recent <em>completed</em> attempt, grouped by dimension, or
+	 * {@link Optional#empty() empty} when they have never completed one. An attempt in progress never contributes,
+	 * however far along it is: only a completed attempt is a settled statement of what the user cares about.
+	 * <p>
+	 * Unlike the other reads, this one is not about showing the compass to anyone, so it takes no language.
+	 */
+	Uni<Optional<CompletedCompassAnswers>> findLatestCompletedAnswers(User user);
 }

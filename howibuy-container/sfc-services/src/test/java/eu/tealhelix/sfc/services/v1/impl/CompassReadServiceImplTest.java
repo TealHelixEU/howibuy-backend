@@ -448,6 +448,65 @@ public class CompassReadServiceImplTest {
 				.build();
 	}
 
+	@Test
+	void groupsTheLatestCompletedAttemptsAnswersUnderTheDimensionEachQuestionAddresses() {
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), ScaleOption.EXTREMELY_IMPORTANT,
+				Q2.getId(), ScaleOption.NOT_IMPORTANT,
+				Q4.getId(), ScaleOption.MODERATELY_IMPORTANT)));
+		when(questionDao.retrieveDimensionsByQuestion(any())).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), SustainabilityDimension.HEALTH,
+				Q2.getId(), SustainabilityDimension.HEALTH,
+				Q4.getId(), SustainabilityDimension.ECOLOGICAL)));
+
+		var result = sut.findLatestCompletedAnswers(USER).await().atMost(WAIT);
+
+		assertTrue(result.isPresent(), "the user has a completed attempt");
+		assertEquals(ATTEMPT_ID, result.get().attemptId(), "names the attempt the answers came from");
+		assertEquals(
+				Set.of(ScaleOption.EXTREMELY_IMPORTANT, ScaleOption.NOT_IMPORTANT),
+				Set.copyOf(result.get().answersByDimension().get(SustainabilityDimension.HEALTH)),
+				"both health answers gathered under health");
+		assertEquals(
+				List.of(ScaleOption.MODERATELY_IMPORTANT),
+				result.get().answersByDimension().get(SustainabilityDimension.ECOLOGICAL),
+				"the ecological answer gathered under ecological");
+	}
+
+	@Test
+	void neverReadsAnAttemptThatIsStillInProgress() {
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
+
+		var result = sut.findLatestCompletedAnswers(USER).await().atMost(WAIT);
+
+		assertTrue(result.isEmpty(), "a user who has completed nothing has said nothing settled");
+		verify(attemptDao, never()).findInProgressId(any(), any());
+		verifyNoInteractions(answerDao);
+	}
+
+	@Test
+	void leavesOutAnAnswerWhoseQuestionTheCompassNoLongerAsks() {
+		when(attemptDao.findLatestCompletedId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), ScaleOption.VERY_IMPORTANT,
+				Q3.getId(), ScaleOption.EXTREMELY_IMPORTANT)));
+		when(questionDao.retrieveDimensionsByQuestion(any())).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), SustainabilityDimension.HEALTH)));
+
+		var result = sut.findLatestCompletedAnswers(USER).await().atMost(WAIT);
+
+		assertEquals(
+				Map.of(SustainabilityDimension.HEALTH, List.of(ScaleOption.VERY_IMPORTANT)),
+				result.get().answersByDimension(),
+				"a retired question carries no dimension, so its old answer is left out rather than misfiled");
+	}
+
+	@Test
+	void rejectsAServiceAccountReadingCompletedAnswers() {
+		assertThrows(NotAuthorizedException.class, () -> sut.findLatestCompletedAnswers(SERVICE_USER));
+	}
+
 	private static AnsweredQuestion unanswered(Question question) {
 		return new AnsweredQuestion(question, Optional.empty());
 	}

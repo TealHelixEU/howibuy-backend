@@ -1,11 +1,13 @@
 package eu.tealhelix.sfc.dao;
 
 import java.util.List;
+import java.util.Map;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.sfc.v1.model.Question;
 import eu.tealhelix.sfc.v1.types.CategoryId;
 import eu.tealhelix.sfc.v1.types.QuestionId;
+import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
 import io.smallrye.mutiny.Uni;
 
 public interface QuestionDao {
@@ -27,4 +29,10 @@ public interface QuestionDao {
 	 * check an attempt for completeness — that every question has an answer — independently of language.
 	 */
 	Uni<List<QuestionId>> retrieveAllIds(ReactivePersistenceContext em);
+
+	/**
+	 * The dimension each question addresses, by way of the category it belongs to. Language-independent, because a
+	 * question's dimension has nothing to do with the words it is asked in.
+	 */
+	Uni<Map<QuestionId, SustainabilityDimension>> retrieveDimensionsByQuestion(ReactivePersistenceContext em);
 }
