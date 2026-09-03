@@ -5,6 +5,8 @@ import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -20,11 +22,13 @@ import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductData;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
+import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
@@ -44,6 +48,9 @@ public class ProductAssessmentServiceImplTest {
 
 	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false);
 	private static final User SERVICE_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true);
+	/** Which profile it is does not matter here, only that the assessor is handed the one the provider returned. */
+	private static final WeightProfile PERSONAL = ScientificWeights.profile();
+
 	private static final ProductData PRODUCT = product("product-key", "Freshly squeezed orange juice");
 	private static final ProductData PRODUCT2 = product("product-key-2", "Some other drink");
 
@@ -52,12 +59,18 @@ public class ProductAssessmentServiceImplTest {
 	@Mock
 	SingleProductAssessor singleProductAssessor;
 
+	@Produces
+	@ExcludeBean
+	@Mock
+	PersonalWeightsProvider personalWeightsProvider;
+
 	@Inject
 	ProductAssessmentServiceImpl sut;
 
 	@Test
 	void assessSingleProductReturnsTheAssessorsOutcomeForAValidUser() {
-		when(singleProductAssessor.assessOne(PRODUCT)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		mockPersonalWeights();
+		when(singleProductAssessor.assessOne(PRODUCT, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
 
 		var outcome = sut.assessSingleProduct(USER, PRODUCT).await().atMost(WAIT);
 
@@ -82,8 +95,9 @@ public class ProductAssessmentServiceImplTest {
 
 	@Test
 	void syncBatchReportsOneOutcomePerProductInOrder() {
-		when(singleProductAssessor.assessOne(PRODUCT)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
+		mockPersonalWeights();
+		when(singleProductAssessor.assessOne(PRODUCT, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
 
@@ -96,8 +110,9 @@ public class ProductAssessmentServiceImplTest {
 
 	@Test
 	void syncBatchIsolatesAnUnexpectedFailureAsFailureOther() {
-		when(singleProductAssessor.assessOne(PRODUCT)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
+		mockPersonalWeights();
+		when(singleProductAssessor.assessOne(PRODUCT, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, PERSONAL)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
 
@@ -109,8 +124,9 @@ public class ProductAssessmentServiceImplTest {
 
 	@Test
 	void asyncBatchStreamsOneOutcomePerProductIsolatingFailures() {
-		when(singleProductAssessor.assessOne(PRODUCT)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
+		mockPersonalWeights();
+		when(singleProductAssessor.assessOne(PRODUCT, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, PERSONAL)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
 
 		var outcomes = sut.assessMultipleProductsAsync(USER, List.of(PRODUCT, PRODUCT2))
 				.subscribe().withSubscriber(AssertSubscriber.create(Long.MAX_VALUE))
@@ -120,6 +136,21 @@ public class ProductAssessmentServiceImplTest {
 		assertEquals(2, outcomes.size());
 		assertEquals(SUCCESS, outcomes.get(0).getType());
 		assertEquals(FAILURE_OTHER, outcomes.get(1).getType());
+	}
+
+	@Test
+	void resolvesTheUsersWeightingProfileOncePerBatchRatherThanOncePerProduct() {
+		mockPersonalWeights();
+		when(singleProductAssessor.assessOne(PRODUCT, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, SUCCESS)));
+
+		sut.assessMultipleProductsSync(USER, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
+
+		verify(personalWeightsProvider, times(1)).forUser(USER);
+	}
+
+	private void mockPersonalWeights() {
+		when(personalWeightsProvider.forUser(USER)).thenReturn(Uni.createFrom().item(PERSONAL));
 	}
 
 	private static ProductData product(String key, String name) {

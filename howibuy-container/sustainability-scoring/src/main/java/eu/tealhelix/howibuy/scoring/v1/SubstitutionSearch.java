@@ -11,9 +11,13 @@ import eu.tealhelix.howibuy.v1.types.WeightProfile;
 /**
  * Finds the best substitute for a scanned product, three ways.
  * <p>
- * The search is four steps. Which categories may substitute for the reference product's category at the configured
- * level; which of their products are at least as good as the reference on the <em>scientific</em> score; how those
- * survivors rank under the personal, scientific, and combined criteria; and the best of each.
+ * The search is four steps:
+ * <ol>
+ *     <li>Which categories may substitute for the reference product's category at the configured level</li>
+ *     <li>Which of their products are at least as good as the reference on the <em>scientific</em> score</li>
+ *     <li>How those survivors rank under the personal, scientific, and combined criteria</li>
+ *     <li>And the best of each</li>
+ * </ol>
  * <p>
  * The no-regression step deliberately uses the scientific score alone. A user's own priorities decide the order of
  * the answers, never which answers are allowed, so no weighting a user can express can steer them toward something
@@ -69,8 +73,7 @@ public final class SubstitutionSearch {
 	}
 
 	private double combinedScore(ScoredProduct product, WeightProfile personalProfile) {
-		return settings.personalWeight() * product.overallScore(personalProfile)
-				+ settings.scientificWeight() * product.overallScore(scientificProfile);
+		return settings.combinedScore(product.overallScore(personalProfile), product.overallScore(scientificProfile));
 	}
 
 	/**

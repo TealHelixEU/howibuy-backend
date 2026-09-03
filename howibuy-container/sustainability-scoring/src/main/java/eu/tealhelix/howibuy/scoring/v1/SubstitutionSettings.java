@@ -54,6 +54,13 @@ public record SubstitutionSettings(
 		return new SubstitutionSettings(level, minimumDegrees, personalWeight, scientificWeight);
 	}
 
+	/**
+	 * The two overall scores of one product blended into the score its combined ranking uses.
+	 */
+	public double combinedScore(double personalScore, double scientificScore) {
+		return personalWeight * personalScore + scientificWeight * scientificScore;
+	}
+
 	public short minimumDegreeFor(SubstitutabilityLevel level) {
 		return minimumDegrees.get(level);
 	}

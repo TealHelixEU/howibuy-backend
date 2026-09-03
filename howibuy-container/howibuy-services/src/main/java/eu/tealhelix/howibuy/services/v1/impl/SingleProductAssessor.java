@@ -1,8 +1,6 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
 import static eu.tealhelix.common.utils.UniComprehensions.forc;
-import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.NO_SUGGESTION;
-import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.SUGGESTION;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_OTHER;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_TO_IDENTIFY;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS;
@@ -25,13 +23,13 @@ import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.services.v1.enrichment.FoodTermGlossary;
-import eu.tealhelix.howibuy.v1.model.ImmutableAlternativeForProduct;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcomeDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcomeDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ProductData;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
+import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +52,7 @@ public class SingleProductAssessor {
 	private final ArchetypeProductDao archetypeProductDao;
 	private final FoodTermGlossary foodTermGlossary;
 	private final ProductClassificationGuidance productClassificationGuidance;
+	private final ArchetypeCorpus archetypeCorpus;
 
 	@Inject
 	public SingleProductAssessor(
@@ -62,7 +61,8 @@ public class SingleProductAssessor {
 			ArchetypeCategoryDao archetypeCategoryDao,
 			ArchetypeProductDao archetypeProductDao,
 			FoodTermGlossary foodTermGlossary,
-			ProductClassificationGuidance productClassificationGuidance
+			ProductClassificationGuidance productClassificationGuidance,
+			ArchetypeCorpus archetypeCorpus
 	) {
 		this.persistenceContextFactory = persistenceContextFactory;
 		this.productAssessmentAiFacade = productAssessmentAiFacade;
@@ -70,6 +70,7 @@ public class SingleProductAssessor {
 		this.archetypeProductDao = archetypeProductDao;
 		this.foodTermGlossary = foodTermGlossary;
 		this.productClassificationGuidance = productClassificationGuidance;
+		this.archetypeCorpus = archetypeCorpus;
 	}
 
 	/**
@@ -77,16 +78,16 @@ public class SingleProductAssessor {
 	 * corresponding non-{@code SUCCESS} outcome. Unexpected failures (a DB error, an open circuit breaker) are left on
 	 * the failure channel for the caller to surface (as a server error) or isolate (per product, in a batch).
 	 */
-	public Uni<ProductAssessmentOutcome> assessOne(ProductData productData) {
-		return assessOneWithoutHandlingFailures(productData)
+	public Uni<ProductAssessmentOutcome> assessOne(ProductData productData, WeightProfile personalProfile) {
+		return assessOneWithoutHandlingFailures(productData, personalProfile)
 				.onFailure(ProductNotAssessedException.class)
 				.recoverWithItem(failure -> outcomeFor(productData, failure));
 	}
 
-	private Uni<ProductAssessmentOutcome> assessOneWithoutHandlingFailures(ProductData productData) {
+	private Uni<ProductAssessmentOutcome> assessOneWithoutHandlingFailures(ProductData productData, WeightProfile personalProfile) {
 		return forc(
 				recognizedTermsFor(productData),
-				recognizedTerms -> descendCategories(productData, recognizedTerms)
+				recognizedTerms -> descendCategories(productData, recognizedTerms, personalProfile)
 		);
 	}
 
@@ -101,7 +102,8 @@ public class SingleProductAssessor {
 				.invoke(recognizedTerms -> logEnrichment(language, productData.getName(), recognizedTerms));
 	}
 
-	private Uni<ProductAssessmentOutcome> descendCategories(ProductData productData, List<FoodTerm> recognizedTerms) {
+	private Uni<ProductAssessmentOutcome> descendCategories(
+			ProductData productData, List<FoodTerm> recognizedTerms, WeightProfile personalProfile) {
 		return forc(
 				retrieveL1Categories(),
 				l1categories -> resolveCategory(0, l1categories, recognizedTerms,
@@ -113,14 +115,14 @@ public class SingleProductAssessor {
 						() -> productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories), recognizedTerms),
 						diagnostics(l1category.getName(), null, null, null)
 				),
-				(_, l1category, _, l2category) -> retrieveSubcategoriesOf(l2category.getId()),
+				(_, _, _, l2category) -> retrieveSubcategoriesOf(l2category.getId()),
 				(_, l1category, _, l2category, l3categories) -> resolveCategory(2, l3categories, recognizedTerms,
 						() -> productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories), recognizedTerms),
 						diagnostics(l1category.getName(), l2category.getName(), null, null)
 				),
-				(_, l1category, _, l2category, _, l3category) -> retrieveProductsInCategory(l3category.getId()),
+				(_, _, _, l2category, _, l3category) -> retrieveProductsInCategory(l3category.getId()),
 				(_, l1category, _, l2category, _, l3category, products) ->
-						extractProduct(productData, l1category.getName(), l2category.getName(), l3category.getName(), products, recognizedTerms)
+						extractProduct(productData, l1category.getName(), l2category.getName(), l3category.getName(), products, recognizedTerms, personalProfile)
 		);
 	}
 
@@ -199,12 +201,13 @@ public class SingleProductAssessor {
 		});
 	}
 
-	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products, List<FoodTerm> recognizedTerms) {
+	private Uni<ProductAssessmentOutcome> extractProduct(ProductData productData, String l1name, String l2name, String l3name, List<ArchetypeProduct> products, List<FoodTerm> recognizedTerms, WeightProfile personalProfile) {
 		ProductAssessmentOutcomeDiagnostics diagnostics = diagnostics(l1name, l2name, l3name, null);
 		String categoryGuidance = productClassificationGuidance.forCategoryPath(
 				productData.getLanguage().getLanguage(), List.of(l1name, l2name, l3name));
 		return pick(productAssessmentAiFacade.extractArchetypeProduct(productData, productNames(products), recognizedTerms, categoryGuidance), products, "product", diagnostics)
-				.flatMap(product -> successfulAssessment(productData, diagnostics(l1name, l2name, l3name, product.getName())));
+				.flatMap(product -> successfulAssessment(
+						productData, diagnostics(l1name, l2name, l3name, product.getName()), product.getId(), personalProfile));
 	}
 
 	private Uni<List<ArchetypeCategory>> retrieveSubcategoriesOf(UUID parentId) {
@@ -232,9 +235,27 @@ public class SingleProductAssessor {
 				.build();
 	}
 
-	private Uni<ProductAssessmentOutcome> successfulAssessment(ProductData productData, ProductAssessmentOutcomeDiagnostics diagnostics) {
-		var output = (ImmutableProductAssessmentOutcome) makeDummyProductAssessmentOutcome(productData);
-		return Uni.createFrom().item(output.withDiagnostics(diagnostics));
+	/**
+	 * The assessed product's archetype decided, what to buy instead follows from the scored corpus: three rankings of
+	 * the archetypes that may substitute for its category, each reporting its own winner. A winner that is the
+	 * archetype itself says the user already has the best available choice.
+	 */
+	private Uni<ProductAssessmentOutcome> successfulAssessment(
+			ProductData productData,
+			ProductAssessmentOutcomeDiagnostics diagnostics,
+			UUID archetypeProductId,
+			WeightProfile personalProfile
+	) {
+		return archetypeCorpus.scoredArchetypes()
+				.map(archetypes -> archetypes.recommendationsFor(archetypeProductId, personalProfile))
+				.map(best -> ImmutableProductAssessmentOutcome.builder()
+						.productKey(productData.getProductKey())
+						.type(SUCCESS)
+						.bestPersonalAlternative(best.personal())
+						.bestScientificAlternative(best.scientific())
+						.bestCombinedAlternative(best.combined())
+						.diagnostics(diagnostics)
+						.build());
 	}
 
 	private static <O> Uni<O> failureToIdentify(ProductAssessmentOutcomeDiagnostics diagnostics) {
@@ -248,20 +269,6 @@ public class SingleProductAssessor {
 				.productKey(productData.getProductKey())
 				.type(type)
 				.diagnostics(diagnostics)
-				.build();
-	}
-
-	private ProductAssessmentOutcome makeDummyProductAssessmentOutcome(ProductData productData) {
-		var dummyAlternative = ImmutableAlternativeForProduct.builder()
-				.type(SUGGESTION)
-				.name("The best personal alternative")
-				.build();
-		return ImmutableProductAssessmentOutcome.builder()
-				.productKey(productData.getProductKey())
-				.type(SUCCESS)
-				.bestPersonalAlternative(dummyAlternative)
-				.bestScientificAlternative(ImmutableAlternativeForProduct.builder().type(NO_SUGGESTION).build())
-				.bestCombinedAlternative(dummyAlternative)
 				.build();
 	}
 }
