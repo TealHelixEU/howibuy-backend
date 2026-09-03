@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
+import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import io.smallrye.mutiny.Uni;
 
 public interface ArchetypeProductDao {
@@ -14,4 +15,11 @@ public interface ArchetypeProductDao {
 	 * unique only within a single category.
 	 */
 	Uni<List<ArchetypeProduct>> retrieveProductsInCategory(ReactivePersistenceContext em, UUID categoryId);
+
+	/**
+	 * Every archetype product with its measured impacts and its L2 category. The sustainability scoring normalises each
+	 * dimension across the whole corpus, so it is meaningless on a subset and this is read as one — once, and cached
+	 * for the lifetime of the application, as it is reference data that only changes on redeployment.
+	 */
+	Uni<List<ArchetypeProductImpacts>> retrieveAllWithImpacts(ReactivePersistenceContext em);
 }
