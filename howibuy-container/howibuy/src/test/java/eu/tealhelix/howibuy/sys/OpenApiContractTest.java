@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -103,5 +104,29 @@ public class OpenApiContractTest {
 				.body("components.schemas.MultiProductAssessmentResponse", notNullValue())
 				.body("paths.'/api/howibuy/v1/assessment/single'.post.responses.'200'.content.'application/json'.schema.'$ref'",
 						equalTo("#/components/schemas/ProductAssessmentOutcome"));
+	}
+
+	/**
+	 * An assessment answers with three alternatives, each naming the archetype product it recommends and the two
+	 * overall scores that put it there. The scores are what the front-end shows the user, so they belong to the
+	 * published contract rather than only to the Java type.
+	 */
+	@Test
+	void describesTheRecommendedAlternativeWithItsArchetypeAndScores() {
+		given()
+				.accept("application/json")
+				.when().get("/q/openapi")
+				.then()
+				.statusCode(200)
+				.body("components.schemas.AlternativeForProduct.properties.archetypeProductId.'$ref'",
+						equalTo("#/components/schemas/UUID"))
+				.body("components.schemas.UUID.type", equalTo("string"))
+				.body("components.schemas.UUID.format", equalTo("uuid"))
+				.body("components.schemas.AlternativeForProduct.properties.referenceOverallScore.type", equalTo("number"))
+				.body("components.schemas.AlternativeForProduct.properties.alternativeOverallScore.type", equalTo("number"))
+				.body("components.schemas.AlternativeForProduct.properties.type.'$ref'",
+						equalTo("#/components/schemas/AlternativeForProductType"))
+				.body("components.schemas.AlternativeForProductType.enum",
+						hasItems("SUGGESTION", "GOOD_ENOUGH", "NO_SUGGESTION"));
 	}
 }

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Currency;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -21,19 +22,27 @@ import jakarta.inject.Inject;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.howibuy.dao.ArchetypeCategoryDao;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
+import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
+import eu.tealhelix.howibuy.scoring.v1.SubstitutionSettings;
 import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
+import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeCategory;
+import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ImmutableFoodTerm;
+import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
+import eu.tealhelix.howibuy.services.model.Substitutability;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.services.v1.enrichment.FoodTermGlossary;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductData;
+import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
+import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
@@ -72,9 +81,13 @@ public class SingleProductAssessorTest {
 			category(L2_JUICES, "Juices"), category(UUID.fromString("00000000-0000-0000-0000-0000000000fe"), "Other"));
 	private static final List<ArchetypeCategory> L3_CATEGORIES = List.of(
 			category(L3_ORANGE, "Orange juice"), category(UUID.fromString("00000000-0000-0000-0000-0000000000fd"), "Apple juice"));
+	/** The archetype the AI picks at the last level of every successful descent below, and a better one beside it. */
+	private static final UUID PICKED_ARCHETYPE = UUID.fromString("00000000-0000-0000-0000-0000000000fc");
+	private static final UUID BETTER_ARCHETYPE = UUID.fromString("00000000-0000-0000-0000-0000000000fb");
+
 	private static final List<ArchetypeProduct> PRODUCTS = List.of(
-			product(UUID.fromString("00000000-0000-0000-0000-0000000000fc"), "Tropicana"),
-			product(UUID.fromString("00000000-0000-0000-0000-0000000000fb"), "Store brand"));
+			product(PICKED_ARCHETYPE, "Tropicana"),
+			product(BETTER_ARCHETYPE, "Store brand"));
 
 	@Produces
 	@Mock
@@ -94,6 +107,11 @@ public class SingleProductAssessorTest {
 	FoodTermGlossary foodTermGlossary;
 
 	@Produces
+	@Mock
+	@ExcludeBean
+	ArchetypeCorpus archetypeCorpus;
+
+	@Produces
 	@RegisterExtension
 	private MockReactivePersistenceContextFactory mockPersistenceContextFactory = new MockReactivePersistenceContextFactory();
 
@@ -103,6 +121,7 @@ public class SingleProductAssessorTest {
 	@Test
 	void descendsAllFourLevelsAndReportsTheMatchedPath() {
 		mockGlossary(List.of());
+		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -126,6 +145,7 @@ public class SingleProductAssessorTest {
 		var vlita = ImmutableFoodTerm.builder()
 				.term("Βλήτα").canonicalEn("amaranth greens").description("a leafy green vegetable").build();
 		mockGlossary(List.of(vlita));
+		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -217,6 +237,7 @@ public class SingleProductAssessorTest {
 				.categoryHintL1("Beverages").categoryHintL2("Juices").categoryHintL3("Orange juice")
 				.build();
 		mockGlossary(List.of(term));
+		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
 		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
@@ -242,6 +263,7 @@ public class SingleProductAssessorTest {
 		var milk = ImmutableFoodTerm.builder()
 				.term("milk").canonicalEn("milk").description("a dairy drink").categoryHintL1("Dairy").build();
 		mockGlossary(List.of(juice, milk));
+		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockExtractL1(FIRST);
 		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
@@ -256,8 +278,83 @@ public class SingleProductAssessorTest {
 		verify(productAssessmentAiFacade).extractL1Category(any(), any(), any());
 	}
 
+	@Test
+	void reportsTheBestAlternativeFromTheScoredCorpusForTheMatchedArchetype() {
+		mockGlossary(List.of());
+		mockArchetypeCorpus("Nutriscore_C");
+		mockL1Categories();
+		mockExtractL1(FIRST);
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory(FIRST, FIRST);
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct(FIRST);
+
+		var outcome = assess();
+
+		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType());
+		var alternative = outcome.getBestScientificAlternative();
+		assertEquals(AlternativeForProductType.SUGGESTION, alternative.getType());
+		assertEquals(BETTER_ARCHETYPE, alternative.getArchetypeProductId());
+		assertEquals("Store brand", alternative.getName(), "graded A where the matched archetype is only graded C");
+		assertEquals(0.875, alternative.getReferenceOverallScore(), 1e-9);
+		assertEquals(1.0, alternative.getAlternativeOverallScore(), 1e-9);
+	}
+
+	@Test
+	void reportsNoSuggestionWhenTheMatchedArchetypeIsOutsideTheNutriScoreScheme() {
+		mockGlossary(List.of());
+		mockArchetypeCorpus("0");
+		mockL1Categories();
+		mockExtractL1(FIRST);
+		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockExtractSubcategory(FIRST, FIRST);
+		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
+		mockProductsOf(L3_ORANGE);
+		mockExtractArchetypeProduct(FIRST);
+
+		var outcome = assess();
+
+		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType(),
+				"the descent succeeded; it is the recommendation that has nothing to say");
+		assertEquals(AlternativeForProductType.NO_SUGGESTION, outcome.getBestPersonalAlternative().getType());
+		assertEquals(AlternativeForProductType.NO_SUGGESTION, outcome.getBestScientificAlternative().getType());
+		assertEquals(AlternativeForProductType.NO_SUGGESTION, outcome.getBestCombinedAlternative().getType());
+		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category(), "and the matched path is still reported");
+	}
+
 	private ProductAssessmentOutcome assess() {
-		return sut.assessOne(PRODUCT).await().atMost(WAIT);
+		return sut.assessOne(PRODUCT, ScientificWeights.profile()).await().atMost(WAIT);
+	}
+
+	/**
+	 * A corpus of the two candidate archetypes alone. Their indicator values are all zero, so every dimension has a
+	 * zero range and normalises flat, leaving the Nutri-Score the only thing that tells the two apart: the store brand
+	 * is graded A and the one the AI picks only C.
+	 */
+	private void mockArchetypeCorpus(String pickedProductNutriScore) {
+		var corpus = List.of(
+				impacts(PICKED_ARCHETYPE, "Tropicana", "agb-tropicana", pickedProductNutriScore),
+				impacts(BETTER_ARCHETYPE, "Store brand", "agb-store-brand", "Nutriscore_A"));
+		List<Substitutability> matrix = List.of(ImmutableSubstitutability.builder()
+				.fromCategoryId(L2_JUICES).toCategoryId(L2_JUICES).degree((short) 5).build());
+		when(archetypeCorpus.scoredArchetypes()).thenReturn(Uni.createFrom().item(
+				ScoredArchetypes.of(corpus, matrix, SubstitutionSettings.defaults())));
+	}
+
+	private static ArchetypeProductImpacts impacts(UUID id, String name, String agbCode, String nutriScore) {
+		var values = new EnumMap<SustainabilityIndicator, Double>(SustainabilityIndicator.class);
+		for (var indicator : SustainabilityIndicator.values()) {
+			values.put(indicator, 0.0);
+		}
+		return ImmutableArchetypeProductImpacts.builder()
+				.id(id)
+				.name(name)
+				.agbCode(agbCode)
+				.l2CategoryId(L2_JUICES)
+				.indicatorValues(values)
+				.nutriScore(nutriScore)
+				.build();
 	}
 
 	private void mockGlossary(List<FoodTerm> matches) {
