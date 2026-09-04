@@ -1,8 +1,9 @@
 package eu.tealhelix.howibuy.services.model;
 
 import java.util.Map;
-import java.util.UUID;
 
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.HasArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 import org.immutables.value.Value;
 
@@ -16,9 +17,7 @@ import org.immutables.value.Value;
  * matrix speaks about.
  */
 @Value.Immutable
-public interface ArchetypeProductImpacts {
-	UUID getId();
-
+public interface ArchetypeProductImpacts extends HasArchetypeProductId {
 	/**
 	 * The name shown to the user when this product is recommended as an alternative.
 	 */
@@ -29,7 +28,7 @@ public interface ArchetypeProductImpacts {
 	 */
 	String getAgbCode();
 
-	UUID getL2CategoryId();
+	ArchetypeCategoryId getL2CategoryId();
 
 	/**
 	 * The measured value of each indicator. An indicator absent from the map contributes nothing to its dimension.

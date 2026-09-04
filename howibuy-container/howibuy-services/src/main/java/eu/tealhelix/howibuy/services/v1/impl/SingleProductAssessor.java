@@ -8,7 +8,6 @@ import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,6 +27,7 @@ import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcomeDiagnostic
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcomeDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ProductData;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
@@ -110,17 +110,17 @@ public class SingleProductAssessor {
 						() -> productAssessmentAiFacade.extractL1Category(productData, categoryNames(l1categories), recognizedTerms),
 						diagnostics(null, null, null, null)
 				),
-				(_, l1category) -> retrieveSubcategoriesOf(l1category.getId()),
+				(_, l1category) -> retrieveSubcategoriesOf(l1category),
 				(_, l1category, l2categories) -> resolveCategory(1, l2categories, recognizedTerms,
 						() -> productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l2categories), recognizedTerms),
 						diagnostics(l1category.getName(), null, null, null)
 				),
-				(_, _, _, l2category) -> retrieveSubcategoriesOf(l2category.getId()),
+				(_, _, _, l2category) -> retrieveSubcategoriesOf(l2category),
 				(_, l1category, _, l2category, l3categories) -> resolveCategory(2, l3categories, recognizedTerms,
 						() -> productAssessmentAiFacade.extractSubcategory(productData, categoryNames(l3categories), recognizedTerms),
 						diagnostics(l1category.getName(), l2category.getName(), null, null)
 				),
-				(_, _, _, l2category, _, l3category) -> retrieveProductsInCategory(l3category.getId()),
+				(_, _, _, l2category, _, l3category) -> retrieveProductsInCategory(l3category),
 				(_, l1category, _, l2category, _, l3category, products) ->
 						extractProduct(productData, l1category.getName(), l2category.getName(), l3category.getName(), products, recognizedTerms, personalProfile)
 		);
@@ -210,12 +210,12 @@ public class SingleProductAssessor {
 						productData, diagnostics(l1name, l2name, l3name, product.getName()), product.getId(), personalProfile));
 	}
 
-	private Uni<List<ArchetypeCategory>> retrieveSubcategoriesOf(UUID parentId) {
-		return persistenceContextFactory.withoutTransaction(em -> archetypeCategoryDao.retrieveSubcategories(em, parentId));
+	private Uni<List<ArchetypeCategory>> retrieveSubcategoriesOf(ArchetypeCategory parent) {
+		return persistenceContextFactory.withoutTransaction(em -> archetypeCategoryDao.retrieveSubcategories(em, parent));
 	}
 
-	private Uni<List<ArchetypeProduct>> retrieveProductsInCategory(UUID categoryId) {
-		return persistenceContextFactory.withoutTransaction(em -> archetypeProductDao.retrieveProductsInCategory(em, categoryId));
+	private Uni<List<ArchetypeProduct>> retrieveProductsInCategory(ArchetypeCategory category) {
+		return persistenceContextFactory.withoutTransaction(em -> archetypeProductDao.retrieveProductsInCategory(em, category));
 	}
 
 	private static List<String> categoryNames(List<ArchetypeCategory> categories) {
@@ -243,7 +243,7 @@ public class SingleProductAssessor {
 	private Uni<ProductAssessmentOutcome> successfulAssessment(
 			ProductData productData,
 			ProductAssessmentOutcomeDiagnostics diagnostics,
-			UUID archetypeProductId,
+			ArchetypeProductId archetypeProductId,
 			WeightProfile personalProfile
 	) {
 		return archetypeCorpus.scoredArchetypes()

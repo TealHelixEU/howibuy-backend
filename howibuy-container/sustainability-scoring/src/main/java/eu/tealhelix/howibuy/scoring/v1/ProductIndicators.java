@@ -1,8 +1,9 @@
 package eu.tealhelix.howibuy.scoring.v1;
 
 import java.util.Map;
-import java.util.UUID;
 
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 
 /**
@@ -17,8 +18,8 @@ import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
  *        {@code "0"} for a product outside the scheme
  */
 public record ProductIndicators(
-		UUID productId,
-		UUID categoryId,
+		ArchetypeProductId productId,
+		ArchetypeCategoryId categoryId,
 		String agbCode,
 		Map<SustainabilityIndicator, Double> values,
 		String nutriScore) {

@@ -42,7 +42,6 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
@@ -55,7 +54,11 @@ import eu.tealhelix.howibuy.dao.jpa.values.EnvironmentalImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.SocialImpact;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeAll;
@@ -72,15 +75,15 @@ public class ArchetypeProductDaoImplTest {
 	/** How the seed data spells "this product is outside the Nutri-Score scheme", as WP3 does. */
 	private static final String UNSCOREABLE = "0";
 
-	private static final UUID L1_BEVERAGES = UUID.fromString("00000000-0000-0000-0000-000000000001");
-	private static final UUID L2_JUICES = UUID.fromString("00000000-0000-0000-0000-000000000011");
-	private static final UUID L2_DAIRY = UUID.fromString("00000000-0000-0000-0000-000000000012");
-	private static final UUID L3_JUICES = UUID.fromString("00000000-0000-0000-0000-000000000101");
-	private static final UUID L3_MILKS = UUID.fromString("00000000-0000-0000-0000-000000000102");
-	private static final UUID ORANGE_JUICE = UUID.fromString("00000000-0000-0000-0000-000000000201");
-	private static final UUID GENERIC_JUICE = UUID.fromString("00000000-0000-0000-0000-000000000202");
-	private static final UUID WHOLE_MILK = UUID.fromString("00000000-0000-0000-0000-000000000203");
-	private static final UUID GENERIC_MILK = UUID.fromString("00000000-0000-0000-0000-000000000204");
+	private static final ArchetypeCategoryId L1_BEVERAGES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000001");
+	private static final ArchetypeCategoryId L2_JUICES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000011");
+	private static final ArchetypeCategoryId L2_DAIRY = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000012");
+	private static final ArchetypeCategoryId L3_JUICES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000101");
+	private static final ArchetypeCategoryId L3_MILKS = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000102");
+	private static final ArchetypeProductId ORANGE_JUICE = new ArchetypeProductIdImpl("00000000-0000-0000-0000-000000000201");
+	private static final ArchetypeProductId GENERIC_JUICE = new ArchetypeProductIdImpl("00000000-0000-0000-0000-000000000202");
+	private static final ArchetypeProductId WHOLE_MILK = new ArchetypeProductIdImpl("00000000-0000-0000-0000-000000000203");
+	private static final ArchetypeProductId GENERIC_MILK = new ArchetypeProductIdImpl("00000000-0000-0000-0000-000000000204");
 
 	/**
 	 * Every impact column of {@code TH_ARCHETYPE_PRODUCT} against the indicator it measures, written out here so the
@@ -171,16 +174,16 @@ public class ArchetypeProductDaoImplTest {
 	 * One distinct value per column, so that any two columns mapped to each other's indicator disagree with the
 	 * expectation rather than cancelling out.
 	 */
-	private static void writeImpacts(UUID productId) {
+	private static void writeImpacts(ArchetypeProductId productId) {
 		var assignments = IntStream.range(0, IMPACT_COLUMNS.size())
 				.mapToObj(i -> IMPACT_COLUMNS.get(i).column() + " = " + valueOfColumn(i))
 				.collect(joining(", "));
 		try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
 				var statement = connection.prepareStatement("UPDATE TH_ARCHETYPE_PRODUCT SET " + assignments + " WHERE id = ?")) {
-			statement.setObject(1, productId);
+			statement.setObject(1, productId.asUuid());
 			statement.executeUpdate();
 		} catch (SQLException e) {
-			throw new IllegalStateException("Could not write the archetype product impacts, id: " + productId, e);
+			throw new IllegalStateException("Could not write the archetype product impacts, id: " + productId.asString(), e);
 		}
 	}
 
@@ -270,14 +273,14 @@ public class ArchetypeProductDaoImplTest {
 				.awaitItem(WAIT).getItem();
 	}
 
-	private static ArchetypeProductImpacts productOf(List<ArchetypeProductImpacts> corpus, UUID productId) {
+	private static ArchetypeProductImpacts productOf(List<ArchetypeProductImpacts> corpus, ArchetypeProductId productId) {
 		return corpus.stream()
 				.filter(product -> product.getId().equals(productId))
 				.findFirst()
-				.orElseThrow(() -> new AssertionError("The corpus does not contain the product, id: " + productId));
+				.orElseThrow(() -> new AssertionError("The corpus does not contain the product, id: " + productId.asString()));
 	}
 
-	private static Map<UUID, String> byIdAndName(List<ArchetypeProduct> products) {
+	private static Map<ArchetypeProductId, String> byIdAndName(List<ArchetypeProduct> products) {
 		return products.stream().collect(toMap(ArchetypeProduct::getId, ArchetypeProduct::getName));
 	}
 
@@ -285,9 +288,9 @@ public class ArchetypeProductDaoImplTest {
 		return products.stream().map(ArchetypeProduct::getName).toList();
 	}
 
-	private static ArchetypeCategoryEntity category(UUID id, short level, ArchetypeCategoryEntity parent, String name) {
+	private static ArchetypeCategoryEntity category(ArchetypeCategoryId id, short level, ArchetypeCategoryEntity parent, String name) {
 		var category = new ArchetypeCategoryEntity();
-		category.setId(id);
+		category.setId(id.asUuid());
 		category.setLevel(level);
 		category.setParent(parent);
 		category.setName(name);
@@ -295,9 +298,9 @@ public class ArchetypeProductDaoImplTest {
 	}
 
 	private static ArchetypeProductEntity product(
-			UUID id, ArchetypeCategoryEntity category, String name, String agbCode, String nutriScore) {
+			ArchetypeProductId id, ArchetypeCategoryEntity category, String name, String agbCode, String nutriScore) {
 		var product = new ArchetypeProductEntity();
-		product.setId(id);
+		product.setId(id.asUuid());
 		product.setCategory(category);
 		product.setName(name);
 		product.setAgbCode(agbCode);

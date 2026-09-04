@@ -1,7 +1,6 @@
 package eu.tealhelix.howibuy.services.model;
 
-import java.util.UUID;
-
+import eu.tealhelix.howibuy.v1.types.HasArchetypeCategoryId;
 import org.immutables.value.Value;
 
 /**
@@ -10,8 +9,6 @@ import org.immutables.value.Value;
  * be fetched; the {@link #getName() name} is the candidate shown to the AI when it picks the matching subcategory.
  */
 @Value.Immutable
-public interface ArchetypeCategory {
-	UUID getId();
-
+public interface ArchetypeCategory extends HasArchetypeCategoryId {
 	String getName();
 }

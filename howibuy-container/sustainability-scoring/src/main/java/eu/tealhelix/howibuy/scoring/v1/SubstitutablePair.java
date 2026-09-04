@@ -1,6 +1,6 @@
 package eu.tealhelix.howibuy.scoring.v1;
 
-import java.util.UUID;
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 
 /**
  * One cell of the WP3 substitutability matrix, read as: the {@code from} category may substitute for the {@code to}
@@ -8,5 +8,5 @@ import java.util.UUID;
  * <p>
  * Only substitutable pairs exist. A pair that is absent is not substitutable at any level.
  */
-public record SubstitutablePair(UUID fromCategoryId, UUID toCategoryId, short degree) {
+public record SubstitutablePair(ArchetypeCategoryId fromCategoryId, ArchetypeCategoryId toCategoryId, short degree) {
 }

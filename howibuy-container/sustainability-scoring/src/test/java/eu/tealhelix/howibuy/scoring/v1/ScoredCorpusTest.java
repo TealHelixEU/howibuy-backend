@@ -68,7 +68,7 @@ class ScoredCorpusTest {
 
 	@Test
 	void combinesTheFourNormalisedScoresByTheirDimensionWeights() {
-		var sut = new ScoredProduct(java.util.UUID.randomUUID(), ProductIndicatorsTestUtils.SOME_CATEGORY, "1",
+		var sut = new ScoredProduct(idOf("1"), ProductIndicatorsTestUtils.SOME_CATEGORY, "1",
 				Map.of(ENVIRONMENT, 1.0, ANIMAL_WELFARE, 0.5, SOCIAL, 0.0, HEALTH, 0.25));
 
 		var scientific = WeightProfileTestUtils.profile(Map.of(),

@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.ToDoubleFunction;
 
 import eu.tealhelix.howibuy.scoring.v1.Alternatives;
@@ -25,6 +24,7 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.Substitutability;
 import eu.tealhelix.howibuy.v1.model.AlternativeForProduct;
 import eu.tealhelix.howibuy.v1.model.ImmutableAlternativeForProduct;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 
 /**
@@ -39,7 +39,7 @@ public final class ScoredArchetypes {
 	private final ScoredCorpus scoredCorpus;
 	private final SubstitutionSearch search;
 	private final SubstitutionSettings settings;
-	private final Map<UUID, String> namesByProductId;
+	private final Map<ArchetypeProductId, String> namesByProductId;
 
 	/**
 	 * The best alternative under each of the three criteria, all three {@code NO_SUGGESTION} when the assessed product
@@ -64,7 +64,7 @@ public final class ScoredArchetypes {
 				scoredCorpus, SubstitutabilityMatrix.of(matrix.stream().map(ScoredArchetypes::toSubstitutablePair).toList()),
 				scientificProfile, settings);
 
-		var namesByProductId = new HashMap<UUID, String>(corpus.size());
+		var namesByProductId = new HashMap<ArchetypeProductId, String>(corpus.size());
 		corpus.forEach(product -> namesByProductId.put(product.getId(), product.getName()));
 		return new ScoredArchetypes(scoredCorpus, search, settings, Map.copyOf(namesByProductId));
 	}
@@ -76,7 +76,7 @@ public final class ScoredArchetypes {
 	 * against; nor for one whose category nothing substitutes for at the configured level. Both are answers, not
 	 * failures, and both read as {@code NO_SUGGESTION}.
 	 */
-	public BestAlternatives recommendationsFor(UUID referenceProductId, WeightProfile personalProfile) {
+	public BestAlternatives recommendationsFor(ArchetypeProductId referenceProductId, WeightProfile personalProfile) {
 		if (scoredCorpus.find(referenceProductId).isEmpty()) return BestAlternatives.none();
 
 		var alternatives = search.find(referenceProductId, personalProfile);
@@ -125,7 +125,7 @@ public final class ScoredArchetypes {
 
 	private ScoredArchetypes(
 			ScoredCorpus scoredCorpus, SubstitutionSearch search, SubstitutionSettings settings,
-			Map<UUID, String> namesByProductId) {
+			Map<ArchetypeProductId, String> namesByProductId) {
 		this.scoredCorpus = scoredCorpus;
 		this.search = search;
 		this.settings = settings;

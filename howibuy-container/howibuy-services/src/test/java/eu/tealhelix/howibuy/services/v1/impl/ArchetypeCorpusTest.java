@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -24,6 +23,10 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
@@ -39,8 +42,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ArchetypeCorpusTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
 
-	private static final UUID L2_JUICES = UUID.fromString("00000000-0000-0000-0000-000000000011");
-	private static final UUID ORANGE_JUICE = UUID.fromString("00000000-0000-0000-0000-000000000201");
+	private static final ArchetypeCategoryId L2_JUICES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000011");
+	private static final ArchetypeProductId ORANGE_JUICE = new ArchetypeProductIdImpl("00000000-0000-0000-0000-000000000201");
 
 	@Produces
 	@Mock

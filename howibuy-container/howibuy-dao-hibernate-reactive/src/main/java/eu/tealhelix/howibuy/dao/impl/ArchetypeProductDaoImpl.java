@@ -17,7 +17,10 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
+import eu.tealhelix.howibuy.v1.types.HasArchetypeCategoryId;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -29,12 +32,12 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 	private static final Map<SustainabilityIndicator, ToDoubleFunction<ArchetypeProductEntity>> MEASUREMENTS = measurements();
 
 	@Override
-	public Uni<List<ArchetypeProduct>> retrieveProductsInCategory(ReactivePersistenceContext em, UUID categoryId) {
+	public Uni<List<ArchetypeProduct>> retrieveProductsInCategory(ReactivePersistenceContext em, HasArchetypeCategoryId category) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createTupleQuery();
 		var root = q.from(ArchetypeProductEntity.class);
 		q.select(cb.tuple(root.get(ArchetypeProductEntity_.id), root.get(ArchetypeProductEntity_.name)))
-				.where(cb.equal(root.get(ArchetypeProductEntity_.category).get(ArchetypeCategoryEntity_.id), categoryId))
+				.where(cb.equal(root.get(ArchetypeProductEntity_.category).get(ArchetypeCategoryEntity_.id), category.getId().asUuid()))
 				.orderBy(cb.asc(root.get(ArchetypeProductEntity_.name)), cb.asc(root.get(ArchetypeProductEntity_.id)));
 		return em.createQuery(q).getResultList().map(ArchetypeProductDaoImpl::toArchetypeProducts);
 	}
@@ -58,10 +61,10 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 	private static ArchetypeProductImpacts toArchetypeProductImpacts(Tuple tuple) {
 		var product = tuple.get(0, ArchetypeProductEntity.class);
 		return ImmutableArchetypeProductImpacts.builder()
-				.id(product.getId())
+				.id(new ArchetypeProductIdImpl(product.getId().toString()))
 				.name(product.getName())
 				.agbCode(product.getAgbCode())
-				.l2CategoryId(tuple.get(1, UUID.class))
+				.l2CategoryId(new ArchetypeCategoryIdImpl(tuple.get(1, UUID.class).toString()))
 				.indicatorValues(indicatorValues(product))
 				.nutriScore(product.getNutriScore())
 				.build();
@@ -116,7 +119,7 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 
 	private static ArchetypeProduct toArchetypeProduct(Tuple tuple) {
 		return ImmutableArchetypeProduct.builder()
-				.id(tuple.get(0, UUID.class))
+				.id(new ArchetypeProductIdImpl(tuple.get(0, UUID.class).toString()))
 				.name(tuple.get(1, String.class))
 				.build();
 	}

@@ -7,13 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity;
 import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,12 +28,12 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 public class ArchetypeCategoryDaoImplTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
 
-	private static final UUID L1_BEVERAGES = UUID.fromString("00000000-0000-0000-0000-000000000001");
-	private static final UUID L1_DAIRY = UUID.fromString("00000000-0000-0000-0000-000000000002");
-	private static final UUID L2_JUICES = UUID.fromString("00000000-0000-0000-0000-000000000003");
-	private static final UUID L3_ORANGE_JUICE = UUID.fromString("00000000-0000-0000-0000-000000000004");
-	private static final UUID L2_OTHER_BEVERAGES = UUID.fromString("00000000-0000-0000-0000-000000000005");
-	private static final UUID L2_OTHER_DAIRY = UUID.fromString("00000000-0000-0000-0000-000000000006");
+	private static final ArchetypeCategoryId L1_BEVERAGES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000001");
+	private static final ArchetypeCategoryId L1_DAIRY = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000002");
+	private static final ArchetypeCategoryId L2_JUICES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000003");
+	private static final ArchetypeCategoryId L3_ORANGE_JUICE = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000004");
+	private static final ArchetypeCategoryId L2_OTHER_BEVERAGES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000005");
+	private static final ArchetypeCategoryId L2_OTHER_DAIRY = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000006");
 
 	@Container
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
@@ -132,7 +133,7 @@ public class ArchetypeCategoryDaoImplTest {
 				"subcategory candidates are ordered by name so the classifier prompt is deterministic (seeded reverse-alphabetically)");
 	}
 
-	private static Map<UUID, String> byIdAndName(List<ArchetypeCategory> categories) {
+	private static Map<ArchetypeCategoryId, String> byIdAndName(List<ArchetypeCategory> categories) {
 		return categories.stream().collect(toMap(ArchetypeCategory::getId, ArchetypeCategory::getName));
 	}
 
@@ -140,9 +141,9 @@ public class ArchetypeCategoryDaoImplTest {
 		return categories.stream().map(ArchetypeCategory::getName).toList();
 	}
 
-	private static ArchetypeCategoryEntity category(UUID id, short level, ArchetypeCategoryEntity parent, String name) {
+	private static ArchetypeCategoryEntity category(ArchetypeCategoryId id, short level, ArchetypeCategoryEntity parent, String name) {
 		var category = new ArchetypeCategoryEntity();
-		category.setId(id);
+		category.setId(id.asUuid());
 		category.setLevel(level);
 		category.setParent(parent);
 		category.setName(name);

@@ -4,8 +4,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
+
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 
 /**
  * Which L2 categories may stand in for which, and how readily.
@@ -16,10 +17,10 @@ import java.util.stream.Collectors;
  * asymmetric revision cannot quietly invert it.
  */
 public final class SubstitutabilityMatrix {
-	private final Map<UUID, Map<UUID, Short>> substitutesByCategory;
+	private final Map<ArchetypeCategoryId, Map<ArchetypeCategoryId, Short>> substitutesByCategory;
 
 	public static SubstitutabilityMatrix of(Collection<SubstitutablePair> pairs) {
-		var substitutesByCategory = new HashMap<UUID, Map<UUID, Short>>();
+		var substitutesByCategory = new HashMap<ArchetypeCategoryId, Map<ArchetypeCategoryId, Short>>();
 		for (var pair : pairs) {
 			substitutesByCategory
 					.computeIfAbsent(pair.toCategoryId(), _ -> new HashMap<>())
@@ -33,7 +34,7 @@ public final class SubstitutabilityMatrix {
 	 * substitutable for itself, so the answer usually contains the category asked about; it is empty for a category
 	 * the matrix does not mention at all.
 	 */
-	public Set<UUID> categoriesSubstitutableFor(UUID categoryId, short minimumDegree) {
+	public Set<ArchetypeCategoryId> categoriesSubstitutableFor(ArchetypeCategoryId categoryId, short minimumDegree) {
 		var substitutes = substitutesByCategory.get(categoryId);
 		if (substitutes == null) return Set.of();
 		return substitutes.entrySet().stream()
@@ -42,7 +43,7 @@ public final class SubstitutabilityMatrix {
 				.collect(Collectors.toSet());
 	}
 
-	private SubstitutabilityMatrix(Map<UUID, Map<UUID, Short>> substitutesByCategory) {
+	private SubstitutabilityMatrix(Map<ArchetypeCategoryId, Map<ArchetypeCategoryId, Short>> substitutesByCategory) {
 		this.substitutesByCategory = substitutesByCategory;
 	}
 }
