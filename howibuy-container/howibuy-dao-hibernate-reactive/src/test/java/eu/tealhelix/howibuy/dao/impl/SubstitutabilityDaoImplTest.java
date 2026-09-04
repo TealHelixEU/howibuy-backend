@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
@@ -14,6 +13,8 @@ import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeSubstitutabilityEntity;
 import eu.tealhelix.howibuy.services.model.Substitutability;
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,10 +28,10 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 public class SubstitutabilityDaoImplTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
 
-	private static final UUID L1_BEVERAGES = UUID.fromString("00000000-0000-0000-0000-000000000001");
-	private static final UUID L2_JUICES = UUID.fromString("00000000-0000-0000-0000-000000000002");
-	private static final UUID L2_SOFT_DRINKS = UUID.fromString("00000000-0000-0000-0000-000000000003");
-	private static final UUID L2_WATER = UUID.fromString("00000000-0000-0000-0000-000000000004");
+	private static final ArchetypeCategoryId L1_BEVERAGES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000001");
+	private static final ArchetypeCategoryId L2_JUICES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000002");
+	private static final ArchetypeCategoryId L2_SOFT_DRINKS = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000003");
+	private static final ArchetypeCategoryId L2_WATER = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000004");
 
 	@Container
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
@@ -116,7 +117,7 @@ public class SubstitutabilityDaoImplTest {
 						+ "reproducible (seeded in reverse)");
 	}
 
-	private record Pair(UUID from, UUID to, short degree) {
+	private record Pair(ArchetypeCategoryId from, ArchetypeCategoryId to, short degree) {
 	}
 
 	private static List<Pair> pairs(List<Substitutability> matrix) {
@@ -134,9 +135,9 @@ public class SubstitutabilityDaoImplTest {
 		return substitutability;
 	}
 
-	private static ArchetypeCategoryEntity category(UUID id, short level, ArchetypeCategoryEntity parent, String name) {
+	private static ArchetypeCategoryEntity category(ArchetypeCategoryId id, short level, ArchetypeCategoryEntity parent, String name) {
 		var category = new ArchetypeCategoryEntity();
-		category.setId(id);
+		category.setId(id.asUuid());
 		category.setLevel(level);
 		category.setParent(parent);
 		category.setName(name);

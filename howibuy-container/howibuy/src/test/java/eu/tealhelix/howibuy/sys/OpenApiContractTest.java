@@ -119,9 +119,9 @@ public class OpenApiContractTest {
 				.then()
 				.statusCode(200)
 				.body("components.schemas.AlternativeForProduct.properties.archetypeProductId.'$ref'",
-						equalTo("#/components/schemas/UUID"))
-				.body("components.schemas.UUID.type", equalTo("string"))
-				.body("components.schemas.UUID.format", equalTo("uuid"))
+						equalTo("#/components/schemas/ArchetypeProductId"))
+				.body("components.schemas.ArchetypeProductId.type", equalTo("string"))
+				.body("components.schemas.ArchetypeProductId.properties", nullValue())
 				.body("components.schemas.AlternativeForProduct.properties.referenceOverallScore.type", equalTo("number"))
 				.body("components.schemas.AlternativeForProduct.properties.alternativeOverallScore.type", equalTo("number"))
 				.body("components.schemas.AlternativeForProduct.properties.type.'$ref'",

@@ -15,7 +15,6 @@ import java.util.Currency;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -29,8 +28,8 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeCategory;
-import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProduct;
+import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableFoodTerm;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.services.model.Substitutability;
@@ -41,8 +40,12 @@ import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductData;
 import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
@@ -71,19 +74,24 @@ public class SingleProductAssessorTest {
 			.currency(Currency.getInstance("EUR"))
 			.build();
 
-	private static final UUID L1_BEVERAGES = UUID.fromString("00000000-0000-0000-0000-000000000001");
-	private static final UUID L2_JUICES = UUID.fromString("00000000-0000-0000-0000-000000000002");
-	private static final UUID L3_ORANGE = UUID.fromString("00000000-0000-0000-0000-000000000003");
+	private static final ArchetypeCategoryId L1_BEVERAGES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000001");
+	private static final ArchetypeCategoryId L2_JUICES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000002");
+	private static final ArchetypeCategoryId L3_ORANGE = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000003");
+
+	/** The category the AI picks at each level of every successful descent below. */
+	private static final ArchetypeCategory BEVERAGES = category(L1_BEVERAGES, "Beverages");
+	private static final ArchetypeCategory JUICES = category(L2_JUICES, "Juices");
+	private static final ArchetypeCategory ORANGE_JUICE = category(L3_ORANGE, "Orange juice");
 
 	private static final List<ArchetypeCategory> L1_CATEGORIES = List.of(
-			category(L1_BEVERAGES, "Beverages"), category(UUID.fromString("00000000-0000-0000-0000-0000000000ff"), "Dairy"));
+			BEVERAGES, category(new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-0000000000ff"), "Dairy"));
 	private static final List<ArchetypeCategory> L2_CATEGORIES = List.of(
-			category(L2_JUICES, "Juices"), category(UUID.fromString("00000000-0000-0000-0000-0000000000fe"), "Other"));
+			JUICES, category(new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-0000000000fe"), "Other"));
 	private static final List<ArchetypeCategory> L3_CATEGORIES = List.of(
-			category(L3_ORANGE, "Orange juice"), category(UUID.fromString("00000000-0000-0000-0000-0000000000fd"), "Apple juice"));
+			ORANGE_JUICE, category(new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-0000000000fd"), "Apple juice"));
 	/** The archetype the AI picks at the last level of every successful descent below, and a better one beside it. */
-	private static final UUID PICKED_ARCHETYPE = UUID.fromString("00000000-0000-0000-0000-0000000000fc");
-	private static final UUID BETTER_ARCHETYPE = UUID.fromString("00000000-0000-0000-0000-0000000000fb");
+	private static final ArchetypeProductId PICKED_ARCHETYPE = new ArchetypeProductIdImpl("00000000-0000-0000-0000-0000000000fc");
+	private static final ArchetypeProductId BETTER_ARCHETYPE = new ArchetypeProductIdImpl("00000000-0000-0000-0000-0000000000fb");
 
 	private static final List<ArchetypeProduct> PRODUCTS = List.of(
 			product(PICKED_ARCHETYPE, "Tropicana"),
@@ -124,10 +132,10 @@ public class SingleProductAssessorTest {
 		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
@@ -148,10 +156,10 @@ public class SingleProductAssessorTest {
 		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(FIRST);
 
 		assess();
@@ -167,7 +175,7 @@ public class SingleProductAssessorTest {
 		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(new AiSelection.None());
 
 		var outcome = assess();
@@ -184,10 +192,10 @@ public class SingleProductAssessorTest {
 		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(new AiSelection.None());
 
 		var outcome = assess();
@@ -215,10 +223,10 @@ public class SingleProductAssessorTest {
 		mockGlossary(List.of());
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(new AiSelection.Malformed("A product the AI made up"));
 
 		var outcome = assess();
@@ -239,9 +247,9 @@ public class SingleProductAssessorTest {
 		mockGlossary(List.of(term));
 		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
@@ -266,10 +274,10 @@ public class SingleProductAssessorTest {
 		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
@@ -284,10 +292,10 @@ public class SingleProductAssessorTest {
 		mockArchetypeCorpus("Nutriscore_C");
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
@@ -307,10 +315,10 @@ public class SingleProductAssessorTest {
 		mockArchetypeCorpus("0");
 		mockL1Categories();
 		mockExtractL1(FIRST);
-		mockSubcategoriesOf(L1_BEVERAGES, L2_CATEGORIES);
+		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
 		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(L2_JUICES, L3_CATEGORIES);
-		mockProductsOf(L3_ORANGE);
+		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
+		mockProductsOf(ORANGE_JUICE);
 		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
@@ -342,7 +350,7 @@ public class SingleProductAssessorTest {
 				ScoredArchetypes.of(corpus, matrix, SubstitutionSettings.defaults())));
 	}
 
-	private static ArchetypeProductImpacts impacts(UUID id, String name, String agbCode, String nutriScore) {
+	private static ArchetypeProductImpacts impacts(ArchetypeProductId id, String name, String agbCode, String nutriScore) {
 		var values = new EnumMap<SustainabilityIndicator, Double>(SustainabilityIndicator.class);
 		for (var indicator : SustainabilityIndicator.values()) {
 			values.put(indicator, 0.0);
@@ -365,12 +373,12 @@ public class SingleProductAssessorTest {
 		when(archetypeCategoryDao.retrieveL1Categories(any())).thenReturn(Uni.createFrom().item(L1_CATEGORIES));
 	}
 
-	private void mockSubcategoriesOf(UUID parentId, List<ArchetypeCategory> subcategories) {
-		when(archetypeCategoryDao.retrieveSubcategories(any(), eq(parentId))).thenReturn(Uni.createFrom().item(subcategories));
+	private void mockSubcategoriesOf(ArchetypeCategory parent, List<ArchetypeCategory> subcategories) {
+		when(archetypeCategoryDao.retrieveSubcategories(any(), eq(parent))).thenReturn(Uni.createFrom().item(subcategories));
 	}
 
-	private void mockProductsOf(UUID categoryId) {
-		when(archetypeProductDao.retrieveProductsInCategory(any(), eq(categoryId))).thenReturn(Uni.createFrom().item(PRODUCTS));
+	private void mockProductsOf(ArchetypeCategory category) {
+		when(archetypeProductDao.retrieveProductsInCategory(any(), eq(category))).thenReturn(Uni.createFrom().item(PRODUCTS));
 	}
 
 	private void mockExtractL1(AiSelection pick) {
@@ -391,11 +399,11 @@ public class SingleProductAssessorTest {
 		when(productAssessmentAiFacade.extractArchetypeProduct(any(), any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
 	}
 
-	private static ArchetypeCategory category(UUID id, String name) {
+	private static ArchetypeCategory category(ArchetypeCategoryId id, String name) {
 		return ImmutableArchetypeCategory.builder().id(id).name(name).build();
 	}
 
-	private static ArchetypeProduct product(UUID id, String name) {
+	private static ArchetypeProduct product(ArchetypeProductId id, String name) {
 		return ImmutableArchetypeProduct.builder().id(id).name(name).build();
 	}
 }

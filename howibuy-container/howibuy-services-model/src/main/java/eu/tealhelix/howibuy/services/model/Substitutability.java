@@ -1,7 +1,6 @@
 package eu.tealhelix.howibuy.services.model;
 
-import java.util.UUID;
-
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 import org.immutables.value.Value;
 
 /**
@@ -14,9 +13,9 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 public interface Substitutability {
-	UUID getFromCategoryId();
+	ArchetypeCategoryId getFromCategoryId();
 
-	UUID getToCategoryId();
+	ArchetypeCategoryId getToCategoryId();
 
 	/**
 	 * How readily the substitution may be made, 1 (barely) to 5 (freely). Compared against the cut-off of the

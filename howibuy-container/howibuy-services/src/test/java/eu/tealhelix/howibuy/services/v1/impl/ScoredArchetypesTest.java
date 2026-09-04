@@ -21,11 +21,15 @@ import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.services.model.Substitutability;
 import eu.tealhelix.howibuy.v1.model.AlternativeForProduct;
 import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.ImmutableWeightProfile;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,22 +48,22 @@ class ScoredArchetypesTest {
 	private static final double BASE_VALUE = 1e-9;
 	private static final double TOLERANCE = 1e-9;
 
-	private static final UUID L2_JUICES = UUID.nameUUIDFromBytes("juices".getBytes());
-	private static final UUID L2_WATER = UUID.nameUUIDFromBytes("water".getBytes());
-	private static final UUID L2_CANDY = UUID.nameUUIDFromBytes("candy".getBytes());
+	private static final ArchetypeCategoryId L2_JUICES = categoryId("juices");
+	private static final ArchetypeCategoryId L2_WATER = categoryId("water");
+	private static final ArchetypeCategoryId L2_CANDY = categoryId("candy");
 
 	/** Water substitutes for juices only barely, and candy not at all — it is absent from the matrix. */
 	private static final List<Substitutability> MATRIX = List.of(
 			substitutability(L2_JUICES, L2_JUICES, (short) 5),
 			substitutability(L2_WATER, L2_JUICES, (short) 1));
 
-	private static final UUID REFERENCE = UUID.nameUUIDFromBytes("reference".getBytes());
-	private static final UUID GREENEST = UUID.nameUUIDFromBytes("greenest".getBytes());
-	private static final UUID SOUNDEST = UUID.nameUUIDFromBytes("soundest".getBytes());
-	private static final UUID WORST = UUID.nameUUIDFromBytes("worst".getBytes());
-	private static final UUID SPIRITS = UUID.nameUUIDFromBytes("spirits".getBytes());
-	private static final UUID CANDY_BAR = UUID.nameUUIDFromBytes("candy bar".getBytes());
-	private static final UUID SPRING_WATER = UUID.nameUUIDFromBytes("spring water".getBytes());
+	private static final ArchetypeProductId REFERENCE = productId("reference");
+	private static final ArchetypeProductId GREENEST = productId("greenest");
+	private static final ArchetypeProductId SOUNDEST = productId("soundest");
+	private static final ArchetypeProductId WORST = productId("worst");
+	private static final ArchetypeProductId SPIRITS = productId("spirits");
+	private static final ArchetypeProductId CANDY_BAR = productId("candy bar");
+	private static final ArchetypeProductId SPRING_WATER = productId("spring water");
 
 	/*
 	 * Normalised scores and the two overall scores that follow from them:
@@ -146,7 +150,7 @@ class ScoredArchetypesTest {
 
 	private static void assertAlternative(
 			AlternativeForProduct alternative, AlternativeForProductType type,
-			UUID productId, String name, double referenceScore, double alternativeScore) {
+			ArchetypeProductId productId, String name, double referenceScore, double alternativeScore) {
 		assertEquals(type, alternative.getType());
 		assertEquals(productId, alternative.getArchetypeProductId(), "the recommended archetype, by id");
 		assertEquals(name, alternative.getName());
@@ -177,8 +181,20 @@ class ScoredArchetypesTest {
 				.build();
 	}
 
+	/**
+	 * Ids derived from a name, so that a failure names a product a reader can find in the test rather than an opaque
+	 * UUID.
+	 */
+	private static ArchetypeProductId productId(String name) {
+		return new ArchetypeProductIdImpl(UUID.nameUUIDFromBytes(name.getBytes()).toString());
+	}
+
+	private static ArchetypeCategoryId categoryId(String name) {
+		return new ArchetypeCategoryIdImpl(UUID.nameUUIDFromBytes(name.getBytes()).toString());
+	}
+
 	private static ArchetypeProductImpacts impacts(
-			UUID id, String name, String agbCode, UUID l2CategoryId,
+			ArchetypeProductId id, String name, String agbCode, ArchetypeCategoryId l2CategoryId,
 			double environment, double animalWelfare, double social, String nutriScore) {
 		var values = new EnumMap<SustainabilityIndicator, Double>(SustainabilityIndicator.class);
 		for (var indicator : SustainabilityIndicator.values()) {
@@ -199,7 +215,7 @@ class ScoredArchetypesTest {
 				.build();
 	}
 
-	private static Substitutability substitutability(UUID fromCategoryId, UUID toCategoryId, short degree) {
+	private static Substitutability substitutability(ArchetypeCategoryId fromCategoryId, ArchetypeCategoryId toCategoryId, short degree) {
 		return ImmutableSubstitutability.builder()
 				.fromCategoryId(fromCategoryId)
 				.toCategoryId(toCategoryId)

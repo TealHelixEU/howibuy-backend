@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 
@@ -20,7 +20,7 @@ import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
  */
 public final class ScoredCorpus {
 	private final List<ScoredProduct> products;
-	private final Map<UUID, ScoredProduct> byProductId;
+	private final Map<ArchetypeProductId, ScoredProduct> byProductId;
 
 	/**
 	 * Scores and normalises the whole corpus under the given indicator weights.
@@ -65,7 +65,7 @@ public final class ScoredCorpus {
 		return products;
 	}
 
-	public Optional<ScoredProduct> find(UUID productId) {
+	public Optional<ScoredProduct> find(ArchetypeProductId productId) {
 		return Optional.ofNullable(byProductId.get(productId));
 	}
 
@@ -73,8 +73,8 @@ public final class ScoredCorpus {
 	 * @throws IllegalArgumentException if the product is not in the corpus, which for a scored corpus means it has no
 	 *                                  health score and therefore no overall score
 	 */
-	public ScoredProduct require(UUID productId) {
-		return find(productId).orElseThrow(() -> new IllegalArgumentException("Product is not in the scored corpus, id: " + productId));
+	public ScoredProduct require(ArchetypeProductId productId) {
+		return find(productId).orElseThrow(() -> new IllegalArgumentException("Product is not in the scored corpus, id: " + productId.asString()));
 	}
 
 	private static Map<ScoredSustainabilityDimension, double[]> normaliseEveryDimension(
@@ -95,7 +95,7 @@ public final class ScoredCorpus {
 
 	private ScoredCorpus(List<ScoredProduct> products) {
 		this.products = products;
-		var byProductId = new HashMap<UUID, ScoredProduct>(products.size());
+		var byProductId = new HashMap<ArchetypeProductId, ScoredProduct>(products.size());
 		products.forEach(product -> byProductId.put(product.productId(), product));
 		this.byProductId = Map.copyOf(byProductId);
 	}

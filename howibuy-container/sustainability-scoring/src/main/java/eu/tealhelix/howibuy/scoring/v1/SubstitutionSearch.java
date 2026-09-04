@@ -3,9 +3,9 @@ package eu.tealhelix.howibuy.scoring.v1;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.ToDoubleFunction;
 
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 
 /**
@@ -47,7 +47,7 @@ public final class SubstitutionSearch {
 	 * @throws IllegalArgumentException if the reference product has no scores, which for an archetype product means it
 	 *                                  has no Nutri-Score and so cannot be assessed at all
 	 */
-	public Alternatives find(UUID referenceProductId, WeightProfile personalProfile) {
+	public Alternatives find(ArchetypeProductId referenceProductId, WeightProfile personalProfile) {
 		var reference = corpus.require(referenceProductId);
 		var candidates = candidatesFor(reference);
 		if (candidates.isEmpty()) return Alternatives.none(reference);

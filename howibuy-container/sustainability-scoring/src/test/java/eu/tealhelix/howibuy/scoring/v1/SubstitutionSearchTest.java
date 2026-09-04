@@ -1,5 +1,6 @@
 package eu.tealhelix.howibuy.scoring.v1;
 
+import static eu.tealhelix.howibuy.scoring.v1.ProductIndicatorsTestUtils.categoryOf;
 import static eu.tealhelix.howibuy.scoring.v1.ProductIndicatorsTestUtils.idOf;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
@@ -14,8 +15,8 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
@@ -27,10 +28,10 @@ import org.junit.jupiter.api.Test;
  * weight on the environment, so its overall score is the environmental score alone.
  */
 class SubstitutionSearchTest {
-	private static final UUID JUICES = UUID.nameUUIDFromBytes("juices".getBytes());
-	private static final UUID SOFT_DRINKS = UUID.nameUUIDFromBytes("soft drinks".getBytes());
-	private static final UUID WATER = UUID.nameUUIDFromBytes("water".getBytes());
-	private static final UUID CANDY = UUID.nameUUIDFromBytes("candy".getBytes());
+	private static final ArchetypeCategoryId JUICES = categoryOf("juices");
+	private static final ArchetypeCategoryId SOFT_DRINKS = categoryOf("soft drinks");
+	private static final ArchetypeCategoryId WATER = categoryOf("water");
+	private static final ArchetypeCategoryId CANDY = categoryOf("candy");
 
 	private static final WeightProfile SCIENTIFIC = WeightProfileTestUtils.indicatorsOnly(Map.of());
 	private static final WeightProfile PERSONAL = WeightProfileTestUtils.profile(Map.of(), Map.of(ENVIRONMENT, 1.0));
@@ -168,7 +169,7 @@ class SubstitutionSearchTest {
 		return search.find(reference.productId(), PERSONAL);
 	}
 
-	private static ScoredProduct scored(String agbCode, UUID categoryId, double environment, double animalWelfare, double social, double health) {
+	private static ScoredProduct scored(String agbCode, ArchetypeCategoryId categoryId, double environment, double animalWelfare, double social, double health) {
 		var scores = new EnumMap<ScoredSustainabilityDimension, Double>(ScoredSustainabilityDimension.class);
 		scores.put(ENVIRONMENT, environment);
 		scores.put(ANIMAL_WELFARE, animalWelfare);

@@ -1,7 +1,6 @@
 package eu.tealhelix.howibuy.services.model;
 
-import java.util.UUID;
-
+import eu.tealhelix.howibuy.v1.types.HasArchetypeProductId;
 import org.immutables.value.Value;
 
 /**
@@ -10,8 +9,6 @@ import org.immutables.value.Value;
  * that best matches the assessed product; the {@link #getId() id} identifies it for the subsequent impact lookup.
  */
 @Value.Immutable
-public interface ArchetypeProduct {
-	UUID getId();
-
+public interface ArchetypeProduct extends HasArchetypeProductId {
 	String getName();
 }

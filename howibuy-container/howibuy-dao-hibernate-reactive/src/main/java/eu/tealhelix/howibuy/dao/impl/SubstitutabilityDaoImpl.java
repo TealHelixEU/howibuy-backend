@@ -12,6 +12,7 @@ import eu.tealhelix.howibuy.dao.jpa.ArchetypeSubstitutabilityEntity;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeSubstitutabilityEntity_;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.services.model.Substitutability;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -34,8 +35,8 @@ public class SubstitutabilityDaoImpl implements SubstitutabilityDao {
 
 	private static Substitutability toSubstitutability(Tuple tuple) {
 		return ImmutableSubstitutability.builder()
-				.fromCategoryId(tuple.get(0, UUID.class))
-				.toCategoryId(tuple.get(1, UUID.class))
+				.fromCategoryId(new ArchetypeCategoryIdImpl(tuple.get(0, UUID.class).toString()))
+				.toCategoryId(new ArchetypeCategoryIdImpl(tuple.get(1, UUID.class).toString()))
 				.degree(tuple.get(2, Short.class))
 				.build();
 	}

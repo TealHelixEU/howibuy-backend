@@ -11,6 +11,8 @@ import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity_;
 import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeCategory;
+import eu.tealhelix.howibuy.v1.types.HasArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -29,12 +31,12 @@ public class ArchetypeCategoryDaoImpl implements ArchetypeCategoryDao {
 	}
 
 	@Override
-	public Uni<List<ArchetypeCategory>> retrieveSubcategories(ReactivePersistenceContext em, UUID parentId) {
+	public Uni<List<ArchetypeCategory>> retrieveSubcategories(ReactivePersistenceContext em, HasArchetypeCategoryId parent) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createTupleQuery();
 		var root = q.from(ArchetypeCategoryEntity.class);
 		q.select(cb.tuple(root.get(ArchetypeCategoryEntity_.id), root.get(ArchetypeCategoryEntity_.name)))
-				.where(cb.equal(root.get(ArchetypeCategoryEntity_.parent).get(ArchetypeCategoryEntity_.id), parentId))
+				.where(cb.equal(root.get(ArchetypeCategoryEntity_.parent).get(ArchetypeCategoryEntity_.id), parent.getId().asUuid()))
 				.orderBy(cb.asc(root.get(ArchetypeCategoryEntity_.name)), cb.asc(root.get(ArchetypeCategoryEntity_.id)));
 		return em.createQuery(q).getResultList().map(ArchetypeCategoryDaoImpl::toArchetypeCategories);
 	}
@@ -45,7 +47,7 @@ public class ArchetypeCategoryDaoImpl implements ArchetypeCategoryDao {
 
 	private static ArchetypeCategory toArchetypeCategory(Tuple tuple) {
 		return ImmutableArchetypeCategory.builder()
-				.id(tuple.get(0, UUID.class))
+				.id(new ArchetypeCategoryIdImpl(tuple.get(0, UUID.class).toString()))
 				.name(tuple.get(1, String.class))
 				.build();
 	}

@@ -1,9 +1,8 @@
 package eu.tealhelix.howibuy.v1.model;
 
-import java.util.UUID;
-
 import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import org.immutables.value.Value;
 
 /**
@@ -25,7 +24,7 @@ public interface AlternativeForProduct {
 	 * {@link AlternativeForProductType#GOOD_ENOUGH}.
 	 */
 	@Nullable
-	UUID getArchetypeProductId();
+	ArchetypeProductId getArchetypeProductId();
 
 	/**
 	 * The overall score of the archetype the assessed product was matched to, and of the one recommended in its place.

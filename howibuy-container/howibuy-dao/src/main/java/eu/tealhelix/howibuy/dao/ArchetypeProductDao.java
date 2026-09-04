@@ -1,11 +1,11 @@
 package eu.tealhelix.howibuy.dao;
 
 import java.util.List;
-import java.util.UUID;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
+import eu.tealhelix.howibuy.v1.types.HasArchetypeCategoryId;
 import io.smallrye.mutiny.Uni;
 
 public interface ArchetypeProductDao {
@@ -14,7 +14,7 @@ public interface ArchetypeProductDao {
 	 * from which the archetype matching an assessed product is picked. Scoped by category id, since product names are
 	 * unique only within a single category.
 	 */
-	Uni<List<ArchetypeProduct>> retrieveProductsInCategory(ReactivePersistenceContext em, UUID categoryId);
+	Uni<List<ArchetypeProduct>> retrieveProductsInCategory(ReactivePersistenceContext em, HasArchetypeCategoryId category);
 
 	/**
 	 * Every archetype product with its measured impacts and its L2 category. The sustainability scoring normalises each

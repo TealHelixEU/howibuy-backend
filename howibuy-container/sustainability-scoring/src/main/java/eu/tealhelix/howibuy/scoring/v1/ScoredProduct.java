@@ -1,8 +1,9 @@
 package eu.tealhelix.howibuy.scoring.v1;
 
 import java.util.Map;
-import java.util.UUID;
 
+import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 
@@ -14,8 +15,8 @@ import eu.tealhelix.howibuy.v1.types.WeightProfile;
  * least two — the scientific one and the user's.
  */
 public record ScoredProduct(
-		UUID productId,
-		UUID categoryId,
+		ArchetypeProductId productId,
+		ArchetypeCategoryId categoryId,
 		String agbCode,
 		Map<ScoredSustainabilityDimension, Double> normalisedScores) {
 
