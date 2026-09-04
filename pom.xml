@@ -26,7 +26,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<version.quarkus.platform>3.39.1</version.quarkus.platform>
+		<version.quarkus.platform>3.39.2</version.quarkus.platform>
 
 		<!-- REVISE PROPERTIES FROM HERE, AND SORT THEM ALPHABETICALLY IN THEIR GROUPS -->
 		<version.assertj>3.27.7</version.assertj>
@@ -37,7 +37,7 @@
 		<version.nimbus-jose-jwt>10.9.1</version.nimbus-jose-jwt>
 		<version.org.immutables>2.12.2</version.org.immutables>
 		<version.postgres>42.7.13</version.postgres><!-- Defined in quarkus-bom, search for org.postgresql; keep here, needed by the build scripts -->
-		<version.quarkus-langchain4j>1.13.0</version.quarkus-langchain4j>
+		<version.quarkus-langchain4j>1.13.1</version.quarkus-langchain4j>
 		<version.slf4j>2.0.18</version.slf4j><!-- Defined in quarkus-bom, search for slf4j-api - needed for the slf4j-jdk14 dependency -->
 		<version.swagger-annotations>1.6.5</version.swagger-annotations>
 		<version.weld-junit5>5.0.3.Final</version.weld-junit5>
@@ -219,7 +219,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.15.0</version>
+					<version>3.16.0</version>
 					<configuration>
 						<release>${version.java}</release>
 						<source>${version.java}</source>
@@ -279,7 +279,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>3.5.6</version>
+					<version>3.6.0</version>
 					<!-- TODO The configuration is from Quarkus. Double check if it is needed at this level, or just in the Quarkus modules. -->
 					<configuration>
 						<systemPropertyVariables>
