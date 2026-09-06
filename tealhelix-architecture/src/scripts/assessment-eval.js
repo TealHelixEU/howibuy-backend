@@ -43,6 +43,17 @@
 //   -c, --correlation-id <s> correlation id for impersonation (default: abc)
 //   -l, --language <code>    ProductData language (default: el -- the glossary is Greek)
 //       --limit <n>          process only the first n data rows (for a quick smoke run)
+//       --on-error <mode>    what to do when a request fails (a non-200 response or a transport error):
+//                            stop     -- (default) abort at once, report the statistics gathered so far and
+//                                        print the full error response; exit code 1
+//                            continue -- record the failure as the row's outcome type and move on
+//                            retry    -- re-issue the request up to --max-retries times, waiting
+//                                        --retry-after-seconds between attempts; if the last retry still
+//                                        fails, print the response of the FIRST failure and exit 1
+//                            ask      -- prompt for s(top) / c(ontinue) / r(etry) per failing row; on stop
+//                                        the first failure's response is printed
+//       --max-retries <n>       retry attempts per row for --on-error retry (default: 4)
+//       --retry-after-seconds <n>  delay between those attempts, in seconds (default: 9)
 //
 // This script requires only NodeJS (no external dependencies).
 
@@ -52,6 +63,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const https = require('node:https');
 const path = require('node:path');
+const readline = require('node:readline');
 const { execFileSync } = require('node:child_process');
 
 // ---------------------------------------------------------------------------
@@ -123,6 +135,81 @@ function missSeverity(score, expectedGrade, assessedGrade, expectedProduct, asse
 function looksLikeNormalizationArtifact(a, b) {
 	const aggressive = (s) => norm(s).normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
 	return norm(a) !== norm(b) && aggressive(a) === aggressive(b);
+}
+
+// ---------------------------------------------------------------------------
+// Failure policy (--on-error). The decision is pure so it can be tested; the waiting and the prompting
+// around it are not.
+// ---------------------------------------------------------------------------
+
+const ON_ERROR_MODES = ['stop', 'continue', 'retry', 'ask'];
+
+// What to do after the attempts-th consecutive failure of the current row: 'continue' (record the failure
+// and move on), 'retry', 'abort' (report and exit non-zero) or 'ask' (put the choice to the user).
+function errorAction(mode, attempts, maxRetries) {
+	switch (mode) {
+		case 'continue': return 'continue';
+		case 'retry': return attempts <= maxRetries ? 'retry' : 'abort';
+		case 'ask': return 'ask';
+		default: return 'abort';
+	}
+}
+
+// The action behind an answer to the ask prompt, or null when the answer is not one of s/c/r.
+function choiceToAction(answer) {
+	switch (norm(answer).toLowerCase().charAt(0)) {
+		case 's': return 'abort';
+		case 'c': return 'continue';
+		case 'r': return 'retry';
+		default: return null;
+	}
+}
+
+function sleep(millis) {
+	return new Promise((resolve) => setTimeout(resolve, millis));
+}
+
+// One reader for the whole run: a reader created per question swallows whatever input is already buffered
+// when it closes. Resolves to null once the input ends.
+let promptReader = null;
+
+function prompt(question) {
+	if (!promptReader) {
+		promptReader = readline.createInterface({ input: process.stdin, output: process.stderr });
+	}
+	return new Promise((resolve) => {
+		const onClose = () => resolve(null);
+		promptReader.once('close', onClose);
+		promptReader.question(question, (line) => {
+			promptReader.off('close', onClose);
+			resolve(line);
+		});
+	});
+}
+
+function closePrompt() {
+	if (promptReader) {
+		promptReader.close();
+		promptReader = null;
+	}
+}
+
+// Prompts on stderr until the answer is one of s/c/r. Without a terminal to ask there is nobody to answer,
+// so the safe reading of 'ask' is to stop.
+async function askAction() {
+	if (!process.stdin.isTTY) {
+		console.error('  --on-error ask, but stdin is not a terminal: stopping.');
+		return 'abort';
+	}
+	for (;;) {
+		const answer = await prompt('  [s]top, [c]ontinue, [r]etry? ');
+		if (answer == null) {
+			console.error('  input ended: stopping.');
+			return 'abort';
+		}
+		const action = choiceToAction(answer);
+		if (action) return action;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -226,6 +313,9 @@ function parseArgs(argv) {
 		correlationId: 'abc',
 		language: 'el',
 		limit: Infinity,
+		onError: 'stop',
+		maxRetries: 4,
+		retryAfterSeconds: 9,
 	};
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
@@ -240,6 +330,9 @@ function parseArgs(argv) {
 			case '-c': case '--correlation-id': cfg.correlationId = argv[++i]; break;
 			case '-l': case '--language': cfg.language = argv[++i]; break;
 			case '--limit': cfg.limit = Number(argv[++i]); break;
+			case '--on-error': cfg.onError = norm(argv[++i]).toLowerCase(); break;
+			case '--max-retries': cfg.maxRetries = Number(argv[++i]); break;
+			case '--retry-after-seconds': cfg.retryAfterSeconds = Number(argv[++i]); break;
 			case '-h': case '--help':
 				console.log(fs.readFileSync(__filename, 'utf8').split('\n').filter((l) => l.startsWith('//')).map((l) => l.slice(3)).join('\n'));
 				process.exit(0);
@@ -249,6 +342,9 @@ function parseArgs(argv) {
 		}
 	}
 	if (!cfg.secret) fail('Service-account secret is required (-p|--secret or TH_SVC_SECRET)');
+	if (!ON_ERROR_MODES.includes(cfg.onError)) fail(`--on-error must be one of ${ON_ERROR_MODES.join('|')}, got: ${cfg.onError}`);
+	if (!Number.isInteger(cfg.maxRetries) || cfg.maxRetries < 0) fail(`--max-retries must be a non-negative integer, got: ${cfg.maxRetries}`);
+	if (!(cfg.retryAfterSeconds >= 0)) fail(`--retry-after-seconds must be a non-negative number, got: ${cfg.retryAfterSeconds}`);
 	if (!cfg.output) {
 		const dir = path.dirname(cfg.input);
 		const base = path.basename(cfg.input, path.extname(cfg.input));
@@ -293,6 +389,63 @@ function loadNutriScoreGrades(csvPath) {
 	return grades;
 }
 
+const NO_DIAGNOSTICS = { l1: null, l2: null, l3: null, product: null };
+
+// One call to /assessment/single, re-acquiring the token once when it comes back rejected. Returns the
+// row's outcome; a `failure` field (the full response, for diagnostics) marks it as a request failure and
+// hands it to the --on-error policy. A 200 the classifier declined to answer is an outcome, not a failure.
+async function attemptAssessment(cfg, url, session, requestBody) {
+	let response;
+	try {
+		response = await postAssessment(url, session.token, requestBody);
+		if (response.status === 401 || response.status === 403) {
+			console.error('  token rejected, re-acquiring...');
+			session.token = acquireImpersonationToken(cfg);
+			response = await postAssessment(url, session.token, requestBody);
+		}
+	} catch (err) {
+		return { type: 'ERROR', assessed: NO_DIAGNOSTICS, failure: err.stack || err.message };
+	}
+	if (!session.firstResponseLogged) {
+		console.error(`  first response (HTTP ${response.status}): ${response.body.slice(0, 400)}`);
+		session.firstResponseLogged = true;
+	}
+	if (response.status !== 200) {
+		return { type: `HTTP_${response.status}`, assessed: NO_DIAGNOSTICS, failure: `HTTP ${response.status}\n${response.body}` };
+	}
+	let json;
+	try {
+		json = JSON.parse(response.body);
+	} catch (err) {
+		return { type: 'ERROR', assessed: NO_DIAGNOSTICS, failure: `unparseable body (HTTP 200): ${response.body}` };
+	}
+	const diagnostics = extractDiagnostics(json);
+	if (!diagnostics) return { type: 'NO_DIAGNOSTICS', assessed: NO_DIAGNOSTICS };
+	return { type: json.type ?? 'UNKNOWN', assessed: diagnostics };
+}
+
+// Assesses one product under the --on-error policy. Returns the outcome to record, or `{ abort }` carrying
+// the response of the row's FIRST failure -- the one that diagnoses the problem, later retries only
+// confirm it.
+async function assessProduct(cfg, url, session, requestBody, name) {
+	let firstFailure = null;
+	for (let attempts = 1; ; attempts++) {
+		const outcome = await attemptAssessment(cfg, url, session, requestBody);
+		if (!outcome.failure) return outcome;
+		if (firstFailure == null) firstFailure = outcome.failure;
+		console.error(`  request failed for "${name}": ${outcome.type}`);
+
+		let action = errorAction(cfg.onError, attempts, cfg.maxRetries);
+		if (action === 'ask') action = await askAction();
+		if (action === 'continue') return outcome;
+		if (action === 'abort') return { abort: firstFailure };
+		if (cfg.onError === 'retry') {
+			console.error(`  retry ${attempts}/${cfg.maxRetries} in ${cfg.retryAfterSeconds}s...`);
+			await sleep(cfg.retryAfterSeconds * 1000);
+		}
+	}
+}
+
 async function main() {
 	const cfg = parseArgs(process.argv.slice(2));
 	const assessmentUrl = `${cfg.base}/assessment/single`;
@@ -317,8 +470,9 @@ async function main() {
 	console.error(`Archetypes: ${cfg.archetypes} (${nutriScoreGrades.size} Nutri-Score grades)`);
 	console.error(`Assessment: ${assessmentUrl}`);
 	console.error(`Language:   ${cfg.language}`);
+	console.error(`On error:   ${cfg.onError}${cfg.onError === 'retry' ? ` (${cfg.maxRetries} retries, ${cfg.retryAfterSeconds}s apart)` : ''}`);
 	console.error('Acquiring impersonation token...');
-	let token = acquireImpersonationToken(cfg);
+	const session = { token: acquireImpersonationToken(cfg), firstResponseLogged: false };
 
 	const out = fs.createWriteStream(cfg.output, { encoding: 'utf8' });
 	out.write(toCsvLine([...header, 'Assessed L1 cat', 'Assessed L2 cat', 'Assessed L3 cat', 'Assessed product', 'Outcome type', 'Score', 'Expected Nutri-Score', 'Assessed Nutri-Score', 'Miss severity']) + '\n');
@@ -327,7 +481,6 @@ async function main() {
 	const bySeverity = new Map();    // miss severity -> count (only for confidently-wrong SUCCESS rows)
 	const byReliability = new Map(); // reliability -> { count, scoreSum, successes }
 	const byType = new Map();        // outcome type -> count
-	let firstResponseLogged = false;
 
 	for (let n = 0; n < total; n++) {
 		const r = dataRows[n];
@@ -344,35 +497,16 @@ async function main() {
 			tags: [],
 		});
 
-		let type;
-		let assessed = { l1: null, l2: null, l3: null, product: null };
-		try {
-			let response = await postAssessment(assessmentUrl, token, requestBody);
-			if (response.status === 401 || response.status === 403) {
-				console.error('  token rejected, re-acquiring...');
-				token = acquireImpersonationToken(cfg);
-				response = await postAssessment(assessmentUrl, token, requestBody);
-			}
-			if (!firstResponseLogged) {
-				console.error(`  first response (HTTP ${response.status}): ${response.body.slice(0, 400)}`);
-				firstResponseLogged = true;
-			}
-			if (response.status !== 200) {
-				type = `HTTP_${response.status}`;
-			} else {
-				const json = JSON.parse(response.body);
-				type = json.type ?? 'UNKNOWN';
-				const diagnostics = extractDiagnostics(json);
-				if (!diagnostics) {
-					type = 'NO_DIAGNOSTICS';
-				} else {
-					assessed = diagnostics;
-				}
-			}
-		} catch (err) {
-			type = 'ERROR';
-			console.error(`  request failed for "${name}": ${err.message}`);
+		const outcome = await assessProduct(cfg, assessmentUrl, session, requestBody, name);
+		if (outcome.abort) {
+			await new Promise((resolve) => out.end(resolve));
+			printSummary(cfg.output, n, scoreHistogram, bySeverity, byReliability, byType);
+			console.error('');
+			console.error(`Aborted at row ${n + 1}/${total} on "${name}". The first error response was:`);
+			console.error(outcome.abort);
+			process.exit(1);
 		}
+		const { type, assessed } = outcome;
 
 		const score = scoreRow(expected, assessed);
 		reportArtifacts(name, expected, assessed, score);
@@ -397,6 +531,7 @@ async function main() {
 		console.error(`[${n + 1}/${total}] score ${score} (${type})  ${successes}/${n + 1} full so far  ${name}`);
 	}
 
+	closePrompt();
 	await new Promise((resolve) => out.end(resolve));
 	printSummary(cfg.output, total, scoreHistogram, bySeverity, byReliability, byType);
 }
@@ -463,4 +598,4 @@ if (require.main === module) {
 	});
 }
 
-module.exports = { scoreRow, norm, nutriScoreGrade, identityConflict, missSeverity, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics };
+module.exports = { scoreRow, norm, nutriScoreGrade, identityConflict, missSeverity, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics, errorAction, choiceToAction };

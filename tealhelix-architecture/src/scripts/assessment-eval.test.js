@@ -9,7 +9,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { scoreRow, looksLikeNormalizationArtifact, nutriScoreGrade, identityConflict, missSeverity } = require('./assessment-eval.js');
+const { scoreRow, looksLikeNormalizationArtifact, nutriScoreGrade, identityConflict, missSeverity, errorAction, choiceToAction } = require('./assessment-eval.js');
 
 const EXPECTED = {
 	l1: 'Milk and dairy products',
@@ -114,4 +114,37 @@ test('missSeverity: within the right pool, a grade change is grade-shift and a m
 	// same grade, no identity conflict -> near-equivalent output
 	assert.equal(missSeverity(3, 'C', 'C', "Emmental cheese, from cow's milk", "Emmental cheese, grated, from cow's milk"), 'cosmetic');
 	assert.equal(missSeverity(2, 'E', 'E', 'Butter oil or concentrated butter', 'Butter, 80% fat, lightly salted'), 'cosmetic');
+});
+
+// --- the --on-error policy ---------------------------------------------------
+
+test('errorAction: continue records the failed row and moves on', () => {
+	assert.equal(errorAction('continue', 1, 4), 'continue');
+	assert.equal(errorAction('continue', 9, 4), 'continue');
+});
+
+test('errorAction: stop aborts on the first failure', () => {
+	assert.equal(errorAction('stop', 1, 4), 'abort');
+});
+
+test('errorAction: retry retries up to maxRetries times, then aborts', () => {
+	assert.equal(errorAction('retry', 1, 4), 'retry');
+	assert.equal(errorAction('retry', 4, 4), 'retry');
+	assert.equal(errorAction('retry', 5, 4), 'abort');
+	// --max-retries 0 degenerates to stop
+	assert.equal(errorAction('retry', 1, 0), 'abort');
+});
+
+test('errorAction: ask defers the decision to the user', () => {
+	assert.equal(errorAction('ask', 1, 4), 'ask');
+	assert.equal(errorAction('ask', 99, 4), 'ask');
+});
+
+test('choiceToAction maps the s/c/r answers and rejects anything else', () => {
+	assert.equal(choiceToAction('s'), 'abort');
+	assert.equal(choiceToAction('stop'), 'abort');
+	assert.equal(choiceToAction('C'), 'continue');
+	assert.equal(choiceToAction('  r  '), 'retry');
+	assert.equal(choiceToAction(''), null);
+	assert.equal(choiceToAction('x'), null);
 });
