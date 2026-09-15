@@ -6,3 +6,4 @@ target/
 .idea/
 *.iml
 __pycache__/
+CLAUDE.local.md

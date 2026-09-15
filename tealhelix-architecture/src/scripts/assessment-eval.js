@@ -32,7 +32,7 @@
 //   ./assessment-eval.js -p <service-account-secret> [options]
 //   TH_SVC_SECRET=... ./assessment-eval.js [options]
 // Options:
-//   -i, --input <csv>        ground-truth CSV (default: ../data/test_data_kritis_filled.csv)
+//   -i, --input <csv>        ground-truth CSV (default: ../data/kritis/test_data_kritis_filled.csv)
 //   -o, --output <csv>       results CSV (default: <input dir>/<input name>-results.csv)
 //       --archetypes <csv>   archetype data providing the Nutri-Score grade per archetype
 //                            (default: the imported howibuy archetype_product.csv)
@@ -302,7 +302,7 @@ function fail(message) {
 
 function parseArgs(argv) {
 	const cfg = {
-		input: path.resolve(__dirname, '..', 'data', 'test_data_kritis_filled.csv'),
+		input: path.resolve(__dirname, '..', 'data', 'kritis', 'test_data_kritis_filled.csv'),
 		output: null,
 		archetypes: path.resolve(__dirname, '..', '..', '..', 'howibuy-container', 'howibuy-dao-hibernate-reactive',
 			'src', 'main', 'resources', 'db', 'archetype', 'archetype_product.csv'),
