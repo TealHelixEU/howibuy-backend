@@ -1,0 +1,43 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+6ddc27ed-986a-5438-8810-fe0ae80afd5e,et,Liha,meat,meat,Meat and meat products (including edible offal),,
+018b9b5a-33a8-5be3-8b0e-f84f8f5ba8f5,et,Sea,pig (of a pig),"the genitive of siga, pig: sea liha is pork",Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+c2939886-6491-59ed-806b-7cf52f86f8c0,et,Sealihast,of pork,made of pork,Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+ca451f09-a74d-55c8-b904-6b1588657013,et,Veise,cattle (of cattle),"the genitive of veis, head of cattle: veise liha is beef",Meat and meat products (including edible offal),Livestock meat,Beef meat (Bos spp.)
+4bc987d2-ba14-5511-b9a9-e66eb3013f9d,et,Veiselihast,of beef,made of beef,Meat and meat products (including edible offal),,
+f0d4570f-7244-5b9c-9817-00a3e7576277,et,Lamba,sheep (of a sheep),"the genitive of lammas, sheep",Meat and meat products (including edible offal),Livestock meat,Mutton / lamb meat (Ovis aries)
+e49af684-4ff8-574a-afdf-77b893578e83,et,Broileri,broiler (of a broiler),"the genitive of broiler, a chicken raised for meat",Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+551468f5-1ab5-501b-b654-edf926f0bc99,et,Broiler,broiler chicken,"a broiler, a chicken raised for meat",Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+05cfd3a0-e335-52fc-86f0-9b093315693e,et,Kalkuni,turkey (of a turkey),"the genitive of kalkun, turkey",Meat and meat products (including edible offal),Poultry,
+df833d07-5b34-588f-bf0c-035857f87d8e,et,Sisefilee,tenderloin,"the tenderloin, the small muscle under the loin",Meat and meat products (including edible offal),Livestock meat,
+d4d0cd16-5b05-5a27-9e10-25a80c78466d,et,Välisfilee,loin eye,the trimmed boneless loin eye,Meat and meat products (including edible offal),Livestock meat,
+a5ab6b77-3710-5e8d-b888-77ab0ad92f91,et,Kaelakarbonaad,neck,"the neck or collar, a fatty grilling cut",Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+69c4daca-c119-5a99-a38d-b14048730271,et,Küljeliha,belly,"the belly, the cut bacon is made from",Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+e01cca26-5ce3-5f59-a391-955c0cadeebd,et,Triibuliha,streaky belly,"streaky belly, the layered pork side",Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+9c873ea7-f4b1-5ef5-b7ba-a104f0a7bc74,et,Koot,shank,"the shank, the leg below the knee",Meat and meat products (including edible offal),Livestock meat,
+162e6c24-20ad-5ce9-b7e1-dbea527cd4eb,et,Ribi,rib,ribs,Meat and meat products (including edible offal),Livestock meat,
+e084ad7c-ec57-5559-aa91-2340e3a03190,et,Guljašš,goulash cubes,meat cubed for goulash,Meat and meat products (including edible offal),Livestock meat,
+7dd55b93-813b-5bc6-a0dd-7fd04a1531d0,et,Steik,steak,a steak,Meat and meat products (including edible offal),Livestock meat,
+82ff7a38-4e2a-56f3-9fb9-919620dbf751,et,Grill-liha,grilling meat,meat cut and seasoned for the grill,Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+40cbc7da-c246-5d04-930b-b6ff5ee1639e,et,Šašlõkk,shashlik,"shashlik, marinated meat for the skewer",Meat and meat products (including edible offal),,
+6cc92e0c-5d55-5340-ad0a-729976081238,et,Rinnafilee,breast fillet,the breast fillet of a bird,Meat and meat products (including edible offal),Poultry,
+34b1e309-e3ec-587c-9f7b-24d4919f148d,et,Kintsuliha,thigh meat,thigh meat off the bone,Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+1bac3ac4-2024-5360-b853-c510f3eb1fc7,et,Kints,thigh,the thigh of a bird,Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+d9716096-b8d1-5d00-9186-e909075e8899,et,Koib,leg,the whole leg of a bird,Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+58661a2d-7a5a-5627-a48f-88451b3d6551,et,Poolkoivad,half legs,"half legs of a bird, thigh or drumstick",Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+57d9badb-7110-5ddd-90d5-cd364b2dee4f,et,Broileripooltiivad,chicken half wings,the sections of a chicken wing,Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+b35dcef5-de84-53ac-b6a9-480f6b7f3313,et,Filee,fillet,"a boneless fillet: on poultry the breast, on fish the side",,,
+f3cbbf01-6704-5916-95d2-a15756c31498,et,Hakkliha,minced meat,minced meat of any species,Meat and meat products (including edible offal),,
+fc8bba6a-fe76-5041-b619-0e543aee482b,et,Veisehakkliha,minced beef,minced beef,Meat and meat products (including edible offal),Livestock meat,Beef meat (Bos spp.)
+44e0ac6f-f2a2-5e5a-8136-aae44aebef18,et,Seahakkliha,minced pork,minced pork,Meat and meat products (including edible offal),,
+e9ab4178-2985-5085-a4dd-5380dfccf55a,et,Maks,liver,liver,Meat and meat products (including edible offal),,
+4e268160-a113-5355-98e2-f66cc97fb4a8,et,Pihv,patty,a patty of minced meat,Meat and meat products (including edible offal),,
+5e374097-aeb7-550f-b8e1-7217b7fdb896,et,Kotlet,cutlet,a patty or breaded cutlet of minced meat,Meat and meat products (including edible offal),,
+c132deb4-2750-5f98-9e1f-4e37017f8c12,et,Peekon,bacon,"bacon, cured pork belly or back",Meat and meat products (including edible offal),,
+a4ca6625-9602-5f4c-967c-9fb02263f731,et,Seakaelakarbonaad,pork neck,the pork neck or collar,Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+9998e08d-0509-5bb6-b100-9e35ce097031,et,Seavälisfilee,pork loin eye,the trimmed boneless pork loin,Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+beb281a4-dcad-5639-a041-27a84c4bd87a,et,Seakoot,pork shank,the pork shank,Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+82cbb301-eca8-5676-a545-5e2766ef6fec,et,Broilerikintsuliha,chicken thigh meat,chicken thigh meat off the bone,Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+695e236a-402a-501d-bf7c-5207393a2cd1,et,Broileritiivad,chicken wings,chicken wings,Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+44ccf124-7071-55ad-886c-5b100577868f,et,Grillsteik,grilling steak,a steak cut for the grill,Meat and meat products (including edible offal),Livestock meat,
+be661df0-eaa3-53e7-a75c-3025bcfff386,et,Delikatesshakkliha,fine minced meat,finely minced meat,Meat and meat products (including edible offal),,
+a228f133-cf6c-56c2-83e6-79244fbc7966,et,Peekonilõigud,bacon slices,slices of pork belly sold as bacon,Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)

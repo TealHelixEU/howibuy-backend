@@ -1,0 +1,43 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+d6182234-ef96-59fb-a399-3f9d3ee32c55,et,Piim,milk,"milk, the drinking kind",Milk and dairy products,Liquid milk,Cow milk
+b97517e2-0dc3-5c67-b3ed-89e4de8f3e56,et,Piimajook,milk drink,a flavoured drink made from milk,Milk and dairy products,Milk based beverages,
+b00cb99b-9832-5e08-aa75-ebdf113295b7,et,Kondenspiim,condensed milk,milk boiled down with sugar,Milk and dairy products,Concentrated milk,Condensed milk
+a3ce68e1-e391-5c4b-96b1-00353815a1d5,et,Koor,cream,dairy cream,Milk and dairy products,Cream and cream products,Cream
+481e9b1d-e3c3-5660-b815-aab026cc657b,et,Rõõsk,sweet (unsoured),"sweet, said of cream that has not been soured",Milk and dairy products,Cream and cream products,Cream
+90b3ed78-8dc6-5d53-bc1d-ca0769ed8072,et,Hapukoor,sour cream,soured cream,Milk and dairy products,Cream and cream products,Cream
+cf8c656e-e1aa-5028-8350-5e200b4cd518,et,Vahukoor,whipping cream,cream for whipping,Milk and dairy products,Cream and cream products,Cream
+9cd54dc0-1c60-5b07-9a0a-e6c128f6cb0d,et,Kohvikoor,coffee cream,thin cream for coffee,Milk and dairy products,Cream and cream products,Cream
+0ddc2d12-6855-5324-864a-211f1082f790,et,Keefir,kefir,"kefir, a cultured milk drink",Milk and dairy products,Fermented milk products,
+e56b5365-b3d3-5ca6-a61b-8b1ac8b75110,et,Pett,buttermilk,"buttermilk, what is left when cream is churned",Milk and dairy products,Fermented milk products,
+c7c22a82-900f-54ba-b706-f82678e28757,et,Kohupiim,quark,"kohupiim, fresh unripened curd (quark)",Milk and dairy products,Cheese,Fresh uncured cheese
+29a6d9ba-fa0b-5630-b7a1-79206eec2289,et,Kohupiimakreem,quark cream,sweetened whipped quark,Milk and dairy products,Cheese,Fresh uncured cheese
+d5266a6c-1ce3-5e41-8e33-051d846ed8aa,et,Juust,cheese,cheese of any kind,Milk and dairy products,Cheese,
+1df79af9-8044-5246-a2d6-081c7dd0c22d,et,Või,butter,dairy butter,Animal and vegetable fats and oils,Animal fat,Butter
+9ffff765-e9c2-5493-bb4a-54f1447f502b,et,Margariin,margarine,"margarine, a spreadable vegetable-fat butter substitute",Animal and vegetable fats and oils,Margarine and similar products,
+89c16836-b88a-521b-8f45-f9b9d8ab8a47,et,Rasvasegu,fat blend,a spread blending butter with vegetable fat,Animal and vegetable fats and oils,Margarine and similar products,Fat emulsions
+d47954d8-e8a9-581d-b785-d0e357ff79bc,et,Majonees,mayonnaise,mayonnaise,"Herbs, spices and condiments",Dressing,
+11a5ec49-c326-538c-ae38-c05a80d78b13,et,Kaste,sauce,a sauce or dressing,"Herbs, spices and condiments",,
+f5c5d969-47d4-5450-bde4-79ec7b1b08c7,et,Täispiim,whole milk,"whole milk, its fat not reduced",Milk and dairy products,Liquid milk,Cow milk
+ed294f26-8296-52db-864f-47c014cb44a6,et,Rjaženka,ryazhenka,"ryazhenka, soured baked milk",Milk and dairy products,Fermented milk products,
+0876c787-2054-52f3-9492-484e0226d80f,et,Keefirijook,kefir drink,a drinkable kefir,Milk and dairy products,Fermented milk products,
+b702c2ed-eb05-5c84-a549-89212b75e302,et,Hapupiimajook,soured milk drink,a drink of soured milk,Milk and dairy products,Fermented milk products,
+9a62bd1d-d24b-55b4-8939-78753679c8ba,et,Köögikoor,cooking cream,cream sold for cooking,Milk and dairy products,Cream and cream products,Cream
+65bd685f-73f5-5bc3-86f6-270a82d62ba0,et,Toidukoor,culinary cream,cream sold for cooking,Milk and dairy products,Cream and cream products,Cream
+dfc859ba-7513-50c8-847e-1843fd246438,et,Kodujuust,cottage cheese,"cottage cheese, curd grains in cream",Milk and dairy products,Cheese,Fresh uncured cheese
+f50564bf-9897-547c-971d-890defe7a5c0,et,Kohupiimapasta,quark paste,"sweetened quark, soft enough to spread",Milk and dairy products,Cheese,Fresh uncured cheese
+ce44695f-a72a-5033-9968-86b506d22929,et,Kohupiimavorm,quark bake,a baked pudding of quark,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+ae53ce86-b2bd-57be-924d-279b27c18a29,et,Taluvõi,farm butter,farmhouse butter,Animal and vegetable fats and oils,Animal fat,Butter
+df321650-c18b-527e-91c9-4f1c30fbec72,et,Searasv,lard,rendered pork fat,Animal and vegetable fats and oils,Animal fat,Pork lard (Schmaltz)
+49a648cb-dc8a-5111-a854-648fcd002e2b,et,Küpsetusmargariin,baking margarine,margarine sold for baking,Animal and vegetable fats and oils,Margarine and similar products,
+a2d816da-d05a-5bec-88b4-b37058614cc7,et,Rasvavõie,fat spread,a spreadable fat,Animal and vegetable fats and oils,Margarine and similar products,
+eb6c6d88-2d1e-5c0b-9b04-f91892c64730,et,Majoneesikaste,mayonnaise dressing,a dressing based on mayonnaise,"Herbs, spices and condiments",Dressing,
+ef744718-3730-5e68-bf60-4c3e83922266,et,Juustumajonees,cheese mayonnaise,mayonnaise flavoured with cheese,"Herbs, spices and condiments",Dressing,
+c7f63ca2-0336-5b4a-81ce-114138f1f55a,et,Tšillimajonees,chilli mayonnaise,mayonnaise flavoured with chilli,"Herbs, spices and condiments",Dressing,
+e263d223-60be-5a9e-b774-937b7a37d352,et,Salatikaste,salad dressing,a dressing for salad,"Herbs, spices and condiments",Dressing,
+23be76b9-135b-5dee-a68f-61cc32e05edd,et,Dipikaste,dip,a thick sauce for dipping,"Herbs, spices and condiments",Dressing,
+8a795c2e-d91b-56b4-b53e-1abff7b8db22,et,Burgerikaste,burger sauce,a sauce for burgers,"Herbs, spices and condiments",Dressing,
+6e3883c7-74af-5943-892f-7dc9311c7dee,et,Kartulikaste,potato sauce,a sauce served with potatoes,"Herbs, spices and condiments",Dressing,
+3692d5c7-4d84-5ba6-bfc1-b83114a5c2e6,et,Küüslaugukaste,garlic sauce,a garlic sauce,"Herbs, spices and condiments",Dressing,
+d030564c-2fe9-52d1-b82c-8c0a35683f54,et,Juustukaste,cheese sauce,a sauce of melted cheese,"Herbs, spices and condiments",Savoury sauces,"White sauce (Bechamel sauce, Cheese sauce)"
+26f0ed34-d566-571e-b92f-b3e8b86816ed,et,Remulaad,remoulade,"remoulade, a mayonnaise dressing with pickles and herbs","Herbs, spices and condiments",Dressing,
+3f9d1342-5655-5158-b65d-e080cc0d28f9,et,Karamell,caramel,"caramel, boiled sugar, soft or hard",Sugar and confectionary,Confectionery (non-chocolate),

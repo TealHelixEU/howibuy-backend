@@ -1,0 +1,21 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+f73d5de1-bc67-5570-9039-eaddd1356a7c,et,Kaerajook,oat drink,"a drink made from oats, used as milk is",Milk and dairy products,Milk and milk product imitates,Oats drink
+9e2b2375-1b2c-5f8d-aaf1-5061b7d1b2fd,et,Mandlijook,almond drink,"a drink made from almonds, used as milk is",Milk and dairy products,Milk and milk product imitates,Almond drink
+1cf2345a-5ca6-5acd-968f-72cf2cfd4a4f,et,Riisijook,rice drink,"a drink made from rice, used as milk is",Milk and dairy products,Milk and milk product imitates,Rice drink
+79fa4c48-510d-5306-95c0-c2e499e697a7,et,Sojajook,soya drink,"a drink made from soya beans, used as milk is",Milk and dairy products,Milk and milk product imitates,Soya drink
+08fc4689-e44b-5ac7-9800-ad70c3e10fbe,et,Kookosjook,coconut drink,a drink made from coconut,Vegetables and vegetable products (including fungi),Vegetable products,Coconut milk (Cocos nucifera)
+5a0ebf23-f3e5-52fb-aff9-5756bed17eff,et,Tofu,tofu,"tofu, curd pressed from soya drink",Milk and dairy products,Milk and milk product imitates,Tofu
+b276277f-178a-5b99-83be-11ccb0d9f328,et,Tempeh,tempeh,"tempeh, fermented whole soya beans pressed into a cake","Legumes, nuts and oilseeds","Legumes, beans, dried",
+6212bb76-f078-570c-93d3-469d653aa94f,et,Taimne,plant-based,"plant, as in taimne juust, plant-based cheese",,,
+9e3ead2a-aa38-5d63-8f67-3e060c2b55c8,et,Haks,mince,"mince, here of plant protein",,,
+c793d3c8-f9a5-5c79-96b7-613a5f3c9700,et,Nagitsad,nuggets,"nuggets, small breaded pieces",,,
+bc134d91-9020-5f4a-aa5e-3826f45dee5c,et,Jäätis,ice cream,ice cream,"Snacks, desserts, and other foods",Ices and desserts,
+dbe4fa20-2692-5db9-9784-eda3c29ebe28,et,Falafel,falafel,"falafel, fried balls of ground chickpeas",Composite food (including frozen products),Beans-based meals,
+07dc046a-27b1-5956-bdc7-59955bfa6a6b,et,Batoon,bar,a bar to eat in the hand,,,
+e1c98e3b-8e71-5250-a27d-9371adc9bbbd,et,Taimsed,plant-based (plural),plant-based,,,
+0bb0456a-0de1-593e-8838-fc850abbe09c,et,Kaeradessert,oat dessert,a dessert made on an oat base,,,
+93844cf6-b7d2-5e23-9510-f6d6a6e5d202,et,Toortatrajook,raw buckwheat drink,a drink made from unroasted buckwheat,Milk and dairy products,Milk and milk product imitates,
+ff667a4b-8edf-534b-96d9-6f9fff61d88d,et,Hernetempeh,pea tempeh,tempeh fermented from peas rather than soya,,,
+89b0f3b4-dbb7-53c9-9807-2941e8bfdbc0,et,Sojatoode,soya product,a product made from soya,Milk and dairy products,Milk and milk product imitates,
+499879ee-c48a-5c71-a64d-ca0077be2a09,et,Võileivaviilud,sandwich slices,"slices for a sandwich, here plant-based",,,
+cae5a74a-3616-545e-ad06-47111113e801,et,Vegan,vegan,"vegan, made without any animal ingredient",,,

@@ -52,4 +52,22 @@
 			<delete tableName="TH_FOOD_TERM" />
 		</rollback>
 	</changeSet>
+
+	<changeSet id="food_terms_data_lt" author="nikospara" context="appdata">
+		<loadData tableName="TH_FOOD_TERM" file="db/glossary/food_term_lt.csv" relativeToChangelogFile="false">
+			<column name="id" type="UUID" />
+			<column name="lang" type="STRING" />
+			<column name="term" type="STRING" />
+			<column name="canonical_en" type="STRING" />
+			<column name="description" type="STRING" />
+			<column name="category_hint_l1" type="STRING" />
+			<column name="category_hint_l2" type="STRING" />
+			<column name="category_hint_l3" type="STRING" />
+		</loadData>
+		<rollback>
+			<delete tableName="TH_FOOD_TERM">
+				<where>lang = 'lt'</where>
+			</delete>
+		</rollback>
+	</changeSet>
 </databaseChangeLog>

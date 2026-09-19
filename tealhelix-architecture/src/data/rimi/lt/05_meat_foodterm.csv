@@ -1,0 +1,66 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+87a09cc5-f7a7-5eb7-a3f5-16db09e4b2a7,lt,Jautiena,beef,"beef, the meat of cattle",Meat and meat products (including edible offal),Livestock meat,Beef meat (Bos spp.)
+e4320e4e-399c-5614-a94e-9a51bf0c3dda,lt,Jautienos,beef (of beef),"the genitive of jautiena, beef",Meat and meat products (including edible offal),Livestock meat,Beef meat (Bos spp.)
+5e4c867f-76db-5d94-95ef-da5d93551320,lt,Kiauliena,pork,"pork, the meat of pigs",Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+c47b5d66-1c4e-50f3-b031-c169e1650dc7,lt,Kiaulienos,pork (of pork),"the genitive of kiauliena, pork",Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+768d82f9-84c7-5f2b-b476-877d189962e3,lt,Vištienos,chicken (of chicken),"the genitive of vištiena, chicken meat",Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+d5245845-b692-5f57-98b2-0e07131a5a22,lt,Kalakutų,turkey (of turkeys),"the genitive plural of kalakutas, turkey",Meat and meat products (including edible offal),Poultry,Turkey meat (Meleagris gallopavo)
+f3a0c2b2-1e37-5ad1-b6ad-c8eda7729332,lt,Kalakutienos,turkey meat (of turkey),"the genitive of kalakutiena, turkey meat",Meat and meat products (including edible offal),Poultry,
+0bcff18a-aa52-5ff8-88a4-ab7fb9b7e7c0,lt,Veršienos,veal (of veal),"the genitive of veršiena, veal",Meat and meat products (including edible offal),Livestock meat,Veal meat
+6f248dc0-eabc-535e-a108-c99326b97a96,lt,Triušio,rabbit (of a rabbit),"the genitive of triušis, rabbit",Meat and meat products (including edible offal),Livestock meat,Rabbit meat (Lepus cuniculus)
+e4b9d526-159c-56cd-b298-a286e05a2af2,lt,Ančiukų,duckling (of ducklings),"the genitive plural of ančiukas, duckling",Meat and meat products (including edible offal),Poultry,Duck meat (Anas spp.)
+75e828f0-b719-59b7-9edc-dd02d1b80412,lt,Ančių,duck (of ducks),"the genitive plural of antis, duck",Meat and meat products (including edible offal),Poultry,Duck meat (Anas spp.)
+98615093-0015-550c-8a8c-b0b1a57f9e64,lt,Broileris,broiler chicken,"a broiler, a chicken raised for meat",Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+0e2fda87-acb7-53b3-a9bb-c42fe60b7d50,lt,Broilerių,broiler (of broilers),"the genitive plural of broileris, broiler chicken",Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+b5f277d5-d86b-5d6e-b70f-8dbfc8ceb774,lt,Viščiukas,chicken,a young chicken,Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+98f5467a-d0f3-5c6c-94f3-d6a43f81ba8e,lt,Viščiukų,chicken (of chickens),"the genitive plural of viščiukas, young chicken",Meat and meat products (including edible offal),Poultry,Chicken meat (Gallus domesticus)
+7dd7fc49-047f-50fe-88d2-0ca2694f8d3d,lt,Mėsa,meat,meat,Meat and meat products (including edible offal),,
+3e4b1b19-859a-56f3-ba3a-e6b2e51aab83,lt,Mėsos,meat (of meat),"the genitive of mėsa, meat",Meat and meat products (including edible offal),,
+bbb14d44-429d-5089-8a68-3ac01fb8ece8,lt,Faršas,minced meat,minced meat of any species,Meat and meat products (including edible offal),,
+44420819-8bf4-537c-b9a2-a15436f94882,lt,Smulkinta mėsa,minced meat,"minced meat, the same thing Rimi also calls faršas",Meat and meat products (including edible offal),,
+de3e0258-3c73-586d-be24-f9241e59a186,lt,Filė,fillet,"a boneless fillet: on poultry the breast, on fish the side",,,
+05a9aa92-4e33-56d5-9a70-e05ffe1043d8,lt,Nugarinė,loin,"the loin, the eye muscle along the back",Meat and meat products (including edible offal),Livestock meat,
+f90e5bb1-c5b8-5f94-b9b3-3ff76bd4dcd7,lt,Sprandinė,neck or collar,"the neck or collar, a fatty braising and grilling cut",Meat and meat products (including edible offal),Livestock meat,
+1f69fba7-c87a-550c-98b3-015938aec3d0,lt,Kumpis,ham or leg,"the whole hind leg, and the cured ham made from it",Meat and meat products (including edible offal),,
+211ec475-8bf4-5fc6-b7fa-0e15f34f9a9a,lt,Kumpio,ham (of the leg),"the genitive of kumpis, the hind leg",Meat and meat products (including edible offal),Livestock meat,
+d20f8d81-ca94-50af-837c-ebd9b7392cca,lt,Išpjova,tenderloin,"the tenderloin, the small muscle under the loin",Meat and meat products (including edible offal),Livestock meat,
+4e5865bf-d96c-5643-85d2-981fc9358dfd,lt,Mentė,shoulder blade,"the blade, a shoulder cut",Meat and meat products (including edible offal),Livestock meat,
+b1539932-2327-593a-a8f6-b2e3a4ca155f,lt,Šoninė,belly or bacon,"the pork belly, and the bacon cured from it",Meat and meat products (including edible offal),,
+7e94def3-daef-5296-86c1-d7edd2b316ce,lt,Šonkauliai,ribs,"ribs, sold as a rack",Meat and meat products (including edible offal),Livestock meat,
+a3859b8b-9e20-57f8-aafb-7bcbc41c535f,lt,Antrekotas,entrecote,"entrecote, the rib eye steak",Meat and meat products (including edible offal),Livestock meat,Beef meat (Bos spp.)
+16cfd977-ec44-5032-9c00-a297c618d0bb,lt,Antrekoto,entrecote (of entrecote),"the genitive of antrekotas, the rib eye",Meat and meat products (including edible offal),Livestock meat,Beef meat (Bos spp.)
+98598937-fd46-563e-9fd8-101c418829ad,lt,Kepsnys,steak or roast,a steak or a roasting joint,Meat and meat products (including edible offal),Livestock meat,
+b77d12d9-6158-537e-9b0d-2d4ba5d1f872,lt,Karka,hock,"the hock, the pork shank with the bone in",Meat and meat products (including edible offal),Livestock meat,Pork / piglet meat (Sus scrofa)
+f36f1ced-1d13-53b2-ab64-d33cb9014d75,lt,Kulninė,shank,"the shank, the leg muscle below the knee",Meat and meat products (including edible offal),Livestock meat,
+233821af-fed0-5b26-a7e8-0111f4b80e00,lt,Papilvė,thin flank,"the thin flank, the belly cut of beef",Meat and meat products (including edible offal),Livestock meat,
+bbabff15-4c2f-572a-a4e0-0fed4f46674b,lt,Guliašui,for goulash,meat cubed for goulash,Meat and meat products (including edible offal),,
+5e8a536b-6753-5ba5-b988-0561c8b7aaeb,lt,Troškinimui,for stewing,meat cut for stewing,Meat and meat products (including edible offal),,
+c0efdff4-4160-5ea3-9aaf-12ffc9997424,lt,Krūtinėlių,breast (of breasts),"the genitive plural of krūtinėlė, the breast of a bird",Meat and meat products (including edible offal),Poultry,
+b1822675-791e-5f49-a92e-45706ac30a37,lt,Šlaunelės,thighs,thighs of a bird,Meat and meat products (including edible offal),Poultry,
+a388e502-cfb7-5f86-9049-3d135decb06a,lt,Šlaunelių,thigh (of thighs),"the genitive plural of šlaunelė, thigh",Meat and meat products (including edible offal),Poultry,
+a30d1eed-a558-5f05-805a-e06413a21d53,lt,Blauzdelės,drumsticks,"drumsticks, the lower leg of a bird",Meat and meat products (including edible offal),Poultry,
+97a8552f-30dd-5030-b9fa-d4e036872a67,lt,Kulšelės,legs,"the whole leg of a bird, thigh and drumstick together",Meat and meat products (including edible offal),Poultry,
+74f520a2-58b5-5a96-8faf-9c8208d8cc58,lt,Sparneliai,wings,wings of a bird,Meat and meat products (including edible offal),Poultry,
+ff967d9a-ebf4-5f28-80f2-9400989b85a5,lt,Sparnelių,wing (of wings),"the genitive plural of sparnelis, wing",Meat and meat products (including edible offal),Poultry,
+9770bbd2-c4ad-54ab-a47b-42c4348678aa,lt,Kepenys,liver,liver,Meat and meat products (including edible offal),"Edible offal, farmed animals",
+06fabe57-0aa3-5e10-a2e1-c7bbcb5e9377,lt,Kepenėlės,liver (small),"the diminutive of kepenys, used for poultry liver",Meat and meat products (including edible offal),"Edible offal, farmed animals",
+b52c92a3-3add-5f74-b70d-37e5460df3b4,lt,Širdys,hearts,hearts,Meat and meat products (including edible offal),"Edible offal, farmed animals",
+b43f934f-760b-5b05-b0d2-3ad0337983d9,lt,Širdelės,hearts (small),"the diminutive of širdys, used for poultry hearts",Meat and meat products (including edible offal),"Edible offal, farmed animals",
+440d9bf5-5ee5-57dc-b370-081e15c3ef7c,lt,Skilviai,gizzards,"gizzards, the muscular stomach of a bird",Meat and meat products (including edible offal),"Edible offal, farmed animals",
+cbf86a57-b883-554b-bff1-8ec983370a0a,lt,Liežuviai,tongues,tongues,Meat and meat products (including edible offal),"Edible offal, farmed animals","Tongue (beef, veal, mutton, lamb, pork)"
+210fc7fe-65ac-5747-8ab0-7cdc13307242,lt,Inkstai,kidneys,kidneys,Meat and meat products (including edible offal),"Edible offal, farmed animals",
+418e7686-5868-58af-b6c9-579d71fca0b2,lt,Ausys,ears,"ears, a pork offal cut",Meat and meat products (including edible offal),"Edible offal, farmed animals",
+66f6c3c2-7fd8-53f2-a037-a8c146ec0c20,lt,Kojos,feet,trotters and feet,Meat and meat products (including edible offal),"Edible offal, farmed animals",
+6633c284-9a6f-5514-8c56-928b3c5f1717,lt,Kebabai,kebabs,"kebabs, seasoned meat formed into a roll or put on a skewer",Meat and meat products (including edible offal),,
+47b22ed6-6622-55fa-9145-bc10651a2402,lt,Iešmeliai,skewers,small skewers of meat,Meat and meat products (including edible offal),,
+4f1d800f-a7c9-5afd-a920-47119e88a9d0,lt,Kukuliai,meatballs,meatballs,Composite food (including frozen products),Meat-based meals,
+040a25b9-7f5f-58d9-9518-cae4430d3260,lt,Paplotėliai,patties,flat patties of minced meat,Composite food (including frozen products),Meat-based meals,
+dadf6139-6d57-5f21-b1b2-e9841c01525e,lt,Triušis,rabbit,"a rabbit, sold whole",Meat and meat products (including edible offal),Livestock meat,Rabbit meat (Lepus cuniculus)
+92466094-7e2d-5bbf-93de-7b78b70a9dc4,lt,Kiaulių,pig (of pigs),"the genitive plural of kiaulė, pig",Meat and meat products (including edible offal),,
+8bb1ecbe-e9e4-5757-b12b-f43dd8759cef,lt,Kumpeliai,small legs,"the diminutive of kumpis, small legs such as a rabbit's",Meat and meat products (including edible offal),Livestock meat,
+7b966c4a-8a71-545c-b1d5-52a7a8cfa145,lt,Paslėpsniai,flank,"the flank: a grilling steak on beef, a stewing cut on pork",Meat and meat products (including edible offal),Livestock meat,
+6d692094-01be-59e8-8557-d8c08e64afe2,lt,Krūtininė,brisket,"the brisket, the breast of beef",Meat and meat products (including edible offal),Livestock meat,
+a677d7be-96ee-5bb9-9781-69c54422b971,lt,Didkepsnis,large steak,a thick steak for the grill,Meat and meat products (including edible offal),Livestock meat,
+b54ed700-b1d4-5b4d-9a14-06204b0800e3,lt,Peteliai,drumettes,"the drumette, the upper section of a wing",Meat and meat products (including edible offal),Poultry,
+5c8f6f07-5aa2-5595-96ed-bc44b7235ef5,lt,Ketvirčiai,quarters,quarters of a bird,Meat and meat products (including edible offal),Poultry,
+3b5c54c9-dc7a-5314-8a71-a5eb5892bf06,lt,Žarnos,casings,"intestines, sold as sausage casings",Meat and meat products (including edible offal),"Edible offal, farmed animals",

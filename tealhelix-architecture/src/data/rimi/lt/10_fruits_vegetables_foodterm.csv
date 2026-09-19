@@ -1,0 +1,120 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+63b3a427-7116-5a4a-90b6-e94240847cd3,lt,Vaisiai,fruit,fruit,Fruit and fruit products,,
+a7d6637a-1730-55e3-8e79-143f5b95c9b9,lt,Uogos,berries,berries,Fruit and fruit products,,
+262de098-81cd-5e55-bebb-9eb5deea1120,lt,Obuoliai,apples,apples,Fruit and fruit products,Pome fruits,Apple (Malus domesticus)
+715601ae-e544-5828-8f70-3a6cff3c9fb9,lt,Kriaušės,pears,pears,Fruit and fruit products,Pome fruits,Pear (Pyrus communis)
+34447498-488a-5d1b-9e68-2a8a9c18dd5e,lt,Apelsinai,oranges,oranges,Fruit and fruit products,Citrus fruits,Oranges (Citrus sinensis)
+1b288a54-808a-5223-a74f-6e98d282b3aa,lt,Mandarinai,mandarins,mandarins and clementines,Fruit and fruit products,Citrus fruits,Mandarins (Citrus reticulata)
+793f71d8-4ed2-52f1-ae92-8912b8f88e2a,lt,Citrinos,lemons,"lemons; žaliosios citrinos, green lemons, are limes",Fruit and fruit products,Citrus fruits,Lemons (Citrus limon)
+056959ee-2540-5b6d-a1e5-0b82fc13601c,lt,Greipfrutai,grapefruit,grapefruit,Fruit and fruit products,Citrus fruits,Grapefruit (Citrus paradisi)
+7b94c3fe-f6a8-5080-9ee1-2bac510f0564,lt,Vynuogės,grapes,table grapes,Fruit and fruit products,Berries and small fruits,Table grapes (Vitis euvitis)
+ee6c883a-d57c-5068-83fa-4e890dc39e3e,lt,Braškės,strawberries,strawberries,Fruit and fruit products,Berries and small fruits,Strawberries (Fragaria × ananassa)
+ebe87aed-c83a-5fb7-aba5-48ced6576fd8,lt,Avietės,raspberries,raspberries,Fruit and fruit products,Berries and small fruits,Raspberries (Rubus idaeus)
+96611f6d-10e2-5411-8f8e-e1f7d252686e,lt,Šilauogės,blueberries,cultivated blueberries,Fruit and fruit products,Berries and small fruits,Blueberries (Vaccinium corymbosum)
+3eee5a31-944e-540e-ac02-37cea720aae4,lt,Spanguolės,cranberries,cranberries,Fruit and fruit products,Berries and small fruits,Cranberries (Vaccinium macrocarpon)
+f516be8a-4c42-5fe4-b037-d975dc58307b,lt,Serbentai,currants,"currants, red, black or white",Fruit and fruit products,Berries and small fruits,"Currants (red, black and white) (Ribes nigrum, Ribes rubrum)"
+726d7b42-7d58-5dec-a14f-036d2402d1cd,lt,Vyšnios,sour cherries,sour cherries,Fruit and fruit products,Stone fruits,Sour cherry (Prunus cerasus)
+82f3ebf2-703c-5cfb-a740-c664e0327c80,lt,Slyvos,plums,plums,Fruit and fruit products,Stone fruits,Plums (Prunus domestica)
+7b815c31-9f46-5990-ac47-7bd7440e7ebc,lt,Persikai,peaches,peaches,Fruit and fruit products,Stone fruits,Peaches (Prunus persica)
+7fe3f0ea-883d-5d88-aca1-c30ebe716e15,lt,Nektarinai,nectarines,"nectarines, a smooth-skinned peach",Fruit and fruit products,Stone fruits,Peaches (Prunus persica)
+62694fc0-526d-5c3d-aeeb-9945bc3376fd,lt,Bananai,bananas,bananas,Fruit and fruit products,Miscellaneous fruits,Bananas (Musa × paradisica)
+bbb21a29-30df-5c8e-8efa-c4bee773d141,lt,Kiviai,kiwi,kiwi fruit,Fruit and fruit products,Miscellaneous fruits,Kiwi (Actinidia deliciosa syn. A. chinensis)
+1185d907-e2a5-5678-b9f1-4ba3db5dffa0,lt,Ananasai,pineapples,pineapples,Fruit and fruit products,Miscellaneous fruits,Pineapples (Ananas comosus)
+e788b52f-8394-506c-a05a-4c487168c4fe,lt,Mangai,mangoes,mangoes,Fruit and fruit products,Miscellaneous fruits,Mangoes (Mangifera indica)
+32f77b40-a648-5f9b-a082-6aa449ab0a22,lt,Avokadai,avocados,avocados,Fruit and fruit products,Miscellaneous fruits,Avocados (Persea americana)
+84fb3a07-48f9-53c9-ab13-bc4ff592bb1a,lt,Granatai,pomegranates,pomegranates,Fruit and fruit products,Miscellaneous fruits,Pomegranate (Punica granatum)
+1137964d-1064-5cd6-91d4-f81a61ed13b2,lt,Figos,figs,figs,Fruit and fruit products,Miscellaneous fruits,Figs (Ficus carica)
+dfd34d64-40e1-52f9-a174-f0b6e514cc94,lt,Datulės,dates,dates,Fruit and fruit products,Miscellaneous fruits,Dates (Phoenix dactylifera)
+7f996bb1-1090-5428-9ed3-555ffcbc82ad,lt,Melionai,melons,melons,Vegetables and vegetable products (including fungi),Fruiting vegetables,Melons (Cucumis melo)
+789daf5a-1178-52f9-9b32-bfd3b15f6f1f,lt,Arbūzai,watermelons,watermelons,Vegetables and vegetable products (including fungi),Fruiting vegetables,Watermelons (Citrullus lanatus)
+e0bcecf6-8cde-5761-b1b0-5a4de4461d38,lt,Daržovės,vegetables,vegetables,Vegetables and vegetable products (including fungi),,
+aaf6ca4d-0d04-53f9-8708-b0a4e86da84b,lt,Daržovių,vegetables (of vegetables),"the genitive plural of daržovė, vegetable",,,
+97e8ef96-5ba9-5a60-99ca-7f0d3157e555,lt,Pomidorai,tomatoes,tomatoes,Vegetables and vegetable products (including fungi),Fruiting vegetables,Tomatoes (Lycopersicum esculentum)
+6303aafd-eea0-5bd9-bd53-f1942cae9e08,lt,Agurkai,cucumbers,cucumbers,Vegetables and vegetable products (including fungi),Fruiting vegetables,Cucumbers (Cucumis sativus)
+d2fdecb1-f14a-582c-a54b-39b69a8a5522,lt,Paprikos,peppers,sweet peppers,Vegetables and vegetable products (including fungi),Fruiting vegetables,"Peppers, paprika (Capsicum annuum, var. grossum and var. longum)"
+31bebea6-f590-5a92-9559-1f9a2b92ef86,lt,Paprika,pepper,"a sweet pepper, or the ground spice made from it",Vegetables and vegetable products (including fungi),Fruiting vegetables,
+d74f1db0-f21e-5908-a2c4-0644367372ed,lt,Moliūgai,pumpkins,pumpkins,Vegetables and vegetable products (including fungi),Fruiting vegetables,Pumpkins (Cucurbita maxima)
+45ff63f2-cf0c-5dfe-b1db-136de12adc5e,lt,Cukinijos,courgettes,courgettes (zucchini),Vegetables and vegetable products (including fungi),Fruiting vegetables,Courgettes (Zucchini) (Cucurbita pepo var. melopepo)
+bc3a0a52-ac1e-5f59-acb3-419f2f84d2df,lt,Kukurūzų,maize (of maize),"the genitive plural of kukurūzas, maize: sweetcorn as a vegetable, corn as a grain",,,
+660cdf38-d78d-5af8-b8b3-04e0e4c824f7,lt,Kopūstai,cabbages,cabbages,Vegetables and vegetable products (including fungi),Brassica vegetables,Head cabbage (Brassica oleracea convar. capitata)
+0079808c-ec2f-523e-a22c-6b9412312bdc,lt,Kopūstas,cabbage,a cabbage; the kind is in the word in front of it,Vegetables and vegetable products (including fungi),Brassica vegetables,
+45e6e4b5-f3df-5f24-bfdf-cf4ad20ffd4f,lt,Brokoliai,broccoli,broccoli,Vegetables and vegetable products (including fungi),Brassica vegetables,Broccoli (Brassica oleracea var. italica)
+731e0556-d1ab-5cac-97ff-94e10f7faed6,lt,Kimchi,kimchi,"kimchi, Korean fermented cabbage",Vegetables and vegetable products (including fungi),Brassica vegetables,
+0bac5eb8-c372-5d96-b100-c2710e34114e,lt,Salotos,lettuce or salad,lettuce; also a dressed salad made of anything,Vegetables and vegetable products (including fungi),Leaf vegetables,
+ccfe5497-02bc-5e62-a336-aae8b2d98e01,lt,Salotų,salad (of salad),"the genitive of salotos, lettuce or salad",Vegetables and vegetable products (including fungi),Leaf vegetables,Leaf vegetables
+609d270d-faca-57d0-b0e6-c8584d214e96,lt,Špinatai,spinach,spinach,Vegetables and vegetable products (including fungi),Leaf vegetables,Spinach (fresh) (Spinacia oleracea)
+7d2e74c3-421d-540a-a058-9bc1b904f50d,lt,Daigai,sprouts,sprouted seeds eaten raw,Vegetables and vegetable products (including fungi),Leaf vegetables,
+e85eaf36-6e3e-5152-ada9-3449d3379c46,lt,Morkos,carrots,carrots,Vegetables and vegetable products (including fungi),Root vegetables,Carrots (Daucus carota)
+26a31f65-d4d4-59d1-9538-71b4d15fc7fc,lt,Morkytės,baby carrots,"the diminutive of morka, small carrots",Vegetables and vegetable products (including fungi),Root vegetables,Carrots (Daucus carota)
+65990399-d500-514d-92f0-c31618019c23,lt,Burokėliai,beetroot,beetroot,Vegetables and vegetable products (including fungi),Root vegetables,Beetroot (Beta vulgaris subsp. vulgaris)
+23fe2312-8b3c-5c51-9f87-a9aba52929f3,lt,Ridikėliai,radishes,radishes,Vegetables and vegetable products (including fungi),Root vegetables,Radishes (Raphanus sativus var. sativus)
+6f190f4b-2bc7-56c4-8072-8b80b364cae5,lt,Svogūnai,onions,onions,Vegetables and vegetable products (including fungi),Bulb vegetables,"Onions, bulb (Allium cepa)"
+34a35981-0ec8-558a-b280-a547ff253232,lt,Česnakai,garlic,garlic,Vegetables and vegetable products (including fungi),Bulb vegetables,"Garlic, bulb (Allium sativum)"
+8e79282d-ab25-539b-87f0-c19903b6a8bd,lt,Porai,leeks,leeks,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Leek (Allium porrum)
+8192e6ba-bf0f-5410-8e8f-aee04ace4919,lt,Grybai,mushrooms,mushrooms,Vegetables and vegetable products (including fungi),,
+dd57899e-7128-597b-a27d-ddf6ba956ec6,lt,Pievagrybiai,button mushrooms,the cultivated button mushroom (Agaricus bisporus),Vegetables and vegetable products (including fungi),,
+b34f2917-c3dc-514e-9f7c-e0f66226169a,lt,Bulvės,potatoes,potatoes,Starchy roots and tubers,Potatoes and potatoes products,
+b49e1be1-6187-5241-a5b2-1a9541fa57ac,lt,Bulvių,potato (of potatoes),"the genitive plural of bulvė, potato",Starchy roots and tubers,Potatoes and potatoes products,
+1e35a6aa-7f34-5d28-83ae-702dfd16d965,lt,Bulvytės,potato chips,"the diminutive of bulvė: small potatoes, or chips",Starchy roots and tubers,Potatoes and potatoes products,
+33844b0d-7462-588e-a385-01934879a2db,lt,Pupelės,beans,"beans, green in the pod or dried","Legumes, nuts and oilseeds",,
+dbd80cf5-db0a-5655-a5bf-f1ab544682af,lt,Žirneliai,peas,peas,,,
+777faf38-d5ac-5e3e-85a9-3e06b61448c4,lt,Petražolės,parsley,parsley,"Herbs, spices and condiments",Herbs,"Parsley, herb (Petroselinum crispum)"
+8cf05bba-2fcd-5716-b08a-de45ea875c6b,lt,Krapai,dill,dill,"Herbs, spices and condiments",Herbs,"Dill, herb (Anethum graveolens)"
+bcedbfeb-602a-5d17-bb37-30bde7b60125,lt,Bazilikas,basil,basil,"Herbs, spices and condiments",Herbs,"Basil, herb (Ocimum basilicum)"
+44456e8d-2885-57cd-8dd7-ac4813c6355c,lt,Arbūzas,watermelon,a watermelon,Vegetables and vegetable products (including fungi),Fruiting vegetables,Watermelons (Citrullus lanatus)
+4204edfe-7cb9-5e5e-b82a-ef5ffb7dae0e,lt,Melionas,melon,a melon,Vegetables and vegetable products (including fungi),Fruiting vegetables,Melons (Cucumis melo)
+beb04538-02c3-56dc-9d64-69107eab2fc7,lt,Avokadas,avocado,an avocado,Fruit and fruit products,Miscellaneous fruits,Avocados (Persea americana)
+240e2a96-34c0-5aea-bcad-b753d074087e,lt,Mangas,mango,a mango,Fruit and fruit products,Miscellaneous fruits,Mangoes (Mangifera indica)
+87641214-bd4b-5abf-8ae3-018db58abee1,lt,Ananasas,pineapple,a pineapple,Fruit and fruit products,Miscellaneous fruits,Pineapples (Ananas comosus)
+0e0ac3de-0899-52ce-91cc-e6dba6236811,lt,Agurkas,cucumber,a cucumber,Vegetables and vegetable products (including fungi),Fruiting vegetables,Cucumbers (Cucumis sativus)
+d0ae3476-d6fa-5c75-8e5b-7f8ab0573e4b,lt,Agurkėliai,gherkins,"the diminutive of agurkas: small cucumbers, gherkins",Vegetables and vegetable products (including fungi),Fruiting vegetables,Cucumbers (Cucumis sativus)
+6a1233b6-9448-5e5d-a302-e6e1fdc03d92,lt,Brokolis,broccoli,a head of broccoli,Vegetables and vegetable products (including fungi),Brassica vegetables,Broccoli (Brassica oleracea var. italica)
+3e0ea64a-29ba-5f31-b8d9-b240685af883,lt,Baklažanas,aubergine,an aubergine (eggplant),Vegetables and vegetable products (including fungi),Fruiting vegetables,Aubergines (egg plants) (Solanum melongena)
+77ea2b79-45a3-5d51-b43c-ccf2ddbc3afc,lt,Svogūnas,onion,an onion,Vegetables and vegetable products (including fungi),Bulb vegetables,"Onions, bulb (Allium cepa)"
+5759867d-dc9d-5ffb-8a82-97c5acf2d2b2,lt,Česnakas,garlic,a bulb of garlic,Vegetables and vegetable products (including fungi),Bulb vegetables,"Garlic, bulb (Allium sativum)"
+ac15a901-2305-5a71-b451-7c476cba5700,lt,Moliūgas,pumpkin,a pumpkin or winter squash,Vegetables and vegetable products (including fungi),Fruiting vegetables,Pumpkins (Cucurbita maxima)
+c6369198-a03c-54b0-aa48-a89dc774c749,lt,Patisonai,patty pan squash,"patty pan squash, a flat scalloped summer squash",Vegetables and vegetable products (including fungi),Fruiting vegetables,
+c2b1a832-21f6-5485-836e-60d48292fb23,lt,Ridikai,radishes,"radishes, including the large white daikon",Vegetables and vegetable products (including fungi),Root vegetables,Radishes (Raphanus sativus var. sativus)
+2a2bed9c-ec22-54ca-be1b-7c4e0e2d12a9,lt,Pipirai,peppers,"chilli peppers; as a spice, peppercorns",Vegetables and vegetable products (including fungi),Fruiting vegetables,
+38731f1c-1760-56c3-9636-a21278e51d0b,lt,Čili pipirai,chilli peppers,chilli peppers,Vegetables and vegetable products (including fungi),Fruiting vegetables,Chilli pepper (Capsicum frutescens)
+b8ace536-d1e7-56e3-a264-7f90509535eb,lt,Papaja,papaya,papaya,Fruit and fruit products,Miscellaneous fruits,Papaya (Carica papaya)
+6ccbfffb-edfc-551e-8d02-24865f23a90e,lt,Pasiflora,passion fruit,passion fruit,Fruit and fruit products,Miscellaneous fruits,Passion fruit (Passiflora edulis)
+75308e96-ed6d-59f7-8e76-554feae709ba,lt,Kertuotis,prickly pear,"the prickly pear, the fruit of a cactus",Fruit and fruit products,Miscellaneous fruits,Prickly pear (cactus fruit) (Opuntia ficus-indica)
+b4e223f3-7042-5be9-9765-aa5d4f86b03c,lt,Karambola,carambola,carambola (star fruit),Fruit and fruit products,Miscellaneous fruits,Carambola (Averrhoa carambola)
+f173b7d4-2373-5990-8113-ad621f67b05c,lt,Kinkanai,kumquats,"kumquats, eaten skin and all",Fruit and fruit products,Miscellaneous fruits,Kumquats (Fortunella species)
+180821b0-6195-5b3b-bff3-1cdaae9e52df,lt,Gervuogės,blackberries,blackberries,Fruit and fruit products,Berries and small fruits,Blackberries (Rubus fruticosus)
+4cf8a82f-f4b8-505e-a59f-696ed8cc6a5d,lt,Dumplainiai,physalis,"physalis, the cape gooseberry in its papery husk",Fruit and fruit products,Miscellaneous fruits,
+c3b82d6f-eec1-57db-9fcc-a2aa72509f76,lt,Kokosas,coconut,a coconut,"Legumes, nuts and oilseeds",Tree nuts,Coconuts (Cocos nucifera)
+396053ce-bd65-5a9e-a1bb-3a4e0ea25402,lt,Kokoso riešutas,coconut,"a coconut, literally the coconut nut","Legumes, nuts and oilseeds",Tree nuts,Coconuts (Cocos nucifera)
+e42ec6ad-bffd-5bcb-af2c-37a81065c4ee,lt,Batatai,sweet potatoes,sweet potatoes,Starchy roots and tubers,Other starchy roots and tubers,Sweet potatoes (Ipomoea batatas)
+31057e48-81f1-5105-bc17-37ef6bd53ff2,lt,Topinambai,Jerusalem artichokes,Jerusalem artichoke tubers,Starchy roots and tubers,Other starchy roots and tubers,Jerusalem artichokes tubers (Helianthus tuberosus)
+4ddd4602-81b9-5dc4-8f8c-f428f5ae3b90,lt,Smidrai,asparagus,asparagus spears,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Asparagus (Asparagus officinalis)
+8bcf73a5-dc56-5db3-8273-bc729051605a,lt,Pankoliai,fennel,fennel bulbs,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Fennel (Foeniculum vulgare)
+60ae9460-8c91-5cdf-b329-3b8308a814c0,lt,Salierų stiebai,celery stalks,the stalks of celery,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Celery (Apium graveolens var. dulce)
+725bd104-9053-5ebf-89cc-e8076417c214,lt,Salierų šaknys,celeriac,"celeriac, the root of celery",Vegetables and vegetable products (including fungi),Root vegetables,Celeriac (Apium graveolens var. rapaceum)
+9de84544-2803-510a-a972-4f3df8024f36,lt,Gražgarstės,rocket,rocket (rucola),Vegetables and vegetable products (including fungi),Leaf vegetables,"Rocket, Rucola (Eruca sativa, Diplotaxis spec.)"
+7cb92715-2a93-516a-b6cc-2ee2aaab5d0d,lt,Gražgarsčių,rocket (of rocket),"the genitive plural of gražgarstė, rocket",Vegetables and vegetable products (including fungi),Leaf vegetables,"Rocket, Rucola (Eruca sativa, Diplotaxis spec.)"
+99f5963c-f92d-5839-bdbf-2e6c443398cf,lt,Rukola,rucola,"rucola, the borrowed name for rocket",Vegetables and vegetable products (including fungi),Leaf vegetables,"Rocket, Rucola (Eruca sativa, Diplotaxis spec.)"
+60a62345-f6e2-52a7-8490-cc1aaba77832,lt,Želmenys,shoots,"young cereal shoots, eaten green",Vegetables and vegetable products (including fungi),Leaf vegetables,
+174cd620-a4df-5089-9ab4-06b5aede69af,lt,Mikrožalumynai,microgreens,"microgreens, seedlings cut at the first leaves",Vegetables and vegetable products (including fungi),Leaf vegetables,
+d66f4ceb-59fa-536c-8325-c716bd3cf1fd,lt,Voveraitės,chanterelles,"chanterelles, a wild forest mushroom",Vegetables and vegetable products (including fungi),"Fungi, wild, edible",
+3af74152-79f9-58ef-a2cb-b9c3055fed31,lt,Avinžirniai,chickpeas,chickpeas,"Legumes, nuts and oilseeds","Legumes, beans, dried",Chick pea (Cicer arietinum)
+14ee9cea-bad9-55fa-8804-f2ee8745085b,lt,Žirniai,peas,"peas, green or dried","Legumes, nuts and oilseeds",,
+b7c3cc3e-0204-5af3-94ca-10beac6fe8d5,lt,Imbierų šaknys,ginger root,the root of ginger,"Herbs, spices and condiments",Spices,Ginger (Zingiber officinale)
+b1fe3b58-15c8-54cf-a4c2-4adc8e05e0d1,lt,Kalendra,coriander,coriander leaf (cilantro),"Herbs, spices and condiments",Herbs,Coriander leaves
+381b2027-95a4-5955-bd03-853007669ba6,lt,Kalendros,coriander (of coriander),"the genitive of kalendra, coriander leaf","Herbs, spices and condiments",Herbs,Coriander leaves
+c2388a14-8378-548b-9b0e-e4b43d9bf345,lt,Mėtos,mint,mint,"Herbs, spices and condiments",Herbs,Mint
+7fac2dd9-408f-5183-97c7-6e01ebc15e8a,lt,Melisa,lemon balm,lemon balm,"Herbs, spices and condiments",Herbs,
+d6d50f36-d885-57a2-ae56-4451d628c196,lt,Rozmarinas,rosemary,rosemary,"Herbs, spices and condiments",Herbs,"Rosemary, herb (Rosmarinus officinalis)"
+f6f92a33-749d-5c9c-a266-24c37d62d1c8,lt,Čiobreliai,thyme,thyme,"Herbs, spices and condiments",Herbs,"Thyme, herb (Thymus spp.)"
+a61de902-27f3-52f1-a944-3a56dbc9e504,lt,Čiobrelis,thyme,a pot of thyme,"Herbs, spices and condiments",Herbs,"Thyme, herb (Thymus spp.)"
+7ef142a5-6e67-5f7f-9885-24843f8d5896,lt,Šalavijas,sage,sage,"Herbs, spices and condiments",Herbs,"Sage, herb (Salvia officinalis)"
+723ffb13-356d-5ff0-9207-d6f6553993c0,lt,Raudonėlis,oregano,oregano,"Herbs, spices and condiments",Herbs,
+ccc630a1-86e7-5814-a670-729c9020f9c0,lt,Mairūnas,marjoram,marjoram,"Herbs, spices and condiments",Herbs,
+2bba81c7-fc68-5764-936b-0de4e367e253,lt,Citrinžolė,lemongrass,lemongrass,"Herbs, spices and condiments",Herbs,
+d039d30c-d57b-57af-9f99-4beb6cdf73b9,lt,Laiškinis česnakas,chives,chives,"Herbs, spices and condiments",Herbs,"Chives, herb (Allium schoenoprasum)"
+9e8b8092-2297-5c80-a912-41bd7e5bd4f2,lt,Svogūnų laiškai,spring onion tops,"the green tops of onions, chive-like","Herbs, spices and condiments",Herbs,"Chives, herb (Allium schoenoprasum)"
+e4cb2500-7fce-564b-8277-a5a13089b048,lt,Žolelių,herbs (of herbs),"the genitive plural of žolelė, herb","Herbs, spices and condiments",,
+31884744-fc2e-50e9-b0da-44d234c372b6,lt,Žalumynų,greens (of greens),"the genitive plural of žalumynas, green","Herbs, spices and condiments",,
+571557e6-049e-5988-b2cc-05798e28c6ee,lt,Rinkinys,set,a set or assortment sold together,,,
+94371115-5233-5a6a-a84c-625539171d30,lt,Asorti,assortment,an assortment,,,

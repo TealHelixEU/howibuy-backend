@@ -1,0 +1,38 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+5fc7ff11-19a8-54bc-8bd9-c263500f7d09,et,Leib,rye bread,"leib, the dark rye bread that in Estonian is simply ""bread""",Grains and grain-based products,Bread and rolls,Mixed wheat and rye bread and rolls
+5abdbf48-4ae9-5fd4-bd9a-91cf38daae2c,et,Rukkileib,rye bread,rye bread,Grains and grain-based products,Bread and rolls,Mixed wheat and rye bread and rolls
+e35de5fa-6957-5df4-8286-80fa729ba4ce,et,Sai,white bread,"sai, white wheat bread, the counterpart of leib",Grains and grain-based products,Bread and rolls,Wheat bread and rolls
+a84ce9e6-1bfa-542b-979e-bff6f65a698d,et,Saiake,bun,"the diminutive of sai, a small white roll",Grains and grain-based products,,
+c06bc2b0-2e8f-5bc5-8561-cacab83badbf,et,Sepik,sepik,"sepik, a light wholemeal wheat bread",Grains and grain-based products,Bread and rolls,Wheat bread and rolls
+59d8194e-2096-5ab1-8a7f-68057d13f5f3,et,Röstsai,toast bread,sliced bread for toasting,Grains and grain-based products,Bread and rolls,
+f8f73397-2cb0-5f67-99f8-0489398a3193,et,Näkileib,crispbread,thin dry crispbread,Grains and grain-based products,Bread and rolls,"Unleavened bread, crisp bread and rusk"
+9939ecee-de9b-5352-b27a-9a7103a8724b,et,Lavašš,lavash,"lavash, a thin unleavened flatbread",Grains and grain-based products,Bread and rolls,"Unleavened bread, crisp bread and rusk"
+5aeeb76f-6806-51ac-b8bd-faf76478766d,et,Leivakrõpsud,bread crisps,dried bread eaten as a snack,Grains and grain-based products,Bread and rolls,Bread products
+59eee328-6a0f-5ee7-a33f-88ea4ed1a249,et,Kook,cake,a cake,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+f1af4d21-27dc-5bfe-9e7f-bd471501b495,et,Tort,gateau,a layered cream cake,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+e0a3acec-2cef-55e0-9d46-13a86d360b77,et,Kukkel,bun,a soft bun,Grains and grain-based products,,
+5a7fff99-6739-526e-9d92-43525ab1dc48,et,Pirukas,pasty,a filled pasty,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+c9272c00-a9c1-5f21-99b6-ba26c792a630,et,Kringel,kringle,"kringel, a plaited sweet wreath bread",Grains and grain-based products,Fine bakery wares,Pastries and cakes
+b107e37b-6d7e-5d80-997a-b966cd7e0431,et,Croissant,croissant,a croissant,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+4bc10c11-15b8-5722-b6fc-fd33959619d1,et,Muffin,muffin,a muffin,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+5cdf47e4-5c20-5c7d-ba49-6a974db8afba,et,Vahvel,waffle,a waffle,Grains and grain-based products,Fine bakery wares,
+a4e8e5d8-fc9e-55a7-ae4f-ce4d4417203c,et,Küpsis,biscuit,a biscuit (cookie),Grains and grain-based products,Fine bakery wares,Biscuits (cookies)
+b6adc171-ea1f-5d69-abbc-cc5e6eebfee6,et,Küpsised,biscuits,biscuits (cookies),Grains and grain-based products,Fine bakery wares,
+b1e8ee3f-75bc-5ab7-bb6b-0a34dca065c0,et,Peenleib,fine rye bread,"peenleib, a finely milled rye bread",Grains and grain-based products,Bread and rolls,Mixed wheat and rye bread and rolls
+e5aafa19-b305-5870-a618-0150d96990f8,et,Näkileivad,crispbreads,thin dry crispbreads,Grains and grain-based products,Bread and rolls,"Unleavened bread, crisp bread and rusk"
+c8c3f69c-7f0d-5f8b-ad93-d11b6f11203f,et,Kohupiimakook,quark cake,a cake made with fresh curd,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+381ac700-abc0-5f64-bb8c-7c6856ad11b2,et,Riisivahvlid,rice cakes,"puffed rice cakes, light and crisp",Grains and grain-based products,Bread and rolls,
+39ba230b-6f27-5c8c-b00c-c1ad8eb5c81e,et,Riisikrõpsud,rice crisps,crisp snacks of puffed rice,,,
+534bb7b9-3dd0-57e9-948d-0d31ab62e43e,et,Riisigaletid,rice galettes,round puffed rice cakes,Grains and grain-based products,Bread and rolls,
+39c6c1fd-16e8-5bac-8fc8-d5ab908e5bfb,et,Leivapulgad,bread sticks,thin crisp sticks of baked dough,Grains and grain-based products,Bread and rolls,
+4ce9f72b-f6d6-54f7-9f4c-37e7fa801521,et,Grissinid,grissini,"grissini, thin Italian bread sticks",Grains and grain-based products,Bread and rolls,
+937a9b92-b786-56d9-b9b1-45f3a7aa14c1,et,Burgerikukkel,burger bun,a soft bun for burgers,Grains and grain-based products,Bread and rolls,Wheat bread and rolls
+cced8c27-95a3-55d9-8712-5a2d5793cc7c,et,Kodusai,home-style white bread,a home-style white wheat loaf,Grains and grain-based products,Bread and rolls,Wheat bread and rolls
+1e896293-6973-549b-8b5e-38d76186107a,et,Täisterasepik,wholemeal sepik,a wholemeal wheat bread,Grains and grain-based products,Bread and rolls,
+0313e536-3f2d-5fb9-9c92-6666243739c6,et,Täistera,wholegrain,"wholegrain, milled with the whole kernel",Grains and grain-based products,,
+09427a77-91c3-5c1c-8b9b-5766b3092881,et,Bruschetta,bruschetta,"bruschetta, toasted bread with a topping",Grains and grain-based products,,
+1652cf0a-b900-51da-90b2-e7d0bd1bc130,et,Pavlova,pavlova,"pavlova, a meringue cake",Grains and grain-based products,Fine bakery wares,Pastries and cakes
+73388cee-5013-52d6-b76c-8c5c41d4a73c,et,Trühvlitort,truffle gateau,a rich chocolate layer cake,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+f12f9143-c352-5a57-a32a-6307f3df8ff3,et,Topsikook,cup cake,a small cake baked in a cup,Grains and grain-based products,Fine bakery wares,Pastries and cakes
+ee7de1df-8ae4-5004-bc5b-bc78efd4ea62,et,Viineripirukas,sausage roll,a frankfurter baked in pastry,,,
+a29be5f1-7531-5136-b9b2-9a928e21090c,et,Krõbepallid,crisp balls,small crisp puffed balls,,,

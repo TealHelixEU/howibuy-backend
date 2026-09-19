@@ -1,0 +1,91 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+718c0807-b37f-5755-a9a2-ef06395254f2,et,Õun,apple,an apple,Fruit and fruit products,Pome fruits,Apple (Malus domesticus)
+35e7d0e4-a98f-5159-98ce-920cff83e325,et,Pirn,pear,a pear,Fruit and fruit products,Pome fruits,Pear (Pyrus communis)
+e009afcc-0e87-5a72-b539-43f7e7ec9d9c,et,Ploom,plum,a plum,Fruit and fruit products,Stone fruits,Plums (Prunus domestica)
+c2f4073f-c63b-5a8f-979f-1c04f145a562,et,Virsik,peach,a peach,Fruit and fruit products,Stone fruits,Peaches (Prunus persica)
+ccc6b408-2f6b-52e4-94fe-eda641c86111,et,Aprikoos,apricot,an apricot,Fruit and fruit products,Stone fruits,Apricots (Prunus armeniaca)
+f99cc0cd-bf5b-5634-a124-965ee4ee2ec7,et,Viinamari,grape,table grapes,Fruit and fruit products,Berries and small fruits,Table grapes (Vitis euvitis)
+1dbaa89b-6568-5786-b74b-e365b29f6eb7,et,Maasikad,strawberries,strawberries,Fruit and fruit products,Berries and small fruits,Strawberries (Fragaria × ananassa)
+7e69bfe0-eaee-5010-be60-599fe8e7b3fc,et,Vaarikad,raspberries,raspberries,Fruit and fruit products,Berries and small fruits,Raspberries (Rubus idaeus)
+3aed24a5-cee9-5b16-86d5-43067bfef9ce,et,Banaan,banana,a banana,Fruit and fruit products,Miscellaneous fruits,Bananas (Musa × paradisica)
+4c626bbc-e004-5e40-b579-e6de77808ddf,et,Banaanid,bananas,bananas,Fruit and fruit products,Miscellaneous fruits,Bananas (Musa × paradisica)
+cdde42e3-7d24-5a5a-b859-e0d4efdd635c,et,Apelsin,orange,an orange,Fruit and fruit products,Citrus fruits,Oranges (Citrus sinensis)
+ad87abd2-1b02-5712-9851-5acb45d53eaf,et,Mandariin,mandarin,a mandarin or clementine,Fruit and fruit products,Citrus fruits,Mandarins (Citrus reticulata)
+f408b620-24f1-5145-9a9f-aa8aa4fed777,et,Sidrun,lemon,a lemon,Fruit and fruit products,Citrus fruits,Lemons (Citrus limon)
+e82f0d2f-3a3b-5fdb-bf32-2c07ad7fc6cc,et,Laim,lime,a lime,Fruit and fruit products,Citrus fruits,Limes (Citrus aurantifolia)
+88d0ea34-e69f-5b1b-939e-946da30426a2,et,Kiivi,kiwi,kiwi fruit,Fruit and fruit products,Miscellaneous fruits,Kiwi (Actinidia deliciosa syn. A. chinensis)
+51e3870f-9fd9-5c28-bfed-b521e83652ce,et,Ananass,pineapple,a pineapple,Fruit and fruit products,Miscellaneous fruits,Pineapples (Ananas comosus)
+4e304cbe-ec7c-559e-80f2-7fedef281272,et,Mango,mango,a mango,Fruit and fruit products,Miscellaneous fruits,Mangoes (Mangifera indica)
+e3370880-264d-5972-ad02-2b0689c55e7a,et,Avokaado,avocado,an avocado,Fruit and fruit products,Miscellaneous fruits,Avocados (Persea americana)
+a109018b-52b8-5927-9dc3-704b4f830e77,et,Datlid,dates,dates,Fruit and fruit products,Miscellaneous fruits,Dates (Phoenix dactylifera)
+1d3530fe-3dd9-5d25-b199-53b3e2dab84c,et,Granaatõun,pomegranate,a pomegranate,Fruit and fruit products,Miscellaneous fruits,Pomegranate (Punica granatum)
+4a22271c-d813-5bec-8219-7e3771279b81,et,Arbuus,watermelon,a watermelon,Vegetables and vegetable products (including fungi),Fruiting vegetables,Watermelons (Citrullus lanatus)
+14eadefa-c6ba-5f5b-8d70-f2f50ccf8252,et,Melon,melon,a melon,Vegetables and vegetable products (including fungi),Fruiting vegetables,Melons (Cucumis melo)
+59ec520f-117f-502b-8fc5-d83e5e8c700d,et,Kartul,potato,potatoes,Starchy roots and tubers,Potatoes and potatoes products,
+064102da-9eef-52f5-993a-305c13a65557,et,Bataat,sweet potato,sweet potato,Starchy roots and tubers,Other starchy roots and tubers,Sweet potatoes (Ipomoea batatas)
+30e9f2ff-17ec-59f6-98c5-6ab3b5b505f4,et,Peet,beetroot,beetroot,Vegetables and vegetable products (including fungi),Root vegetables,Beetroot (Beta vulgaris subsp. vulgaris)
+3da0af3b-6062-566c-94b1-ffa91f979eda,et,Porgand,carrot,carrots,Vegetables and vegetable products (including fungi),Root vegetables,Carrots (Daucus carota)
+497dd177-8013-5dc1-a814-d9ceef592e64,et,Kaalikas,swede,swede (rutabaga),Vegetables and vegetable products (including fungi),Root vegetables,Swedes (Brassica napus var. napobrassica)
+361b5d91-b002-5de0-aafe-70a2c28d03eb,et,Juurseller,celeriac,"celeriac, the root of celery",Vegetables and vegetable products (including fungi),Root vegetables,Celeriac (Apium graveolens var. rapaceum)
+4047093e-f34b-5a91-9ab3-ba4e8e6efdef,et,Varsseller,celery,the stalks of celery,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Celery (Apium graveolens var. dulce)
+2f5832f0-e424-5e4e-ae1a-c42bb6be9ce2,et,Pastinaak,parsnip,parsnip,Vegetables and vegetable products (including fungi),Root vegetables,Parsnips (Pastinaca sativa)
+a80696aa-9847-5f90-8a2f-18c745012666,et,Redis,radish,radishes,Vegetables and vegetable products (including fungi),Root vegetables,Radishes (Raphanus sativus var. sativus)
+c0486aca-d13f-5617-a8ce-cb5cc88de61e,et,Sibul,onion,an onion; roheline sibul is the spring onion,Vegetables and vegetable products (including fungi),Bulb vegetables,
+3ccea632-0dc6-5ee3-b7b5-3046e33c6678,et,Küüslauk,garlic,garlic,Vegetables and vegetable products (including fungi),Bulb vegetables,"Garlic, bulb (Allium sativum)"
+5595193b-cddb-5e5d-a44f-8a637340a098,et,Peakapsas,white cabbage,the round head cabbage,Vegetables and vegetable products (including fungi),Brassica vegetables,Head cabbage (Brassica oleracea convar. capitata)
+9ed705ca-84bf-5c77-91f7-fd1c2bf8b292,et,Lillkapsas,cauliflower,cauliflower,Vegetables and vegetable products (including fungi),Brassica vegetables,Cauliflower (Brassica oleracea var. botrytis)
+72cc4acf-82ee-5820-a163-e38c0db577ba,et,Nuikapsas,kohlrabi,kohlrabi,Vegetables and vegetable products (including fungi),Brassica vegetables,"Kohlrabi (Brassica oleracea convar. acephala, var. gongylodes)"
+76e1ddb9-b3fe-5203-89e4-2c12d82887ac,et,Hiinakapsas,Chinese cabbage,Chinese cabbage,Vegetables and vegetable products (including fungi),Brassica vegetables,Chinese cabbage (Brassica pekinensis)
+b89b916a-73b4-5f84-814b-735250e1a8e8,et,Lehtkapsas,kale,kale,Vegetables and vegetable products (including fungi),Brassica vegetables,Kale (Brassica oleracea convar. Acephalea)
+041d773a-3fee-56a0-9fcf-33d3cdc2799e,et,Brokoli,broccoli,broccoli,Vegetables and vegetable products (including fungi),Brassica vegetables,Broccoli (Brassica oleracea var. italica)
+6f951303-f440-5aaf-9eb7-93ab6478e916,et,Kõrvits,pumpkin,pumpkin or winter squash,Vegetables and vegetable products (including fungi),Fruiting vegetables,Pumpkins (Cucurbita maxima)
+819385c3-7f3f-5259-8706-78a67b2c11a9,et,Suvikõrvits,courgette,courgette (zucchini),Vegetables and vegetable products (including fungi),Fruiting vegetables,Courgettes (Zucchini) (Cucurbita pepo var. melopepo)
+48e8919e-feaf-5093-b25c-eb294ddf0b4d,et,Kurk,cucumber,cucumber,Vegetables and vegetable products (including fungi),Fruiting vegetables,Cucumbers (Cucumis sativus)
+d6376e88-e432-5349-af03-4d02bdf323e7,et,Baklažaan,aubergine,aubergine (eggplant),Vegetables and vegetable products (including fungi),Fruiting vegetables,Aubergines (egg plants) (Solanum melongena)
+81ad0029-1b34-5ba5-b95a-78a0bfdbabe6,et,Paprika,sweet pepper,sweet pepper,Vegetables and vegetable products (including fungi),Fruiting vegetables,"Peppers, paprika (Capsicum annuum, var. grossum and var. longum)"
+11322b08-5b92-5f57-8852-4fb1be4aaf0e,et,Tšillipipar,chilli pepper,chilli pepper,Vegetables and vegetable products (including fungi),Fruiting vegetables,Chilli pepper (Capsicum frutescens)
+9ed7851f-b589-547a-ada3-5ea9cb19caa4,et,Spargel,asparagus,asparagus spears,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Asparagus (Asparagus officinalis)
+2a3df28a-9f49-53d7-892a-ed38ccd57780,et,Fenkol,fennel,fennel bulb,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Fennel (Foeniculum vulgare)
+b1c616a2-538f-5735-9066-05d7ffe761fa,et,Hernes,pea,peas,"Legumes, nuts and oilseeds",,
+3b3578d8-7dd8-5df1-8a6d-1c4fd842f81f,et,Aedoad,haricot beans,haricot beans,"Legumes, nuts and oilseeds","Legumes, beans, dried",Beans (Phaseolus vulgaris)
+5b78ba76-fe94-51de-a8b0-08be08579e45,et,Kikerherned,chickpeas,chickpeas,"Legumes, nuts and oilseeds","Legumes, beans, dried",Chick pea (Cicer arietinum)
+f760af46-e5bf-5e0a-868a-19995ce26521,et,Idud,sprouts,sprouted seeds eaten raw,,,
+e87881b2-de8b-58e9-bc0d-b0255f19defb,et,Seened,mushrooms,mushrooms,Vegetables and vegetable products (including fungi),,
+4113a36f-3ec7-5fda-b03a-c138ce403a8c,et,Šampinjon,button mushroom,the cultivated button mushroom (Agaricus bisporus),Vegetables and vegetable products (including fungi),,
+18f04c0e-118c-5058-a7a5-54fa92388213,et,Kukeseen,chanterelle,"chanterelle, a wild forest mushroom",Vegetables and vegetable products (including fungi),,
+68680ca3-3c91-5efe-85c0-07b91b1b9cc4,et,Till,dill,dill,"Herbs, spices and condiments",Herbs,"Dill, herb (Anethum graveolens)"
+4625b3c8-1d2a-5cd9-b306-320c11683a29,et,Petersell,parsley,parsley,"Herbs, spices and condiments",Herbs,"Parsley, herb (Petroselinum crispum)"
+77ff6c4b-e375-58b1-a26b-d5cf40f1481c,et,Basiilik,basil,basil,"Herbs, spices and condiments",Herbs,"Basil, herb (Ocimum basilicum)"
+92906888-9d33-547f-bac3-2eed06eac97e,et,Koriander,coriander,coriander leaf (cilantro),"Herbs, spices and condiments",Herbs,Coriander leaves
+0ec32ba2-7cc6-5b07-ae1b-7e4740ff0fc0,et,Murulauk,chives,chives,"Herbs, spices and condiments",Herbs,"Chives, herb (Allium schoenoprasum)"
+3218ebff-15d2-509f-b349-e32dd489697c,et,Piparmünt,mint,mint,"Herbs, spices and condiments",Herbs,Mint
+4554ac11-be79-52a1-948e-5d8605059bf2,et,Rosmariin,rosemary,rosemary,"Herbs, spices and condiments",Herbs,"Rosemary, herb (Rosmarinus officinalis)"
+ac7c087f-18a0-518d-a0f9-4d2162e7aeba,et,Tüümian,thyme,thyme,"Herbs, spices and condiments",Herbs,"Thyme, herb (Thymus spp.)"
+e29187fc-3f32-5366-97f0-6f0206ab0867,et,Salvei,sage,sage,"Herbs, spices and condiments",Herbs,"Sage, herb (Salvia officinalis)"
+0b8a642e-b751-5d2e-98a9-7b6ec413637d,et,Salat,lettuce or salad,lettuce; also a dressed salad made of anything,Vegetables and vegetable products (including fungi),Leaf vegetables,
+415ed36a-bee5-522c-b975-dafaf1e73a4b,et,Tomat,tomato,a tomato,Vegetables and vegetable products (including fungi),Fruiting vegetables,Tomatoes (Lycopersicum esculentum)
+888f1a08-9ab8-5b24-91e1-d3f280296758,et,Tomatid,tomatoes,tomatoes,Vegetables and vegetable products (including fungi),Fruiting vegetables,Tomatoes (Lycopersicum esculentum)
+fe2aa0ce-34b7-5ca5-80cd-886c84f4b2c2,et,Hapukapsas,sauerkraut,"sauerkraut, salt-fermented cabbage",Vegetables and vegetable products (including fungi),Brassica vegetables,Head cabbage (Brassica oleracea convar. capitata)
+1336ae58-57b5-54c3-9a4b-e35e6717eea2,et,Hapukurk,pickled cucumber,a salted or pickled cucumber,Vegetables and vegetable products (including fungi),Fruiting vegetables,Cucumbers (Cucumis sativus)
+4645c3ff-6d3d-53df-9a89-74039c5d38ce,et,Porrulauk,leek,leeks,Vegetables and vegetable products (including fungi),Stem vegetables (Fresh),Leek (Allium porrum)
+591ef472-3ccf-534a-9cd1-64cb05cecba3,et,Soolakurk,salted cucumber,a cucumber cured in brine,Vegetables and vegetable products (including fungi),Fruiting vegetables,Cucumbers (Cucumis sativus)
+03f187d8-8297-5e24-861e-a1b6c0473441,et,Šampinjonid,button mushrooms,cultivated button mushrooms,Vegetables and vegetable products (including fungi),,
+c558680c-b901-57fb-b8b0-8fd7a3db7085,et,Salatisegu,salad mix,a bag of mixed salad leaves,Vegetables and vegetable products (including fungi),Leaf vegetables,
+77da7f88-aad1-5d34-b231-ef43501a718b,et,Kapsasalat,cabbage salad,shredded cabbage dressed as a salad,,,
+80dbd88e-8f21-510f-a1bc-840b336957fc,et,Peedisalat,beetroot salad,grated beetroot dressed as a salad,Vegetables and vegetable products (including fungi),Root vegetables,
+519689fd-c762-55d0-8efa-4e7536427173,et,Kapsas,cabbage,a cabbage,Vegetables and vegetable products (including fungi),Brassica vegetables,
+1a515368-eb10-5a95-bc62-1a574d09f400,et,Mais,maize,"maize: sweetcorn as a vegetable, corn as a grain",Vegetables and vegetable products (including fungi),Fruiting vegetables,Sweet corn (Zea mays var. saccharata)
+3362ccd4-b4fa-5bd7-aa0c-d9d64116a9c8,et,Nektariin,nectarine,"a nectarine, a smooth-skinned peach",Fruit and fruit products,Stone fruits,Peaches (Prunus persica)
+3598b05d-a75a-5d10-a863-8e16519b0b13,et,Ploomtomat,plum tomato,the oval plum tomato,Vegetables and vegetable products (including fungi),Fruiting vegetables,Tomatoes (Lycopersicum esculentum)
+7d14bcb6-1b03-5f19-aaad-de69ad17aa93,et,Porgandid,carrots,carrots,Vegetables and vegetable products (including fungi),Root vegetables,Carrots (Daucus carota)
+eb32757e-444c-58d8-9a1c-b2c18647d113,et,Redised,radishes,radishes,Vegetables and vegetable products (including fungi),Root vegetables,Radishes (Raphanus sativus var. sativus)
+da4f5ee9-a910-5067-8911-3a45788c26eb,et,Paprikad,sweet peppers,sweet peppers,Vegetables and vegetable products (including fungi),Fruiting vegetables,"Peppers, paprika (Capsicum annuum, var. grossum and var. longum)"
+9f6b7556-73b1-5dda-8de0-6724337c7ad6,et,Rukola,rocket,rocket (rucola),Vegetables and vegetable products (including fungi),Leaf vegetables,"Rocket, Rucola (Eruca sativa, Diplotaxis spec.)"
+ceb16566-6ab4-5fd5-a583-f05659dde62b,et,Viigimarjad,figs,figs,Fruit and fruit products,Miscellaneous fruits,Figs (Ficus carica)
+e0def90f-6348-5991-8027-14bf77b54a20,et,Põldmarjad,blackberries,blackberries,Fruit and fruit products,Berries and small fruits,Blackberries (Rubus fruticosus)
+04851e22-769c-577c-97da-f03c3a017c83,et,Papaia,papaya,papaya,Fruit and fruit products,Miscellaneous fruits,Papaya (Carica papaya)
+2fbbdc5a-d558-5fc8-980d-825db16251fe,et,Sidrunmeliss,lemon balm,lemon balm,"Herbs, spices and condiments",Herbs,
+4ffae7ce-a8b4-5913-9281-50f0369be621,et,Sidrunhein,lemongrass,lemongrass,"Herbs, spices and condiments",Herbs,
+34cbc940-9faf-5cc0-8822-2f944ea41766,et,Suhkruhernes,sugar snap pea,"sugar snap peas, eaten pod and all",Vegetables and vegetable products (including fungi),,
+13744da6-8520-50ff-ac60-a045738226d1,et,Salatisibul,salad onion,a mild onion for salads,Vegetables and vegetable products (including fungi),Bulb vegetables,
+70f13494-5f2b-50f4-8e4c-71727fe740eb,et,Riisikad,milk-caps,"riisikad, wild milk-cap mushrooms",Vegetables and vegetable products (including fungi),,

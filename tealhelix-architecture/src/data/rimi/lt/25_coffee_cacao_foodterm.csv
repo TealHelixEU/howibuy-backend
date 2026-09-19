@@ -1,0 +1,15 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+b2e8f391-62e4-5a9e-9ec9-a05fd0ddab17,lt,Kava,coffee,coffee,Vegetables and vegetable products (including fungi),Coffee beans and coffee products (Solid),
+b825de2f-e004-54ee-8a13-0d6e59828d0c,lt,Kavos,coffee (of coffee),"the genitive of kava, coffee",Vegetables and vegetable products (including fungi),Coffee beans and coffee products (Solid),
+96758ce8-1aae-550b-9bdf-29bf7ad9ac3b,lt,Kavos pupelės,coffee beans,coffee beans,Vegetables and vegetable products (including fungi),Coffee beans and coffee products (Solid),"Coffee beans, roasted and ground"
+a1edfe89-2167-5ac9-a159-f8cfff59c210,lt,Espresso,espresso,"espresso, coffee brewed short under pressure",Vegetables and vegetable products (including fungi),Coffee beans and coffee products (Solid),
+7cfa8162-508e-58c2-bb4b-ee5fd0ba3e3b,lt,Cikorija,chicory,"chicory root, roasted as a coffee substitute",Vegetables and vegetable products (including fungi),Coffee imitates (Solid),Chicory coffee
+1a514804-7bb8-5f91-94b6-1aa1319c243a,lt,Arbata,tea,"tea, or any leaf or fruit infusion",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+472b4b41-7dbe-5d48-aad0-e22bd6f4ae76,lt,Arbatos,tea (of tea),"the genitive of arbata, tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),
+59061b8f-8081-55e4-8479-e0f92e07ec5a,lt,Žalioji,green (feminine),"green, as in žalioji arbata, green tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),"Green tee, infusion"
+c456f387-54da-5a71-a29d-7bef2b0d9c27,lt,Juodoji,black (feminine),"black, as in juodoji arbata, black tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),"Black tea, infusion"
+13d01ec3-e6da-5e9a-bd33-0fdc27cb2455,lt,Vaisinė,fruit (feminine),"fruit, as in vaisinė arbata, fruit infusion",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),"Herbal tea, infusion"
+047b1ea4-0823-553e-b7c9-72982de6bcfd,lt,Matcha,matcha,"matcha, powdered Japanese green tea",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),"Green tee, infusion"
+92d32f5f-5cf1-53e9-ac27-65576e03d786,lt,Rooibos,rooibos,"rooibos, a South African bush infusion",Non-alcoholic beverages (excepting milk based beverages),Tea (Infusion),"Herbal tea, infusion"
+c2fd2a17-a4bf-59c5-bd2e-1dfec58b4eae,lt,Kakavos,cocoa (of cocoa),"the genitive of kakava, cocoa",Vegetables and vegetable products (including fungi),Cocoa beans and cocoa products,
+16abcf0e-ab3d-523f-b5c8-bde4ef8b006d,lt,Kapsulės,capsules,capsules for a coffee machine,,,

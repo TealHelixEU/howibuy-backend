@@ -1,0 +1,31 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+9e73fd89-c226-5a03-8c8e-705236e72dd6,lt,Pienas,milk,"milk, the drinking kind",Milk and dairy products,Liquid milk,
+9bd27897-fed2-5957-9c96-8cb2ec3f4f53,lt,Pieno,milk (of milk),"the genitive of pienas, milk, as Lithuanian compounds write it: pieno gėrimas is a milk drink",Milk and dairy products,,
+8d281269-fa46-542f-9e8c-a8778cae9f64,lt,Pieno gėrimas,milk drink,a flavoured or sweetened drink made from milk,Milk and dairy products,Milk based beverages,
+0568b472-ca61-50ab-93e6-b8dd05ae050f,lt,Ožkų pienas,goat milk,milk of goats,Milk and dairy products,Liquid milk,Goat milk
+44c78921-731a-5ee1-8f9e-599787e4a224,lt,Sutirštintas pienas,condensed milk,milk boiled down with sugar,Milk and dairy products,Concentrated milk,Condensed milk
+d0e7ae84-df02-579c-bf28-0d58c24a2f70,lt,Grietinė,sour cream,"soured cream, the thick Lithuanian table cream",Milk and dairy products,Cream and cream products,Cream
+341e04dd-27aa-5c6b-a567-21998589b9ae,lt,Grietinėlė,cream,"sweet dairy cream, for coffee or whipping",Milk and dairy products,Cream and cream products,Cream
+c138d215-643e-5370-9f96-58e4f09c2ac8,lt,Kastinys,kastinys,"kastinys, a Samogitian whipped soured-cream spread",Milk and dairy products,Cream and cream products,Cream
+3222724c-fd3a-589e-b36a-ebd2754829fa,lt,Varškė,curd cheese,"varškė, fresh unripened curd (quark), plain or granular",Milk and dairy products,Cheese,Fresh uncured cheese
+2c59a6c4-2dd8-5e65-9226-250995e0bba3,lt,Varškės,curd cheese (of curd),"the genitive of varškė, curd: varškės sūris is a pressed fresh curd cheese",Milk and dairy products,Cheese,
+f2f9bb1a-e500-56ea-befd-e0ecdb5d4f7f,lt,Sūris,cheese,cheese of any kind,Milk and dairy products,Cheese,
+55f2457b-8a9c-5f5a-9c18-db6cbc810e7e,lt,Kefyras,kefir,"kefir, a cultured milk drink",Milk and dairy products,Fermented milk products,Kefir
+699e6928-7eca-5ecc-9ab2-65d33706363b,lt,Kefyro,kefir (of kefir),"the genitive of kefyras, kefir: kefyro gėrimas is a kefir drink",Milk and dairy products,Fermented milk products,
+3b00e4c9-bf1a-5d38-9842-39b58546889f,lt,Rūgpienis,soured milk,"rūgpienis, naturally soured milk",Milk and dairy products,Fermented milk products,
+a5c937f7-c207-54d2-8e8c-55bc88d53984,lt,Pasukos,buttermilk,"buttermilk, what is left when cream is churned",Milk and dairy products,Fermented milk products,
+c6031451-25a4-59ce-a568-196614640c6e,lt,Sviestas,butter,dairy butter,Animal and vegetable fats and oils,Animal fat,Butter
+c8627e7f-c0ec-5f58-bc91-120dba105eb7,lt,Lydytas sviestas,ghee,clarified butter (ghee),Animal and vegetable fats and oils,Animal fat,Butter oil
+0da739d6-f83a-5bfa-9d2b-649b57e5aa17,lt,Taukai,rendered animal fat,"rendered animal fat, lard or dripping",Animal and vegetable fats and oils,Animal fat,
+a0430ff2-4845-59f7-b1de-fe2471371fd0,lt,Margarinas,margarine,"margarine, a spreadable vegetable-fat butter substitute",Animal and vegetable fats and oils,Margarine and similar products,
+805adc78-9308-56d7-94b1-7f0bb07f061e,lt,Riebalų mišinys,fat blend,a spread blending butter with vegetable fat,Animal and vegetable fats and oils,Margarine and similar products,Fat emulsions
+1429691f-6555-55d4-bb14-3a4cd2e04651,lt,Tepinys,fat spread,"a spreadable fat, margarine-like",Animal and vegetable fats and oils,Margarine and similar products,
+ce91210f-95f3-5862-a0c8-840747af0dba,lt,Majonezas,mayonnaise,mayonnaise,"Herbs, spices and condiments",Dressing,
+77ba2c62-0072-5110-9f9e-20e15e14c40b,lt,Majonezo,mayonnaise (of mayonnaise),"the genitive of majonezas, mayonnaise: majonezo padažas is a mayonnaise-based dressing","Herbs, spices and condiments",Dressing,
+2ffe3d7f-4686-5006-9df0-db2ab6d4c9c3,lt,Remuladas,remoulade,"remoulade, a mayonnaise dressing with pickles and herbs","Herbs, spices and condiments",Dressing,
+0f4fb25a-2918-5d65-b63d-f08f87a5a450,lt,Padažas,sauce,a sauce or dressing,"Herbs, spices and condiments",,
+d6fb6b8c-3b3c-5235-a498-78eee98b68a6,lt,Bešamelio padažas,bechamel sauce,"bechamel, a white sauce of milk, butter and flour","Herbs, spices and condiments",Savoury sauces,"White sauce (Bechamel sauce, Cheese sauce)"
+93b7fb41-0537-542c-93b2-dc3273b08239,lt,Riebalai,fats,"edible fats, animal or vegetable",Animal and vegetable fats and oils,,
+e6da93f7-cc9d-525b-8358-765853fef04b,lt,Gėrimas,drink,a drink; the word says nothing about what it is made of,,,
+02d58b85-29b0-53bb-95be-f71cc681dc75,lt,Užtepėlė,spread,"a savoury spread, of cheese, meat, fish or vegetables",,,
+98ad2c02-1a24-56e6-a999-4f157ad446e2,lt,Mišinys,blend,a blend or mixture of ingredients,,,

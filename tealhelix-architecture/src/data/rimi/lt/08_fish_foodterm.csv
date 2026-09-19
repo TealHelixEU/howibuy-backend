@@ -1,0 +1,71 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+fc0bd01a-12d7-55cc-874c-c48e628c9dd4,lt,Žuvis,fish,fish,"Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+a766bb3d-2d2c-5373-a603-b1df6c243db0,lt,Žuvies,fish (of fish),"the genitive of žuvis, fish","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+1b19d48b-9264-5f32-ac73-eeb9f2dd7405,lt,Žuvų,fish (of fishes),"the genitive plural of žuvis, fish","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+3bef5e86-5e9f-5b79-9a64-f3fb1279b156,lt,Lašiša,salmon,Atlantic salmon,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Salmon and trout (Salmo spp.)
+14cac899-81c0-5b1a-a958-d4e341a2eb51,lt,Lašišos,salmon (of salmon),"the genitive of lašiša, salmon","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Salmon and trout (Salmo spp.)
+1a876bbd-f2d3-5669-9475-33c63b50294e,lt,Upėtakio,trout (of trout),"the genitive of upėtakis, trout","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Salmon and trout (Salmo spp.)
+2d80a47f-23c5-5ce5-908a-24367d7f1699,lt,Palija,char,Arctic char,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Char (Salvelinus)
+c6dab325-da5f-5769-b7fc-272f070939c2,lt,Silkė,herring,Atlantic herring,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Herring (Clupea)
+c6bcc4cf-cefa-5ead-ba21-af86e45086e7,lt,Silkės,herring (of herring),"the genitive of silkė, herring","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Herring (Clupea)
+9fa24f40-e1dd-5528-af45-609da2fe6b8b,lt,Strimelė,Baltic herring,"Baltic herring, the small Baltic race of the Atlantic herring","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Herring (Clupea)
+19e9ad19-e6b5-51d6-bf9c-644d42bfb89a,lt,Strimelės,Baltic herring (of herring),"the genitive of strimelė, Baltic herring","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Herring (Clupea)
+d7b65745-c4e9-56a3-8d91-3a3ae1ea9d35,lt,Šprotai,sprats,"sprats, a small Baltic clupeid usually smoked in oil","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Sprat (Sprattus sprattus)
+74c81709-5865-56e4-988a-f24a3c08c0d5,lt,Skumbrė,mackerel,mackerel,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Mackeral (Scomber)
+94062c86-e45a-5b68-9daf-4f077a922ea2,lt,Skumbrės,mackerel (of mackerel),"the genitive of skumbrė, mackerel","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Mackeral (Scomber)
+30fe014d-3b5a-5b2f-b9d4-edc506f9b94c,lt,Ančiuviai,anchovies,anchovies,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Anchovy (Engraulis)
+54a48e14-d86b-508f-ad10-807485d2d737,lt,Sardinės,sardines,sardines,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Sardine and pilchard (Sardina)
+ac6dfcba-046b-5d51-a2ab-093e430ebcc1,lt,Menkė,cod,cod,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Cod and whiting (Gadus spp.)
+bc33e96a-37a8-565c-be5c-6527a9cb16a0,lt,Menkės,cod (of cod),"the genitive of menkė, cod","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+e339ce7a-8c5e-5236-990a-94df7bde312b,lt,Menkių,cod (of cods),"the genitive plural of menkė, cod: menkių kepenėlės is cod liver","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Cod and whiting (Gadus spp.)
+5414165b-16c6-5518-8453-0bb4ac1916ca,lt,Merlangai,whiting,"whiting, a small gadoid","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Cod and whiting (Gadus spp.)
+6591b089-d7be-5ba8-a0fe-6803a4881adc,lt,Polakas,saithe,"saithe or pollock, a gadoid relative of cod","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+127e1731-9078-518f-af3f-14fa7fded4ed,lt,Karpis,carp,common carp,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Carp (Cyprinus)
+6359960e-d52e-5318-bd53-dcabe6345193,lt,Karpio,carp (of carp),"the genitive of karpis, carp","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Carp (Cyprinus)
+5ad33b1b-d0e1-5912-964a-6b25e4dc85ae,lt,Karšio,bream (of bream),"the genitive of karšis, the freshwater bream","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+de0696bd-5474-5954-b19a-ea80e13c8713,lt,Ešerys,perch,"perch; jūrinis ešerys is the redfish, a different fish","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+2789c41e-6980-5e46-bcaf-719e028e6fdf,lt,Lydeka,pike,"pike; only in jūrinė lydeka, sea pike, does the word mean hake","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+8bfca288-4bc0-577a-b23a-31f7da9cea55,lt,Lydekos,pike (of pike),"the genitive of lydeka, pike, or of the hake in jūrinė lydeka","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+814f52ff-b75c-5b0f-9306-7c5b08a3b886,lt,Jūrinė lydeka,hake,hake,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Hake (Merluccius)
+4ff9402a-95a7-58c3-93c7-23163cb58d75,lt,Tunas,tuna,tuna,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Tuna (Thunnus)
+f370b145-672f-50a1-b6c5-5fa56bf3be92,lt,Tuno,tuna (of tuna),"the genitive of tunas, tuna","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Tuna (Thunnus)
+8d9e3203-3c3a-5c89-a8cd-8fae1d9387ec,lt,Šamo,catfish (of catfish),"the genitive of šamas, which covers the wels, the pangasius and the African catfish","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+71d99924-05de-5d53-97e8-15bbb3852185,lt,Vilkžuvė,wolffish,"wolffish, the Atlantic catfish","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Sea catfish and wolf-fish (Anarhichas)
+1701a528-3d59-5f83-93be-427ba20dc59c,lt,Stintos,smelt (of smelt),"the genitive of stinta, the European smelt","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Smelt (Osmerus)
+3989e624-a1c7-51bc-978e-86d7a4639656,lt,Paltusas,halibut,halibut,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Halibut (Hippoglossus spp.)
+aede9485-d647-5b49-a1d9-9f83ad9ed6c5,lt,Stauridė,horse mackerel,"horse mackerel or scad, not a true mackerel","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+3c7ed1be-8a5b-5ee4-bdca-0d5a6b46efc9,lt,Selarai,scad,"scad, a small carangid","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+b47b8e7a-3aee-5733-85e7-6b0285edaf95,lt,Eršketas,sturgeon,sturgeon,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+b5e76fbc-5738-5b60-84e5-b973aa2d041e,lt,Krevetės,prawns,prawns or shrimp,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Crustaceans,
+95a5107f-c146-54cb-bea3-dddc64e1e07a,lt,Krevečių,prawn (of prawns),"the genitive plural of krevetė, prawn","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+0101141f-5d61-58c4-8319-3fcaff8761f9,lt,Krabų,crab (of crabs),"the genitive plural of krabas, crab","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+3a3abbb2-4cdb-5116-ad95-ed6ae6686bb5,lt,Midijos,mussels,mussels,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Water molluscs,Mussel (Mytilus edulis)
+38905bc3-dadb-5345-a7a8-51f644ced821,lt,Austrės,oysters,oysters,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Water molluscs,Oyster (Ostrea edulis)
+5ad409b3-01d4-51bd-bd5a-a771b1702d3f,lt,Kalmarai,squid,squid,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Water molluscs,Squid (Loligo vulgaris)
+877bbc26-4afc-5d17-839e-17027b8c40f9,lt,Kalmarų,squid (of squid),"the genitive plural of kalmaras, squid","Fish and other seafood (including amphibians, reptiles, snails and insects)",Water molluscs,Squid (Loligo vulgaris)
+f45087ed-ca52-57af-bd82-ce485dab16b2,lt,Ikrai,roe,fish roe,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish products,
+b4beebfa-cbe8-5318-90ac-70f4343a9bdc,lt,Ikrų,roe (of roe),"the genitive plural of ikrai, roe","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish products,
+24d2deae-5960-57fc-a55d-0b15c7e61ae4,lt,Surimi,surimi,"surimi, a paste of minced white fish","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+189b3b81-2442-5566-a7ae-26af07964f30,lt,Krabų lazdelės,crab sticks,"crab sticks, surimi coloured and shaped to imitate crab","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+b560e396-b88e-52d4-9409-1e90c701ca35,lt,Piršteliai,fingers,"fish fingers, breaded batons of fish","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish products,Fish fingers
+25b3c363-e6c8-5357-8a79-8a1fab6423de,lt,Žuvies piršteliai,fish fingers,breaded batons of fish,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish products,Fish fingers
+adeae3d4-f3a5-5fd6-95c6-027cf990b4c3,lt,Maltinukai,patties,small patties of minced fish or meat,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish products,
+c66c94ae-b5e5-5d4e-8544-d8d1c17e36bc,lt,Papilvės,belly flaps,"the belly flaps of a fish, the fattest part","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+a9486b6c-9b58-536f-bb50-4aa6cc2c8099,lt,Nugarkauliai,backbones,"the backbone of a fish, sold with the meat left on it","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+97b78ed9-8815-5c8e-93e4-914715c044a6,lt,Konservai,canned food,canned food,,,
+c9f8e8f0-4398-5ca6-963c-5d02ed254742,lt,Gabaliukai,pieces,pieces,,,
+ca598588-f92c-5418-a25b-4323e09fae3e,lt,Tunai,tuna (plural),tuna,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Tuna (Thunnus)
+4c6819af-4b01-5e23-8c52-5f368b4a0cfb,lt,Tunų,tuna (of tunas),"the genitive plural of tunas, tuna","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Tuna (Thunnus)
+a5a2696e-7e6a-5a18-a559-6e9bf0c86fc3,lt,Lašišų,salmon (of salmons),"the genitive plural of lašiša, salmon","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Salmon and trout (Salmo spp.)
+c32e1acf-81b7-5ada-9bd2-c4bdc65b8af0,lt,Lašišiena,salmon meat,the meat of salmon,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Salmon and trout (Salmo spp.)
+7c2697c7-4a37-5f42-b58f-9517d48e08ae,lt,Silkių,herring (of herrings),"the genitive plural of silkė, herring","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Herring (Clupea)
+89e746d1-d211-540c-961e-6161c8c49c99,lt,Šamų,catfish (of catfishes),"the genitive plural of šamas, catfish","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+b7790428-baa2-52a8-81bd-89536d9ef309,lt,Dorados,seabream (of seabream),"the genitive of dorada, the gilthead seabream","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,
+4e42612d-e7b1-5da8-aafd-f2bfaaed175b,lt,Vilkešeriai,seabass,European seabass,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,Bass (Marone)
+0a986b32-0d73-50f9-9d8f-151f3e91f6a5,lt,Uodegėlės,tails,"the tails of prawns, the part that is eaten","Fish and other seafood (including amphibians, reptiles, snails and insects)",Crustaceans,
+860ac766-5fc4-5eed-9417-0e241a39c20b,lt,Čiuptuvai,tentacles,tentacles of squid or octopus,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Water molluscs,
+d4ef3997-eebb-55c8-a650-792424527643,lt,Galvakojų čiuptuvai,squid tentacles,the tentacles of squid,"Fish and other seafood (including amphibians, reptiles, snails and insects)",Water molluscs,Squid (Loligo vulgaris)
+f5e3fa38-6031-54fa-bcf1-b2e060df181c,lt,Jūros kopūstai,sea cabbage,"sea cabbage, an edible kelp: seaweed, not a cabbage",Vegetables and vegetable products (including fungi),Sea weeds,
+e1a9a17c-4ab9-57f7-b588-992a3c233bad,lt,Jūros gėrybių,seafood (of seafood),"the genitive of jūros gėrybės, seafood","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+5a50b3d7-520c-55c9-9772-e8bf9a64fdaf,lt,Jūrų gėrybių,seafood (of seafood),"a variant genitive of jūros gėrybės, seafood","Fish and other seafood (including amphibians, reptiles, snails and insects)",,
+09e5bad5-46fa-599e-be4c-83081c35bf76,lt,Nugara,back,"the back of a fish, the loin","Fish and other seafood (including amphibians, reptiles, snails and insects)",Fish meat,

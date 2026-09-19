@@ -1,0 +1,59 @@
+id,lang,term,canonical_en,description,category_hint_l1,category_hint_l2,category_hint_l3
+8cdde420-52ab-57a2-8ee7-34cb7bc6bc9b,lt,Sūrio,cheese (of cheese),"the genitive of sūris, cheese: sūrio lazdelės are cheese sticks",Milk and dairy products,Cheese,
+b7ce8431-f590-5d26-8dd3-a84f601593c2,lt,Sūrių,cheeses (of cheeses),"the plural of sūris, cheeses",Milk and dairy products,Cheese,
+c778c06e-65a0-5369-b6b5-9708d3054e75,lt,Sūrelis,small cheese or curd bar,either a small processed cheese or a glazed sweet curd bar,,,
+fb232b84-9de5-5f5f-9b62-0bfcb62067f5,lt,Lydytas sūrelis,small processed cheese,a small portion of processed cheese,Milk and dairy products,Cheese,
+2ddb5b5e-5c27-533e-a4f5-7940a33da653,lt,Sūrio gaminys,cheese product,"a cheese-based product, not legally a cheese",Milk and dairy products,Cheese,
+a5f8e4c2-61a1-52a7-aff5-6aee003cdcd8,lt,Lydytas sūris,processed cheese,processed (melted) cheese,Milk and dairy products,Cheese,
+0ae67bc2-763e-5009-a147-c10530afd3ca,lt,Kietasis sūris,hard cheese,"a hard, long-matured cheese",Milk and dairy products,Cheese,
+95cb5705-ff4f-58ed-a791-d64d92072f0f,lt,Puskietis sūris,semi-hard cheese,a semi-hard cheese of the gouda and edam kind,Milk and dairy products,Cheese,
+55d5403a-da3a-57a6-8143-bdf30de87407,lt,Fermentinis sūris,rennet cheese,"a rennet-set ripened cheese, as opposed to fresh curd",Milk and dairy products,Cheese,
+046069f3-010f-5dfc-a0b9-217ed3237926,lt,Pelėsinis sūris,mould cheese,"a mould-ripened cheese, blue-veined or white-rinded",Milk and dairy products,Cheese,
+01e3275c-d691-5f31-9843-e4c5348ef1af,lt,Melsvasis sūris,blue cheese,a blue-veined cheese,Milk and dairy products,Cheese,
+9c5e9e19-d0dd-5103-a50a-4f04b4ab167a,lt,Šviežias sūris,fresh cheese,a fresh unripened cheese,Milk and dairy products,Cheese,Fresh uncured cheese
+138ba660-58eb-53f9-a424-3034473e21f0,lt,Tepamas sūris,spreadable cheese,a soft cheese sold to be spread,Milk and dairy products,Cheese,
+51f1b38c-9cc9-5b7d-b295-9528040f7dbd,lt,Rūkytas sūris,smoked cheese,a smoked cheese,Milk and dairy products,Cheese,
+6805abcb-7577-5b19-83fb-e1fb49c137ab,lt,Tarkuotas sūris,grated cheese,grated cheese,Milk and dairy products,Cheese,
+289cb0ce-5b2b-5e58-ab89-7694f0e3144a,lt,Pjaustytas sūris,sliced cheese,cheese sold in slices,Milk and dairy products,Cheese,
+d30a68d9-a3a1-5632-8b05-89d950e54b82,lt,Sūrio lazdelės,cheese sticks,sticks of stringy cheese,Milk and dairy products,Cheese,
+f4ac5549-05ec-5dee-ac0f-fe59fa003875,lt,Sūrio užkandis,cheese snack,a small cheese sold as a snack,Milk and dairy products,Cheese,
+bf6e2dd4-271a-59ae-8122-b0025ac2cdb6,lt,Varškės kremas,curd cheese spread,a soft spread of fresh curd,Milk and dairy products,Cheese,Fresh uncured cheese
+7abd5798-690e-5576-b1e7-92c6aa46dd1d,lt,Varškės užtepėlė,curd spread,a savoury spread of fresh curd,Milk and dairy products,Cheese,Fresh uncured cheese
+8feefa12-bbb5-53ee-9efd-a0c2e7bbc39b,lt,Salotų sūris,salad cheese,"a firm white brined cheese for salads, feta-like",Milk and dairy products,Cheese,"Cheese, Feta"
+7a8a4ad3-d320-5722-9126-eea58a504247,lt,Sūris salotoms,salad cheese,"cheese sold for salads, a feta-like white brined cheese",Milk and dairy products,Cheese,"Cheese, Feta"
+84a94a74-f4cd-5d94-b937-ca3cae80eba2,lt,Ožkų,goat (of goats),"the genitive plural of ožka, goat: ožkų sūris is goat cheese",Milk and dairy products,,
+dac20039-861b-5554-916e-da43fa89d210,lt,Ožkos,goat (of a goat),"the genitive of ožka, goat",Milk and dairy products,,
+d1c434a8-5d84-5ab5-a589-b5c4aa003353,lt,Avių,sheep (of sheep),"the genitive plural of avis, sheep: avių pieno sūris is sheep-milk cheese",Milk and dairy products,,
+0b1eb423-c045-5532-83b1-eff7d392ebb3,lt,Ožkų pieno sūris,goat milk cheese,cheese made from goat milk,Milk and dairy products,Cheese,"Cheese, Capra"
+a7b11d99-ad59-547c-b4e3-93b8029d0677,lt,Avių pieno sūris,sheep milk cheese,cheese made from sheep milk,Milk and dairy products,Cheese,
+4b7cbd18-089b-50a0-9ec7-da82bc43d1b5,lt,Čederis,cheddar,"cheddar, a firm orange-to-yellow cow cheese",Milk and dairy products,Cheese,"Cheese, Cheddar"
+df12511a-cdf9-5c76-bf6b-b5de61af7f99,lt,Čederio,cheddar (of cheddar),"the genitive of čederis, cheddar",Milk and dairy products,Cheese,"Cheese, Cheddar"
+d3ccf4a7-6907-59bd-82e7-c04c3a012107,lt,Mocarela,mozzarella,"mozzarella, a fresh stretched-curd cheese",Milk and dairy products,Cheese,"Cheese, Mozzarella"
+04507917-ef08-536d-bc55-a34af550c242,lt,Mozzarella,mozzarella,"mozzarella, a fresh stretched-curd cheese",Milk and dairy products,Cheese,"Cheese, Mozzarella"
+489ba6c7-1fa1-5b3f-bed6-c2e2ab181864,lt,Feta,feta,"feta, a white cheese ripened in brine",Milk and dairy products,Cheese,"Cheese, Feta"
+7288089e-c548-5c66-9346-c2a6395b69a8,lt,Fetos,feta (of feta),"the genitive of feta, a white cheese ripened in brine",Milk and dairy products,Cheese,"Cheese, Feta"
+104f7fee-84cf-553d-bfce-2077e9fd042b,lt,Brinza,brinza,"brinza, a Balkan white brined cheese",Milk and dairy products,Cheese,
+d4055189-25af-5f12-9609-5c6b46b3710f,lt,Rikotos,ricotta (of ricotta),"ricotta, a soft fresh whey cheese",Milk and dairy products,Cheese,
+481772da-76e9-5f8b-86fe-8fa4e531f51d,lt,Maskarponės,mascarpone (of mascarpone),"mascarpone, a very rich fresh cream cheese",Milk and dairy products,Cream and cream products,
+61e28d16-7f0f-5136-9936-ee7e28816bd7,lt,Mascarpone,mascarpone,"mascarpone, a very rich fresh cream cheese",Milk and dairy products,Cream and cream products,
+a78cde5a-37c9-507a-a43e-0e70f1209197,lt,Gouda,gouda,"gouda, a semi-hard cow cheese",Milk and dairy products,Cheese,"Cheese, Gouda"
+6760d35c-e6b1-56ba-a39a-afea93df5c97,lt,Maasdam,maasdam,"maasdam, a semi-hard cow cheese with large holes",Milk and dairy products,Cheese,"Cheese, Maasdam"
+e4cbfc38-b9b0-5871-b12c-ac127e51b941,lt,Masdamas,maasdam,"the Lithuanian spelling of maasdam, a semi-hard cow cheese",Milk and dairy products,Cheese,"Cheese, Maasdam"
+8bd1ffe9-02c0-5034-b550-f1a9a8a8f809,lt,Brie,brie,"brie, a soft cheese with a white bloomy rind",Milk and dairy products,Cheese,"Cheese, Brie"
+485309b1-9c15-5afa-a649-47aeb23aa1d0,lt,Camembert,camembert,"camembert, a soft cheese with a white bloomy rind",Milk and dairy products,Cheese,"Cheese, Camembert"
+90651bca-ad69-5f2c-ac19-c34e3b398d40,lt,Gorgonzola,gorgonzola,"gorgonzola, an Italian blue cheese",Milk and dairy products,Cheese,"Cheese, Gorgonzola"
+a7e54c07-f00b-5831-a69d-70d6284d4786,lt,Roquefort,roquefort,"roquefort, a French sheep-milk blue cheese",Milk and dairy products,Cheese,"Cheese, Roquefort"
+c82ac7ea-f6d0-5f77-ab8c-0302da838480,lt,Parmigiano,parmigiano reggiano,"parmigiano reggiano (parmesan), a hard grating cheese",Milk and dairy products,Cheese,"Cheese, Parmigiano Reggiano"
+9a5dea6b-83b7-56d2-9e39-a36562cba4bc,lt,Grana Padano,grana padano,"grana padano, a hard grating cheese",Milk and dairy products,Cheese,"Cheese, Grana Padano"
+4677e65a-bd18-5f45-a362-a3a1f5ca704d,lt,Manchego,manchego,"manchego, a Spanish sheep-milk cheese",Milk and dairy products,Cheese,"Cheese, Manchego"
+4276c58c-0149-500d-ade3-9957de774800,lt,Mimolette,mimolette,"mimolette, a hard bright-orange cow cheese",Milk and dairy products,Cheese,"Cheese, Mimolette"
+3e3a83c6-dcef-5fd1-ba92-7ffb9acc3e86,lt,Provolone,provolone,"provolone, an Italian stretched-curd cheese",Milk and dairy products,Cheese,"Cheese, Provolone"
+47b627b3-783e-5150-aa4e-ec908837cb1e,lt,Raclette,raclette,"raclette, a semi-hard cheese sold to be melted",Milk and dairy products,Cheese,"Cheese, Raclette"
+5e41596c-4823-5e23-a934-e87da972a862,lt,Gruyere,gruyere,"gruyere, a hard alpine cow cheese",Milk and dairy products,Cheese,"Cheese, Gruyere"
+0f679eb5-1cd9-541b-ad6e-5373301d60dc,lt,Halloumi,halloumi,"halloumi, a Cypriot brined cheese that holds its shape when fried",Milk and dairy products,Cheese,
+1896edf8-d7df-5fc6-b07c-6592cebc8cd6,lt,Burrata,burrata,"burrata, a mozzarella pouch filled with cream",Milk and dairy products,Cheese,
+fb12b0da-0be8-5405-94d3-81cba69d899b,lt,Tilsit,tilsit,"tilsit, a semi-hard washed-rind cow cheese",Milk and dairy products,Cheese,
+9b098417-9979-5d15-98af-b6cf360e076d,lt,Havarti,havarti,"havarti, a semi-soft Danish cow cheese",Milk and dairy products,Cheese,
+e0050984-1026-5bd7-9990-fbaeca6ccf9b,lt,Danablu,danablu,"danablu, a Danish blue cheese",Milk and dairy products,Cheese,
+79fd87ee-7557-57fc-a8c3-753d8b33703a,lt,Wensleydale,wensleydale,"wensleydale, a crumbly English cow cheese",Milk and dairy products,Cheese,
+d0b9b364-7c54-5214-b30a-adcc1be0a091,lt,Kremas,cream,"a smooth spreadable cream, of cheese, dairy or confectionery",,,
