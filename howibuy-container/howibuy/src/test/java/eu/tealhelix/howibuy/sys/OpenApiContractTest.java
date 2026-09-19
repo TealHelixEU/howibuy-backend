@@ -28,7 +28,7 @@ public class OpenApiContractTest {
 	void publishesOpenApiDocumentDescribingTheCompassReadSurface() {
 		given()
 				.accept("application/json")
-				.when().get("/q/openapi")
+				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
 				.body(containsString("sfc/overview"))
@@ -43,7 +43,7 @@ public class OpenApiContractTest {
 	void rendersValueTypeIdsAsStrings() {
 		given()
 				.accept("application/json")
-				.when().get("/q/openapi")
+				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
 				.body("components.schemas.CategoryId.type", equalTo("string"))
@@ -60,7 +60,7 @@ public class OpenApiContractTest {
 	void omitsTheQuteSampleEndpointAndItsSchemaNoise() {
 		given()
 				.accept("application/json")
-				.when().get("/q/openapi")
+				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
 				.body("paths.keySet()", not(hasItem("/api/howibuy/v1/greeting")))
@@ -77,7 +77,7 @@ public class OpenApiContractTest {
 	void rendersStringSerializedValueTypesAsStrings() {
 		given()
 				.accept("application/json")
-				.when().get("/q/openapi")
+				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
 				.body("components.schemas.ProductKey.type", equalTo("string"))
@@ -95,7 +95,7 @@ public class OpenApiContractTest {
 	void describesResponseBodySchemas() {
 		given()
 				.accept("application/json")
-				.when().get("/q/openapi")
+				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
 				.body("components.schemas.HandoffResponse", notNullValue())
@@ -115,7 +115,7 @@ public class OpenApiContractTest {
 	void describesTheRecommendedAlternativeWithItsArchetypeAndScores() {
 		given()
 				.accept("application/json")
-				.when().get("/q/openapi")
+				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
 				.body("components.schemas.AlternativeForProduct.properties.archetypeProductId.'$ref'",
