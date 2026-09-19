@@ -30,13 +30,14 @@ public class CategoryTextEntity {
 	@Column(name = "name")
 	private String name;
 
-	@Column(name = "description")
+	// The length asks for the dialect's unbounded string type, i.e. TEXT on Postgres, as the changelog declares it
+	@Column(name = "description", length = Integer.MAX_VALUE)
 	private String description;
 
-	@Column(name = "video_url")
+	@Column(name = "video_url", length = 1024)
 	private String videoUrl;
 
-	@Column(name = "detail_url")
+	@Column(name = "detail_url", length = 1024)
 	private String detailUrl;
 
 	public CategoryEntity getCategory() {

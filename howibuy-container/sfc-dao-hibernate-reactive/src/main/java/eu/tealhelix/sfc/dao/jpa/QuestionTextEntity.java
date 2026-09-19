@@ -27,7 +27,8 @@ public class QuestionTextEntity {
 	@Column(name = "lang")
 	private String lang;
 
-	@Column(name = "text")
+	// The length asks for the dialect's unbounded string type, i.e. TEXT on Postgres, as the changelog declares it
+	@Column(name = "text", length = Integer.MAX_VALUE)
 	private String text;
 
 	public QuestionEntity getQuestion() {
