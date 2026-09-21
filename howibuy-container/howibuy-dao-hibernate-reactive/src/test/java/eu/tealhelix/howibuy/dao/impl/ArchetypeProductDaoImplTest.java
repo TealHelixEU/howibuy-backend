@@ -232,6 +232,19 @@ public class ArchetypeProductDaoImplTest {
 	}
 
 	@Test
+	void retrievesTheSafadCategoryPathOfEveryProductInTheCorpus(Mutiny.SessionFactory sessionFactory) {
+		var corpus = retrieveCorpus(sessionFactory);
+
+		assertEquals(
+				Map.of(ORANGE_JUICE, "Beverages/Juices/Juices", GENERIC_JUICE, "Beverages/Juices/Juices",
+						WHOLE_MILK, "Beverages/Dairy/Milks", GENERIC_MILK, "Beverages/Dairy/Milks"),
+				corpus.stream().collect(toMap(
+						ArchetypeProductImpacts::getId,
+						product -> product.getL1CategoryName() + "/" + product.getL2CategoryName() + "/" + product.getL3CategoryName())),
+				"a recommended alternative names the three taxonomy levels it sits in, walked up from the leaf it hangs from");
+	}
+
+	@Test
 	void retrievesTheNameAndAgbCodeOfEveryProductInTheCorpus(Mutiny.SessionFactory sessionFactory) {
 		var corpus = retrieveCorpus(sessionFactory);
 

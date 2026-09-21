@@ -29,8 +29,8 @@ import eu.tealhelix.howibuy.v1.types.WeightProfile;
 
 /**
  * The whole archetype corpus, scored and ready to answer "what should this user buy instead". Holds the scored
- * products, the substitutability matrix and the product names, and turns the engine's answer into the three
- * alternatives an assessment reports.
+ * products, the substitutability matrix and what a recommendation says about each product, and turns the engine's
+ * answer into the three alternatives an assessment reports.
  * <p>
  * Immutable and shared by every request; see {@link ArchetypeCorpus}, which loads it. The scoring itself is
  * independent of who is asking, so a request contributes only its own weighting profile.
@@ -39,7 +39,18 @@ public final class ScoredArchetypes {
 	private final ScoredCorpus scoredCorpus;
 	private final SubstitutionSearch search;
 	private final SubstitutionSettings settings;
-	private final Map<ArchetypeProductId, String> namesByProductId;
+	private final Map<ArchetypeProductId, ArchetypeDescription> descriptionsByProductId;
+
+	/**
+	 * What an alternative says about the archetype it names, whichever ranking chose it: the product name and the SAFAD
+	 * taxonomy path it sits in.
+	 */
+	private record ArchetypeDescription(String name, String l1Category, String l2Category, String l3Category) {
+		static ArchetypeDescription of(ArchetypeProductImpacts product) {
+			return new ArchetypeDescription(
+					product.getName(), product.getL1CategoryName(), product.getL2CategoryName(), product.getL3CategoryName());
+		}
+	}
 
 	/**
 	 * The best alternative under each of the three criteria, all three {@code NO_SUGGESTION} when the assessed product
@@ -64,9 +75,9 @@ public final class ScoredArchetypes {
 				scoredCorpus, SubstitutabilityMatrix.of(matrix.stream().map(ScoredArchetypes::toSubstitutablePair).toList()),
 				scientificProfile, settings);
 
-		var namesByProductId = new HashMap<ArchetypeProductId, String>(corpus.size());
-		corpus.forEach(product -> namesByProductId.put(product.getId(), product.getName()));
-		return new ScoredArchetypes(scoredCorpus, search, settings, Map.copyOf(namesByProductId));
+		var descriptionsByProductId = new HashMap<ArchetypeProductId, ArchetypeDescription>(corpus.size());
+		corpus.forEach(product -> descriptionsByProductId.put(product.getId(), ArchetypeDescription.of(product)));
+		return new ScoredArchetypes(scoredCorpus, search, settings, Map.copyOf(descriptionsByProductId));
 	}
 
 	/**
@@ -100,9 +111,13 @@ public final class ScoredArchetypes {
 
 		var product = winner.get();
 		var reference = alternatives.reference();
+		var description = descriptionsByProductId.get(product.productId());
 		return ImmutableAlternativeForProduct.builder()
 				.type(product.productId().equals(reference.productId()) ? GOOD_ENOUGH : SUGGESTION)
-				.name(namesByProductId.get(product.productId()))
+				.name(description.name())
+				.l1Category(description.l1Category())
+				.l2Category(description.l2Category())
+				.l3Category(description.l3Category())
 				.archetypeProductId(product.productId())
 				.referenceOverallScore(score.applyAsDouble(reference))
 				.alternativeOverallScore(score.applyAsDouble(product))
@@ -125,10 +140,10 @@ public final class ScoredArchetypes {
 
 	private ScoredArchetypes(
 			ScoredCorpus scoredCorpus, SubstitutionSearch search, SubstitutionSettings settings,
-			Map<ArchetypeProductId, String> namesByProductId) {
+			Map<ArchetypeProductId, ArchetypeDescription> descriptionsByProductId) {
 		this.scoredCorpus = scoredCorpus;
 		this.search = search;
 		this.settings = settings;
-		this.namesByProductId = namesByProductId;
+		this.descriptionsByProductId = descriptionsByProductId;
 	}
 }

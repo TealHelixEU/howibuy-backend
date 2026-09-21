@@ -27,6 +27,20 @@ public interface AlternativeForProduct {
 	ArchetypeProductId getArchetypeProductId();
 
 	/**
+	 * The SAFAD taxonomy path the recommended archetype sits in, from the top-level category down to the leaf it hangs
+	 * from. A suggestion may well come from a different branch than the assessed product's own, since substitutability
+	 * reaches across categories, so the path says what kind of food is being recommended.
+	 */
+	@Nullable
+	String getL1Category();
+
+	@Nullable
+	String getL2Category();
+
+	@Nullable
+	String getL3Category();
+
+	/**
 	 * The overall score of the archetype the assessed product was matched to, and of the one recommended in its place.
 	 * Both are measured under the criterion that chose this alternative — the user's own weights for the personal
 	 * recommendation, WP3's for the scientific one, and the blend of the two for the combined one — so the pair

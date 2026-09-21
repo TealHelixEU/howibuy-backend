@@ -305,6 +305,9 @@ public class SingleProductAssessorTest {
 		assertEquals(AlternativeForProductType.SUGGESTION, alternative.getType());
 		assertEquals(BETTER_ARCHETYPE, alternative.getArchetypeProductId());
 		assertEquals("Store brand", alternative.getName(), "graded A where the matched archetype is only graded C");
+		assertEquals("Beverages", alternative.getL1Category(), "the recommended archetype's own taxonomy path");
+		assertEquals("Juices", alternative.getL2Category());
+		assertEquals("Orange juice", alternative.getL3Category());
 		assertEquals(0.875, alternative.getReferenceOverallScore(), 1e-9);
 		assertEquals(1.0, alternative.getAlternativeOverallScore(), 1e-9);
 	}
@@ -360,6 +363,9 @@ public class SingleProductAssessorTest {
 				.name(name)
 				.agbCode(agbCode)
 				.l2CategoryId(L2_JUICES)
+				.l1CategoryName(BEVERAGES.getName())
+				.l2CategoryName(JUICES.getName())
+				.l3CategoryName(ORANGE_JUICE.getName())
 				.indicatorValues(values)
 				.nutriScore(nutriScore)
 				.build();

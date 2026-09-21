@@ -107,12 +107,12 @@ public class OpenApiContractTest {
 	}
 
 	/**
-	 * An assessment answers with three alternatives, each naming the archetype product it recommends and the two
-	 * overall scores that put it there. The scores are what the front-end shows the user, so they belong to the
-	 * published contract rather than only to the Java type.
+	 * An assessment answers with three alternatives, each naming the archetype product it recommends, the SAFAD
+	 * taxonomy path that archetype sits in and the two overall scores that put it there. All of it is what the
+	 * front-end shows the user, so it belongs to the published contract rather than only to the Java type.
 	 */
 	@Test
-	void describesTheRecommendedAlternativeWithItsArchetypeAndScores() {
+	void describesTheRecommendedAlternativeWithItsArchetypeCategoriesAndScores() {
 		given()
 				.accept("application/json")
 				.when().get("/api/howibuy/v1/openapi")
@@ -122,6 +122,9 @@ public class OpenApiContractTest {
 						equalTo("#/components/schemas/ArchetypeProductId"))
 				.body("components.schemas.ArchetypeProductId.type", equalTo("string"))
 				.body("components.schemas.ArchetypeProductId.properties", nullValue())
+				.body("components.schemas.AlternativeForProduct.properties.l1Category.type", equalTo("string"))
+				.body("components.schemas.AlternativeForProduct.properties.l2Category.type", equalTo("string"))
+				.body("components.schemas.AlternativeForProduct.properties.l3Category.type", equalTo("string"))
 				.body("components.schemas.AlternativeForProduct.properties.referenceOverallScore.type", equalTo("number"))
 				.body("components.schemas.AlternativeForProduct.properties.alternativeOverallScore.type", equalTo("number"))
 				.body("components.schemas.AlternativeForProduct.properties.type.'$ref'",

@@ -48,14 +48,24 @@ class ScoredArchetypesTest {
 	private static final double BASE_VALUE = 1e-9;
 	private static final double TOLERANCE = 1e-9;
 
-	private static final ArchetypeCategoryId L2_JUICES = categoryId("juices");
-	private static final ArchetypeCategoryId L2_WATER = categoryId("water");
-	private static final ArchetypeCategoryId L2_CANDY = categoryId("candy");
+	/**
+	 * A branch of the SAFAD taxonomy: the L2 node substitutability is decided at, plus the whole path a recommendation
+	 * reports. The id is derived from the L2 name, so a failure names a category a reader can find in the test.
+	 */
+	private record Branch(String l1, String l2, String l3) {
+		ArchetypeCategoryId id() {
+			return categoryId(l2);
+		}
+	}
+
+	private static final Branch JUICES = new Branch("Beverages", "Juices", "Fruit juices");
+	private static final Branch WATER = new Branch("Beverages", "Water", "Spring waters");
+	private static final Branch CANDY = new Branch("Sweets", "Candy", "Candy bars");
 
 	/** Water substitutes for juices only barely, and candy not at all — it is absent from the matrix. */
 	private static final List<Substitutability> MATRIX = List.of(
-			substitutability(L2_JUICES, L2_JUICES, (short) 5),
-			substitutability(L2_WATER, L2_JUICES, (short) 1));
+			substitutability(JUICES.id(), JUICES.id(), (short) 5),
+			substitutability(WATER.id(), JUICES.id(), (short) 1));
 
 	private static final ArchetypeProductId REFERENCE = productId("reference");
 	private static final ArchetypeProductId GREENEST = productId("greenest");
@@ -78,13 +88,13 @@ class ScoredArchetypesTest {
 	 * Spirits            —     —     —     —     none        none
 	 */
 	private static final List<ArchetypeProductImpacts> CORPUS = List.of(
-			impacts(REFERENCE, "Reference juice", "100", L2_JUICES, 0.5, 0.5, 0.5, "Nutriscore_B"),
-			impacts(GREENEST, "Greenest juice", "200", L2_JUICES, 0.0, 0.5, 0.5, "Nutriscore_A"),
-			impacts(SOUNDEST, "Soundest juice", "300", L2_JUICES, 0.5, 0.0, 0.0, "Nutriscore_A"),
-			impacts(WORST, "Worst juice", "400", L2_JUICES, 1.0, 1.0, 1.0, "Nutriscore_E"),
-			impacts(SPIRITS, "Spirits", "500", L2_JUICES, 0.5, 0.5, 0.5, "0"),
-			impacts(CANDY_BAR, "Candy bar", "600", L2_CANDY, 0.5, 0.5, 0.5, "Nutriscore_A"),
-			impacts(SPRING_WATER, "Spring water", "700", L2_WATER, 0.0, 0.0, 0.0, "Nutriscore_A"));
+			impacts(REFERENCE, "Reference juice", "100", JUICES, 0.5, 0.5, 0.5, "Nutriscore_B"),
+			impacts(GREENEST, "Greenest juice", "200", JUICES, 0.0, 0.5, 0.5, "Nutriscore_A"),
+			impacts(SOUNDEST, "Soundest juice", "300", JUICES, 0.5, 0.0, 0.0, "Nutriscore_A"),
+			impacts(WORST, "Worst juice", "400", JUICES, 1.0, 1.0, 1.0, "Nutriscore_E"),
+			impacts(SPIRITS, "Spirits", "500", JUICES, 0.5, 0.5, 0.5, "0"),
+			impacts(CANDY_BAR, "Candy bar", "600", CANDY, 0.5, 0.5, 0.5, "Nutriscore_A"),
+			impacts(SPRING_WATER, "Spring water", "700", WATER, 0.0, 0.0, 0.0, "Nutriscore_A"));
 
 	private static final WeightProfile PERSONAL = personalProfileOnEnvironment();
 
@@ -92,18 +102,18 @@ class ScoredArchetypesTest {
 	void reportsTheBestAlternativeUnderEachCriterionScoredByThatCriterion() {
 		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL);
 
-		assertAlternative(best.personal(), SUGGESTION, GREENEST, "Greenest juice", 0.5, 1.0);
-		assertAlternative(best.scientific(), SUGGESTION, SOUNDEST, "Soundest juice", 0.5625, 0.875);
-		assertAlternative(best.combined(), SUGGESTION, GREENEST, "Greenest juice", 0.525, 0.9);
+		assertAlternative(best.personal(), SUGGESTION, GREENEST, "Greenest juice", JUICES, 0.5, 1.0);
+		assertAlternative(best.scientific(), SUGGESTION, SOUNDEST, "Soundest juice", JUICES, 0.5625, 0.875);
+		assertAlternative(best.combined(), SUGGESTION, GREENEST, "Greenest juice", JUICES, 0.525, 0.9);
 	}
 
 	@Test
 	void reportsTheReferenceProductItselfAsGoodEnoughWhenNothingEligibleBeatsIt() {
 		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(SOUNDEST, PERSONAL);
 
-		assertAlternative(best.personal(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", 0.5, 0.5);
-		assertAlternative(best.scientific(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", 0.875, 0.875);
-		assertAlternative(best.combined(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", 0.65, 0.65);
+		assertAlternative(best.personal(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.5, 0.5);
+		assertAlternative(best.scientific(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.875, 0.875);
+		assertAlternative(best.combined(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.65, 0.65);
 	}
 
 	@Test
@@ -141,7 +151,7 @@ class ScoredArchetypesTest {
 
 		assertEquals(SOUNDEST, atSmall.scientific().getArchetypeProductId(),
 				"water substitutes for juices at degree 1, below the small level's cut-off");
-		assertAlternative(atLarge.scientific(), SUGGESTION, SPRING_WATER, "Spring water", 0.5625, 1.0);
+		assertAlternative(atLarge.scientific(), SUGGESTION, SPRING_WATER, "Spring water", WATER, 0.5625, 1.0);
 	}
 
 	private static ScoredArchetypes archetypes(SubstitutabilityLevel level) {
@@ -150,10 +160,13 @@ class ScoredArchetypesTest {
 
 	private static void assertAlternative(
 			AlternativeForProduct alternative, AlternativeForProductType type,
-			ArchetypeProductId productId, String name, double referenceScore, double alternativeScore) {
+			ArchetypeProductId productId, String name, Branch branch, double referenceScore, double alternativeScore) {
 		assertEquals(type, alternative.getType());
 		assertEquals(productId, alternative.getArchetypeProductId(), "the recommended archetype, by id");
 		assertEquals(name, alternative.getName());
+		assertEquals(branch.l1(), alternative.getL1Category(), "the SAFAD path the recommended archetype sits in");
+		assertEquals(branch.l2(), alternative.getL2Category());
+		assertEquals(branch.l3(), alternative.getL3Category());
 		assertEquals(referenceScore, alternative.getReferenceOverallScore(), TOLERANCE, "the reference product's own score under this criterion");
 		assertEquals(alternativeScore, alternative.getAlternativeOverallScore(), TOLERANCE, "the recommended product's score under this criterion");
 	}
@@ -162,6 +175,9 @@ class ScoredArchetypesTest {
 		assertEquals(NO_SUGGESTION, alternative.getType());
 		assertNull(alternative.getArchetypeProductId(), "no product is named when none is recommended");
 		assertNull(alternative.getName());
+		assertNull(alternative.getL1Category());
+		assertNull(alternative.getL2Category());
+		assertNull(alternative.getL3Category());
 		assertNull(alternative.getReferenceOverallScore());
 		assertNull(alternative.getAlternativeOverallScore());
 	}
@@ -194,7 +210,7 @@ class ScoredArchetypesTest {
 	}
 
 	private static ArchetypeProductImpacts impacts(
-			ArchetypeProductId id, String name, String agbCode, ArchetypeCategoryId l2CategoryId,
+			ArchetypeProductId id, String name, String agbCode, Branch branch,
 			double environment, double animalWelfare, double social, String nutriScore) {
 		var values = new EnumMap<SustainabilityIndicator, Double>(SustainabilityIndicator.class);
 		for (var indicator : SustainabilityIndicator.values()) {
@@ -209,7 +225,10 @@ class ScoredArchetypesTest {
 				.id(id)
 				.name(name)
 				.agbCode(agbCode)
-				.l2CategoryId(l2CategoryId)
+				.l2CategoryId(branch.id())
+				.l1CategoryName(branch.l1())
+				.l2CategoryName(branch.l2())
+				.l3CategoryName(branch.l3())
 				.indicatorValues(Map.copyOf(values))
 				.nutriScore(nutriScore)
 				.build();

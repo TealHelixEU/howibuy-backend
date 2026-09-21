@@ -8,11 +8,11 @@ import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 import org.immutables.value.Value;
 
 /**
- * An archetype product with everything the sustainability scoring needs to place it against the rest of the corpus:
+ * An archetype product with everything the sustainability scoring needs to place it against the rest of the corpus —
  * its measured indicator values, the Nutri-Score its health score is read from, and the L2 category at which
- * substitutability is decided.
+ * substitutability is decided — plus what a recommendation of it says to the user: its name and its taxonomy path.
  * <p>
- * The whole corpus is read as one, so the L2 category is resolved in that query rather than by walking the taxonomy
+ * The whole corpus is read as one, so the categories are resolved in that query rather than by walking the taxonomy
  * per product; a product's own category is the L3 leaf it hangs from, and its parent is what the substitutability
  * matrix speaks about.
  */
@@ -29,6 +29,16 @@ public interface ArchetypeProductImpacts extends HasArchetypeProductId {
 	String getAgbCode();
 
 	ArchetypeCategoryId getL2CategoryId();
+
+	/**
+	 * The names of the three SAFAD taxonomy levels the product sits in, shown to the user alongside a recommendation of
+	 * it.
+	 */
+	String getL1CategoryName();
+
+	String getL2CategoryName();
+
+	String getL3CategoryName();
 
 	/**
 	 * The measured value of each indicator. An indicator absent from the map contributes nothing to its dimension.

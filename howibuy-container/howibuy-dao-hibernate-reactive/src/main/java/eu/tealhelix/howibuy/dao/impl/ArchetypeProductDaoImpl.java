@@ -48,8 +48,14 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 		var q = cb.createTupleQuery();
 		var root = q.from(ArchetypeProductEntity.class);
 		var l3category = root.join(ArchetypeProductEntity_.category);
-		var l2categoryId = l3category.get(ArchetypeCategoryEntity_.parent).get(ArchetypeCategoryEntity_.id);
-		q.select(cb.tuple(root, l2categoryId))
+		var l2category = l3category.join(ArchetypeCategoryEntity_.parent);
+		var l1category = l2category.join(ArchetypeCategoryEntity_.parent);
+		q.select(cb.tuple(
+						root,
+						l2category.get(ArchetypeCategoryEntity_.id),
+						l1category.get(ArchetypeCategoryEntity_.name),
+						l2category.get(ArchetypeCategoryEntity_.name),
+						l3category.get(ArchetypeCategoryEntity_.name)))
 				.orderBy(cb.asc(root.get(ArchetypeProductEntity_.agbCode)));
 		return em.createQuery(q).getResultList().map(ArchetypeProductDaoImpl::toArchetypeProductImpacts);
 	}
@@ -65,6 +71,9 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 				.name(product.getName())
 				.agbCode(product.getAgbCode())
 				.l2CategoryId(new ArchetypeCategoryIdImpl(tuple.get(1, UUID.class).toString()))
+				.l1CategoryName(tuple.get(2, String.class))
+				.l2CategoryName(tuple.get(3, String.class))
+				.l3CategoryName(tuple.get(4, String.class))
 				.indicatorValues(indicatorValues(product))
 				.nutriScore(product.getNutriScore())
 				.build();

@@ -114,6 +114,9 @@ public class ArchetypeCorpusTest {
 				.name("Orange juice")
 				.agbCode("agb-oj")
 				.l2CategoryId(L2_JUICES)
+				.l1CategoryName("Beverages")
+				.l2CategoryName("Juices")
+				.l3CategoryName("Fruit juices")
 				.indicatorValues(Map.of())
 				.nutriScore("Nutriscore_A")
 				.build();
