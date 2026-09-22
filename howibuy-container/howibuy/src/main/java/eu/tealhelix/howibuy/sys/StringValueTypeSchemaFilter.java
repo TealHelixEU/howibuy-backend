@@ -17,7 +17,9 @@ import org.eclipse.microprofile.openapi.models.media.Schema.SchemaType;
  *     <li>{@code Locale}, {@code Currency} — JDK value types Jackson renders as a language tag / currency code,
  *     otherwise expanded into their full bean shape.</li>
  * </ul>
- * This filter rewrites those component schemas to a plain string, matching the wire.
+ * This filter rewrites those component schemas to a plain string, matching the wire. It corrects the shape only: the
+ * text describing these types comes from {@code META-INF/openapi.yaml}, so it is carried over to the schema written in
+ * their place.
  */
 public class StringValueTypeSchemaFilter implements OASFilter {
 	private static final Set<String> STRING_VALUE_TYPES = Set.of("ArchetypeProductId", "CategoryId", "QuestionId", "ProductKey", "Locale", "Currency");
@@ -27,7 +29,12 @@ public class StringValueTypeSchemaFilter implements OASFilter {
 		var components = openAPI.getComponents();
 		if (components == null || components.getSchemas() == null) return;
 		for (var name : STRING_VALUE_TYPES) {
-			if (components.getSchemas().containsKey(name)) components.addSchema(name, OASFactory.createSchema().addType(SchemaType.STRING));
+			var scanned = components.getSchemas().get(name);
+			if (scanned == null) continue;
+			components.addSchema(name, OASFactory.createSchema()
+					.addType(SchemaType.STRING)
+					.description(scanned.getDescription())
+					.examples(scanned.getExamples()));
 		}
 	}
 }

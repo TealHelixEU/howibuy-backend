@@ -46,6 +46,17 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp -DskipTests dependency:go-of
 
 COPY . .
 
+# Swagger UI configuration is fixed at augmentation time, so it has to be present in the environment
+# of the Maven build rather than in the runtime container. This one is used to overcome the path swap
+# in the production URLs: api/howibuy/v1 becomes howibuy/api/v1
+ARG QUARKUS_SWAGGER_UI_URLS_DEFAULT
+
+# The JAX-RS application path is baked into the OpenAPI path keys during the same augmentation, so leaving it out is
+# also fixed here. The published paths are then relative to the base path named by QUARKUS_SMALLRYE_OPENAPI_SERVERS,
+# which is runtime configuration and belongs in the container environment. The two go together: with the application
+# path gone and no base path named, the document stops saying where its operations are reached at all.
+ARG MP_OPENAPI_EXTENSIONS_SMALLRYE_APPLICATION_PATH_DISABLE
+
 # Build the full multi-module project and skip test execution.
 RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp clean package -DskipTests
 

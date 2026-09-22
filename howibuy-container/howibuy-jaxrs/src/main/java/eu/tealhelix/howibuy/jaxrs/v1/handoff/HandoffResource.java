@@ -1,5 +1,11 @@
 package eu.tealhelix.howibuy.jaxrs.v1.handoff;
 
+import static eu.tealhelix.common.web.CommonOpenApiConstants.BAD_REQUEST;
+import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
+import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
+import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.HANDOFF;
+import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.HANDOFF_DESC;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -14,11 +20,19 @@ import eu.tealhelix.common.web.authentication.jwt.BearerToken;
 import eu.tealhelix.common.web.authentication.jwt.JwtGenerationService;
 import eu.tealhelix.common.web.authentication.jwt.TokenHelper;
 import eu.tealhelix.common.web.authentication.jwt.TokenHelperException;
+import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
 import eu.tealhelix.howibuy.services.v1.HandoffService;
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
 import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("handoff")
+@Tag(name = HANDOFF, description = HANDOFF_DESC)
 public class HandoffResource {
 	@Inject
 	UserImpersonationService userImpersonationService;
@@ -38,6 +52,15 @@ public class HandoffResource {
 	 * because what follows happens in the user's browser: a ticket is worth nothing until redeemed, and nothing again
 	 * afterwards.
 	 */
+	@Operation(
+			summary = "Mint a handoff ticket for one of the retailer's users",
+			description = "The retailer names the user by its own correlation id, as for the token exchange, and is answered a ticket rather than a token because what follows happens in the user's browser. The ticket is redeemable once, and only for the short while the answer states.")
+	@APIResponse(responseCode = "200", description = "The ticket, which this application will not produce a second time.")
+	@APIResponse(responseCode = "400", description = "The correlation id is missing or longer than 100 characters.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)
+	@APIResponse(responseCode = "403", description = "The caller is not an active retailer of this application, or the user named has not consented.")
+	@SecurityRequirement(name = BEARER_AUTH)
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<HandoffResponse> mintTicket(@Context ContainerRequestContext crc, HandoffRequest request) {
@@ -53,6 +76,12 @@ public class HandoffResource {
 	 * why it is worth so little for so short a time. Nothing here reads the security context, so nothing here can be
 	 * reached by presenting anything other than the ticket.
 	 */
+	@Operation(
+			summary = "Redeem a handoff ticket for the first token of the session it opens",
+			description = "The one operation of this application that asks for no token of its own: the single-page application holds none yet, and the ticket in the body is the credential. Answers the token the session runs on, and the seconds left of the session as a whole — which no later renewal moves.")
+	@APIResponse(responseCode = "200", description = "The first token of the session the ticket opened.")
+	@APIResponse(responseCode = "400", description = BAD_REQUEST)
+	@APIResponse(responseCode = "401", description = "There was no ticket to redeem. A ticket that never existed, one that has expired and one already redeemed are refused alike, so presenting a ticket says nothing beyond whether it worked.")
 	@POST
 	@Path("redeem")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -70,6 +99,12 @@ public class HandoffResource {
 	 * token has died is over, however far the end of it still was. The request carries nothing but that token — there is
 	 * nothing to say about a renewal that the token does not already say.
 	 */
+	@Operation(
+			summary = "Exchange the token of a handed-over session for the next one",
+			description = "The session slides for as long as the user keeps working and ends at the moment the first token specified. The request carries nothing but the token to renew. A renewal carries no extra information.")
+	@APIResponse(responseCode = "200", description = "The next token of the session, and the seconds left of the session itself.")
+	@APIResponse(responseCode = "401", description = "No token was presented, or the one presented can no longer be renewed. A session whose token has died is over, however far the end of it still was, so the single-page application renews ahead of the expiry.")
+	@SecurityRequirement(name = BEARER_AUTH)
 	@POST
 	@Path("renew")
 	@Produces(MediaType.APPLICATION_JSON)

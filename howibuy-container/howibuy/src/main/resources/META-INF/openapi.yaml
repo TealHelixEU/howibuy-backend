@@ -1,0 +1,177 @@
+# Descriptions for the types this application puts on the wire but does not define for it: the domain model, shared
+# with the rest of the code, and the JDK types it carries. Those modules are framework-free, so they hold no
+# MicroProfile OpenAPI annotations — the same line StringValueTypeSchemaFilter exists to avoid crossing. SmallRye
+# merges this document into the one it scans from the code, leaving everything scanned (types, formats, required-ness)
+# in place and adding only the text below.
+#
+# The types defined for the wire — the DTOs and the request/response envelopes — carry their text as annotations
+# instead, next to the code that produces them. Nothing here is resolved against the model at build time, so a rename
+# would leave an entry hanging on a name that no longer exists; OpenApiContractTest sweeps for that.
+#
+openapi: 3.1.0
+components:
+  schemas:
+
+    # ---- Product assessment -------------------------------------------------------------------------------------
+
+    ProductData:
+      description: >-
+        A product put forward for assessment. Everything written in it must be in the one language named below, since
+        it is the text that drives the classification.
+      properties:
+        productKey:
+          description: >-
+            The caller's own identifier for this product. It is echoed on the outcome, which is how a caller ties each
+            answer back to the product it asked about.
+        language:
+          description: The language everything textual in this product is written in.
+        name:
+          description: The name of the product, as it reads to a shopper in that language.
+        price:
+          description: What the product sells for, in the currency below.
+        currency:
+          description: The currency the price is given in.
+        characteristics:
+          description: >-
+            Named characteristics of the product, which feed the classification. Both the names and the values are in
+            the language named above.
+        tags:
+          description: Free-form tags, which feed the classification the same way. Also in the language named above.
+
+    ProductAssessmentOutcome:
+      description: >-
+        What the assessment made of one product: whether it could be placed in the taxonomy at all and, if it could,
+        the better-scoring products that could be bought in its place.
+      properties:
+        productKey:
+          description: The key the caller sent with the product, echoed so each outcome can be tied back to its product.
+        type:
+          description: Whether the assessment succeeded. The fields below carry something only when it did.
+        bestPersonalAlternative:
+          description: >-
+            The best alternative under this user's own weighting of the sustainability dimensions, as their compass
+            records it.
+        bestScientificAlternative:
+          description: The best alternative under the scientific weighting of the dimensions, which is the same for every user.
+        bestCombinedAlternative:
+          description: The best alternative under a blend of the two weightings above.
+        diagnostics:
+          description: How the product was classified, for tracing an assessment rather than for showing to a shopper.
+
+    AlternativeForProduct:
+      description: A product put forward to be bought in place of the one assessed, together with what it would gain.
+      properties:
+        type:
+          description: >-
+            Whether an alternative is being put forward at all. The rest of this object is carried only when one is.
+        name:
+          description: The name of the archetype product being recommended.
+        archetypeProductId:
+          description: >-
+            The archetype product being recommended — the same one the assessed product was matched to, when the type
+            is `GOOD_ENOUGH`.
+        l1Category:
+          description: >-
+            The top of the SAFAD taxonomy path the recommended archetype sits in. A suggestion may well come from a
+            different branch than the assessed product's own, since substitutability reaches across categories, so the
+            path says what kind of food is being recommended.
+        l2Category:
+          description: The middle of that path.
+        l3Category:
+          description: The leaf of that path, the one the recommended archetype hangs from.
+        referenceOverallScore:
+          description: >-
+            The overall score of the archetype the assessed product was matched to, measured under the criterion that
+            chose this alternative — the user's own weights for the personal recommendation, the scientific ones for
+            the scientific recommendation, and the blend of the two for the combined one.
+        alternativeOverallScore:
+          description: >-
+            The overall score of the archetype recommended in its place, measured under that same criterion. The pair
+            is what explains the recommendation, and it never falls below the reference.
+
+    ProductAssessmentOutcomeDiagnostics:
+      description: >-
+        The path the classification actually took: the SAFAD taxonomy it descended and the archetype it ended at. A
+        level is absent when the classification did not reach it, which is how a failed assessment says how far it got.
+      properties:
+        l1Category:
+          description: The top-level category the assessed product was placed in.
+        l2Category:
+          description: The category below that one.
+        l3Category:
+          description: The leaf category the assessed product was placed in.
+        product:
+          description: The name of the archetype product within that leaf that the assessed product was matched to.
+
+    ProductAssessmentOutcomeType:
+      description: >-
+        How an assessment ended. `SUCCESS` — it ran, and the outcome carries what it found. `FAILURE_TO_IDENTIFY` —
+        the product could not be matched to any known archetype. `FAILURE_OTHER` — it failed for some other reason.
+
+    AlternativeForProductType:
+      description: >-
+        What an alternative amounts to. `SUGGESTION` — a product that would improve on the one assessed.
+        `GOOD_ENOUGH` — the assessed product is already good enough, so nothing is put forward in its place.
+        `NO_SUGGESTION` — none could be produced.
+
+    ArchetypeProductId:
+      description: >-
+        Names one archetype product: a leaf of the SAFAD taxonomy, the thing an assessed product is matched to and the
+        key a recommended alternative is reported by.
+
+    ProductKey:
+      description: The caller's own identifier for a product, carried through an assessment unchanged.
+
+    # ---- Sustainable Food Compass -------------------------------------------------------------------------------
+
+    Progress:
+      description: >-
+        How far a user has got, reported both for the compass as a whole and for one category of it.
+      properties:
+        answered:
+          description: How many of the questions have been answered.
+          examples: [7]
+        total:
+          description: How many questions there are to answer.
+          examples: [12]
+        percentage:
+          description: >-
+            The answered share of the total, rounded to the nearest whole number. A set with no questions in it counts
+            as 0.
+          examples: [58]
+
+    AttemptStatus:
+      description: >-
+        Where a compass attempt stands. It begins `IN_PROGRESS`, where answers may be given and changed freely, and
+        moves once and irreversibly to `COMPLETED` when the user locks it in.
+
+    ScaleOption:
+      description: >-
+        The fixed five-point scale every compass question is answered on — how much the user cares about what it asks
+        — ordered from `NOT_IMPORTANT` to `EXTREMELY_IMPORTANT`. What a user is shown are the localized labels
+        delivered with the question, not these names.
+
+    SustainabilityDimension:
+      description: The fixed set of sustainability dimensions the compass covers. Every category addresses exactly one of them.
+
+    CategoryId:
+      description: Names one category of the compass.
+
+    QuestionId:
+      description: Names one question of the compass.
+
+    # ---- Carried from the JDK -----------------------------------------------------------------------------------
+
+    Locale:
+      description: A language, written as an IETF language tag.
+      examples: [en, el]
+
+    Currency:
+      description: A currency, written as its three-letter ISO 4217 code.
+      examples: [EUR]
+
+    LocalDateTime:
+      description: A date and time carrying no time zone or offset, in ISO-8601 form.
+
+    UUID:
+      description: A universally unique identifier, in the canonical 8-4-4-4-12 hexadecimal form.
