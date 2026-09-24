@@ -1,10 +1,12 @@
 package eu.tealhelix.howibuy.dao.impl;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.criteria.Root;
 
+import eu.tealhelix.common.dao.EntityAlreadyExistsException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.types.EmailAddress;
@@ -17,9 +19,12 @@ import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity_;
 import io.smallrye.mutiny.Uni;
+import org.hibernate.exception.ConstraintViolationException;
 
 @ApplicationScoped
 public class UserProfileDaoImpl implements UserProfileDao {
+	private static final String UNIQUE_IDM_ID_CONSTRAINT = "UQ_TH_USER_PROFILE__IDM_ID";
+
 	@Override
 	public Uni<User> createAutoUser(ReactivePersistenceTxContext tx) {
 		var u = new UserProfileEntity();
@@ -28,13 +33,29 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	}
 
 	@Override
-	public Uni<User> requireByIdmId(ReactivePersistenceContext em, String userIdFromIdm, String name, boolean serviceFlag) {
+	public Uni<User> createFromIdm(ReactivePersistenceTxContext tx, String userIdFromIdm, String name, EmailAddress email) {
+		var u = new UserProfileEntity();
+		u.setId(UUID.randomUUID());
+		u.setIdmId(userIdFromIdm);
+		u.setEmail(email != null ? email.asString() : null);
+		return tx.persist(u)
+				.flatMap(tx::flush)
+				.onFailure(UserProfileDaoImpl::violatesUniqueIdmId)
+				.transform(e -> new EntityAlreadyExistsException("A user profile already exists for IDM id: " + userIdFromIdm, e))
+				.map(profile -> toUser(profile, name, false));
+	}
+
+	private static boolean violatesUniqueIdmId(Throwable e) {
+		return e instanceof ConstraintViolationException cve && UNIQUE_IDM_ID_CONSTRAINT.equalsIgnoreCase(cve.getConstraintName());
+	}
+
+	@Override
+	public Uni<Optional<User>> findByIdmId(ReactivePersistenceContext em, String userIdFromIdm, String name) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(UserProfileEntity.class);
 		Root<UserProfileEntity> userProfileEntity = q.from(UserProfileEntity.class);
 		q.where(cb.equal(userProfileEntity.get(UserProfileEntity_.idmId), userIdFromIdm));
-		return em.createQuery(q).getSingleResult().map(profile -> toUser(profile, name, serviceFlag))
-				.onFailure(NotFoundException.class).transform(nfe -> new NotFoundException("No UserProfileEntity for IDM id " + userIdFromIdm, nfe));
+		return em.createQuery(q).getSingleOptionalResult().map(profile -> profile.map(p -> toUser(p, name, false)));
 	}
 
 	@Override

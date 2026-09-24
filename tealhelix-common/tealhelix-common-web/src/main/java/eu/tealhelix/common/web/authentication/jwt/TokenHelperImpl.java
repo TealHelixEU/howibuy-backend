@@ -112,9 +112,7 @@ public class TokenHelperImpl implements TokenHelper {
 									.onFailure(NotFoundException.class)
 									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm));
 						} else {
-							return userService.requireUserFromValidIdmId(userIdFromIdm, userName, false)
-									.onFailure(NotFoundException.class)
-									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm));
+							return userService.findOrCreateUserFromValidIdmId(userIdFromIdm, userName, email);
 						}
 					}
 				});
@@ -312,8 +310,8 @@ public class TokenHelperImpl implements TokenHelper {
 		}
 	}
 
-	private NotAuthorizedException logAndMapToNotAuthorizedException(NotFoundException nfe, String userIdFromIdm) {
-		LOG.error("IDM user not found in DB, id {} (IDM)", userIdFromIdm);
+	private NotAuthorizedException logAndMapToNotAuthorizedException(NotFoundException nfe, String userId) {
+		LOG.error("User not found in DB, id: {}", userId);
 		return new NotAuthorizedException("invalid data");
 	}
 

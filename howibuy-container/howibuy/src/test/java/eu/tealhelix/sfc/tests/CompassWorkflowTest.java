@@ -22,11 +22,11 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 
 /**
- * The one Keycloak-backed end-to-end test: a real user, authenticated with a real Keycloak-issued token, takes the
+ * The Keycloak-backed end-to-end test of the happy path: a real user, authenticated with a real Keycloak-issued token, takes the
  * compass through the public API along the happy path — read the (empty) overview, walk a category to the end via
  * next-question answering each frontier, answer the rest, complete, and read the overview back to see the attempt locked
  * and fully answered. Everything runs for real: the JWT filter, authorization, resources, services, DAOs, the database
- * and JSON mapping. It is deliberately the only test that pays Keycloak's slow start-up; every finer case lives at the
+ * and JSON mapping. It pays Keycloak's slow start-up once, for itself and {@code CompassIdmLoginTest}, which runs on the same resource arguments; every finer case lives at the
  * faster Postgres-only and unit seams ({@code CompassOverviewTest}, {@code CompassCompletionTest},
  * {@code CompassNavigationTest}, {@code CompassReadServiceImplTest}).
  * <p>

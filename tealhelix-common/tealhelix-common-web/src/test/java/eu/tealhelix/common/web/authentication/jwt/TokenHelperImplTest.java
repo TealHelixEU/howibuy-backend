@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
 import java.time.Duration;
@@ -193,7 +194,7 @@ public class TokenHelperImplTest {
 	@DisplayName("A valid user access token resolves the user through the IDM id")
 	void testValidUserTokenIsAccepted() throws JOSEException {
 		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, USER_EMAIL, false, false);
-		lenient().when(userService.requireUserFromValidIdmId(IDM_SUB, USER_NAME, false))
+		lenient().when(userService.findOrCreateUserFromValidIdmId(IDM_SUB, USER_NAME, USER_EMAIL))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
 		var user = await(signWithIdmKey(idmUserClaims().build()));
@@ -206,10 +207,22 @@ public class TokenHelperImplTest {
 	@DisplayName("A user token is accepted although its email differs from the one on record")
 	void testUserTokenWithDifferentEmailIsAccepted() throws JOSEException {
 		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, ANOTHER_EMAIL, false, false);
-		lenient().when(userService.requireUserFromValidIdmId(IDM_SUB, USER_NAME, false))
+		lenient().when(userService.findOrCreateUserFromValidIdmId(IDM_SUB, USER_NAME, USER_EMAIL))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
 		var user = await(signWithIdmKey(idmUserClaims().build()));
+
+		assertEquals(INTERNAL_USER_ID, user.getId().asString());
+	}
+
+	@Test
+	@DisplayName("A user token without an email resolves the user all the same")
+	void testUserTokenWithoutEmailIsAccepted() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, null, false, false);
+		when(userService.findOrCreateUserFromValidIdmId(IDM_SUB, USER_NAME, null))
+				.thenReturn(Uni.createFrom().item(dbUser));
+
+		var user = await(signWithIdmKey(idmUserClaims().claim(EMAIL_FIELD, null).build()));
 
 		assertEquals(INTERNAL_USER_ID, user.getId().asString());
 	}
@@ -233,7 +246,7 @@ public class TokenHelperImplTest {
 
 		assertTrue(user.isService());
 		assertEquals(RETAILER_CLIENT, user.getName());
-		verify(userService, never()).requireUserFromValidIdmId(any(), any(), anyBoolean());
+		verify(userService, never()).findOrCreateUserFromValidIdmId(any(), any(), any());
 		verify(userService, never()).requireUserWithId(any(), any(), anyBoolean());
 	}
 
@@ -251,7 +264,7 @@ public class TokenHelperImplTest {
 		var user = await(signWithInternalKey(impersonationClaims().build()));
 
 		assertEquals(INTERNAL_USER_ID, user.getId().asString());
-		verify(userService, never()).requireUserFromValidIdmId(any(), any(), anyBoolean());
+		verify(userService, never()).findOrCreateUserFromValidIdmId(any(), any(), any());
 	}
 
 	@Test

@@ -66,12 +66,17 @@ Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule
   `tealhelix-common-dao-reactive-hibernate`.
 - DAO methods take a `ReactivePersistenceContext` / `ReactivePersistenceTxContext` as their first parameter — the
   service composes the transaction boundary, the DAO doesn't.
+- A `withTransaction`/`withoutTransaction` called *inside* another one's lambda reuses the outer session (Mutiny's
+  `SessionFactory` keeps it on the Vert.x context). After a failed flush that session is unusable, so work that must
+  recover from a DB error has to run *after* the outer call completes, not inside it (see
+  `UserServiceImpl.findOrCreateUserFromValidIdmId`).
 - IDs follow a pattern: a domain interface (`UserId`) + an implementation (`UserIdImpl`) + test utilities
   (`UserIdTestUtils`). Same for `RetailerId`, `Email`, etc. Don't introduce a new ID type without all three.
 - An external IDM identifier (the `sub` claim from Keycloak) is **not** the same as the internal `UserId`.
-  `UserService.requireUserFromValidIdmId` translates IDM → internal; `requireUserWithId` is for already-internal IDs
-  (e.g. impersonation tokens we issued ourselves). `TokenHelperImpl` picks between the two based on whether the JWT is
-  impersonated.
+  `UserService.findOrCreateUserFromValidIdmId` translates IDM → internal, creating the `TH_USER_PROFILE` row the first
+  time a Keycloak user shows up (any Keycloak user may use the app; no retailer or correlation id needed);
+  `requireUserWithId` is for already-internal IDs (e.g. impersonation tokens we issued ourselves). `TokenHelperImpl`
+  picks between the two based on whether the JWT is impersonated.
 
 ## Liquibase
 
@@ -145,13 +150,20 @@ Request → JwtAuthenticationFilter (nonBlocking, event loop)
             → TokenHelper.processToken
                 ├── service token  → UserImpl built from JWT claims (no DB)
                 ├── impersonated   → UserService.requireUserWithId (DB lookup by internal UserId)
-                └── normal user    → UserService.requireUserFromValidIdmId (DB lookup by IDM `sub`)
+                └── normal user    → UserService.findOrCreateUserFromValidIdmId (DB lookup by IDM `sub`, profile created on first login)
          → SecurityContext set
          → resource method (Uni-based ⇒ event loop, plain return ⇒ worker thread)
 ```
 
 The `/tokenexchange` endpoint mints an impersonation JWT signed by us (see `JwtGenerationService`); the
 `JwtAuthenticationFilter` recognises it via `isImpersonated(...)` and takes the second branch above.
+
+The SPA fires several requests at once right after login, so a new Keycloak user's first requests race to create the
+profile. The losers get `EntityAlreadyExistsException` from the DAO and read the winner's row back. Expect Hibernate to
+log each lost insert as a WARN on `org.hibernate.orm.jdbc.error` (`SQLState: 23505`, `duplicate key ...
+uq_th_user_profile__idm_id`). This is expected noise, not a bug; don't silence that logger, it also reports real
+constraint errors. Avoiding it would need `INSERT ... ON CONFLICT DO NOTHING`, which the persistence abstraction can't
+issue.
 
 ## Data Objects Between Layers
 Any data object shared internally between the DAO and service layers belongs in the `howibuy-services-model`
