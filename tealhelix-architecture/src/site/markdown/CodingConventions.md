@@ -4,10 +4,6 @@
 
 1. TAB for indentation.
 2. 2 TABs for line continuation.
-3. Balanced return branches: when a function has more than one outcomes, e.g. `oneThing` and `anotherThing` depending on
-   a `condition`, prefer `if (condition) return oneThing; else return anotherThing` over
-   `if (condition) return oneThing; return anotherThing`. Keep the `return` statement at the same depth in branches.
-   - EXCEPTION: Fast-fail tests at the beginning of the method: `if (arg == null) return null; if (condition) ...`
 
 ## For pom.xml
 
@@ -36,7 +32,14 @@
 ## For Java code
 
 1. Balance the branches in a method body: instead of `if (condition) { doSomething(); return x; } doSomethingElse(); return y;`,
-   prefer `if (condition) { doSomething(); return x; } else { doSomethingElse(); return y; }`
+   prefer `if (condition) { doSomething(); return x; } else { doSomethingElse(); return y; }`. Keep the `return` statement at the same depth in branches.
+   - EXCEPTION: Fast-fail tests at the beginning of the method: `if (arg == null) return null; if (condition) ...`
+2. Text in logging statements, exceptions:
+   - Try to put variables at the end of the message so that when someone searches for a text in the logs, they will find exactly what they want. Examples:
+     - GOOD: `log.info("User logged in: {}", username);`. Here I can search the code for `"User logged in:"` and find this code.
+     - BAD: `log.info("User {} logged in", username);`. Here the constant strings are `"User "` and `" logged in"`. Both could be encountered in other places too, so searching for them does not uniquely identify the code that caused the log.
+3. The usage of `var`: It is preferred when the type is obvious from the context. The type is obvious when creating a
+   new object, e.g. `var foo = new Foo()` or for the return of a well known Java method. Never replace `int` with `var`.
 
 ### Javadocs
 
@@ -72,8 +75,8 @@
    types that are input to business logic, even if they do not correspond to domain types.
 3. **INCOMPLETE** Name concrete implementations of domain objects that act as arguments to the APIs after the domain with the `-Param`
    suffix, e.g. `UserParam`
-4. **A data type crossing the JAX-RS boundary gets its own type; do not serialize a domain or service type
-   directly.** This keeps the wire contract and the in-code model free to change independently, and keeps framework
+4. **A data type crossing the JAX-RS boundary gets its own type; do not serialize a domain or service type directly.**
+   This keeps the wire contract and the in-code model free to change independently, and keeps framework
    (Jackson) concerns out of the deliberately framework-free model. One exception: a small, flat, framework-free value
    type that is already exactly the wire shape and has no plausible divergence (an id value type, `Progress`) may be
    used on the wire directly instead of being copied.
