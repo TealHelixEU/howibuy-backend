@@ -135,8 +135,86 @@ Substitutability must be to qualify. A larger level admits more distant categori
 _Avoid_: radius, distance, tolerance, strictness, threshold
 
 **Alternative**:
-An Archetype Product offered in place of the Reference Product: substitutable for it, no worse on
-the scientific Overall Score, and the best available under one ranking criterion. Three are
-produced per assessment — best personal, best scientific, and best combined. An Alternative may be
-the Reference Product itself, which is how "what you have is already a good choice" is expressed.
+A Retailer Product, from an active Listing in the user's Catalogue, offered in place of the scanned
+product. It is chosen from the Archetype Product that is substitutable for the Reference Product, no
+worse on the scientific Overall Score, and the best one the Catalogue stocks under one ranking
+criterion. Three are produced per assessment: best personal, best scientific and best combined.
+When the best archetype is the Reference Product itself, no Retailer Product is offered: the outcome
+says "what you have is already a good choice" instead.
 _Avoid_: substitute, suggestion, recommendation, swap, replacement
+
+## Retailer Catalogue
+
+The bounded context that receives partner Retailers' product data, keeps it current, and has every
+product classified ahead of time, so that assessment looks a scanned product up instead of
+interpreting it.
+
+**Retailer**:
+A partner company whose products HowiBuy assesses, such as Rimi or Kritis. One Retailer may sell in
+several countries, through one Catalogue per country.
+_Avoid_: partner, chain, client, shop
+
+**Catalogue**:
+One of a Retailer's e-shops, serving one country with its own assortment and prices. Every
+assessment happens within exactly one Catalogue. Each Catalogue has a **Primary Language**: every
+product it lists is named in it, and names fall back to it.
+_Avoid_: e-shop, store, market, country (as the name of this concept)
+
+**Retailer Product**:
+A physical product as the Retailer identifies it, by the Retailer's own product id. The same id in
+two Catalogues is the same Retailer Product. Different ids are different Retailer Products, even
+for physically identical goods. It has a name per language, and characteristics and tags that are
+the same in every language.
+_Avoid_: SKU, item, article
+
+**Listing**:
+A Retailer Product on sale in one Catalogue, at that Catalogue's price. A product sold in only one
+country has one Listing.
+_Avoid_: offer, availability, stock entry
+
+**Inactive**:
+A Listing that is missing from its Catalogue's latest Snapshot Feed or was named in a Deletion Feed.
+It is never offered as an Alternative, but it is still assessed when scanned, and it keeps its
+Classification so that it can come back without being classified again.
+_Avoid_: deleted, discontinued, out of stock
+
+**Last Seen**:
+When a Listing last appeared in a Feed. An Inactive Listing not seen for long enough is removed for
+good.
+_Avoid_: last updated, last modified
+
+**Feed**:
+The product data a Retailer sends for one Catalogue. A **Snapshot** Feed is the complete current
+assortment, so a Listing missing from it becomes Inactive. A **Delta** Feed carries only what
+changed, so a missing Listing means nothing. A **Deletion** Feed explicitly names Listings to make
+Inactive.
+_Avoid_: import, upload, export, file, dump
+
+**Ingestion Run**:
+The processing of one Feed, from its receipt to the Retailer Products and Listings it changes,
+with its outcome and counts.
+_Avoid_: import job, batch, sync, load
+
+**Product Change**:
+The complete current state of a Retailer Product and its Listings, or the fact that it was
+removed, as read in order from Ingestion's change cursor. A product changed several times between
+two reads appears once. Unchanged products produce none.
+_Avoid_: event, message, delta, update
+
+**Catalogue Sync**:
+The operator command that carries Product Changes from Ingestion into HowiBuy. It never
+classifies.
+_Avoid_: import, replication, classification run
+
+**Classification**:
+The match of a Retailer Product to an Archetype Product, made ahead of time by any classifier: the
+LLM, WP3 or a person. A Retailer Product has at most one Classification, whatever languages it is
+named in. It may conclude that no archetype matches.
+_Avoid_: recognition, identification, categorisation, assessment (that is the request-time step)
+
+**Classification Attempt**:
+One classifier's match of a Retailer Product, made from the product's name in one language. The
+product's Classification is resolved from its attempts, and attempts that disagree are flagged
+for review and resolved by the Retailer's classification language. Each attempt records its
+classifier and classifier version; there is no other record of a classification run.
+_Avoid_: try, guess, run

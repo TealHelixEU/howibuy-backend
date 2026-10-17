@@ -107,11 +107,13 @@
 ## Database artifacts
 
 1. Names are `SNAKE_CASE`
-2. Tables: capitals (even though it should not matter) like `TH_<NAME>`, where:
+2. Tables: capitals (even though it should not matter) like `<PREFIX>_<NAME>`, where:
+   - `<PREFIX>` identifies the database the table lives in, one per deployable that owns a database:
+     - `TH` (TealHelix) for the HowiBuy database, shared by every bounded context deployed in `howibuy`
+     - `IN` (Ingestion) for the Ingestion database
    - `<NAME>` is the name of the domain object (not the entity, i.e., without the `-Entity` suffix)
    - `<NAME>` is *singular*
    - E.g., `TH_USER`: A table for users of HowiBuy
-   - The prefix itself, `TH` stands for TealHelix
 3. Columns: minuscules, no prefix or suffix
 4. Primary key constraints: `PK_<TABLE>`, and `<TABLE>` is the full table name as specified above
 5. Not null constraints: `NL_<TABLE>__<COLUMN>`, the column name is capitalized
