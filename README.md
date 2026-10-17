@@ -77,6 +77,13 @@ possible therefore, we do not use Quarkus dependencies anywhere, except from the
 However, we need to stay compatible; so we mark version properties that actually depend on Quarkus with an XML comment.
 Be careful when upgrading those dependencies.
 
+After upgrading Quarkus or a Quarkus extension, download the new Quarkus deployment artifacts before running the tests
+(otherwise the `howibuy` tests may hang):
+
+```shell
+mvn -pl howibuy-container/howibuy quarkus:go-offline
+```
+
 ## Building
 
 Build with Maven as usual, `package` is enough:
