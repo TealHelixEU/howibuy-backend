@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>eu.tealhelix</groupId>
+		<artifactId>tealhelix-parent</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>catalogue-container</artifactId>
+
+	<name>Catalogue: Container project</name>
+	<description>Container project for the artifacts of the Ingestion of Retailer Catalogues</description>
+
+	<packaging>pom</packaging>
+
+	<modules>
+		<module>catalogue</module>
+		<module>catalogue-dao-hibernate-reactive</module>
+		<module>catalogue-testutils</module>
+	</modules>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>enforce-bounded-context</id>
+						<goals><goal>enforce</goal></goals>
+						<configuration>
+							<rules>
+								<!--
+									Ingestion is a separate deployable with its own database, and shares nothing with
+									HowiBuy or SFC except the changes it exposes. See ADR 0006.
+								-->
+								<bannedDependencies>
+									<excludes>
+										<exclude>eu.tealhelix:howibuy-*</exclude>
+										<exclude>eu.tealhelix:sfc-*</exclude>
+									</excludes>
+								</bannedDependencies>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

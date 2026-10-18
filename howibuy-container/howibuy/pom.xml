@@ -167,12 +167,19 @@
 			<scope>test</scope>
 			<type>pom</type>
 		</dependency>
+		<!-- Makes Maven build the Postgres image before these tests use it; nothing of it is needed on the classpath -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-docker-postgres</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 			<type>pom</type>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- FRAMEWORK TEST -->
@@ -276,7 +283,6 @@
 						<version>${version.liquibase}</version>
 						<configuration>
 							<changeLogFile>db.changelog.xml</changeLogFile>
-							<promptOnNonLocalDatabase>false</promptOnNonLocalDatabase>
 							<url>${database.howibuy.jdbc.url}</url>
 							<username>${database.howibuy.username}</username>
 							<password>${database.howibuy.password}</password>

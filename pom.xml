@@ -12,9 +12,10 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>tealhelix-common</module>
+		<module>catalogue-container</module>
 		<module>howibuy-container</module>
 		<module>tealhelix-architecture</module>
+		<module>tealhelix-common</module>
 		<module>tealhelix-docker</module>
 	</modules>
 

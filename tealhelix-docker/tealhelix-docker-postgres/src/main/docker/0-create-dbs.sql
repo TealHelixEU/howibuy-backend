@@ -7,6 +7,15 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA th_howibuy TO th_ho
 ALTER SCHEMA th_howibuy OWNER TO th_howibuy;
 ALTER DEFAULT PRIVILEGES FOR USER postgres IN SCHEMA th_howibuy GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO th_howibuy;
 
+-- CATALOGUE (Ingestion)
+CREATE USER th_catalogue WITH PASSWORD 'th_catalogue';
+CREATE SCHEMA AUTHORIZATION th_catalogue;
+ALTER USER th_catalogue SET search_path = th_catalogue, public;
+GRANT CONNECT ON DATABASE tealhelix TO th_catalogue;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA th_catalogue TO th_catalogue;
+ALTER SCHEMA th_catalogue OWNER TO th_catalogue;
+ALTER DEFAULT PRIVILEGES FOR USER postgres IN SCHEMA th_catalogue GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO th_catalogue;
+
 -- KEYCLOAK
 CREATE USER keycloak WITH PASSWORD 'keycloak';
 CREATE SCHEMA AUTHORIZATION keycloak;

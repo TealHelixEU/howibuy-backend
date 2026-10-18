@@ -13,3 +13,4 @@ The relevant parts of the configuration are:
 |----------------------------------|------|-----------|-------|
 | **howibuy**                      | 8180 | 8181      | 5105  |
 | **Keycloak**                     | 8280 | -         | -     |
+| **catalogue**                    | 8380 | 8381      | 5305  |

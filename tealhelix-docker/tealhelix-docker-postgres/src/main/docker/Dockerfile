@@ -5,12 +5,15 @@ ADD target/liquibase.tar.gz /opt/liquibase/
 COPY target/dbdriver*.jar /opt/liquibase/lib/
 COPY target/migrations*.jar /opt/liquibase/
 COPY src/main/docker/db.changelog.xml /opt/liquibase/
+COPY src/main/docker/db.changelog-catalogue.xml /opt/liquibase/
 
 ################################################################
 # See this: https://dzone.com/articles/using-liquibase-without #
 ################################################################
 WORKDIR /opt/liquibase
 RUN ./liquibase --classpath=migrations-howibuy.jar:migrations-sfc.jar --changelog-file=db.changelog.xml --url=offline:postgresql?outputLiquibaseSql=true --driver=org.postgresql.Driver --output-default-schema=true --default-schema-name=th_howibuy update-sql --contexts=none > 1-howibuy.sql
+# A changelog CSV of its own: offline Liquibase emits the CREATE TABLE of databasechangelog only when the CSV does not exist yet
+RUN ./liquibase --classpath=migrations-catalogue.jar --changelog-file=db.changelog-catalogue.xml --url='offline:postgresql?outputLiquibaseSql=true&changeLogFile=databasechangelog-catalogue.csv' --driver=org.postgresql.Driver --output-default-schema=true --default-schema-name=th_catalogue update-sql --contexts=none > 2-catalogue.sql
 
 
 # https://hub.docker.com/_/postgres - also change DockerImageNames!

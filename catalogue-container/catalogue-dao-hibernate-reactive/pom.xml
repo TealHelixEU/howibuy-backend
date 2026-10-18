@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>eu.tealhelix</groupId>
+		<artifactId>catalogue-container</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>catalogue-dao-hibernate-reactive</artifactId>
+
+	<name>Catalogue: DAO implementation with Hibernate Reactive</name>
+	<description>Implementation of the DAO interfaces of the Ingestion with Hibernate Reactive, and the Liquibase changelog of its database</description>
+</project>

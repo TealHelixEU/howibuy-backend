@@ -31,4 +31,32 @@
 		<module>sfc-services</module>
 		<module>sustainability-scoring</module>
 	</modules>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>enforce-bounded-context</id>
+						<goals><goal>enforce</goal></goals>
+						<configuration>
+							<rules>
+								<!--
+									The Ingestion of Retailer Catalogues is a separate deployable with its own database
+									and shares nothing with HowiBuy except the changes it exposes. See ADR 0006.
+								-->
+								<bannedDependencies>
+									<excludes>
+										<exclude>eu.tealhelix:catalogue-*</exclude>
+									</excludes>
+								</bannedDependencies>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

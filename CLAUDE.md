@@ -31,6 +31,10 @@ tealhelix/
 │   ├── tealhelix-common-services-impl/        Implementations of the above
 │   ├── tealhelix-common-web/                  JAX-RS infrastructure (JwtAuthenticationFilter, TokenHelper, ...)
 │   └── tealhelix-common-testutils/            Test resources & utilities (Postgres/Keycloak Testcontainers, @InjectPostgres, ...)
+├── catalogue-container/          The Ingestion of Retailer Catalogues (own deployable and DB schema, see ADR 0006)
+│   ├── catalogue-dao-hibernate-reactive/   Liquibase changelog of the Ingestion schema (IN_ tables)
+│   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb)
+│   └── catalogue/                          Quarkus deployable
 ├── howibuy-container/            The HowiBuy microservice
 │   ├── howibuy-dao/              DAO interfaces
 │   ├── howibuy-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog
@@ -44,10 +48,13 @@ tealhelix/
     └── tealhelix-docker-keycloak/
 ```
 
-Dependency rule: only the `*-deployable` modules (`howibuy/`) and `*-testutils` may depend on Quarkus. Everything else
-stays framework-agnostic so the artifacts remain reusable. When upgrading a dependency whose version is dictated by
-Quarkus, look for the XML comment marker next to its `version.*` property in the root [pom.xml](pom.xml) and bump the
-bundle together.
+Dependency rule: only the `*-deployable` modules (`howibuy/`, `catalogue/`) and `*-testutils` may depend on Quarkus.
+Everything else stays framework-agnostic so the artifacts remain reusable. When upgrading a dependency whose version is
+dictated by Quarkus, look for the XML comment marker next to its `version.*` property in the root [pom.xml](pom.xml) and
+bump the bundle together.
+
+`catalogue-*` and the `howibuy-*`/`sfc-*` modules never depend on each other; a `bannedDependencies` rule in each
+container pom enforces it.
 
 Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule 5 in
 [CodingConventions.md](tealhelix-architecture/src/site/markdown/CodingConventions.md).
@@ -89,6 +96,9 @@ Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule
   - `sfc.db.changelog.xml` (in `sfc-dao-hibernate-reactive`) owns the Sustainable Food Compass changesets.
   - Each module owns only its own changesets; add new SFC/HowiBuy changesets to the respective per-module changelog,
     never to the deployable's root.
+- The Ingestion has a database schema of its own (`th_catalogue`, `IN_` tables), so the `catalogue` deployable owns a
+  second aggregating root (`catalogue-container/catalogue/src/main/resources/db.changelog.xml`), which includes
+  `catalogue.db.changelog.xml` from `catalogue-dao-hibernate-reactive`.
 - **For changes that belong to the same epic/ticket, merge new changesets into the existing per-epic file rather than
   creating a new one.** Minimize the number of new changeset files.
 - The `dev` context loads development seed data — activate with `-Dliquibase.contexts=dev` on the `dbupdate-howibuy` profile.
@@ -117,7 +127,8 @@ mvn process-resources -Pdbupdate-howibuy,th-local-postgres
 mvn -Phowibuy-quarkus-dev,th-local-postgres
 ```
 
-Ports (see [PORTS.md](PORTS.md)): HowiBuy HTTP 8180 / test 8181 / debug 5105; Keycloak 8280.
+Ports (see [PORTS.md](PORTS.md)): HowiBuy HTTP 8180 / test 8181 / debug 5105; Keycloak 8280; catalogue HTTP 8380 /
+test 8381 / debug 5305.
 
 ## Testing
 

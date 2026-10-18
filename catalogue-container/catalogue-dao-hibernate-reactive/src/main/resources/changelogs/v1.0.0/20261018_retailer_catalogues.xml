@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="retailer_catalogues" author="nikospara">
+		<createTable tableName="IN_RETAILER" remarks="A Retailer whose Feeds are ingested, keyed by the same id as in HowiBuy">
+			<column name="id" type="UUID" remarks="The primary key, the id of the Retailer's service account in the IDM">
+				<constraints primaryKey="true" primaryKeyName="PK_IN_RETAILER" />
+			</column>
+			<column name="name" type="VARCHAR(160)" remarks="The name">
+				<constraints
+						nullable="false" notNullConstraintName="NL_IN_RETAILER__NAME"
+						unique="true" uniqueConstraintName="UQ_IN_RETAILER__NAME"
+				/>
+			</column>
+		</createTable>
+
+		<createTable tableName="IN_CATALOGUE" remarks="One of a Retailer's e-shops, serving one country with its own assortment and prices">
+			<column name="id" type="VARCHAR(40)" remarks="The primary key, a short stable code chosen by us, identical in HowiBuy, e.g. 'rimi-lt'">
+				<constraints primaryKey="true" primaryKeyName="PK_IN_CATALOGUE" />
+			</column>
+			<column name="retailer_id" type="UUID" remarks="The Retailer owning this Catalogue">
+				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__RETAILER_ID" />
+			</column>
+			<column name="country" type="VARCHAR(2)" remarks="ISO 3166-1 alpha-2 code of the country served, e.g. 'LT'">
+				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__COUNTRY" />
+			</column>
+			<column name="primary_language" type="VARCHAR(8)" remarks="ISO 639-1 code of the language every listed product must be named in, e.g. 'lt'">
+				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__PRIMARY_LANGUAGE" />
+			</column>
+			<column name="active" type="BOOLEAN" defaultValueBoolean="true" remarks="Whether Feeds are accepted for this Catalogue">
+				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__ACTIVE" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="IN_CATALOGUE" baseColumnNames="retailer_id" constraintName="FK_IN_CATALOGUE__RETAILER_ID__IN_RETAILER__ID" referencedTableName="IN_RETAILER" referencedColumnNames="id" />
+		<createIndex tableName="IN_CATALOGUE" indexName="IX_IN_CATALOGUE__RETAILER_ID">
+			<column name="retailer_id" />
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="dev_retailer_catalogues" author="nikospara" context="@dev">
+		<comment>
+			The realm's development Retailer, Lime Fresh, whose id is the id of its service account in the tealhelix realm,
+			the same as in HowiBuy's TH_RETAILER. It gets one Catalogue to ingest into.
+		</comment>
+		<insert tableName="IN_RETAILER">
+			<column name="id">dc73176c-7069-4a4f-a74f-d60c4a5ec1ee</column>
+			<column name="name">Lime Fresh</column>
+		</insert>
+		<insert tableName="IN_CATALOGUE">
+			<column name="id">lime-fresh-gr</column>
+			<column name="retailer_id">dc73176c-7069-4a4f-a74f-d60c4a5ec1ee</column>
+			<column name="country">GR</column>
+			<column name="primary_language">el</column>
+		</insert>
+	</changeSet>
+</databaseChangeLog>

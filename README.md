@@ -18,6 +18,8 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 - `database.howibuy.reactive.url`: The Hibernate *reactive* URL of the database for the respective microservice
 - `database.howibuy.username`: The DB username
 - `database.howibuy.password`: The DB password
+- `database.catalogue.jdbc.url`, `database.catalogue.reactive.url`, `database.catalogue.username`,
+  `database.catalogue.password`: The same, for the Ingestion of Retailer Catalogues (the `catalogue` deployable)
 - **(TODO)** `db.env` (default: `dev`): Needed only by Liquibase to indicate which environment-specific
   [contexts](https://www.liquibase.org/documentation/contexts.html) will it activate;
   e.g. `dev` will activate the `data-dev` context
@@ -34,6 +36,10 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 				<database.howibuy.reactive.url>vertx-reactive:postgresql://localhost/tealhelix</database.howibuy.reactive.url>
 				<database.howibuy.username>th_howibuy</database.howibuy.username>
 				<database.howibuy.password>th_howibuy</database.howibuy.password>
+				<database.catalogue.jdbc.url>jdbc:postgresql://localhost/tealhelix</database.catalogue.jdbc.url>
+				<database.catalogue.reactive.url>vertx-reactive:postgresql://localhost/tealhelix</database.catalogue.reactive.url>
+				<database.catalogue.username>th_catalogue</database.catalogue.username>
+				<database.catalogue.password>th_catalogue</database.catalogue.password>
 			</properties>
 		</profile>
 		<profile>
@@ -43,6 +49,10 @@ or placed in a local Maven profile in `~/.m2/settings.xml`.
 				<database.howibuy.reactive.url>vertx-reactive:postgresql://postgres/tealhelix</database.howibuy.reactive.url>
 				<database.howibuy.username>th_howibuy</database.howibuy.username>
 				<database.howibuy.password>th_howibuy</database.howibuy.password>
+				<database.catalogue.jdbc.url>jdbc:postgresql://postgres/tealhelix</database.catalogue.jdbc.url>
+				<database.catalogue.reactive.url>vertx-reactive:postgresql://postgres/tealhelix</database.catalogue.reactive.url>
+				<database.catalogue.username>th_catalogue</database.catalogue.username>
+				<database.catalogue.password>th_catalogue</database.catalogue.password>
 			</properties>
 		</profile>
 	</profiles>
@@ -55,8 +65,8 @@ The other (`th-local-postgres`) is to run only the peripherals in Docker - see `
 
 ### Build profiles
 
-- `dbupdate-howibuy`: Execute Liquibase to bring the respective database up to date; you will need to specify connection data, e.g. using the profiles above
-- `howibuy-quarkus-dev`: Activate `quarkus:dev` for the respective service; do not activate more than one in the same command
+- `dbupdate-howibuy`, `dbupdate-catalogue`: Execute Liquibase to bring the respective database up to date; you will need to specify connection data, e.g. using the profiles above
+- `howibuy-quarkus-dev`, `catalogue-quarkus-dev`: Activate `quarkus:dev` for the respective service; do not activate more than one in the same command
 - `docker`: Activate the Docker image build
 
 ### Updating dependencies
@@ -107,6 +117,7 @@ Assuming that the properties are defined through a Maven profile e.g., like the 
 
 ```shell
 mvn process-resources -Pdbupdate-howibuy,th-local-postgres
+mvn process-resources -Pdbupdate-catalogue,th-local-postgres
 ```
 
 The `dev` context add data for the development environment; add `-Dliquibase.contexts=dev` to the previous command to activate.
@@ -127,7 +138,7 @@ modules first (`mvn install`) for them to resolve. Switch to the deployable modu
 ```shell
 mvn org.liquibase:liquibase-maven-plugin:rollback \
 	-Dliquibase.rollbackCount=... -Dliquibase.changeLogFile=src/main/resources/db.changelog.xml \
-	-Dliquibase.promptOnNonLocalDatabase=false -Dliquibase.driver=org.postgresql.Driver \
+	-Dliquibase.driver=org.postgresql.Driver \
 	-Dliquibase.url=jdbc:postgresql://localhost/tealhelix -Dliquibase.username=th_howibuy \
 	-Dliquibase.password=th_howibuy
 ```

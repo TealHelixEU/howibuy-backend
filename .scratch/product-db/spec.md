@@ -68,8 +68,9 @@ User (via retailer token: Retailer + Catalogue) ──assess──▶ HowiBuy: l
   first it is run by hand (or from cron); it can later become a long-running scheduler without changing the contracts.
 - **HowiBuy** holds Retailer Products, Listings and Classifications in the existing `howibuy-*` modules. They belong to
   the assessment context: assessment reads them, and nothing else does.
-- A second Postgres database for Ingestion, on the same server. The `tealhelix-docker-postgres` image gets an init script
-  for it.
+- Ingestion's database is a schema and login of its own, `th_catalogue`, in the same `tealhelix` database, isolated
+  like `th_howibuy` and `keycloak`: neither login can read the other's schema. The `tealhelix-docker-postgres` image
+  creates it on first start.
 
 ### Identity
 

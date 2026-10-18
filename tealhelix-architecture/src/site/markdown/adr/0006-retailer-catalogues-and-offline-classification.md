@@ -9,7 +9,8 @@ accuracy we need may take bigger, slower models, so adding infrastructure would 
 
 The work is split into three parts with narrow contracts between them:
 
-1. **Ingestion**, a separate deployable with its own database. It receives a Retailer's Feeds
+1. **Ingestion**, a separate deployable with its own database (a schema and login that HowiBuy cannot
+   read). It receives a Retailer's Feeds
    through a per-Retailer adapter: push or pull, in whatever format the Retailer uses. It stores
    the raw file and answers `202` with an Ingestion Run id and a status endpoint. Afterwards it
    stream-parses and validates the file, and works out which Listings are new, changed, inactive or
