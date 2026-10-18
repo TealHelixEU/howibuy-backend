@@ -17,6 +17,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import eu.tealhelix.common.v1.model.User;
@@ -45,7 +46,7 @@ class PersonalWeightsProviderTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
 	private static final double TOLERANCE = 1e-9;
 
-	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false);
+	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true, Set.of());
 	private static final UUID ATTEMPT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
 	@Mock

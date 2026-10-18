@@ -1,6 +1,7 @@
 package eu.tealhelix.common.v1.model;
 
 import java.security.Principal;
+import java.util.Set;
 
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.v1.types.HasUserId;
@@ -22,11 +23,30 @@ public interface User extends Principal, HasUserId {
 	boolean isSystem();
 
 	/**
-	 * Check if this user represents a service account.
+	 * Check if this user is a person, as opposed to a service account.
 	 *
-	 * @return {@code true} if this user represents a service account
+	 * @return {@code true} if this user is a person
 	 */
-	boolean isService();
+	boolean isPerson();
+
+	/**
+	 * The roles of this user, which tell what it may do.
+	 *
+	 * @return The roles, empty if it has none
+	 */
+	Set<Role> getRoles();
+
+	default boolean isRetailer() {
+		return getRoles().contains(Role.RETAILER);
+	}
+
+	default boolean isCatalogueSync() {
+		return getRoles().contains(Role.CATALOGUE_SYNC);
+	}
+
+	default boolean isOperator() {
+		return getRoles().contains(Role.OPERATOR);
+	}
 
 	/**
 	 * Check if this user is the unauthenticated (anonymous) user.

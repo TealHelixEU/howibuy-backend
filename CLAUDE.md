@@ -169,6 +169,12 @@ Request → JwtAuthenticationFilter (nonBlocking, event loop)
 The `/tokenexchange` endpoint mints an impersonation JWT signed by us (see `JwtGenerationService`); the
 `JwtAuthenticationFilter` recognises it via `isImpersonated(...)` and takes the second branch above.
 
+What a caller may do comes from its `User.getRoles()` (`RETAILER`, `CATALOGUE_SYNC`, `OPERATOR`), which `TokenHelperImpl`
+maps from the Keycloak realm roles (`realm_access.roles`) of the first and third branches; impersonation tokens carry
+none. Whether the caller is a person (`User.isPerson()`, `TealHelixAuthorization.requirePerson`) is a separate question:
+an operator is a person with a role. Check roles, never "is it a service account": every client of the realm gets a
+service token.
+
 The SPA fires several requests at once right after login, so a new Keycloak user's first requests race to create the
 profile. The losers get `EntityAlreadyExistsException` from the DAO and read the winner's row back. Expect Hibernate to
 log each lost insert as a WARN on `org.hibernate.orm.jdbc.error` (`SQLState: 23505`, `duplicate key ...

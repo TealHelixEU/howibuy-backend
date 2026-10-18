@@ -37,7 +37,7 @@ public class CorrelationIdWorkflowTest {
 	@Test
 	@Order(1)
 	void testNewCorrelationId() {
-		String serviceAccessToken = RetailerServiceAccount.accessToken(keycloak);
+		String serviceAccessToken = ServiceAccount.RETAILER.accessToken(keycloak);
 
 		String impersonationToken = RestAssured
 				.given()
@@ -54,7 +54,24 @@ public class CorrelationIdWorkflowTest {
 
 		String userId = GreetingPage.userId(impersonationToken);
 
-		userService.requireUserWithId(new UserIdImpl(userId), "name", false)
+		userService.requireUserWithId(new UserIdImpl(userId), "name")
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	/**
+	 * The IDM authenticates every client of the realm; only those holding the retailer role may act for users.
+	 */
+	@Test
+	@Order(2)
+	void testTokenExchangeIsRefusedToAServiceAccountThatIsNoRetailer() {
+		RestAssured
+				.given()
+				.header("Authorization", "Bearer " + ServiceAccount.CATALOGUE_SYNC.accessToken(keycloak))
+				.header("Content-Type", "application/json")
+				.body("{\"correlationId\": \"" + CORRELATION_ID1 + "\"}")
+				.when()
+				.post("/api/howibuy/v1/tokenexchange")
+				.then()
+				.statusCode(403);
 	}
 }

@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Set;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -236,8 +236,8 @@ public class JwtGenerationServiceImplTest {
 	 * on where a minted token names things.
 	 */
 	private User validate(String token) throws JOSEException {
-		var dbUser = new UserImpl(USER_ID, null, null, false, false);
-		lenient().when(userService.requireUserWithId(any(), any(), anyBoolean())).thenReturn(Uni.createFrom().item(dbUser));
+		var dbUser = new UserImpl(USER_ID, null, null, false, true, Set.of());
+		lenient().when(userService.requireUserWithId(any(), any())).thenReturn(Uni.createFrom().item(dbUser));
 		lenient().when(jwsVerifierMapper.get(INTERNAL_KID)).thenReturn(new MACVerifier(secretBytes()));
 		var tokenHelper = new TokenHelperImpl(jwsVerifierMapper, dateTimeService, userService, sut, tokenAuthenticationConfig);
 

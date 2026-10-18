@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
+import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -25,6 +26,7 @@ import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
+import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.UserId;
@@ -48,9 +50,10 @@ public class UserImpersonationServiceImplTest {
 
 	private static final UserId USER_ID_REGULAR = new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1");
 	private static final UserId USER_ID_RETAILER = new UserIdImpl("518cae6a-f2b2-4454-b74d-f2404feab2f5");
-	private static final User RETAILER_USER = new UserImpl(USER_ID_RETAILER, null, null, false, true);
-	private static final User REGULAR_USER = new UserImpl(USER_ID_REGULAR, null, null, false, false);
-	private static final User USER_BOB = new UserImpl(USER_ID_REGULAR, "Bob Squarepants", EmailAddress.of("bob@krusty-krab.com"), false, false);
+	private static final User RETAILER_USER = new UserImpl(USER_ID_RETAILER, null, null, false, false, Set.of(Role.RETAILER));
+	private static final User CATALOGUE_SYNC_USER = new UserImpl(USER_ID_RETAILER, null, null, false, false, Set.of(Role.CATALOGUE_SYNC));
+	private static final User REGULAR_USER = new UserImpl(USER_ID_REGULAR, null, null, false, true, Set.of());
+	private static final User USER_BOB = new UserImpl(USER_ID_REGULAR, "Bob Squarepants", EmailAddress.of("bob@krusty-krab.com"), false, true, Set.of());
 	private static final String CORRELATION_ID = "abc";
 
 	@Produces
@@ -80,6 +83,14 @@ public class UserImpersonationServiceImplTest {
 	@DisplayName("When invoking impersonateUserAsRetailer from a non-retailer account, we get a NotAuthorizedException")
 	void testImpersonateUserAsRetailerNotAsServiceUser() {
 		var t = sut.impersonateUserAsRetailer(REGULAR_USER, CORRELATION_ID).subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getFailure();
+		assertInstanceOf(NotAuthorizedException.class, t);
+	}
+
+	@Test
+	@DisplayName("When invoking impersonateUserAsRetailer from a service account without the retailer role, we get a NotAuthorizedException")
+	void testImpersonateUserAsRetailerAsServiceAccountOfNoRetailer() {
+		var t = sut.impersonateUserAsRetailer(CATALOGUE_SYNC_USER, CORRELATION_ID).subscribe().withSubscriber(UniAssertSubscriber.create())
 				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getFailure();
 		assertInstanceOf(NotAuthorizedException.class, t);
 	}
@@ -188,12 +199,12 @@ public class UserImpersonationServiceImplTest {
 	private void mockToUser() {
 		when(mockUserProfileDao.toUser(any())).thenAnswer(iom -> {
 			var userId = (UserId) iom.getArgument(0);
-			return new UserImpl(userId, null, null, false, false);
+			return new UserImpl(userId, null, null, false, true, Set.of());
 		});
 	}
 
 	private void mockAutoUserCreation() {
 		when(mockUserProfileDao.createAutoUser(any(ReactivePersistenceTxContext.class)))
-				.thenReturn(Uni.createFrom().item(new UserImpl(USER_ID_REGULAR, null, null, false, false)));
+				.thenReturn(Uni.createFrom().item(new UserImpl(USER_ID_REGULAR, null, null, false, true, Set.of())));
 	}
 }

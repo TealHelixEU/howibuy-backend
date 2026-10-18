@@ -83,14 +83,14 @@ public class CompassReadServiceImpl implements CompassReadService {
 
 	@Override
 	public Uni<List<Category>> findCategories(User user, String language) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return Uni.createFrom().item(() -> languages.resolve(language))
 				.flatMap(lang -> persistenceContextFactory.withoutTransaction(em -> categoryDao.retrieveByLanguage(em, lang)));
 	}
 
 	@Override
 	public Uni<List<AnsweredQuestion>> findCategoryQuestions(User user, String language, CategoryId categoryId) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return persistenceContextFactory.withoutTransaction(em -> forcm(
 				Uni.createFrom().item(languages.resolve(language)),
 				_ -> currentAnswers(em, user.getId().asUuid()),
@@ -101,7 +101,7 @@ public class CompassReadServiceImpl implements CompassReadService {
 
 	@Override
 	public Uni<List<AnsweredQuestion>> findAllQuestions(User user, String language) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return persistenceContextFactory.withoutTransaction(em -> forcm(
 				Uni.createFrom().item(languages.resolve(language)),
 				_ -> currentAnswers(em, user.getId().asUuid()),
@@ -112,7 +112,7 @@ public class CompassReadServiceImpl implements CompassReadService {
 
 	@Override
 	public Uni<Optional<Question>> findNextQuestion(User user, String language, CategoryId categoryId) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return persistenceContextFactory.withoutTransaction(em -> forcm(
 				Uni.createFrom().item(languages.resolve(language)),
 				_ -> currentAnswers(em, user.getId().asUuid()),
@@ -123,7 +123,7 @@ public class CompassReadServiceImpl implements CompassReadService {
 
 	@Override
 	public Uni<Optional<AnsweredQuestion>> findPreviousQuestion(User user, String language, CategoryId categoryId) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return persistenceContextFactory.withoutTransaction(em -> forcm(
 				Uni.createFrom().item(languages.resolve(language)),
 				_ -> currentAnswers(em, user.getId().asUuid()),
@@ -134,7 +134,7 @@ public class CompassReadServiceImpl implements CompassReadService {
 
 	@Override
 	public Uni<CompassOverview> retrieveOverview(User user, String language) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		var userId = user.getId().asUuid();
 		return localized(language, (em, lang) -> forcm(
 				categoryDao.retrieveByLanguage(em, lang),
@@ -249,7 +249,7 @@ public class CompassReadServiceImpl implements CompassReadService {
 
 	@Override
 	public Uni<Optional<CompletedCompassAnswers>> findLatestCompletedAnswers(User user) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return persistenceContextFactory.withoutTransaction(em ->
 				attemptDao.findLatestCompletedId(em, user.getId().asUuid())
 						.flatMap(attemptId -> attemptId

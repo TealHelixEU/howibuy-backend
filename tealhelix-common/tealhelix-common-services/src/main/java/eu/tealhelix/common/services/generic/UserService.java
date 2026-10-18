@@ -18,5 +18,5 @@ public interface UserService {
 	 */
 	Uni<User> findOrCreateUserFromValidIdmId(String userIdFromIdm, String name, EmailAddress email);
 
-	Uni<User> requireUserWithId(UserId userId, String name, boolean serviceFlag);
+	Uni<User> requireUserWithId(UserId userId, String name);
 }

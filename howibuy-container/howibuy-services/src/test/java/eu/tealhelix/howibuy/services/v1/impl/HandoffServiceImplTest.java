@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Set;
 
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
@@ -52,7 +53,7 @@ public class HandoffServiceImplTest {
 	private static final int TICKET_TIME_IN_SECONDS = 60;
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 31, 12, 0);
 	private static final String TICKET = "the-ticket-as-it-was-presented";
-	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false);
+	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true, Set.of());
 
 	@Mock
 	HandoffTicketDao handoffTicketDao;

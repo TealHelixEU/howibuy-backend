@@ -21,16 +21,16 @@ public class TealHelixAuthorizationImpl implements TealHelixAuthorization {
 	}
 
 	@Override
-	public void requireUserNotService(User user) {
+	public void requirePerson(User user) {
 		if (user == null || user.isUnauthenticated()) {
 			throw new NotAuthenticatedException(REQUIRES_VALID_AUTHENTICATED_USER);
-		} else if (user.isService()) {
+		} else if (!user.isPerson()) {
 			throw new NotAuthorizedException("This operation is accessible only to users, not service accounts");
 		}
 	}
 
 	@Override
 	public Uni<Void> authorizeImpersonation(User currentUser) {
-		return currentUser.isService() ? Uni.createFrom().voidItem() : Uni.createFrom().failure(new NotAuthorizedException());
+		return currentUser.isRetailer() ? Uni.createFrom().voidItem() : Uni.createFrom().failure(new NotAuthorizedException());
 	}
 }

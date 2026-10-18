@@ -1,11 +1,15 @@
 package eu.tealhelix.common.web.authentication.jwt;
 
 import static eu.tealhelix.common.utils.UniComprehensions.forc;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 import java.text.ParseException;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -19,6 +23,7 @@ import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.impl.EmailAddressImpl;
+import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
@@ -54,6 +59,23 @@ public class TokenHelperImpl implements TokenHelper {
 	 * The value of {@link #TOKEN_TYPE_CLAIM} that marks an access token.
 	 */
 	private static final String ACCESS_TOKEN_TYPE = "Bearer";
+
+	/**
+	 * The claim in which the IDM puts the realm roles of the subject of a token, listed under {@link #ROLES_FIELD}.
+	 */
+	private static final String REALM_ACCESS_CLAIM = "realm_access";
+
+	private static final String ROLES_FIELD = "roles";
+
+	/**
+	 * The realm roles of the IDM that this application knows. The IDM gives every subject other realm roles as well,
+	 * which grant nothing here.
+	 */
+	private static final Map<String, Role> ROLES_BY_REALM_ROLE = Map.of(
+			"retailer", Role.RETAILER,
+			"catalogue-sync", Role.CATALOGUE_SYNC,
+			"operator", Role.OPERATOR
+	);
 
 	private final JWSVerifierMapper jwsVerifierMapper;
 	private final DateTimeService dateTimeService;
@@ -104,15 +126,17 @@ public class TokenHelperImpl implements TokenHelper {
 					var email = emailObj != null ? new EmailAddressImpl(emailObj.toString()) : null;
 
 					if (serviceFlag) {
-						var userImpl = new UserImpl(new UserIdImpl(userIdFromIdm), userName, email, false, true);
+						var userImpl = new UserImpl(new UserIdImpl(userIdFromIdm), userName, email, false, false, realmRolesOf(jwtClaimsSet));
 						return Uni.createFrom().item(userImpl);
 					} else {
 						if (jwtClaimsService.isImpersonated(jwtClaimsSet)) {
-							return userService.requireUserWithId(new UserIdImpl(userIdFromIdm), userName, false)
+							return userService.requireUserWithId(new UserIdImpl(userIdFromIdm), userName)
 									.onFailure(NotFoundException.class)
 									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm));
 						} else {
-							return userService.findOrCreateUserFromValidIdmId(userIdFromIdm, userName, email);
+							var roles = realmRolesOf(jwtClaimsSet);
+							return userService.findOrCreateUserFromValidIdmId(userIdFromIdm, userName, email)
+									.map(user -> withRoles(user, roles));
 						}
 					}
 				});
@@ -175,6 +199,29 @@ public class TokenHelperImpl implements TokenHelper {
 	 */
 	private boolean isServiceToken(JWTClaimsSet jwtClaimsSet) {
 		return jwtClaimsSet.getClaim(tokenAuthenticationConfig.getClientIdFieldInJwt()) != null;
+	}
+
+	/**
+	 * The roles the IDM gives the subject of a token it issued; a token without the realm roles claim, or with one of
+	 * another shape, grants none. Only tokens of the IDM carry roles; the tokens this application issues carry none, and
+	 * are never asked for them.
+	 */
+	private static Set<Role> realmRolesOf(JWTClaimsSet jwtClaimsSet) {
+		if (!(jwtClaimsSet.getClaim(REALM_ACCESS_CLAIM) instanceof Map<?, ?> realmAccess)
+				|| !(realmAccess.get(ROLES_FIELD) instanceof List<?> realmRoles)) {
+			return Set.of();
+		}
+		return realmRoles.stream()
+				.map(ROLES_BY_REALM_ROLE::get)
+				.filter(Objects::nonNull)
+				.collect(toUnmodifiableSet());
+	}
+
+	/**
+	 * The user on record, with the roles its token gives it; the record knows who the user is, the token what it may do.
+	 */
+	private static User withRoles(User user, Set<Role> roles) {
+		return new UserImpl(user.getId(), user.getName(), user.getEmail(), user.isSystem(), user.isPerson(), roles);
 	}
 
 	/**
@@ -317,6 +364,6 @@ public class TokenHelperImpl implements TokenHelper {
 
 	@Override
 	public User makeUnauthenticated() {
-		return new UserImpl(null, null, null, false, false);
+		return new UserImpl(null, null, null, false, true, Set.of());
 	}
 }

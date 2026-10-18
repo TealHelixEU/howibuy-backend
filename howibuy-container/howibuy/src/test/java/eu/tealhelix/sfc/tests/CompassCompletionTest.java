@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
@@ -51,7 +52,7 @@ public class CompassCompletionTest {
 	private static final String BEARER_USER = "Bearer user";
 
 	private static final String END_USER_ID = "2e788895-0503-4777-a7bd-24e5d61db5b1";
-	private static final User END_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, false);
+	private static final User END_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, true, Set.of());
 
 	private static final LocalDateTime COMPLETED_AT = LocalDateTime.of(2026, 3, 1, 10, 0, 0);
 

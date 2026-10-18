@@ -50,6 +50,30 @@
   "maxSecondaryAuthFailures" : 0,
   "roles" : {
     "realm" : [ {
+      "id" : "0cadd776-d086-4c62-a0b3-b800629c64bd",
+      "name" : "retailer",
+      "description" : "A retailer of TealHelix, pushes its feeds and acts for the users it sends over",
+      "composite" : false,
+      "clientRole" : false,
+      "containerId" : "e37c08f2-2fc7-4f78-bb94-2883e216a1cc",
+      "attributes" : { }
+    }, {
+      "id" : "09387e70-74a8-45c2-98b4-479c4bf6d6a9",
+      "name" : "catalogue-sync",
+      "description" : "The Catalogue Sync, carries the catalogue changes from the Ingestion to HowiBuy",
+      "composite" : false,
+      "clientRole" : false,
+      "containerId" : "e37c08f2-2fc7-4f78-bb94-2883e216a1cc",
+      "attributes" : { }
+    }, {
+      "id" : "a5ed2d66-a480-4741-afad-6200112008fa",
+      "name" : "operator",
+      "description" : "An operator of TealHelix, looks after the ingestion of the feeds",
+      "composite" : false,
+      "clientRole" : false,
+      "containerId" : "e37c08f2-2fc7-4f78-bb94-2883e216a1cc",
+      "attributes" : { }
+    }, {
       "id" : "cbcf5b67-1c89-4101-ae60-9ee1853fc449",
       "name" : "default-roles-tealhelix",
       "description" : "${role_default-roles}",
@@ -402,7 +426,21 @@
     } ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-tealhelix", "offline_access" ],
+    "realmRoles" : [ "default-roles-tealhelix", "offline_access", "operator" ],
+    "notBefore" : 0,
+    "groups" : [ ]
+  }, {
+    "id" : "dd3573f5-5f7f-4924-9be3-3a0938f80c8f",
+    "username" : "service-account-catalogue-sync",
+    "emailVerified" : false,
+    "enabled" : true,
+    "createdTimestamp" : 1792348509000,
+    "totp" : false,
+    "serviceAccountClientId" : "catalogue-sync",
+    "credentials" : [ ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "default-roles-tealhelix", "catalogue-sync" ],
     "notBefore" : 0,
     "groups" : [ ]
   }, {
@@ -416,7 +454,7 @@
     "credentials" : [ ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-tealhelix" ],
+    "realmRoles" : [ "default-roles-tealhelix", "retailer" ],
     "notBefore" : 0,
     "groups" : [ ]
   } ],
@@ -559,6 +597,46 @@
     "fullScopeAllowed" : false,
     "nodeReRegistrationTimeout" : 0,
     "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "basic", "email" ],
+    "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
+  }, {
+    "id" : "e11037b8-da7d-46b4-88fd-d6b40d185bc9",
+    "clientId" : "catalogue-sync",
+    "name" : "Catalogue Sync",
+    "description" : "",
+    "rootUrl" : "",
+    "adminUrl" : "",
+    "baseUrl" : "",
+    "surrogateAuthRequired" : false,
+    "enabled" : true,
+    "alwaysDisplayInConsole" : false,
+    "clientAuthenticatorType" : "client-secret",
+    "secret" : "7poZpd5n2Abtu7LKcB0MoAWLHBUnhQzU",
+    "redirectUris" : [ "/*" ],
+    "webOrigins" : [ "/*" ],
+    "notBefore" : 0,
+    "bearerOnly" : false,
+    "consentRequired" : false,
+    "standardFlowEnabled" : false,
+    "implicitFlowEnabled" : false,
+    "directAccessGrantsEnabled" : false,
+    "serviceAccountsEnabled" : true,
+    "publicClient" : false,
+    "frontchannelLogout" : true,
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "realm_client" : "false",
+      "oidc.ciba.grant.enabled" : "false",
+      "client.secret.creation.time" : "1792348509",
+      "backchannel.logout.session.required" : "true",
+      "standard.token.exchange.enabled" : "false",
+      "post.logout.redirect.uris" : "+",
+      "oauth2.device.authorization.grant.enabled" : "false",
+      "backchannel.logout.revoke.offline.tokens" : "false"
+    },
+    "authenticationFlowBindingOverrides" : { },
+    "fullScopeAllowed" : true,
+    "nodeReRegistrationTimeout" : -1,
+    "defaultClientScopes" : [ "web-origins", "service_account", "acr", "profile", "roles", "basic", "email" ],
     "optionalClientScopes" : [ "address", "phone", "organization", "offline_access", "microprofile-jwt" ]
   }, {
     "id" : "499fa4f9-c9cc-4b26-bb2c-d3270f364933",

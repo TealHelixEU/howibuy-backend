@@ -1,5 +1,7 @@
 package eu.tealhelix.howibuy.dao.impl;
 
+import java.util.Set;
+
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.v1.model.User;
@@ -15,7 +17,7 @@ interface UserProfileUtils {
 	 * @return The corresponding {@code User} model
 	 */
 	static User toUser(UserProfileEntity u) {
-		return new UserImpl(new UserIdImpl(u.getId().toString()), u.getEmail(), EmailAddress.of(u.getEmail()), false, false);
+		return new UserImpl(new UserIdImpl(u.getId().toString()), u.getEmail(), EmailAddress.of(u.getEmail()), false, true, Set.of());
 	}
 
 	/**
@@ -26,6 +28,6 @@ interface UserProfileUtils {
 	 * @return A user model for a regular user with the given id
 	 */
 	static User toUser(UserId userId) {
-		return new UserImpl(userId, null, null, false, false);
+		return new UserImpl(userId, null, null, false, true, Set.of());
 	}
 }

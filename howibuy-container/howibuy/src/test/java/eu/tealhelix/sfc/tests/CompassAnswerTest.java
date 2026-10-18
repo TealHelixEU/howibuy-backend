@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.sql.DataSource;
 import jakarta.inject.Inject;
@@ -45,8 +46,8 @@ public class CompassAnswerTest {
 
 	private static final String END_USER_ID = "2e788895-0503-4777-a7bd-24e5d61db5b1";
 	private static final UUID END_USER_UUID = UUID.fromString(END_USER_ID);
-	private static final User END_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, false);
-	private static final User SERVICE_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, true);
+	private static final User END_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, true, Set.of());
+	private static final User SERVICE_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, false, Set.of());
 
 	@Inject
 	DataSource dataSource;
@@ -220,7 +221,7 @@ public class CompassAnswerTest {
 
 		@Override
 		public User makeUnauthenticated() {
-			return new UserImpl(null, null, null, false, false);
+			return new UserImpl(null, null, null, false, true, Set.of());
 		}
 	}
 }

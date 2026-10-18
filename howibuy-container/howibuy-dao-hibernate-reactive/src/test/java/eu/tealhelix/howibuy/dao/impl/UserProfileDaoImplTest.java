@@ -2,7 +2,6 @@ package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -108,7 +107,7 @@ public class UserProfileDaoImplTest {
 
 		var subscriber = UniAssertSubscriber.create();
 		factory.withoutTransaction(em ->
-				sut.requireById(em, userId, USER_NAME, false)
+				sut.requireById(em, userId, USER_NAME)
 		).subscribe().withSubscriber(subscriber);
 		subscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
 
@@ -120,7 +119,7 @@ public class UserProfileDaoImplTest {
 		}).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
 		var user = factory.withoutTransaction(em ->
-				sut.requireById(em, userId, USER_NAME, false)
+				sut.requireById(em, userId, USER_NAME)
 		).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 		assertEquals(EMAIL, user.getEmail().asString());
 	}
@@ -137,7 +136,7 @@ public class UserProfileDaoImplTest {
 		assertNotNull(returnedUser.getId());
 		assertEquals(USER_NAME, returnedUser.getName());
 		assertEquals(EMAIL_OF_NEW_USER, returnedUser.getEmail().asString());
-		assertFalse(returnedUser.isService());
+		assertTrue(returnedUser.isPerson());
 
 		var actualUser = factory.withoutTransaction(em ->
 				em.find(UserProfileEntity.class, returnedUser.getId().asUuid())

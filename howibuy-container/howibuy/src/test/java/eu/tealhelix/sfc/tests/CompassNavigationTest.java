@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
@@ -45,7 +46,7 @@ public class CompassNavigationTest {
 	private static final String BEARER_USER = "Bearer user";
 
 	private static final String END_USER_ID = "2e788895-0503-4777-a7bd-24e5d61db5b1";
-	private static final User END_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, false);
+	private static final User END_USER = new UserImpl(new UserIdImpl(END_USER_ID), null, null, false, true, Set.of());
 
 	private static final TypeRef<List<Map<String, Object>>> LIST_OF_OBJECTS = new TypeRef<>() {};
 	private static final TypeRef<Map<String, Object>> OBJECT = new TypeRef<>() {};
@@ -261,7 +262,7 @@ public class CompassNavigationTest {
 
 		@Override
 		public User makeUnauthenticated() {
-			return new UserImpl(null, null, null, false, false);
+			return new UserImpl(null, null, null, false, true, Set.of());
 		}
 	}
 }

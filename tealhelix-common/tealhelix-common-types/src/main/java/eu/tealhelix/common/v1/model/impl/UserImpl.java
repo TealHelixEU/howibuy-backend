@@ -1,6 +1,9 @@
 package eu.tealhelix.common.v1.model.impl;
 
+import java.util.Set;
+
 import eu.tealhelix.common.types.EmailAddress;
+import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.UserId;
 
@@ -12,14 +15,16 @@ public class UserImpl implements User {
 	private final String name;
 	private final EmailAddress email;
 	private final boolean systemFlag;
-	private final boolean serviceFlag;
+	private final boolean personFlag;
+	private final Set<Role> roles;
 
-	public UserImpl(UserId id, String name, EmailAddress email, boolean systemFlag, boolean serviceFlag) {
+	public UserImpl(UserId id, String name, EmailAddress email, boolean systemFlag, boolean personFlag, Set<Role> roles) {
 		this.id = id;
 		this.name = name;
 		this.email = email;
 		this.systemFlag = systemFlag;
-		this.serviceFlag = serviceFlag;
+		this.personFlag = personFlag;
+		this.roles = Set.copyOf(roles);
 	}
 
 	@Override
@@ -29,7 +34,8 @@ public class UserImpl implements User {
 				(name != null ? ", name='" + name + '\'' : "") +
 				(email != null ? ", email=" + email : "") +
 				(systemFlag ? ", system" : "") +
-				(serviceFlag ? ", service" : "") +
+				(personFlag ? ", person" : "") +
+				(!roles.isEmpty() ? ", roles=" + roles : "") +
 				'}';
 	}
 
@@ -54,8 +60,13 @@ public class UserImpl implements User {
 	}
 
 	@Override
-	public boolean isService() {
-		return serviceFlag;
+	public boolean isPerson() {
+		return personFlag;
+	}
+
+	@Override
+	public Set<Role> getRoles() {
+		return roles;
 	}
 
 	@Override

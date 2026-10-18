@@ -58,7 +58,7 @@ public class CompassAttemptServiceImpl implements CompassAttemptService {
 
 	@Override
 	public Uni<Void> answer(User user, QuestionId questionId, ScaleOption option) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		if (option == null) {
 			throw RequiredInputMissingException.fromRequiredInputName("option");
 		}
@@ -98,7 +98,7 @@ public class CompassAttemptServiceImpl implements CompassAttemptService {
 
 	@Override
 	public Uni<Void> startNewAttempt(User user) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return persistenceContextFactory.withTransaction(tx -> startNewAttemptInTx(tx, user.getId().asUuid()));
 	}
 
@@ -110,7 +110,7 @@ public class CompassAttemptServiceImpl implements CompassAttemptService {
 
 	@Override
 	public Uni<Void> complete(User user) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return persistenceContextFactory.withTransaction(tx -> completeInTx(tx, user.getId().asUuid()));
 	}
 

@@ -2,6 +2,7 @@ package eu.tealhelix.howibuy.dao.impl;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.criteria.Root;
@@ -42,7 +43,7 @@ public class UserProfileDaoImpl implements UserProfileDao {
 				.flatMap(tx::flush)
 				.onFailure(UserProfileDaoImpl::violatesUniqueIdmId)
 				.transform(e -> new EntityAlreadyExistsException("A user profile already exists for IDM id: " + userIdFromIdm, e))
-				.map(profile -> toUser(profile, name, false));
+				.map(profile -> toUser(profile, name));
 	}
 
 	private static boolean violatesUniqueIdmId(Throwable e) {
@@ -55,23 +56,23 @@ public class UserProfileDaoImpl implements UserProfileDao {
 		var q = cb.createQuery(UserProfileEntity.class);
 		Root<UserProfileEntity> userProfileEntity = q.from(UserProfileEntity.class);
 		q.where(cb.equal(userProfileEntity.get(UserProfileEntity_.idmId), userIdFromIdm));
-		return em.createQuery(q).getSingleOptionalResult().map(profile -> profile.map(p -> toUser(p, name, false)));
+		return em.createQuery(q).getSingleOptionalResult().map(profile -> profile.map(p -> toUser(p, name)));
 	}
 
 	@Override
-	public Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name, boolean serviceFlag) {
+	public Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name) {
 		Objects.requireNonNull(userId);
 		return em.find(UserProfileEntity.class, userId.asUuid())
 				.onItem().ifNull().failWith(() -> new NotFoundException(userId))
-				.map(profile -> toUser(profile, name, serviceFlag));
+				.map(profile -> toUser(profile, name));
 	}
 
 	@Override
 	public User toUser(UserId userId) {
-		return new UserImpl(userId, null, null, false, false);
+		return new UserImpl(userId, null, null, false, true, Set.of());
 	}
 
-	private User toUser(UserProfileEntity p, String name, boolean serviceFlag) {
-		return new UserImpl(new UserIdImpl(p.getId().toString()), name, EmailAddress.of(p.getEmail()), false, serviceFlag);
+	private User toUser(UserProfileEntity p, String name) {
+		return new UserImpl(new UserIdImpl(p.getId().toString()), name, EmailAddress.of(p.getEmail()), false, true, Set.of());
 	}
 }

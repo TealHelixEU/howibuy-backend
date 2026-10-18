@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -65,9 +66,9 @@ public class CompassAttemptServiceImplTest {
 
 	private static final String USER_ID = "2e788895-0503-4777-a7bd-24e5d61db5b1";
 	private static final UUID USER_UUID = UUID.fromString(USER_ID);
-	private static final User USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, false);
-	private static final User SERVICE_USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, true);
-	private static final User UNAUTHENTICATED = new UserImpl(null, null, null, false, false);
+	private static final User USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, true, Set.of());
+	private static final User SERVICE_USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, false, Set.of());
+	private static final User UNAUTHENTICATED = new UserImpl(null, null, null, false, true, Set.of());
 
 	private static final QuestionId QUESTION_1 = new QuestionIdImpl("22222222-2222-2222-2222-222222222201");
 	private static final QuestionId QUESTION_2 = new QuestionIdImpl("22222222-2222-2222-2222-222222222202");

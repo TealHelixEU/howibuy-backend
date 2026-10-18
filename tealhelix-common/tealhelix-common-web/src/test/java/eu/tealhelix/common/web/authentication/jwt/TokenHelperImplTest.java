@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,6 +17,8 @@ import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -35,6 +36,7 @@ import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
+import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
@@ -72,6 +74,7 @@ public class TokenHelperImplTest {
 	private static final String USERID_FIELD = "sub";
 	private static final String CLIENT_ID_FIELD = "client_id";
 	private static final String EMAIL_FIELD = "email";
+	private static final String REALM_ACCESS_CLAIM = "realm_access";
 
 	private static final String IDM_SUB = "2e788895-0503-4777-a7bd-24e5d61db5b1";
 	private static final String INTERNAL_USER_ID = "518cae6a-f2b2-4454-b74d-f2404feab2f5";
@@ -193,20 +196,20 @@ public class TokenHelperImplTest {
 	@Test
 	@DisplayName("A valid user access token resolves the user through the IDM id")
 	void testValidUserTokenIsAccepted() throws JOSEException {
-		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, USER_EMAIL, false, false);
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, USER_EMAIL, false, true, Set.of());
 		lenient().when(userService.findOrCreateUserFromValidIdmId(IDM_SUB, USER_NAME, USER_EMAIL))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
 		var user = await(signWithIdmKey(idmUserClaims().build()));
 
 		assertEquals(INTERNAL_USER_ID, user.getId().asString());
-		assertFalse(user.isService());
+		assertTrue(user.isPerson());
 	}
 
 	@Test
 	@DisplayName("A user token is accepted although its email differs from the one on record")
 	void testUserTokenWithDifferentEmailIsAccepted() throws JOSEException {
-		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, ANOTHER_EMAIL, false, false);
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, ANOTHER_EMAIL, false, true, Set.of());
 		lenient().when(userService.findOrCreateUserFromValidIdmId(IDM_SUB, USER_NAME, USER_EMAIL))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
@@ -218,7 +221,7 @@ public class TokenHelperImplTest {
 	@Test
 	@DisplayName("A user token without an email resolves the user all the same")
 	void testUserTokenWithoutEmailIsAccepted() throws JOSEException {
-		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, null, false, false);
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, null, false, true, Set.of());
 		when(userService.findOrCreateUserFromValidIdmId(IDM_SUB, USER_NAME, null))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
@@ -237,17 +240,57 @@ public class TokenHelperImplTest {
 	@Test
 	@DisplayName("A service account token is accepted although its client is not one users may sign in through")
 	void testValidServiceTokenIsAccepted() throws JOSEException {
-		var claims = idmUserClaims()
-				.claim("azp", RETAILER_CLIENT)
-				.claim(CLIENT_ID_FIELD, RETAILER_CLIENT)
+		var user = await(signWithIdmKey(idmServiceClaims().build()));
+
+		assertFalse(user.isPerson());
+		assertEquals(RETAILER_CLIENT, user.getName());
+		verify(userService, never()).findOrCreateUserFromValidIdmId(any(), any(), any());
+		verify(userService, never()).requireUserWithId(any(), any());
+	}
+
+	@Test
+	@DisplayName("The realm roles of a service account token become the roles of its user, and the ones this application does not know are ignored")
+	void testRolesOfServiceTokenAreMapped() throws JOSEException {
+		var claims = idmServiceClaims()
+				.claim(REALM_ACCESS_CLAIM, realmRoles("retailer", "default-roles-tealhelix", "offline_access"))
 				.build();
 
 		var user = await(signWithIdmKey(claims));
 
-		assertTrue(user.isService());
-		assertEquals(RETAILER_CLIENT, user.getName());
-		verify(userService, never()).findOrCreateUserFromValidIdmId(any(), any(), any());
-		verify(userService, never()).requireUserWithId(any(), any(), anyBoolean());
+		assertEquals(Set.of(Role.RETAILER), user.getRoles());
+	}
+
+	@Test
+	@DisplayName("Every role this application knows is taken from the realm roles of a user token")
+	void testRolesOfUserTokenAreMapped() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, USER_EMAIL, false, true, Set.of());
+		when(userService.findOrCreateUserFromValidIdmId(IDM_SUB, USER_NAME, USER_EMAIL))
+				.thenReturn(Uni.createFrom().item(dbUser));
+		var claims = idmUserClaims()
+				.claim(REALM_ACCESS_CLAIM, realmRoles("retailer", "catalogue-sync", "operator"))
+				.build();
+
+		var user = await(signWithIdmKey(claims));
+
+		assertEquals(Set.of(Role.RETAILER, Role.CATALOGUE_SYNC, Role.OPERATOR), user.getRoles());
+		assertEquals(INTERNAL_USER_ID, user.getId().asString(), "still the user on record");
+		assertTrue(user.isPerson(), "an operator is still a person");
+	}
+
+	@Test
+	@DisplayName("A token that carries no realm roles grants no roles")
+	void testTokenWithoutRealmRolesGrantsNoRoles() throws JOSEException {
+		var user = await(signWithIdmKey(idmServiceClaims().build()));
+
+		assertEquals(Set.of(), user.getRoles());
+	}
+
+	@Test
+	@DisplayName("A realm roles claim of another shape grants no roles")
+	void testRealmRolesClaimOfAnotherShapeGrantsNoRoles() throws JOSEException {
+		var user = await(signWithIdmKey(idmServiceClaims().claim(REALM_ACCESS_CLAIM, List.of("retailer")).build()));
+
+		assertEquals(Set.of(), user.getRoles());
 	}
 
 	// ----------------------------------------------------------------------------------------------
@@ -257,8 +300,8 @@ public class TokenHelperImplTest {
 	@Test
 	@DisplayName("A valid impersonation token resolves the user through the internal user id")
 	void testValidImpersonationTokenIsAccepted() throws JOSEException {
-		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, false);
-		lenient().when(userService.requireUserWithId(any(), any(), anyBoolean()))
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, true, Set.of());
+		lenient().when(userService.requireUserWithId(any(), any()))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
 		var user = await(signWithInternalKey(impersonationClaims().build()));
@@ -268,10 +311,25 @@ public class TokenHelperImplTest {
 	}
 
 	@Test
+	@DisplayName("An impersonation token grants no roles, whatever realm roles it claims")
+	void testImpersonationTokenGrantsNoRoles() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, true, Set.of());
+		when(userService.requireUserWithId(any(), any()))
+				.thenReturn(Uni.createFrom().item(dbUser));
+		var claims = impersonationClaims()
+				.claim(REALM_ACCESS_CLAIM, realmRoles("retailer", "operator"))
+				.build();
+
+		var user = await(signWithInternalKey(claims));
+
+		assertEquals(Set.of(), user.getRoles());
+	}
+
+	@Test
 	@DisplayName("An impersonation token is accepted for a user who has an email address on record")
 	void testImpersonationTokenIsAcceptedForUserWithEmail() throws JOSEException {
-		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, USER_EMAIL, false, false);
-		lenient().when(userService.requireUserWithId(any(), any(), anyBoolean()))
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, USER_EMAIL, false, true, Set.of());
+		lenient().when(userService.requireUserWithId(any(), any()))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
 		var user = await(signWithInternalKey(impersonationClaims().build()));
@@ -301,8 +359,8 @@ public class TokenHelperImplTest {
 	@Test
 	@DisplayName("A valid handoff token resolves the user through the internal user id")
 	void testValidHandoffTokenIsAccepted() throws JOSEException {
-		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, false);
-		lenient().when(userService.requireUserWithId(any(), any(), anyBoolean()))
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, true, Set.of());
+		lenient().when(userService.requireUserWithId(any(), any()))
 				.thenReturn(Uni.createFrom().item(dbUser));
 
 		var user = await(signWithInternalKey(handoffClaims().build()));
@@ -396,6 +454,18 @@ public class TokenHelperImplTest {
 				.claim(USERNAME_FIELD, USER_NAME)
 				.claim(EMAIL_FIELD, USER_EMAIL.asString())
 				.expirationTime(minutesFromNow(5));
+	}
+
+	/** The claims of a valid access token that the IDM issued to a retailer's client acting on its own behalf. */
+	private JWTClaimsSet.Builder idmServiceClaims() {
+		return idmUserClaims()
+				.claim("azp", RETAILER_CLIENT)
+				.claim(CLIENT_ID_FIELD, RETAILER_CLIENT);
+	}
+
+	/** The realm roles claim, the way the IDM puts it into an access token. */
+	private static Map<String, Object> realmRoles(String... names) {
+		return Map.of("roles", List.of(names));
 	}
 
 	/** The claims of a valid impersonation token, as {@code JwtGenerationService} mints them. */

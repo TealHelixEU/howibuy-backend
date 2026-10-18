@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.Currency;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -46,8 +47,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ProductAssessmentServiceImplTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
 
-	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false);
-	private static final User SERVICE_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true);
+	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true, Set.of());
+	private static final User SERVICE_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false, Set.of());
 	/** Which profile it is does not matter here, only that the assessor is handed the one the provider returned. */
 	private static final WeightProfile PERSONAL = ScientificWeights.profile();
 

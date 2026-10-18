@@ -31,7 +31,7 @@ public interface UserProfileDao {
 
 	Uni<Optional<User>> findByIdmId(ReactivePersistenceContext em, String userIdFromIdm, String name);
 
-	Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name, boolean serviceFlag);
+	Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name);
 
 	/**
 	 * Create a simple, regular (non-system, non-service) user model holding information only about the user id, to be

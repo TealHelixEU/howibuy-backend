@@ -9,11 +9,18 @@ import io.smallrye.mutiny.Uni;
 public interface TealHelixAuthorization {
 	void requireLogin(User user);
 
-	void requireUserNotService(User user);
+	/**
+	 * Ensure that the given user is an authenticated person, not a service account.
+	 *
+	 * @param user The user to check
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException If the user is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException    If the user is a service account
+	 */
+	void requirePerson(User user);
 
 	/**
 	 * Ensure that the given user has impersonation rights, returning a failure with a {@code NotAuthorizedException}
-	 * if they do not.
+	 * if they do not. Retailers have them.
 	 *
 	 * @param currentUser The user to check for impersonation rights
 	 * @return A successfule {@code Uni} if the user has the rights, a failure with a {@code NotAuthorizedException} otherwise

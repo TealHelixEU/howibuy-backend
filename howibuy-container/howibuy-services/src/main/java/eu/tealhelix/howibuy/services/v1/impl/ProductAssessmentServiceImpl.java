@@ -38,7 +38,7 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 
 	@Override
 	public Uni<ProductAssessmentOutcome> assessSingleProduct(User user, ProductData productData) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		LOG.info("Assess single product as user {}: {}", user.getId().asString(), ProductData.toLogString(productData));
 		return personalWeightsProvider.forUser(user)
 				.flatMap(personalProfile -> singleProductAssessor.assessOne(productData, personalProfile));
@@ -46,13 +46,13 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 
 	@Override
 	public Uni<List<ProductAssessmentOutcome>> assessMultipleProductsSync(User user, List<ProductData> productsData) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return assessBatch(user, productsData).collect().asList();
 	}
 
 	@Override
 	public Multi<ProductAssessmentOutcome> assessMultipleProductsAsync(User user, List<ProductData> productsData) {
-		authorization.requireUserNotService(user);
+		authorization.requirePerson(user);
 		return assessBatch(user, productsData);
 	}
 

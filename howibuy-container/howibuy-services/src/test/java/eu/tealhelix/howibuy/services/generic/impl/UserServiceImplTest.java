@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 
 import eu.tealhelix.common.dao.EntityAlreadyExistsException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
@@ -42,7 +43,7 @@ public class UserServiceImplTest {
 	private static final String IDM_ID = "a7c1a3d4-6f55-4a8e-9d0e-1f2b3c4d5e6f";
 	private static final String USER_NAME = "sandy@treedome.com";
 	private static final EmailAddress EMAIL = EmailAddress.of("sandy@treedome.com");
-	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), USER_NAME, EMAIL, false, false);
+	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), USER_NAME, EMAIL, false, true, Set.of());
 
 	@Mock
 	UserProfileDao userProfileDao;
@@ -116,10 +117,10 @@ public class UserServiceImplTest {
 
 	@Test
 	void aUserIsRequiredByTheIdThisApplicationKnowsThemBy() {
-		when(userProfileDao.requireById(any(ReactivePersistenceContext.class), eq(USER.getId()), eq(USER_NAME), eq(false)))
+		when(userProfileDao.requireById(any(ReactivePersistenceContext.class), eq(USER.getId()), eq(USER_NAME)))
 				.thenReturn(Uni.createFrom().item(USER));
 
-		var user = sut.requireUserWithId(USER.getId(), USER_NAME, false).await().atMost(WAIT);
+		var user = sut.requireUserWithId(USER.getId(), USER_NAME).await().atMost(WAIT);
 
 		assertSame(USER, user);
 	}
@@ -130,11 +131,11 @@ public class UserServiceImplTest {
 	 */
 	@Test
 	void aUserWithoutAProfileIsNotFound() {
-		when(userProfileDao.requireById(any(ReactivePersistenceContext.class), eq(USER.getId()), eq(USER_NAME), eq(false)))
+		when(userProfileDao.requireById(any(ReactivePersistenceContext.class), eq(USER.getId()), eq(USER_NAME)))
 				.thenReturn(Uni.createFrom().failure(new NotFoundException(USER.getId())));
 
 		var failure = UniAssertSubscriber.create();
-		sut.requireUserWithId(USER.getId(), USER_NAME, false).subscribe().withSubscriber(failure);
+		sut.requireUserWithId(USER.getId(), USER_NAME).subscribe().withSubscriber(failure);
 
 		failure.awaitFailure(WAIT).assertFailedWith(NotFoundException.class);
 	}

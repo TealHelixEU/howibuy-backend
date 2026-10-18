@@ -33,6 +33,15 @@ Create a new enabled realm, "tealhelix". Configure:
 		- Row `firstName` -> Edit -> "Required field": No -> Save
 		- Row `lastName`, the same
 
+### Create the realm roles
+
+The services of TealHelix decide what a caller may do from its realm roles. Go to Manage → Realm roles in the left
+menu, and create each of these with "Create role":
+
+- `retailer`: a retailer, which pushes its feeds and acts for the users it sends over
+- `catalogue-sync`: the Catalogue Sync, which carries the catalogue changes from the Ingestion to HowiBuy
+- `operator`: an operator, who looks after the ingestion of the feeds
+
 ### Create a client for HowiBuy
 
 Create a new client in the Realm:
@@ -107,6 +116,8 @@ In the client details view, go to the "Credentials" tab:
 - Client Authenticator: Client Id and Secret
 - Client Secret: it is `GrZ4Vd8xWAthuLFOXe1tlYvAtXo8INv1` for the test client
 
+In the "Service accounts roles" tab, "Assign role" → Filter by realm roles → `retailer`.
+
 **TODO:** Advanced tab → "Advanced settings", set timeouts.
 
 Now you should be able to use the `keycloak-auth-service.sh` script under `tealhelix-architecture/src/scripts/` to test
@@ -127,6 +138,17 @@ the client:
 INSERT INTO th_retailer (id, name) VALUES ('...uuid...', 'lime_fresh');
 ```
 
+### Create the Catalogue Sync client
+
+Create a new client in the Realm, for the Catalogue Sync, the same way as the test client above, with:
+
+- Client ID: `catalogue-sync`
+- Name: Catalogue Sync
+- Client Secret: it is `7poZpd5n2Abtu7LKcB0MoAWLHBUnhQzU` for the dev Realm
+- "Service accounts roles" tab: the realm role `catalogue-sync`
+
+It is no retailer, so it needs no row in the database.
+
 ### Create some test users
 
 Go to Manage → Users in the left menu, press "Create new user"
@@ -138,6 +160,7 @@ Go to Manage → Users in the left menu, press "Create new user"
 	- Last name: Squarepants
 - Create
 - Role mapping -> Assign Role -> Filter by realm roles (dropdown, top-left of the popup) -> `offline_access`
+  and `operator`
 
 The ID is `72fa53e0-50a9-4bc7-b6ae-07ebe1e28a2d`. Go to the "Credentials" tab, "Set password" to `bob`. Make sure
 "Temporary" is Off and press "Save".

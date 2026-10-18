@@ -55,9 +55,9 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public Uni<User> requireUserWithId(UserId userId, String name, boolean serviceFlag) {
+	public Uni<User> requireUserWithId(UserId userId, String name) {
 		return persistenceContextFactory.withoutTransaction(em ->
-				userProfileDao.requireById(em, userId, name, serviceFlag)
+				userProfileDao.requireById(em, userId, name)
 		);
 	}
 }

@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import eu.tealhelix.common.v1.model.User;
@@ -47,8 +48,8 @@ public class CompassStructureTest {
 	private static final String BEARER_USER = "Bearer user";
 	private static final String BEARER_SERVICE = "Bearer service";
 
-	private static final User END_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false);
-	private static final User SERVICE_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true);
+	private static final User END_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true, Set.of());
+	private static final User SERVICE_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false, Set.of());
 
 	private static final TypeRef<List<Map<String, Object>>> LIST_OF_OBJECTS = new TypeRef<>() {};
 
@@ -238,7 +239,7 @@ public class CompassStructureTest {
 
 		@Override
 		public User makeUnauthenticated() {
-			return new UserImpl(null, null, null, false, false);
+			return new UserImpl(null, null, null, false, true, Set.of());
 		}
 	}
 }

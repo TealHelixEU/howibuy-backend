@@ -76,8 +76,8 @@ public class CompassReadServiceImplTest {
 
 	private static final String USER_ID = "2e788895-0503-4777-a7bd-24e5d61db5b1";
 	private static final UUID USER_UUID = UUID.fromString(USER_ID);
-	private static final User USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, false);
-	private static final User SERVICE_USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, true);
+	private static final User USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, true, Set.of());
+	private static final User SERVICE_USER = new UserImpl(new UserIdImpl(USER_ID), null, null, false, false, Set.of());
 
 	private static final UUID ATTEMPT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 

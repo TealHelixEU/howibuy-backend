@@ -49,7 +49,7 @@ public class HandoffWorkflowTest {
 
 	@Test
 	void aRetailerIsHandedATicketForOneOfItsUsers() {
-		var response = mintTicket(RetailerServiceAccount.accessToken(keycloak), CORRELATION_ID)
+		var response = mintTicket(ServiceAccount.RETAILER.accessToken(keycloak), CORRELATION_ID)
 				.statusCode(200)
 				.contentType(JSON)
 				.extract();
@@ -64,7 +64,7 @@ public class HandoffWorkflowTest {
 	 */
 	@Test
 	void everyTicketIsHandedOutOnce() {
-		var serviceAccessToken = RetailerServiceAccount.accessToken(keycloak);
+		var serviceAccessToken = ServiceAccount.RETAILER.accessToken(keycloak);
 
 		var first = mintTicket(serviceAccessToken, CORRELATION_ID).statusCode(200).extract().path("ticket");
 		var second = mintTicket(serviceAccessToken, CORRELATION_ID).statusCode(200).extract().path("ticket");
@@ -75,6 +75,14 @@ public class HandoffWorkflowTest {
 	@Test
 	void aTicketIsRefusedToACallerThatIsNoRetailer() {
 		mintTicket(null, CORRELATION_ID).statusCode(403);
+	}
+
+	/**
+	 * The IDM authenticates every client of the realm; only those holding the retailer role may act for users.
+	 */
+	@Test
+	void aTicketIsRefusedToAServiceAccountThatIsNoRetailer() {
+		mintTicket(ServiceAccount.CATALOGUE_SYNC.accessToken(keycloak), CORRELATION_ID).statusCode(403);
 	}
 
 	/**
@@ -149,7 +157,7 @@ public class HandoffWorkflowTest {
 	 * A ticket for this test's correlation id, minted the way a retailer mints one.
 	 */
 	private String mintedTicket() {
-		return mintTicket(RetailerServiceAccount.accessToken(keycloak), CORRELATION_ID)
+		return mintTicket(ServiceAccount.RETAILER.accessToken(keycloak), CORRELATION_ID)
 				.statusCode(200)
 				.extract()
 				.path("ticket");
@@ -170,7 +178,7 @@ public class HandoffWorkflowTest {
 	private String impersonationToken() {
 		return RestAssured
 				.given()
-				.header("Authorization", "Bearer " + RetailerServiceAccount.accessToken(keycloak))
+				.header("Authorization", "Bearer " + ServiceAccount.RETAILER.accessToken(keycloak))
 				.header("Content-Type", "application/json")
 				.body("{\"correlationId\": \"" + CORRELATION_ID + "\"}")
 				.when()
