@@ -124,8 +124,11 @@
    - Use the "Foreign key columns" naming convention for the join table columns.
    - In the special case where the two ends of the relation are the same entity, use the "Foreign key columns" convention for the column refering to the logical master of the relation and the name of the relation property converted to singular, e.g. `player_id` and `friend_or_foe`.
 10. Indexes: `IX_<TABLE>__<COLUMN>`
+11. PostgreSQL truncates identifiers longer than 63 characters (see the [documentation](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS)).
+    When a foreign key constraint name to a primary key would exceed it, leave out the trailing `__<TARGET_COL>`, e.g.
+    `FK_RETAILER_PRODUCT_NAME__RETAILER_PRODUCT_ID__RETAILER_PRODUCT`.
 
-**TODO:** How to deal with the name size limit of PostgreSQL? (Which is 61, see the [documentation](https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS))
+**TODO:** How to shorten the other names that exceed the limit of PostgreSQL.
 
 ## DAOs
 

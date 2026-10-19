@@ -198,7 +198,7 @@ public class OpenApiContractTest {
 
 		var declared = tags.stream().map(tag -> String.valueOf(tag.get("name"))).collect(Collectors.toSet());
 		assertEquals(
-				Set.of("Product assessment", "Session handoff", "Token exchange", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
+				Set.of("Product assessment", "Session handoff", "Token exchange", "Catalogue changes", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
 				declared,
 				"the API is grouped by what its parts do");
 		var ungrouped = new ArrayList<String>();
@@ -250,6 +250,33 @@ public class OpenApiContractTest {
 				"an incomplete completion answers the unanswered question ids");
 		assertNotNull(at(startAttempt, "responses", "401", "description"), "an unauthenticated caller is documented");
 		assertNotNull(at(startAttempt, "responses", "403", "description"), "a service account calling an end-user operation is documented");
+	}
+
+	/**
+	 * The Catalogue Sync reads the cursor and applies pages of changes on top of it. Applying answers 204 with no body,
+	 * and a page that does not start at the cursor is refused with 409 and a message, which the sync has to handle by
+	 * reading the cursor again.
+	 */
+	@Test
+	void documentsTheCatalogueChanges() {
+		var document = openApiDocument();
+		var readCursor = operation(document, "get", "/api/howibuy/v1/catalogue-changes/cursor");
+		var apply = operation(document, "post", "/api/howibuy/v1/catalogue-changes");
+
+		assertEquals("#/components/schemas/CatalogueChangeCursorResponse",
+				at(readCursor, "responses", "200", "content", "application/json", "schema", "$ref"),
+				"the cursor answers the last sequence applied");
+		assertEquals("#/components/schemas/CatalogueChangesRequest",
+				at(apply, "requestBody", "content", "application/json", "schema", "$ref"),
+				"a page is sent as the request body");
+		assertNotNull(at(apply, "responses", "204", "description"), "applying documents its empty success outcome");
+		assertNull(at(apply, "responses", "201"), "applying does not promise a Created it never sends");
+		assertEquals("#/components/schemas/SingleMessageResponse",
+				at(apply, "responses", "409", "content", "application/json", "schema", "$ref"),
+				"a page not starting at the cursor answers a message");
+		for (var operation : List.of(readCursor, apply)) {
+			assertNotNull(at(operation, "responses", "403", "description"), "a caller other than the Catalogue Sync is documented");
+		}
 	}
 
 	/**

@@ -7,6 +7,9 @@ public interface HowiBuyOpenApiTagNames {
 	String HANDOFF = "Session handoff";
 	String HANDOFF_DESC = "Carrying a user's session from a retailer's application over to the single-page application: the retailer is handed a ticket, the single-page application redeems it for a session of its own, and renews that session's token for as long as the user keeps working.";
 
+	String CATALOGUE_CHANGES = "Catalogue changes";
+	String CATALOGUE_CHANGES_DESC = "The receiving end of the Product Changes that the Catalogue Sync carries over from the Ingestion: the cursor of how far they have been applied, and the application of a page of them. For the Catalogue Sync only.";
+
 	String TOKEN_EXCHANGE = "Token exchange";
 	String TOKEN_EXCHANGE_DESC = "Exchange of a retailer's service-account token for one that acts as a user of that retailer, for a retailer calling this application on a user's behalf.";
 }

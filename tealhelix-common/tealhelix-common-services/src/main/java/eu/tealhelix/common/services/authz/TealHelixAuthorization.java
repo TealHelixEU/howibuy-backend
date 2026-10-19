@@ -19,6 +19,16 @@ public interface TealHelixAuthorization {
 	void requirePerson(User user);
 
 	/**
+	 * Ensure that the given user is the Catalogue Sync, which carries the Product Changes between the services.
+	 *
+	 * @param user The user to check
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException If the user is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException    If the user does not have the
+	 *                                                                            {@code CATALOGUE_SYNC} role
+	 */
+	void requireCatalogueSync(User user);
+
+	/**
 	 * Ensure that the given user has impersonation rights, returning a failure with a {@code NotAuthorizedException}
 	 * if they do not. Retailers have them.
 	 *

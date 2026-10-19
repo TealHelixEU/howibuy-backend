@@ -1,6 +1,8 @@
 package eu.tealhelix.howibuy;
 
 import static eu.tealhelix.howibuy.OpenApiTagNames.MISCELLANEOUS;
+import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CATALOGUE_CHANGES;
+import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CATALOGUE_CHANGES_DESC;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.HANDOFF;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.HANDOFF_DESC;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.PRODUCT_ASSESSMENT;
@@ -31,6 +33,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 				@Tag(name = PRODUCT_ASSESSMENT, description = PRODUCT_ASSESSMENT_DESC),
 				@Tag(name = TOKEN_EXCHANGE, description = TOKEN_EXCHANGE_DESC),
 				@Tag(name = HANDOFF, description = HANDOFF_DESC),
+				@Tag(name = CATALOGUE_CHANGES, description = CATALOGUE_CHANGES_DESC),
 				@Tag(name = SFC, description = SFC_DESC),
 				@Tag(name = SFC_ATTEMPTS, description = SFC_ATTEMPTS_DESC),
 				@Tag(name = MISCELLANEOUS),
