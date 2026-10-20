@@ -18,6 +18,7 @@ import java.util.Locale;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.howibuy.dao.ArchetypeCategoryDao;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
@@ -46,7 +47,6 @@ import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
-import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;

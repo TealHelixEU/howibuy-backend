@@ -45,12 +45,17 @@
 							<rules>
 								<!--
 									The Ingestion of Retailer Catalogues is a separate deployable with its own database
-									and shares nothing with HowiBuy except the changes it exposes. See ADR 0006.
+									and shares nothing with HowiBuy except the changes it exposes. See ADR 0006. The
+									modules of tealhelix-architecture are common ground, which every container may use.
 								-->
 								<bannedDependencies>
 									<excludes>
 										<exclude>eu.tealhelix:catalogue-*</exclude>
 									</excludes>
+									<includes>
+										<include>eu.tealhelix:catalogue-model</include>
+										<include>eu.tealhelix:catalogue-model-testutils</include>
+									</includes>
 								</bannedDependencies>
 							</rules>
 						</configuration>

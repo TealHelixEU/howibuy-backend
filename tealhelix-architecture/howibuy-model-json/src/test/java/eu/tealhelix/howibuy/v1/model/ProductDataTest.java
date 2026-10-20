@@ -10,9 +10,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.tealhelix.catalogue.v1.types.ProductKey;
+import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.howibuy.v1.json.ObjectMapperModelUtils;
-import eu.tealhelix.howibuy.v1.types.ProductKey;
-import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
 import org.junit.jupiter.api.Test;
 
 public class ProductDataTest {

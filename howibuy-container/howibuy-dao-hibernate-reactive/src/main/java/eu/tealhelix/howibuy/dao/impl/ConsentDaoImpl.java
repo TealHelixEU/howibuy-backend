@@ -7,15 +7,15 @@ import java.util.Optional;
 import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.common.v1.types.HasRetailerId;
+import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.howibuy.dao.ConsentDao;
 import eu.tealhelix.howibuy.dao.jpa.ConsentEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.howibuy.dao.jpa.values.ConsentPK;
-import eu.tealhelix.howibuy.v1.types.HasRetailerId;
-import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
-import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
-import eu.tealhelix.common.v1.types.HasUserId;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

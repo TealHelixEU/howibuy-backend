@@ -34,13 +34,19 @@
 							<rules>
 								<!--
 									Ingestion is a separate deployable with its own database, and shares nothing with
-									HowiBuy or SFC except the changes it exposes. See ADR 0006.
+									HowiBuy or SFC except the changes it exposes. See ADR 0006. The modules of
+									tealhelix-architecture are common ground, which every container may use.
 								-->
 								<bannedDependencies>
 									<excludes>
 										<exclude>eu.tealhelix:howibuy-*</exclude>
 										<exclude>eu.tealhelix:sfc-*</exclude>
 									</excludes>
+									<includes>
+										<include>eu.tealhelix:howibuy-model</include>
+										<include>eu.tealhelix:howibuy-model-json</include>
+										<include>eu.tealhelix:sfc-model</include>
+									</includes>
 								</bannedDependencies>
 							</rules>
 						</configuration>

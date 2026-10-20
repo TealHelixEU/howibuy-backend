@@ -1,9 +1,9 @@
-package eu.tealhelix.howibuy.v1.types.impl;
+package eu.tealhelix.common.v1.types.impl;
 
 import java.util.Objects;
 import java.util.UUID;
 
-import eu.tealhelix.howibuy.v1.types.RetailerId;
+import eu.tealhelix.common.v1.types.RetailerId;
 
 public class GenericRetailerId implements RetailerId {
 	private final String representation;

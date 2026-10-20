@@ -1,4 +1,4 @@
-package eu.tealhelix.howibuy.v1.types;
+package eu.tealhelix.catalogue.v1.types;
 
 import eu.tealhelix.common.types.RepresentableAsString;
 

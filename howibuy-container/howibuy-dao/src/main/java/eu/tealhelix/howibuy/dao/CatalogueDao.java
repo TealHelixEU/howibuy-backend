@@ -3,9 +3,9 @@ package eu.tealhelix.howibuy.dao;
 import java.util.Map;
 import java.util.Set;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
-import eu.tealhelix.common.v1.types.CatalogueId;
-import eu.tealhelix.howibuy.v1.types.RetailerId;
+import eu.tealhelix.common.v1.types.RetailerId;
 import io.smallrye.mutiny.Uni;
 
 public interface CatalogueDao {

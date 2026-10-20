@@ -1,4 +1,4 @@
-package eu.tealhelix.common.v1.types;
+package eu.tealhelix.catalogue.v1.types;
 
 import static org.mockito.internal.progress.ThreadSafeMockingProgress.mockingProgress;
 

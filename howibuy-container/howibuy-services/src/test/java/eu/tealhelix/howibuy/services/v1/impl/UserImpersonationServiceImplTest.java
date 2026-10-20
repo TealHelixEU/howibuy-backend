@@ -1,7 +1,7 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
-import static eu.tealhelix.howibuy.v1.types.RetailerIdTestUtils.hasRetailerId;
-import static eu.tealhelix.howibuy.v1.types.RetailerIdTestUtils.matchesRetailerId;
+import static eu.tealhelix.common.v1.types.RetailerIdTestUtils.hasRetailerId;
+import static eu.tealhelix.common.v1.types.RetailerIdTestUtils.matchesRetailerId;
 import static eu.tealhelix.common.v1.types.UserIdTestUtils.matchesHasUserId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -15,10 +15,6 @@ import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
-import eu.tealhelix.howibuy.dao.ConsentDao;
-import eu.tealhelix.howibuy.dao.CorrelationIdDao;
-import eu.tealhelix.howibuy.dao.RetailerDao;
-import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -31,6 +27,10 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.dao.ConsentDao;
+import eu.tealhelix.howibuy.dao.CorrelationIdDao;
+import eu.tealhelix.howibuy.dao.RetailerDao;
+import eu.tealhelix.howibuy.dao.UserProfileDao;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.jboss.weld.junit5.auto.AddBeanClasses;

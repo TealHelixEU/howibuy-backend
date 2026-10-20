@@ -8,13 +8,16 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.catalogue.v1.model.Listing;
+import eu.tealhelix.catalogue.v1.model.ProductChange;
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.common.v1.model.User;
-import eu.tealhelix.common.v1.types.CatalogueId;
+import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.howibuy.dao.CatalogueChangeCursorDao;
 import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.RetailerDao;
@@ -22,9 +25,6 @@ import eu.tealhelix.howibuy.dao.RetailerProductDao;
 import eu.tealhelix.howibuy.services.v1.CatalogueChangeService;
 import eu.tealhelix.howibuy.services.v1.types.ChangeCursorConflictException;
 import eu.tealhelix.howibuy.services.v1.types.ProductChangePage;
-import eu.tealhelix.howibuy.v1.model.Listing;
-import eu.tealhelix.howibuy.v1.model.ProductChange;
-import eu.tealhelix.howibuy.v1.types.RetailerId;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

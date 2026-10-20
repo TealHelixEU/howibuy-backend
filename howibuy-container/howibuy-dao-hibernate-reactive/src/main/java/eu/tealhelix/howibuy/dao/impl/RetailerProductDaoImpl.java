@@ -10,14 +10,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import eu.tealhelix.catalogue.v1.model.Listing;
+import eu.tealhelix.catalogue.v1.model.ProductChange;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.howibuy.dao.RetailerProductDao;
 import eu.tealhelix.howibuy.dao.jpa.ListingEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity_;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity;
-import eu.tealhelix.howibuy.v1.model.Listing;
-import eu.tealhelix.howibuy.v1.model.ProductChange;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

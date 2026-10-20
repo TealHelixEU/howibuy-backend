@@ -1,13 +1,13 @@
-package eu.tealhelix.common.v1.types.impl;
+package eu.tealhelix.catalogue.v1.types.impl;
 
 import java.util.Objects;
 
-import eu.tealhelix.common.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.ProductKey;
 
-public class CatalogueIdImpl implements CatalogueId {
+public class ProductKeyImpl implements ProductKey {
 	private final String representation;
 
-	public CatalogueIdImpl(String representation) {
+	public ProductKeyImpl(String representation) {
 		this.representation = Objects.requireNonNull(representation);
 	}
 
@@ -18,7 +18,8 @@ public class CatalogueIdImpl implements CatalogueId {
 
 	@Override
 	public boolean equals(Object o) {
-		return this == o || (o instanceof CatalogueId other && Objects.equals(representation, other.asString()));
+		if (!(o instanceof ProductKey that)) return false;
+		return Objects.equals(asString(), that.asString());
 	}
 
 	@Override
@@ -28,6 +29,6 @@ public class CatalogueIdImpl implements CatalogueId {
 
 	@Override
 	public String toString() {
-		return "CatalogueIdImpl(" + representation + ")";
+		return "ProductKeyImpl(" + representation + ")";
 	}
 }

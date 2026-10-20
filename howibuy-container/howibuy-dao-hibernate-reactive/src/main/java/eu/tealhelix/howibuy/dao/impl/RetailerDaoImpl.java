@@ -2,10 +2,10 @@ package eu.tealhelix.howibuy.dao.impl;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
+import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.howibuy.dao.RetailerDao;
 import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
-import eu.tealhelix.howibuy.v1.types.RetailerId;
-import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

@@ -1,4 +1,4 @@
-package eu.tealhelix.howibuy.v1.types;
+package eu.tealhelix.common.v1.types;
 
 import java.util.UUID;
 

@@ -1,13 +1,13 @@
-package eu.tealhelix.howibuy.v1.types.impl;
+package eu.tealhelix.catalogue.v1.types.impl;
 
 import java.util.Objects;
 
-import eu.tealhelix.howibuy.v1.types.ProductKey;
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 
-public class ProductKeyImpl implements ProductKey {
+public class CatalogueIdImpl implements CatalogueId {
 	private final String representation;
 
-	public ProductKeyImpl(String representation) {
+	public CatalogueIdImpl(String representation) {
 		this.representation = Objects.requireNonNull(representation);
 	}
 
@@ -18,8 +18,7 @@ public class ProductKeyImpl implements ProductKey {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ProductKey that)) return false;
-		return Objects.equals(asString(), that.asString());
+		return this == o || (o instanceof CatalogueId other && Objects.equals(representation, other.asString()));
 	}
 
 	@Override
@@ -29,6 +28,6 @@ public class ProductKeyImpl implements ProductKey {
 
 	@Override
 	public String toString() {
-		return "ProductKeyImpl(" + representation + ")";
+		return "CatalogueIdImpl(" + representation + ")";
 	}
 }

@@ -1,7 +1,7 @@
 package eu.tealhelix.howibuy.v1.model;
 
+import eu.tealhelix.catalogue.v1.types.HasProductKey;
 import eu.tealhelix.common.types.Nullable;
-import eu.tealhelix.howibuy.v1.types.HasProductKey;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import org.immutables.value.Value;
 

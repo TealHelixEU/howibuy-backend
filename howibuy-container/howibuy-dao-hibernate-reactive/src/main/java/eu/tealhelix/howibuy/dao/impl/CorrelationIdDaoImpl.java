@@ -7,6 +7,12 @@ import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.criteria.Root;
 
+import eu.tealhelix.common.dao.EntityNotFoundException;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.common.v1.types.HasUserId;
+import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.howibuy.dao.CorrelationIdDao;
 import eu.tealhelix.howibuy.dao.jpa.CorrelationIdEntity;
 import eu.tealhelix.howibuy.dao.jpa.CorrelationIdEntity_;
@@ -14,12 +20,6 @@ import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerEntity_;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.howibuy.dao.jpa.values.CorrelationIdPK;
-import eu.tealhelix.howibuy.v1.types.RetailerId;
-import eu.tealhelix.common.dao.EntityNotFoundException;
-import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
-import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
-import eu.tealhelix.common.v1.model.User;
-import eu.tealhelix.common.v1.types.HasUserId;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

@@ -1,9 +1,9 @@
-package eu.tealhelix.howibuy.v1.model;
+package eu.tealhelix.catalogue.v1.model;
 
 import java.math.BigDecimal;
 import java.util.Currency;
 
-import eu.tealhelix.common.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import org.immutables.value.Value;
 
 /**

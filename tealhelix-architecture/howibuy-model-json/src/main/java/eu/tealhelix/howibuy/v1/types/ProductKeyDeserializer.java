@@ -5,7 +5,8 @@ import java.io.IOException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import eu.tealhelix.howibuy.v1.types.impl.ProductKeyImpl;
+import eu.tealhelix.catalogue.v1.types.ProductKey;
+import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 
 public class ProductKeyDeserializer extends JsonDeserializer<ProductKey> {
 	@Override

@@ -2,8 +2,8 @@ package eu.tealhelix.howibuy.dao;
 
 import java.util.List;
 
+import eu.tealhelix.catalogue.v1.model.ProductChange;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
-import eu.tealhelix.howibuy.v1.model.ProductChange;
 import io.smallrye.mutiny.Uni;
 
 public interface RetailerProductDao {

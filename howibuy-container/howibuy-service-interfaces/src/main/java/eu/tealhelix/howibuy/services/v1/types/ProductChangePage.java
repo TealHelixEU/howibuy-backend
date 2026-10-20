@@ -2,7 +2,7 @@ package eu.tealhelix.howibuy.services.v1.types;
 
 import java.util.List;
 
-import eu.tealhelix.howibuy.v1.model.ProductChange;
+import eu.tealhelix.catalogue.v1.model.ProductChange;
 
 /**
  * A page of the Product Changes read from the change cursor of the Ingestion.

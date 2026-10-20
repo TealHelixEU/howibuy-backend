@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import eu.tealhelix.howibuy.v1.types.HasProductKey;
+import eu.tealhelix.catalogue.v1.types.HasProductKey;
 import org.immutables.value.Value;
 
 /**

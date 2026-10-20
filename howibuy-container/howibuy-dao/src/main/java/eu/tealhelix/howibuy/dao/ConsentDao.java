@@ -1,8 +1,8 @@
 package eu.tealhelix.howibuy.dao;
 
-import eu.tealhelix.howibuy.v1.types.HasRetailerId;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.common.v1.types.HasRetailerId;
 import eu.tealhelix.common.v1.types.HasUserId;
 import io.smallrye.mutiny.Uni;
 

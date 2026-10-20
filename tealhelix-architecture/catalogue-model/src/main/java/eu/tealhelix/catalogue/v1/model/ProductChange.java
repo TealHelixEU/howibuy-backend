@@ -1,11 +1,11 @@
-package eu.tealhelix.howibuy.v1.model;
+package eu.tealhelix.catalogue.v1.model;
 
 import java.util.List;
 import java.util.Map;
 
+import eu.tealhelix.catalogue.v1.types.HasProductKey;
 import eu.tealhelix.common.types.Nullable;
-import eu.tealhelix.howibuy.v1.types.HasProductKey;
-import eu.tealhelix.howibuy.v1.types.RetailerId;
+import eu.tealhelix.common.v1.types.RetailerId;
 import org.immutables.value.Value;
 
 /**

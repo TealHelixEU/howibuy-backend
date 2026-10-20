@@ -9,13 +9,13 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
-import eu.tealhelix.common.v1.types.CatalogueId;
-import eu.tealhelix.common.v1.types.impl.CatalogueIdImpl;
-import eu.tealhelix.howibuy.v1.types.RetailerId;
-import eu.tealhelix.howibuy.v1.types.impl.GenericRetailerId;
+import eu.tealhelix.common.v1.types.RetailerId;
+import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

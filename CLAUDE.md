@@ -17,6 +17,8 @@ Treat `tealhelix-architecture/src/site/markdown/CodingConventions.md` as authori
 ```
 tealhelix/
 ├── tealhelix-architecture/        Pure domain model (entities, value types). No framework deps.
+│   └── catalogue-model/          Retailer Catalogue types shared by Ingestion, Catalogue Sync and HowiBuy
+│   └── catalogue-model-testutils/   Framework-free test utilities of the Catalogue types
 │   └── howibuy-model/            HowiBuy domain entities
 │   └── howibuy-model-json/       Map the HowiBuy model to JSON with Jackson
 │   └── src
@@ -54,7 +56,8 @@ dictated by Quarkus, look for the XML comment marker next to its `version.*` pro
 bump the bundle together.
 
 `catalogue-*` and the `howibuy-*`/`sfc-*` modules never depend on each other; a `bannedDependencies` rule in each
-container pom enforces it.
+container pom enforces it. The modules of `tealhelix-architecture` are common ground that every container may use, so
+the rule lists them as exceptions; add a new architecture module to those lists.
 
 Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule 5 in
 [CodingConventions.md](tealhelix-architecture/src/site/markdown/CodingConventions.md).

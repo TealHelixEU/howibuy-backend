@@ -5,15 +5,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.types.RepresentableAsString;
-import eu.tealhelix.common.v1.types.CatalogueId;
-import eu.tealhelix.common.v1.types.impl.CatalogueIdImpl;
+import eu.tealhelix.common.v1.types.RetailerId;
+import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity;
 import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity_;
-import eu.tealhelix.howibuy.v1.types.RetailerId;
-import eu.tealhelix.howibuy.v1.types.impl.GenericRetailerId;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
