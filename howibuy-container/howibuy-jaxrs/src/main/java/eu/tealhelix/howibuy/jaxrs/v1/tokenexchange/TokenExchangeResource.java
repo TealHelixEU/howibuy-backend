@@ -14,8 +14,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
 import eu.tealhelix.common.v1.model.User;
-import eu.tealhelix.common.web.authentication.jwt.JwtGenerationService;
 import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
+import eu.tealhelix.howibuy.jaxrs.authentication.jwt.JwtGenerationService;
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.openapi.annotations.Operation;

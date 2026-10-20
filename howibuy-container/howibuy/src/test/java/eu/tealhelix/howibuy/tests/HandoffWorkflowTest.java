@@ -8,7 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.common.test.quarkus.InjectKeycloak;
-import eu.tealhelix.common.web.authentication.jwt.TokenAuthenticationConfigImpl;
+import eu.tealhelix.common.test.quarkus.ServiceAccount;
+import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenAuthenticationConfigImpl;
 import eu.tealhelix.howibuy.services.v1.impl.HandoffServiceImpl;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;

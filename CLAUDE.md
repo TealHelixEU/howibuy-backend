@@ -31,18 +31,22 @@ tealhelix/
 │   ├── tealhelix-common-dao-reactive-hibernate/   Hibernate-Reactive implementation of the above
 │   ├── tealhelix-common-services/             Service interfaces shared across microservices (UserService, ...)
 │   ├── tealhelix-common-services-impl/        Implementations of the above
-│   ├── tealhelix-common-web/                  JAX-RS infrastructure (JwtAuthenticationFilter, TokenHelper, ...)
+│   ├── tealhelix-common-web/                  JAX-RS infrastructure (exception mappers, IdmRealmRoles, ...)
 │   └── tealhelix-common-testutils/            Test resources & utilities (Postgres/Keycloak Testcontainers, @InjectPostgres, ...)
 ├── catalogue-container/          The Ingestion of Retailer Catalogues (own deployable and DB schema, see ADR 0006)
-│   ├── catalogue-dao-hibernate-reactive/   Liquibase changelog of the Ingestion schema (IN_ tables)
-│   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb)
+│   ├── catalogue-dao/                      DAO interfaces
+│   ├── catalogue-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog of the Ingestion schema (IN_ tables)
+│   ├── catalogue-service-interfaces/       Service interfaces
+│   ├── catalogue-services/                 Service implementations, the feed store
+│   ├── catalogue-jaxrs/                    JAX-RS resources
+│   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb, @WithCatalogueDbAndKeycloak)
 │   └── catalogue/                          Quarkus deployable
 ├── howibuy-container/            The HowiBuy microservice
 │   ├── howibuy-dao/              DAO interfaces
 │   ├── howibuy-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog
 │   ├── howibuy-service-interfaces/       Service interfaces
 │   ├── howibuy-services/                 Service implementations
-│   ├── howibuy-jaxrs/                    JAX-RS resources
+│   ├── howibuy-jaxrs/                    JAX-RS resources, HowiBuy's own JWT authentication (JwtAuthenticationFilter, TokenHelper, ...)
 │   ├── howibuy-testutils/                Module-specific test utilities
 │   └── howibuy/                          Quarkus deployable (ties everything together)
 └── tealhelix-docker/              Dockerfiles + docker-compose
@@ -80,6 +84,8 @@ Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule
   `SessionFactory` keeps it on the Vert.x context). After a failed flush that session is unusable, so work that must
   recover from a DB error has to run *after* the outer call completes, not inside it (see
   `UserServiceImpl.findOrCreateUserFromValidIdmId`).
+- Hibernate Reactive runs only on the Vert.x event loop. Code that must block (the Ingestion reading a Feed's body)
+  makes its reactive calls through `UniAwaiter`, which the deployable implements with `VertxContextSupport`.
 - IDs follow a pattern: a domain interface (`UserId`) + an implementation (`UserIdImpl`) + test utilities
   (`UserIdTestUtils`). Same for `RetailerId`, `Email`, etc. Don't introduce a new ID type without all three.
 - An external IDM identifier (the `sub` claim from Keycloak) is **not** the same as the internal `UserId`.
@@ -173,10 +179,17 @@ The `/tokenexchange` endpoint mints an impersonation JWT signed by us (see `JwtG
 `JwtAuthenticationFilter` recognises it via `isImpersonated(...)` and takes the second branch above.
 
 What a caller may do comes from its `User.getRoles()` (`RETAILER`, `CATALOGUE_SYNC`, `OPERATOR`), which `TokenHelperImpl`
-maps from the Keycloak realm roles (`realm_access.roles`) of the first and third branches; impersonation tokens carry
-none. Whether the caller is a person (`User.isPerson()`, `TealHelixAuthorization.requirePerson`) is a separate question:
+maps from the Keycloak realm roles (`realm_access.roles`) of the first and third branches, through `IdmRealmRoles`;
+impersonation tokens carry none. Whether the caller is a person (`User.isPerson()`, `TealHelixAuthorization.requirePerson`) is a separate question:
 an operator is a person with a role. Check roles, never "is it a service account": every client of the realm gets a
 service token.
+
+The Ingestion (`catalogue`) does not use any of the above. quarkus-oidc verifies the IDM's access tokens before the
+resources run, accepting only those whose audience contains `catalogue` (the realm's client scope `catalogue` adds it;
+a Retailer's client needs it as a default scope). `CurrentUser.of(SecurityContext)` in `catalogue-jaxrs` turns the
+token into a `User`: id = `sub`, roles through `IdmRealmRoles`, a person unless the token names a `client_id`. Its
+tests run without an IDM (`%test.quarkus.oidc.tenant-enabled=false`) and stand in for tokens with `@TestSecurity` +
+`@OidcSecurity`; `@WithCatalogueDbAndKeycloak` turns real token verification on.
 
 The SPA fires several requests at once right after login, so a new Keycloak user's first requests race to create the
 profile. The losers get `EntityAlreadyExistsException` from the DAO and read the winner's row back. Expect Hibernate to

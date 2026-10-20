@@ -28,9 +28,9 @@ Create a new enabled realm, "tealhelix". Configure:
 		- Email as username, Login with email: On
 		- Verify email: **should be On, TODO**
 	- Events: **TODO, for when we implement the user management events**
-    - Sessions: Make sure "Offline session settings" -> "Offline Session Idle" is set to something like 30 Days
+    - Sessions: Make sure "Offline session settings" → "Offline Session Idle" is set to something like 30 Days
 	- User profile:
-		- Row `firstName` -> Edit -> "Required field": No -> Save
+		- Row `firstName` → Edit → "Required field": No → Save
 		- Row `lastName`, the same
 
 ### Create the realm roles
@@ -41,6 +41,29 @@ menu, and create each of these with "Create role":
 - `retailer`: a retailer, which pushes its feeds and acts for the users it sends over
 - `catalogue-sync`: the Catalogue Sync, which carries the catalogue changes from the Ingestion to HowiBuy
 - `operator`: an operator, who looks after the ingestion of the feeds
+
+### Create the client scope of the Ingestion
+
+The Ingestion of Retailer Catalogues accepts only the access tokens meant for it, those whose audience contains
+`catalogue`. Go to Manage → Client scopes in the left menu, press "Create client scope":
+
+- Name: `catalogue`
+- Description: Makes the access token one meant for the Ingestion of Retailer Catalogues
+- Type: None
+- Display on consent screen: Off
+- Include in token scope: On
+- Save
+
+In its "Mappers" tab, "Configure a new mapper" → "Audience":
+
+- Name: `catalogue audience`
+- Included Client Audience: leave empty
+- Included Custom Audience: `catalogue`
+- Add to ID token: Off
+- Add to access token: On
+- Save
+
+Every client that calls the Ingestion gets this scope, as described for each client below.
 
 ### Create a client for HowiBuy
 
@@ -68,6 +91,9 @@ Create a new client in the Realm:
 		- A plain plus sign: `+`
 		- **TODO**
 - Save & finish the new client wizard
+
+In the "Client scopes" tab, "Add client scope" → `catalogue` → Add → Optional, so that an operator can ask for a token
+for the Ingestion (`keycloak-auth.sh` does).
 
 ### Create a client for Claims Buster
 
@@ -118,6 +144,9 @@ In the client details view, go to the "Credentials" tab:
 
 In the "Service accounts roles" tab, "Assign role" → Filter by realm roles → `retailer`.
 
+In the "Client scopes" tab, "Add client scope" → `catalogue` → Add → Default. Every Retailer's client needs it to push
+its Feeds; without it the Ingestion answers `401`.
+
 **TODO:** Advanced tab → "Advanced settings", set timeouts.
 
 Now you should be able to use the `keycloak-auth-service.sh` script under `tealhelix-architecture/src/scripts/` to test
@@ -159,7 +188,7 @@ Go to Manage → Users in the left menu, press "Create new user"
 	- First name: Bob
 	- Last name: Squarepants
 - Create
-- Role mapping -> Assign Role -> Filter by realm roles (dropdown, top-left of the popup) -> `offline_access`
+- Role mapping → Assign Role → Filter by realm roles (dropdown, top-left of the popup) → `offline_access`
   and `operator`
 
 The ID is `72fa53e0-50a9-4bc7-b6ae-07ebe1e28a2d`. Go to the "Credentials" tab, "Set password" to `bob`. Make sure

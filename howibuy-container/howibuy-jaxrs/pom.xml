@@ -27,14 +27,40 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-services</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-types</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-utils</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-web</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<!-- FRAMEWORK -->
+		<dependency>
+			<!-- The JWT authentication filter is a RESTEasy Reactive server request filter -->
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-rest</artifactId>
 		</dependency>
 
 		<!-- SPECS -->
 		<dependency>
 			<groupId>io.smallrye.reactive</groupId>
 			<artifactId>mutiny</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.annotation</groupId>
+			<artifactId>jakarta.annotation-api</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>jakarta.enterprise</groupId>
@@ -45,6 +71,10 @@
 			<artifactId>jakarta.ws.rs-api</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.eclipse.microprofile.config</groupId>
+			<artifactId>microprofile-config-api</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.eclipse.microprofile.openapi</groupId>
 			<artifactId>microprofile-openapi-api</artifactId>
 		</dependency>
@@ -53,6 +83,31 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
+		<!-- TEST -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

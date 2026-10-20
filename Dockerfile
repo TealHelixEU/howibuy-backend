@@ -7,6 +7,14 @@ WORKDIR /workspace
 # Copy only POM files first so dependency resolution can be cached.
 # Regenerate this block with: ./tealhelix-architecture/src/scripts/update-dockerfile-pom-copy.sh
 # BEGIN auto-pom-copy
+COPY catalogue-container/catalogue-dao-hibernate-reactive/pom.xml catalogue-container/catalogue-dao-hibernate-reactive/pom.xml
+COPY catalogue-container/catalogue-dao/pom.xml catalogue-container/catalogue-dao/pom.xml
+COPY catalogue-container/catalogue-jaxrs/pom.xml catalogue-container/catalogue-jaxrs/pom.xml
+COPY catalogue-container/catalogue/pom.xml catalogue-container/catalogue/pom.xml
+COPY catalogue-container/catalogue-service-interfaces/pom.xml catalogue-container/catalogue-service-interfaces/pom.xml
+COPY catalogue-container/catalogue-services/pom.xml catalogue-container/catalogue-services/pom.xml
+COPY catalogue-container/catalogue-testutils/pom.xml catalogue-container/catalogue-testutils/pom.xml
+COPY catalogue-container/pom.xml catalogue-container/pom.xml
 COPY howibuy-container/howibuy-dao-hibernate-reactive/pom.xml howibuy-container/howibuy-dao-hibernate-reactive/pom.xml
 COPY howibuy-container/howibuy-dao/pom.xml howibuy-container/howibuy-dao/pom.xml
 COPY howibuy-container/howibuy-jaxrs/pom.xml howibuy-container/howibuy-jaxrs/pom.xml
@@ -23,6 +31,8 @@ COPY howibuy-container/sfc-service-interfaces/pom.xml howibuy-container/sfc-serv
 COPY howibuy-container/sfc-services/pom.xml howibuy-container/sfc-services/pom.xml
 COPY howibuy-container/sustainability-scoring/pom.xml howibuy-container/sustainability-scoring/pom.xml
 COPY pom.xml pom.xml
+COPY tealhelix-architecture/catalogue-model/pom.xml tealhelix-architecture/catalogue-model/pom.xml
+COPY tealhelix-architecture/catalogue-model-testutils/pom.xml tealhelix-architecture/catalogue-model-testutils/pom.xml
 COPY tealhelix-architecture/howibuy-model-json/pom.xml tealhelix-architecture/howibuy-model-json/pom.xml
 COPY tealhelix-architecture/howibuy-model/pom.xml tealhelix-architecture/howibuy-model/pom.xml
 COPY tealhelix-architecture/pom.xml tealhelix-architecture/pom.xml

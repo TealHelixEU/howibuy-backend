@@ -1,0 +1,28 @@
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+			 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			 xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+			 version="3.0">
+
+	<persistence-unit name="default-persistence-unit">
+		<provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+
+		<class>eu.tealhelix.catalogue.dao.jpa.CatalogueEntity</class>
+		<class>eu.tealhelix.catalogue.dao.jpa.IngestionRejectEntity</class>
+		<class>eu.tealhelix.catalogue.dao.jpa.IngestionRunEntity</class>
+
+		<properties>
+			<!-- The DB connection properties are overridden in the code -->
+			<property name="jakarta.persistence.jdbc.url" value="INTENTIONALLY_BAD_VALUE" />
+			<property name="jakarta.persistence.jdbc.user" value="INTENTIONALLY_BAD_VALUE" />
+			<property name="jakarta.persistence.jdbc.password" value="INTENTIONALLY_BAD_VALUE" />
+
+			<!-- Verify that the entity mappings agree with the schema the changelog creates -->
+			<property name="jakarta.persistence.schema-generation.database.action" value="validate" />
+
+			<!-- SQL statement logging -->
+			<property name="hibernate.show_sql" value="true"/>
+			<property name="hibernate.format_sql" value="true"/>
+			<property name="hibernate.highlight_sql" value="true"/>
+		</properties>
+	</persistence-unit>
+</persistence>

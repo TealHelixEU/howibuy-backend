@@ -38,6 +38,11 @@
 
 		<!-- OTHER -->
 		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.hibernate.reactive</groupId>
 			<artifactId>hibernate-reactive-core</artifactId>
 		</dependency>

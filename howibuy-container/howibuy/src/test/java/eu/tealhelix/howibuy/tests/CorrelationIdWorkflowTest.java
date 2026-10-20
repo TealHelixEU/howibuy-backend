@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.test.quarkus.InjectKeycloak;
 import eu.tealhelix.common.test.quarkus.InjectPostgres;
+import eu.tealhelix.common.test.quarkus.ServiceAccount;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;

@@ -12,6 +12,7 @@ import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.common.test.quarkus.InjectKeycloak;
+import eu.tealhelix.common.test.quarkus.ServiceAccount;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;

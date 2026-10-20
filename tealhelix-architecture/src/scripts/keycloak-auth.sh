@@ -85,7 +85,7 @@ fi
 AUTHENTICATE_URL=$(curl -sSL --get --cookie "$COOKIE" --cookie-jar "$COOKIE" \
 	--data-urlencode "client_id=${CLIENTID}" \
 	--data-urlencode "redirect_uri=${REDIRECT_URL}" \
-	--data-urlencode "scope=openid" \
+	--data-urlencode "scope=openid catalogue" \
 	--data-urlencode "response_type=code" \
 	"$KEYCLOAK_URL/realms/$REALM/protocol/openid-connect/auth" \
 	| sed -ne '/<form/s/^.*action=\"\([^"]*\)".*$/\1/p' | sed -e 's/\&amp;/\&/g')

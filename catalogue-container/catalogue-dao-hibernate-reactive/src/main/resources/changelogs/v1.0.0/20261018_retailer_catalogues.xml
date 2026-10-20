@@ -36,10 +36,68 @@
 				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__ACTIVE" />
 			</column>
 		</createTable>
-		<addForeignKeyConstraint baseTableName="IN_CATALOGUE" baseColumnNames="retailer_id" constraintName="FK_IN_CATALOGUE__RETAILER_ID__IN_RETAILER__ID" referencedTableName="IN_RETAILER" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="IN_CATALOGUE" baseColumnNames="retailer_id" constraintName="FK_CATALOGUE__RETAILER_ID__RETAILER__ID" referencedTableName="IN_RETAILER" referencedColumnNames="id" />
 		<createIndex tableName="IN_CATALOGUE" indexName="IX_IN_CATALOGUE__RETAILER_ID">
 			<column name="retailer_id" />
 		</createIndex>
+
+		<createTable tableName="IN_INGESTION_RUN" remarks="The receipt and processing of one Feed of a Catalogue">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_IN_INGESTION_RUN" />
+			</column>
+			<column name="catalogue_id" type="VARCHAR(40)" remarks="The Catalogue the Feed is for">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_RUN__CATALOGUE_ID" />
+			</column>
+			<column name="feed_type" type="VARCHAR(16)" remarks="SNAPSHOT, DELTA or DELETION">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_RUN__FEED_TYPE" />
+			</column>
+			<column name="status" type="VARCHAR(16)" remarks="RECEIVED, PROCESSING, HELD, DONE, FAILED or DISCARDED">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_RUN__STATUS" />
+			</column>
+			<column name="adapter" type="VARCHAR(80)" remarks="The adapter that parses the Feed; null until processing starts" />
+			<column name="adapter_version" type="VARCHAR(40)" remarks="The version of the adapter; null until processing starts" />
+			<column name="received_at" type="TIMESTAMP" remarks="When the Feed was stored">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_RUN__RECEIVED_AT" />
+			</column>
+			<column name="started_at" type="TIMESTAMP" remarks="When processing started; null until then" />
+			<column name="finished_at" type="TIMESTAMP" remarks="When processing finished; null until then" />
+			<column name="file_path" type="VARCHAR(255)" remarks="Where the gzip-compressed Feed is stored, relative to the directory of the feed store">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_RUN__FILE_PATH" />
+			</column>
+			<column name="file_size" type="BIGINT" remarks="The size of the Feed as received, before compression, in bytes">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_RUN__FILE_SIZE" />
+			</column>
+			<column name="file_sha256" type="VARCHAR(64)" remarks="The SHA-256 of the Feed as received, before compression, in lowercase hex">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_RUN__FILE_SHA256" />
+			</column>
+			<column name="count_total" type="INTEGER" remarks="The records read from the Feed; the counts are null until processing finishes" />
+			<column name="count_valid" type="INTEGER" remarks="The records that passed validation" />
+			<column name="count_rejected" type="INTEGER" remarks="The records rejected, listed in IN_INGESTION_REJECT" />
+			<column name="count_added" type="INTEGER" remarks="The records new to the Catalogue" />
+			<column name="count_changed" type="INTEGER" remarks="The records that changed a Retailer Product or its Listing" />
+			<column name="count_unchanged" type="INTEGER" remarks="The records that changed nothing" />
+			<column name="count_deactivated" type="INTEGER" remarks="The Listings taken off sale" />
+			<column name="error" type="TEXT" remarks="Why the run failed; null otherwise" />
+		</createTable>
+		<addForeignKeyConstraint baseTableName="IN_INGESTION_RUN" baseColumnNames="catalogue_id" constraintName="FK_INGESTION_RUN__CATALOGUE_ID__CATALOGUE__ID" referencedTableName="IN_CATALOGUE" referencedColumnNames="id" />
+		<createIndex tableName="IN_INGESTION_RUN" indexName="IX_IN_INGESTION_RUN__CATALOGUE_ID__RECEIVED_AT">
+			<column name="catalogue_id" />
+			<column name="received_at" />
+		</createIndex>
+
+		<createTable tableName="IN_INGESTION_REJECT" remarks="A record of a Feed that was not applied, and why">
+			<column name="ingestion_run_id" type="UUID" remarks="The Ingestion Run that read the record">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_REJECT__INGESTION_RUN_ID" primaryKey="true" primaryKeyName="PK_IN_INGESTION_REJECT" />
+			</column>
+			<column name="position" type="BIGINT" remarks="Where the record is in the Feed, counting the records from 1">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_REJECT__POSITION" primaryKey="true" primaryKeyName="PK_IN_INGESTION_REJECT" />
+			</column>
+			<column name="product_key" type="VARCHAR(255)" remarks="The product key of the record; null if it could not be read" />
+			<column name="reason" type="TEXT" remarks="Why the record was rejected">
+				<constraints nullable="false" notNullConstraintName="NL_IN_INGESTION_REJECT__REASON" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="IN_INGESTION_REJECT" baseColumnNames="ingestion_run_id" constraintName="FK_INGESTION_REJECT__INGESTION_RUN_ID__INGESTION_RUN__ID" referencedTableName="IN_INGESTION_RUN" referencedColumnNames="id" />
 	</changeSet>
 
 	<changeSet id="dev_retailer_catalogues" author="nikospara" context="@dev">

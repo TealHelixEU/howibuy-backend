@@ -15,72 +15,21 @@
 	<packaging>jar</packaging>
 
 	<dependencies>
-		<!-- FRAMEWORK -->
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-rest</artifactId>
-		</dependency>
-
 		<!-- PROJECT -->
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>tealhelix-common-services</artifactId>
-			<version>${project.version}</version>
-		</dependency>
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-types</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>eu.tealhelix</groupId>
-			<artifactId>tealhelix-common-utils</artifactId>
-			<version>${project.version}</version>
-		</dependency>
 
 		<!-- SPECS -->
-		<dependency>
-			<groupId>jakarta.enterprise</groupId>
-			<artifactId>jakarta.enterprise.cdi-api</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>jakarta.ws.rs</groupId>
 			<artifactId>jakarta.ws.rs-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.eclipse.microprofile.config</groupId>
-			<artifactId>microprofile-config-api</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.eclipse.microprofile.openapi</groupId>
 			<artifactId>microprofile-openapi-api</artifactId>
-		</dependency>
-
-		<!-- OTHER -->
-		<dependency>
-			<groupId>com.nimbusds</groupId>
-			<artifactId>nimbus-jose-jwt</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-		</dependency>
-
-		<!-- TEST -->
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-core</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-junit-jupiter</artifactId>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>
