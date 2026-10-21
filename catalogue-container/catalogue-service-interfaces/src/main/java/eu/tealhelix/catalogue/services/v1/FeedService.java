@@ -14,7 +14,8 @@ public interface FeedService {
 	/**
 	 * Store a Feed and record its Ingestion Run as {@link eu.tealhelix.catalogue.v1.types.IngestionRunStatus#RECEIVED
 	 * RECEIVED}. The body is read to its end and stored as it arrives, never held in memory whole. This method blocks
-	 * until then, so it must be called where blocking is allowed.
+	 * until then, so it must be called where blocking is allowed. The run is processed in the background, after the runs
+	 * of the Catalogue received before it.
 	 *
 	 * @param caller      The caller, a Retailer
 	 * @param catalogueId The Catalogue the Feed is for, an active one of the caller

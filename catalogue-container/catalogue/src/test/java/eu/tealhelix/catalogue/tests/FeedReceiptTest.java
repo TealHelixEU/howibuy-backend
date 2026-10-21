@@ -1,5 +1,6 @@
 package eu.tealhelix.catalogue.tests;
 
+import static eu.tealhelix.catalogue.tests.TestFeeds.awaitTheEndOf;
 import static io.restassured.RestAssured.given;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,8 +36,8 @@ class FeedReceiptTest {
 	private static final String LIME_FRESH = "dc73176c-7069-4a4f-a74f-d60c4a5ec1ee";
 	private static final String OTHER_RETAILER = "0b6a2f4e-35c4-4d8e-a1a7-5e2c9f8d7b22";
 	private static final String OPERATOR = "2e788895-0503-4777-a7bd-24e5d61db5b1";
-	private static final String FEED = "<products><product id=\"p-1\"/></products>";
-	private static final String FEED_SHA256 = "294f919ab5e8327e2d9b646fa3f028b9844826e447b7ade5061c95c1fd30031a";
+	private static final String FEED = "{\"productKey\":\"p-1\",\"names\":{\"el\":\"Gala\"},\"price\":\"1.29\",\"currency\":\"EUR\"}\n";
+	private static final String FEED_SHA256 = "a7d96021e18e616927be123cad2ea842870a177459e95c7da609bb1f3889049a";
 
 	@Inject
 	DataSource dataSource;
@@ -47,9 +48,9 @@ class FeedReceiptTest {
 	@BeforeEach
 	void createTheCataloguesOfTheTests() throws SQLException {
 		execute("INSERT INTO IN_RETAILER (id, name) VALUES ('" + OTHER_RETAILER + "', 'Other Retailer')");
-		execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language, active) VALUES "
-				+ "('other-lt', '" + OTHER_RETAILER + "', 'LT', 'lt', TRUE), "
-				+ "('lime-fresh-cy', '" + LIME_FRESH + "', 'CY', 'el', FALSE)");
+		execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language, accepted_languages, adapter, active) VALUES "
+				+ "('other-lt', '" + OTHER_RETAILER + "', 'LT', 'lt', '{lt}', 'test-jsonl', TRUE), "
+				+ "('lime-fresh-cy', '" + LIME_FRESH + "', 'CY', 'el', '{el}', 'test-jsonl', FALSE)");
 	}
 
 	@AfterEach
@@ -62,10 +63,10 @@ class FeedReceiptTest {
 	@Test
 	@TestSecurity(user = "lime_fresh", roles = "retailer")
 	@OidcSecurity(claims = {@Claim(key = "sub", value = LIME_FRESH), @Claim(key = "client_id", value = "lime_fresh")})
-	void aRetailerPushesAFeedAndReadsItsRunBack() throws IOException {
+	void aRetailerPushesAFeedAndReadsItsRunBack() throws IOException, SQLException, InterruptedException {
 		var response = given()
-				.contentType("application/xml")
-				.body(FEED)
+				.contentType("application/x-ndjson")
+				.body(FEED.getBytes(UTF_8))
 				.when().post("/api/catalogue/v1/catalogues/lime-fresh-gr/feeds?type=SNAPSHOT")
 				.then()
 				.statusCode(202)
@@ -76,6 +77,7 @@ class FeedReceiptTest {
 		assertThat(UUID.fromString(runId)).isNotNull();
 		assertThat(receipt.getString("status")).isEqualTo("RECEIVED");
 		assertThat(receipt.getString("statusUrl")).isEqualTo(response.header("Location")).endsWith("/api/catalogue/v1/ingestion-runs/" + runId).startsWith("http://");
+		assertThat(awaitTheEndOf(dataSource, runId)).isEqualTo("DONE");
 
 		JsonPath run = given()
 				.when().get(receipt.getString("statusUrl"))
@@ -86,12 +88,15 @@ class FeedReceiptTest {
 		assertThat(run.getString("id")).isEqualTo(runId);
 		assertThat(run.getString("catalogueId")).isEqualTo("lime-fresh-gr");
 		assertThat(run.getString("feedType")).isEqualTo("SNAPSHOT");
-		assertThat(run.getString("status")).isEqualTo("RECEIVED");
+		assertThat(run.getString("status")).isEqualTo("DONE");
+		assertThat(run.getString("adapter")).isEqualTo("test-jsonl");
+		assertThat(run.getString("adapterVersion")).isEqualTo("1");
 		assertThat(run.getString("receivedAt")).isNotNull();
-		assertThat(run.getString("startedAt")).isNull();
+		assertThat(run.getString("startedAt")).isNotNull();
+		assertThat(run.getString("finishedAt")).isNotNull();
 		assertThat(run.getLong("fileSize")).isEqualTo(FEED.length());
 		assertThat(run.getString("fileSha256")).isEqualTo(FEED_SHA256);
-		assertThat(run.getMap("counts")).isNull();
+		assertThat(run.getMap("counts")).containsEntry("total", 1).containsEntry("valid", 1).containsEntry("rejected", 0);
 		assertThat(run.getMap("")).doesNotContainKey("filePath");
 		assertThat(gunzip(Path.of(feedStoreDirectory, "lime-fresh-gr", runId + ".gz"))).isEqualTo(FEED);
 

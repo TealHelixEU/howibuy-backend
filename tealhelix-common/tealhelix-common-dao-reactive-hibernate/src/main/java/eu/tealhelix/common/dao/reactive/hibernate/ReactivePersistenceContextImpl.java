@@ -47,4 +47,9 @@ class ReactivePersistenceContextImpl implements ReactivePersistenceContext {
 	public <R> ReactiveQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
 		return new ReactiveQueryImpl<>(session.createQuery(criteriaQuery));
 	}
+
+	@Override
+	public <R> ReactiveQuery<R> createNativeQuery(String sql, Class<R> resultType) {
+		return new ReactiveQueryImpl<>(session.createNativeQuery(sql, resultType));
+	}
 }

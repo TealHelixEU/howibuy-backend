@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -61,6 +62,15 @@ public class FeedStoreImpl implements FeedStore {
 			if (!stored && temporary != null) {
 				deleteIfExists(temporary);
 			}
+		}
+	}
+
+	@Override
+	public InputStream open(String path) {
+		try {
+			return new GZIPInputStream(Files.newInputStream(resolve(path)), BUFFER_SIZE);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to open a Feed, path: " + path, e);
 		}
 	}
 

@@ -22,6 +22,15 @@ public interface FeedStore {
 	StoredFeed store(CatalogueId catalogueId, IngestionRunId runId, InputStream body);
 
 	/**
+	 * Open a stored Feed to read it as it was received.
+	 *
+	 * @param path Where the Feed is stored, as {@link StoredFeed#path()} tells
+	 * @return The Feed, decompressed; the caller closes it
+	 * @throws java.io.UncheckedIOException If the Feed cannot be opened
+	 */
+	InputStream open(String path);
+
+	/**
 	 * Remove a stored Feed; nothing happens if it is not there.
 	 *
 	 * @param path Where the Feed is stored, as {@link StoredFeed#path()} tells

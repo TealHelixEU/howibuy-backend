@@ -1,8 +1,12 @@
 package eu.tealhelix.catalogue.dao.impl;
 
+import static eu.tealhelix.catalogue.dao.impl.TestEntities.catalogue;
+import static eu.tealhelix.catalogue.dao.impl.TestEntities.ingestionRun;
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -10,6 +14,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionReject;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
@@ -23,9 +28,12 @@ import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
+import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
+import io.smallrye.mutiny.Uni;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -56,20 +64,25 @@ public class IngestionRunDaoImplTest {
 	private static final HibernateReactiveExtension hibernateReactiveExtension =
 			new HibernateReactiveExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword());
 
+	/**
+	 * The Retailer and the rejects are inserted with plain JDBC, not JPA: {@code IN_RETAILER} has no entity, and the
+	 * tests that read the rejects are about the mapping of {@code IN_INGESTION_REJECT}, which rows written through that
+	 * same mapping could not check.
+	 */
 	@BeforeAll
-	static void setUp() throws SQLException {
-		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()); var s = c.createStatement()) {
-			s.execute("INSERT INTO IN_RETAILER (id, name) VALUES ('" + RETAILER + "', 'Test Retailer')");
-			s.execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language) VALUES ('" + CATALOGUE.asString() + "', '" + RETAILER + "', 'GR', 'el')");
-			s.execute("INSERT INTO IN_INGESTION_RUN (id, catalogue_id, feed_type, status, received_at, file_path, file_size, file_sha256) VALUES "
-					+ "('" + RUN_WITH_REJECTS.asString() + "', '" + CATALOGUE.asString() + "', 'SNAPSHOT', 'DONE', '2026-10-20 10:00:00', 'test-gr/1.gz', 10, 'aa'), "
-					+ "('" + OTHER_RUN_WITH_REJECTS.asString() + "', '" + CATALOGUE.asString() + "', 'SNAPSHOT', 'DONE', '2026-10-20 11:00:00', 'test-gr/2.gz', 10, 'bb')");
-			s.execute("INSERT INTO IN_INGESTION_REJECT (ingestion_run_id, position, product_key, reason) VALUES "
-					+ "('" + RUN_WITH_REJECTS.asString() + "', 7, 'p-7', 'No price'), "
-					+ "('" + RUN_WITH_REJECTS.asString() + "', 2, NULL, 'Unreadable record'), "
-					+ "('" + RUN_WITH_REJECTS.asString() + "', 5, 'p-5', 'Unknown currency'), "
-					+ "('" + OTHER_RUN_WITH_REJECTS.asString() + "', 1, 'p-1', 'No name')");
-		}
+	static void setUp(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		execute("INSERT INTO IN_RETAILER (id, name) VALUES ('" + RETAILER + "', 'Test Retailer')");
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> tx.persist(catalogue(CATALOGUE, new GenericRetailerId(RETAILER), "GR", "el"))
+						.chain(() -> tx.persistAll(
+								ingestionRun(RUN_WITH_REJECTS, CATALOGUE, IngestionRunStatus.DONE, LocalDateTime.of(2026, 10, 20, 10, 0, 0)),
+								ingestionRun(OTHER_RUN_WITH_REJECTS, CATALOGUE, IngestionRunStatus.DONE, LocalDateTime.of(2026, 10, 20, 11, 0, 0)))))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		execute("INSERT INTO IN_INGESTION_REJECT (ingestion_run_id, position, product_key, reason) VALUES "
+				+ "('" + RUN_WITH_REJECTS.asString() + "', 7, 'p-7', 'No price'), "
+				+ "('" + RUN_WITH_REJECTS.asString() + "', 2, NULL, 'Unreadable record'), "
+				+ "('" + RUN_WITH_REJECTS.asString() + "', 5, 'p-5', 'Unknown currency'), "
+				+ "('" + OTHER_RUN_WITH_REJECTS.asString() + "', 1, 'p-1', 'No name')");
 	}
 
 	@Test
@@ -117,6 +130,103 @@ public class IngestionRunDaoImplTest {
 	}
 
 	@Test
+	void updatesARun(Mutiny.SessionFactory sessionFactory) {
+		var received = ImmutableIngestionRun.builder()
+				.id(newRunId())
+				.catalogueId(CATALOGUE)
+				.feedType(FeedType.SNAPSHOT)
+				.status(IngestionRunStatus.RECEIVED)
+				.receivedAt(LocalDateTime.of(2026, 10, 20, 12, 0, 0))
+				.filePath("test-gr/updated.gz")
+				.fileSize(1234L)
+				.fileSha256("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+				.build();
+		create(sessionFactory, received);
+		var done = ImmutableIngestionRun.builder()
+				.from(received)
+				.status(IngestionRunStatus.DONE)
+				.adapter("test-adapter")
+				.adapterVersion("1")
+				.startedAt(LocalDateTime.of(2026, 10, 20, 12, 0, 1))
+				.finishedAt(LocalDateTime.of(2026, 10, 20, 12, 0, 2))
+				.counts(ImmutableIngestionRunCounts.builder()
+						.total(3).valid(2).rejected(1).added(1).changed(1).unchanged(0).deactivated(0)
+						.build())
+				.build();
+
+		inTransaction(sessionFactory, (sut, tx) -> sut.update(tx, done));
+
+		assertEquals(done, find(sessionFactory, received.getId()));
+	}
+
+	@Test
+	void replacesTheRejectsOfARun(Mutiny.SessionFactory sessionFactory) {
+		var runId = createRun(sessionFactory, CATALOGUE, IngestionRunStatus.PROCESSING, LocalDateTime.of(2026, 10, 20, 13, 0, 0));
+		inTransaction(sessionFactory, (sut, tx) -> sut.createRejects(tx, runId, List.of(reject(3, "p-3", "No price"), reject(1, null, "Unreadable record"))));
+
+		inTransaction(sessionFactory, (sut, tx) -> sut.deleteRejects(tx, runId));
+		inTransaction(sessionFactory, (sut, tx) -> sut.createRejects(tx, runId, List.of(reject(2, "p-2", "No name"))));
+
+		assertEquals(List.of(reject(2, "p-2", "No name")), findRejects(sessionFactory, runId, 0, 10));
+	}
+
+	@Test
+	void theNextRunToProcessIsTheOldestReceived(Mutiny.SessionFactory sessionFactory) {
+		var catalogueId = createCatalogue(sessionFactory);
+		createRun(sessionFactory, catalogueId, IngestionRunStatus.DONE, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+		createRun(sessionFactory, catalogueId, IngestionRunStatus.RECEIVED, LocalDateTime.of(2026, 10, 20, 10, 0, 0));
+		var oldest = createRun(sessionFactory, catalogueId, IngestionRunStatus.RECEIVED, LocalDateTime.of(2026, 10, 20, 9, 0, 0));
+		createRun(sessionFactory, CATALOGUE, IngestionRunStatus.RECEIVED, LocalDateTime.of(2026, 10, 20, 7, 0, 0));
+
+		assertEquals(oldest, findNextToProcess(sessionFactory, catalogueId).getId());
+	}
+
+	@Test
+	void noRunIsNextWhileOneIsProcessing(Mutiny.SessionFactory sessionFactory) {
+		var catalogueId = createCatalogue(sessionFactory);
+		createRun(sessionFactory, catalogueId, IngestionRunStatus.PROCESSING, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+		createRun(sessionFactory, catalogueId, IngestionRunStatus.RECEIVED, LocalDateTime.of(2026, 10, 20, 9, 0, 0));
+
+		assertNull(findNextToProcess(sessionFactory, catalogueId));
+	}
+
+	@Test
+	void noRunIsNextWhileOneIsHeld(Mutiny.SessionFactory sessionFactory) {
+		var catalogueId = createCatalogue(sessionFactory);
+		createRun(sessionFactory, catalogueId, IngestionRunStatus.HELD, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+		createRun(sessionFactory, catalogueId, IngestionRunStatus.RECEIVED, LocalDateTime.of(2026, 10, 20, 9, 0, 0));
+
+		assertNull(findNextToProcess(sessionFactory, catalogueId));
+	}
+
+	@Test
+	void noRunIsNextWhenNoneIsReceived(Mutiny.SessionFactory sessionFactory) {
+		var catalogueId = createCatalogue(sessionFactory);
+		createRun(sessionFactory, catalogueId, IngestionRunStatus.FAILED, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+
+		assertNull(findNextToProcess(sessionFactory, catalogueId));
+	}
+
+	@Test
+	void resetsTheRunsLeftProcessingAndFindsTheCataloguesWithRunsToProcess(Mutiny.SessionFactory sessionFactory) {
+		var processingCatalogue = createCatalogue(sessionFactory);
+		var receivedCatalogue = createCatalogue(sessionFactory);
+		var doneCatalogue = createCatalogue(sessionFactory);
+		var processing = createRun(sessionFactory, processingCatalogue, IngestionRunStatus.PROCESSING, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+		createRun(sessionFactory, receivedCatalogue, IngestionRunStatus.RECEIVED, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+		createRun(sessionFactory, doneCatalogue, IngestionRunStatus.DONE, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+
+		inTransaction(sessionFactory, IngestionRunDaoImpl::resetProcessing);
+
+		assertEquals(IngestionRunStatus.RECEIVED, find(sessionFactory, processing).getStatus());
+		var catalogues = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> new IngestionRunDaoImpl().findCataloguesWithReceivedRuns(em))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		assertTrue(catalogues.containsAll(List.of(processingCatalogue, receivedCatalogue)), "Missing from: " + catalogues);
+		assertFalse(catalogues.contains(doneCatalogue), "Unexpected in: " + catalogues);
+	}
+
+	@Test
 	void anUnknownRunIsNotFound(Mutiny.SessionFactory sessionFactory) {
 		assertNull(find(sessionFactory, newRunId()));
 	}
@@ -139,6 +249,29 @@ public class IngestionRunDaoImplTest {
 		assertEquals(List.of(), findRejects(sessionFactory, RUN_WITH_REJECTS, 3, 10));
 	}
 
+	private static CatalogueId createCatalogue(Mutiny.SessionFactory sessionFactory) {
+		var catalogueId = new CatalogueIdImpl("test-" + UUID.randomUUID().toString().substring(0, 8));
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> tx.persist(catalogue(catalogueId, new GenericRetailerId(RETAILER), "GR", "el")))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		return catalogueId;
+	}
+
+	private static IngestionRunId createRun(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId, IngestionRunStatus status, LocalDateTime receivedAt) {
+		var run = ImmutableIngestionRun.builder()
+				.id(newRunId())
+				.catalogueId(catalogueId)
+				.feedType(FeedType.SNAPSHOT)
+				.status(status)
+				.receivedAt(receivedAt)
+				.filePath(catalogueId.asString() + "/run.gz")
+				.fileSize(10L)
+				.fileSha256("aa")
+				.build();
+		create(sessionFactory, run);
+		return run.getId();
+	}
+
 	private static IngestionRunId newRunId() {
 		return new IngestionRunIdImpl(UUID.randomUUID().toString());
 	}
@@ -158,6 +291,20 @@ public class IngestionRunDaoImplTest {
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
+	private static void inTransaction(Mutiny.SessionFactory sessionFactory, BiFunction<IngestionRunDaoImpl, ReactivePersistenceTxContext, Uni<?>> work) {
+		var sut = new IngestionRunDaoImpl();
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> work.apply(sut, tx))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static IngestionRun findNextToProcess(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId) {
+		var sut = new IngestionRunDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.findNextToProcess(em, catalogueId))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
 	private static IngestionRun find(Mutiny.SessionFactory sessionFactory, IngestionRunId runId) {
 		var sut = new IngestionRunDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
@@ -170,5 +317,11 @@ public class IngestionRunDaoImplTest {
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
 				.withoutTransaction(em -> sut.findRejects(em, runId, offset, limit))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static void execute(String sql) throws SQLException {
+		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()); var s = c.createStatement()) {
+			s.execute(sql);
+		}
 	}
 }

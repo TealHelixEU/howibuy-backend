@@ -42,6 +42,7 @@ import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
+import org.jboss.weld.junit5.auto.ExcludeBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -85,6 +86,11 @@ public class FeedServiceImplTest {
 	DateTimeService mockDateTimeService;
 
 	@Produces
+	@ExcludeBean
+	@Mock
+	IngestionRunDispatcher mockDispatcher;
+
+	@Produces
 	UniAwaiter uniAwaiter = new UniAwaiter() {
 		@Override
 		public <T> T await(Supplier<Uni<T>> call) {
@@ -122,6 +128,7 @@ public class FeedServiceImplTest {
 		assertNull(run.getCounts());
 		var transaction = mockReactivePersistenceContextFactory.getOpenedTransactions().getFirst();
 		verify(mockIngestionRunDao).create(transaction, run);
+		verify(mockDispatcher).wake(CATALOGUE);
 	}
 
 	@Test
@@ -129,7 +136,7 @@ public class FeedServiceImplTest {
 		assertThrows(NotAuthenticatedException.class, () -> sut.receive(null, CATALOGUE, FeedType.SNAPSHOT, body));
 		assertThrows(NotAuthorizedException.class, () -> sut.receive(OPERATOR_USER, CATALOGUE, FeedType.SNAPSHOT, body));
 		assertThrows(NotAuthorizedException.class, () -> sut.receive(CATALOGUE_SYNC_USER, CATALOGUE, FeedType.SNAPSHOT, body));
-		verifyNoInteractions(mockCatalogueDao, mockFeedStore, mockIngestionRunDao);
+		verifyNoInteractions(mockCatalogueDao, mockFeedStore, mockIngestionRunDao, mockDispatcher);
 	}
 
 	@Test
@@ -137,7 +144,7 @@ public class FeedServiceImplTest {
 		givenTheCatalogue(null);
 
 		assertThrows(NotFoundException.class, () -> sut.receive(RETAILER_USER, CATALOGUE, FeedType.SNAPSHOT, body));
-		verifyNoInteractions(mockFeedStore, mockIngestionRunDao);
+		verifyNoInteractions(mockFeedStore, mockIngestionRunDao, mockDispatcher);
 	}
 
 	@Test
@@ -145,7 +152,7 @@ public class FeedServiceImplTest {
 		givenTheCatalogue(catalogue(RETAILER, true));
 
 		assertThrows(NotAuthorizedException.class, () -> sut.receive(OTHER_RETAILER_USER, CATALOGUE, FeedType.SNAPSHOT, body));
-		verifyNoInteractions(mockFeedStore, mockIngestionRunDao);
+		verifyNoInteractions(mockFeedStore, mockIngestionRunDao, mockDispatcher);
 	}
 
 	@Test
@@ -153,7 +160,7 @@ public class FeedServiceImplTest {
 		givenTheCatalogue(catalogue(RETAILER, false));
 
 		assertThrows(NotAuthorizedException.class, () -> sut.receive(RETAILER_USER, CATALOGUE, FeedType.SNAPSHOT, body));
-		verifyNoInteractions(mockFeedStore, mockIngestionRunDao);
+		verifyNoInteractions(mockFeedStore, mockIngestionRunDao, mockDispatcher);
 	}
 
 	@Test
@@ -168,6 +175,7 @@ public class FeedServiceImplTest {
 
 		assertSame(failure, thrown);
 		verify(mockFeedStore).delete(STORED_FEED.path());
+		verifyNoInteractions(mockDispatcher);
 	}
 
 	private void givenTheCatalogue(Catalogue catalogue) {
@@ -180,6 +188,8 @@ public class FeedServiceImplTest {
 				.retailerId(new GenericRetailerId(retailer))
 				.country("GR")
 				.primaryLanguage("el")
+				.acceptedLanguages(Set.of("el"))
+				.adapter("test-adapter")
 				.isActive(active)
 				.build();
 	}

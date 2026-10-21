@@ -94,6 +94,13 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 			return m;
 		}
 
+		@Override
+		public <R> ReactiveQuery<R> createNativeQuery(String sql, Class<R> resultType) {
+			@SuppressWarnings("unchecked")
+			ReactiveQuery<R> m = mock(ReactiveQuery.class, RETURNS_DEEP_STUBS);
+			return m;
+		}
+
 		public List<PersistenceAction> getActions() {
 			return actions;
 		}

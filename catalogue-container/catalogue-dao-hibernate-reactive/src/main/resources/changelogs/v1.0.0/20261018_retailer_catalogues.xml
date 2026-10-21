@@ -32,6 +32,13 @@
 			<column name="primary_language" type="VARCHAR(8)" remarks="ISO 639-1 code of the language every listed product must be named in, e.g. 'lt'">
 				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__PRIMARY_LANGUAGE" />
 			</column>
+			<!-- VARCHAR rather than TEXT: the schema validation of Hibernate Reactive recognizes arrays of VARCHAR only -->
+			<column name="accepted_languages" type="_varchar" remarks="ISO 639-1 codes of the languages the products may be named in, the primary one among them">
+				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__ACCEPTED_LANGUAGES" />
+			</column>
+			<column name="adapter" type="VARCHAR(80)" remarks="The name of the adapter that reads the Feeds">
+				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__ADAPTER" />
+			</column>
 			<column name="active" type="BOOLEAN" defaultValueBoolean="true" remarks="Whether Feeds are accepted for this Catalogue">
 				<constraints nullable="false" notNullConstraintName="NL_IN_CATALOGUE__ACTIVE" />
 			</column>
@@ -98,6 +105,86 @@
 			</column>
 		</createTable>
 		<addForeignKeyConstraint baseTableName="IN_INGESTION_REJECT" baseColumnNames="ingestion_run_id" constraintName="FK_INGESTION_REJECT__INGESTION_RUN_ID__INGESTION_RUN__ID" referencedTableName="IN_INGESTION_RUN" referencedColumnNames="id" />
+
+		<createSequence sequenceName="IN_CHANGE_SEQUENCE" startValue="1" incrementBy="1" />
+
+		<createTable tableName="IN_RETAILER_PRODUCT" remarks="A physical product as the Retailer identifies it, the same in every Catalogue of the Retailer">
+			<column name="id" type="UUID" remarks="The primary key, assigned by the Ingestion; HowiBuy assigns its own">
+				<constraints primaryKey="true" primaryKeyName="PK_IN_RETAILER_PRODUCT" />
+			</column>
+			<column name="retailer_id" type="UUID" remarks="The Retailer of the product; part of the external key">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__RETAILER_ID" />
+			</column>
+			<column name="product_key" type="VARCHAR(255)" remarks="The Retailer's own id of the product; part of the external key">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__PRODUCT_KEY" />
+			</column>
+			<column name="characteristics" type="JSONB" remarks="The language-neutral characteristics of the product, a JSON object of strings">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__CHARACTERISTICS" />
+			</column>
+			<!-- VARCHAR rather than TEXT: the schema validation of Hibernate Reactive recognises arrays of VARCHAR only -->
+			<column name="tags" type="_varchar" remarks="The language-neutral tags of the product">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__TAGS" />
+			</column>
+			<column name="input_hash" type="VARCHAR(64)" remarks="The classification input hash over the names, characteristics and tags, in lowercase hex">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__INPUT_HASH" />
+			</column>
+			<column name="change_sequence" type="BIGINT" remarks="The value of IN_CHANGE_SEQUENCE taken when the product or one of its Listings last changed visibly">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__CHANGE_SEQUENCE" />
+			</column>
+			<column name="removed" type="BOOLEAN" defaultValueBoolean="false" remarks="Whether the product is a tombstone, left without Listings">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__REMOVED" />
+			</column>
+		</createTable>
+		<addUniqueConstraint tableName="IN_RETAILER_PRODUCT" columnNames="retailer_id, product_key" constraintName="UQ_IN_RETAILER_PRODUCT__RETAILER_ID_PRODUCT_KEY" />
+		<addForeignKeyConstraint baseTableName="IN_RETAILER_PRODUCT" baseColumnNames="retailer_id" constraintName="FK_RETAILER_PRODUCT__RETAILER_ID__RETAILER__ID" referencedTableName="IN_RETAILER" referencedColumnNames="id" />
+
+		<createTable tableName="IN_RETAILER_PRODUCT_NAME" remarks="The name of a Retailer Product in one language">
+			<column name="retailer_product_id" type="UUID" remarks="The product this name belongs to; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT_NAME__RETAILER_PRODUCT_ID" primaryKey="true" primaryKeyName="PK_IN_RETAILER_PRODUCT_NAME" />
+			</column>
+			<column name="lang" type="VARCHAR(8)" remarks="ISO 639-1 language code, e.g. 'en', 'el'; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT_NAME__LANG" primaryKey="true" primaryKeyName="PK_IN_RETAILER_PRODUCT_NAME" />
+			</column>
+			<column name="name" type="VARCHAR(512)" remarks="The name">
+				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT_NAME__NAME" />
+			</column>
+		</createTable>
+		<!-- The target column is left out of the name, which would otherwise exceed the 63 characters of a Postgres identifier -->
+		<addForeignKeyConstraint baseTableName="IN_RETAILER_PRODUCT_NAME" baseColumnNames="retailer_product_id" constraintName="FK_RETAILER_PRODUCT_NAME__RETAILER_PRODUCT_ID__RETAILER_PRODUCT" referencedTableName="IN_RETAILER_PRODUCT" referencedColumnNames="id" />
+
+		<createTable tableName="IN_LISTING" remarks="A Retailer Product on sale in one Catalogue, at that Catalogue's price">
+			<column name="retailer_product_id" type="UUID" remarks="The product on sale; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_IN_LISTING__RETAILER_PRODUCT_ID" primaryKey="true" primaryKeyName="PK_IN_LISTING" />
+			</column>
+			<column name="catalogue_id" type="VARCHAR(40)" remarks="The Catalogue it is on sale in; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_IN_LISTING__CATALOGUE_ID" primaryKey="true" primaryKeyName="PK_IN_LISTING" />
+			</column>
+			<column name="price" type="NUMERIC(12,4)" remarks="The price in the Catalogue">
+				<constraints nullable="false" notNullConstraintName="NL_IN_LISTING__PRICE" />
+			</column>
+			<column name="currency" type="VARCHAR(3)" remarks="ISO 4217 code of the currency of the price, e.g. 'EUR'">
+				<constraints nullable="false" notNullConstraintName="NL_IN_LISTING__CURRENCY" />
+			</column>
+			<column name="active" type="BOOLEAN" remarks="Whether the Listing is in its Catalogue's latest Feeds; an inactive one is never offered as an Alternative">
+				<constraints nullable="false" notNullConstraintName="NL_IN_LISTING__ACTIVE" />
+			</column>
+			<column name="last_seen_at" type="TIMESTAMP" remarks="When a Feed of the Catalogue last carried the Listing">
+				<constraints nullable="false" notNullConstraintName="NL_IN_LISTING__LAST_SEEN_AT" />
+			</column>
+			<column name="last_seen_run_id" type="UUID" remarks="The Ingestion Run of the Feed that last carried the Listing">
+				<constraints nullable="false" notNullConstraintName="NL_IN_LISTING__LAST_SEEN_RUN_ID" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="IN_LISTING" baseColumnNames="retailer_product_id" constraintName="FK_LISTING__RETAILER_PRODUCT_ID__RETAILER_PRODUCT__ID" referencedTableName="IN_RETAILER_PRODUCT" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="IN_LISTING" baseColumnNames="catalogue_id" constraintName="FK_LISTING__CATALOGUE_ID__CATALOGUE__ID" referencedTableName="IN_CATALOGUE" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="IN_LISTING" baseColumnNames="last_seen_run_id" constraintName="FK_LISTING__LAST_SEEN_RUN_ID__INGESTION_RUN__ID" referencedTableName="IN_INGESTION_RUN" referencedColumnNames="id" />
+	</changeSet>
+
+	<changeSet id="retailer_catalogues_primary_language_accepted" author="nikospara">
+		<sql>ALTER TABLE IN_CATALOGUE ADD CONSTRAINT CK_IN_CATALOGUE__PRIMARY_LANGUAGE CHECK (primary_language = ANY(accepted_languages))</sql>
+		<rollback>
+			<sql>ALTER TABLE IN_CATALOGUE DROP CONSTRAINT CK_IN_CATALOGUE__PRIMARY_LANGUAGE</sql>
+		</rollback>
 	</changeSet>
 
 	<changeSet id="dev_retailer_catalogues" author="nikospara" context="@dev">
@@ -114,6 +201,8 @@
 			<column name="retailer_id">dc73176c-7069-4a4f-a74f-d60c4a5ec1ee</column>
 			<column name="country">GR</column>
 			<column name="primary_language">el</column>
+			<column name="accepted_languages">{el,en}</column>
+			<column name="adapter">test-jsonl</column>
 		</insert>
 	</changeSet>
 </databaseChangeLog>

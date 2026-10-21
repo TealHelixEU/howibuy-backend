@@ -25,6 +25,8 @@ public class CatalogueDaoImpl implements CatalogueDao {
 				.retailerId(new GenericRetailerId(entity.getRetailerId().toString()))
 				.country(entity.getCountry())
 				.primaryLanguage(entity.getPrimaryLanguage())
+				.acceptedLanguages(entity.getAcceptedLanguages())
+				.adapter(entity.getAdapter())
 				.isActive(entity.isActive())
 				.build();
 	}

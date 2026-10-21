@@ -7,13 +7,16 @@ import eu.tealhelix.catalogue.dao.IngestionRunDao;
 import eu.tealhelix.catalogue.dao.jpa.IngestionRejectEntity;
 import eu.tealhelix.catalogue.dao.jpa.IngestionRejectEntity_;
 import eu.tealhelix.catalogue.dao.jpa.IngestionRunEntity;
+import eu.tealhelix.catalogue.dao.jpa.IngestionRunEntity_;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionReject;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRunCounts;
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.model.IngestionRunCounts;
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
+import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
@@ -26,6 +29,68 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 	@Override
 	public Uni<Void> create(ReactivePersistenceTxContext tx, IngestionRun run) {
 		return tx.persist(toEntity(run)).replaceWithVoid();
+	}
+
+	@Override
+	public Uni<Void> update(ReactivePersistenceTxContext tx, IngestionRun run) {
+		return tx.merge(toEntity(run)).replaceWithVoid();
+	}
+
+	@Override
+	public Uni<IngestionRun> findNextToProcess(ReactivePersistenceContext em, CatalogueId catalogueId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(IngestionRunEntity.class);
+		var run = q.from(IngestionRunEntity.class);
+		var waitedFor = q.subquery(IngestionRunEntity.class);
+		var busy = waitedFor.from(IngestionRunEntity.class);
+		waitedFor.select(busy).where(
+				cb.equal(busy.get(IngestionRunEntity_.catalogueId), catalogueId.asString()),
+				busy.get(IngestionRunEntity_.status).in(IngestionRunStatus.PROCESSING, IngestionRunStatus.HELD)
+		);
+		q.where(
+				cb.equal(run.get(IngestionRunEntity_.catalogueId), catalogueId.asString()),
+				cb.equal(run.get(IngestionRunEntity_.status), IngestionRunStatus.RECEIVED),
+				cb.not(cb.exists(waitedFor))
+		);
+		q.orderBy(cb.asc(run.get(IngestionRunEntity_.receivedAt)));
+		return em.createQuery(q).setMaxResults(1).getResultList()
+				.map(runs -> runs.isEmpty() ? null : toIngestionRun(runs.getFirst()));
+	}
+
+	@Override
+	public Uni<List<CatalogueId>> findCataloguesWithReceivedRuns(ReactivePersistenceContext em) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(String.class);
+		var run = q.from(IngestionRunEntity.class);
+		q.select(run.get(IngestionRunEntity_.catalogueId)).distinct(true);
+		q.where(cb.equal(run.get(IngestionRunEntity_.status), IngestionRunStatus.RECEIVED));
+		return em.createQuery(q).getResultList()
+				.map(catalogueIds -> catalogueIds.stream().<CatalogueId>map(CatalogueIdImpl::new).toList());
+	}
+
+	@Override
+	public Uni<Integer> resetProcessing(ReactivePersistenceTxContext tx) {
+		var cb = tx.getCriteriaBuilder();
+		var u = cb.createCriteriaUpdate(IngestionRunEntity.class);
+		var run = u.from(IngestionRunEntity.class);
+		u.set(run.get(IngestionRunEntity_.status), IngestionRunStatus.RECEIVED);
+		u.where(cb.equal(run.get(IngestionRunEntity_.status), IngestionRunStatus.PROCESSING));
+		return tx.createUpdate(u).execute();
+	}
+
+	@Override
+	public Uni<Void> createRejects(ReactivePersistenceTxContext tx, IngestionRunId runId, List<IngestionReject> rejects) {
+		if (rejects.isEmpty()) return Uni.createFrom().voidItem();
+		return tx.persistAll(rejects.stream().map(reject -> toEntity(runId, reject)).toArray());
+	}
+
+	@Override
+	public Uni<Void> deleteRejects(ReactivePersistenceTxContext tx, IngestionRunId runId) {
+		var cb = tx.getCriteriaBuilder();
+		var d = cb.createCriteriaDelete(IngestionRejectEntity.class);
+		var reject = d.from(IngestionRejectEntity.class);
+		d.where(cb.equal(reject.get(IngestionRejectEntity_.ingestionRunId), runId.asUuid()));
+		return tx.createDelete(d).execute().replaceWithVoid();
 	}
 
 	@Override
@@ -69,6 +134,15 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 			entity.setCountDeactivated(counts.getDeactivated());
 		}
 		entity.setError(run.getError());
+		return entity;
+	}
+
+	private static IngestionRejectEntity toEntity(IngestionRunId runId, IngestionReject reject) {
+		var entity = new IngestionRejectEntity();
+		entity.setIngestionRunId(runId.asUuid());
+		entity.setPosition(reject.getPosition());
+		entity.setProductKey(reject.getProductKey() != null ? reject.getProductKey().asString() : null);
+		entity.setReason(reject.getReason());
 		return entity;
 	}
 

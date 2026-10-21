@@ -31,4 +31,14 @@ public interface ReactivePersistenceContext {
 	CriteriaBuilder getCriteriaBuilder();
 
 	<R> ReactiveQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+	/**
+	 * Create a query in the SQL of the database, for what the criteria cannot express, e.g. taking values from a sequence.
+	 *
+	 * @param sql        The SQL, with named parameters
+	 * @param resultType The type of each row of the result, a single column
+	 * @param <R>        The result type
+	 * @return The query
+	 */
+	<R> ReactiveQuery<R> createNativeQuery(String sql, Class<R> resultType);
 }

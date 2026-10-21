@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.Set;
 
 import eu.tealhelix.catalogue.v1.model.Catalogue;
 import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
@@ -46,13 +47,17 @@ public class CatalogueDaoImplTest {
 	private static final HibernateReactiveExtension hibernateReactiveExtension =
 			new HibernateReactiveExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword());
 
+	/**
+	 * Inserts with plain JDBC, not JPA: {@code IN_RETAILER} has no entity, and the test is about the mapping of
+	 * {@code IN_CATALOGUE}, which rows written through that same mapping could not check.
+	 */
 	@BeforeAll
 	static void setUp() throws SQLException {
 		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()); var s = c.createStatement()) {
 			s.execute("INSERT INTO IN_RETAILER (id, name) VALUES ('" + RETAILER + "', 'Test Retailer')");
-			s.execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language, active) VALUES "
-					+ "('" + ACTIVE_CATALOGUE.asString() + "', '" + RETAILER + "', 'GR', 'el', TRUE), "
-					+ "('" + INACTIVE_CATALOGUE.asString() + "', '" + RETAILER + "', 'CY', 'el', FALSE)");
+			s.execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language, accepted_languages, adapter, active) VALUES "
+					+ "('" + ACTIVE_CATALOGUE.asString() + "', '" + RETAILER + "', 'GR', 'el', '{el,en}', 'test-adapter', TRUE), "
+					+ "('" + INACTIVE_CATALOGUE.asString() + "', '" + RETAILER + "', 'CY', 'el', '{el}', 'test-adapter', FALSE)");
 		}
 	}
 
@@ -64,6 +69,8 @@ public class CatalogueDaoImplTest {
 						.retailerId(new GenericRetailerId(RETAILER))
 						.country("GR")
 						.primaryLanguage("el")
+						.acceptedLanguages(Set.of("el", "en"))
+						.adapter("test-adapter")
 						.isActive(true)
 						.build(),
 				find(sessionFactory, ACTIVE_CATALOGUE)

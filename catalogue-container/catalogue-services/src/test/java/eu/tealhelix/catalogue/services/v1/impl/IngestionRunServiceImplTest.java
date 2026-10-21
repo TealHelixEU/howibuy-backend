@@ -181,6 +181,8 @@ public class IngestionRunServiceImplTest {
 				.retailerId(new GenericRetailerId(RETAILER))
 				.country("GR")
 				.primaryLanguage("el")
+				.acceptedLanguages(Set.of("el"))
+				.adapter("test-adapter")
 				.isActive(true)
 				.build()));
 	}

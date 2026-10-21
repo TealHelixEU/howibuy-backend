@@ -9,6 +9,7 @@ WORKDIR /workspace
 # BEGIN auto-pom-copy
 COPY catalogue-container/catalogue-dao-hibernate-reactive/pom.xml catalogue-container/catalogue-dao-hibernate-reactive/pom.xml
 COPY catalogue-container/catalogue-dao/pom.xml catalogue-container/catalogue-dao/pom.xml
+COPY catalogue-container/catalogue-feeds/pom.xml catalogue-container/catalogue-feeds/pom.xml
 COPY catalogue-container/catalogue-jaxrs/pom.xml catalogue-container/catalogue-jaxrs/pom.xml
 COPY catalogue-container/catalogue/pom.xml catalogue-container/catalogue/pom.xml
 COPY catalogue-container/catalogue-service-interfaces/pom.xml catalogue-container/catalogue-service-interfaces/pom.xml

@@ -48,6 +48,23 @@ public class FeedStoreImplTest {
 	}
 
 	@Test
+	void opensAStoredFeedAsReceived() throws IOException {
+		var sut = new FeedStoreImpl(directory.toString());
+		var storedFeed = sut.store(CATALOGUE, newRunId(), new ByteArrayInputStream("<feed>test</feed>".getBytes(UTF_8)));
+
+		try (var feed = sut.open(storedFeed.path())) {
+			assertArrayEquals("<feed>test</feed>".getBytes(UTF_8), feed.readAllBytes());
+		}
+	}
+
+	@Test
+	void aMissingFeedCannotBeOpened() {
+		var sut = new FeedStoreImpl(directory.toString());
+
+		assertThrows(UncheckedIOException.class, () -> sut.open("test-gr/missing.gz"));
+	}
+
+	@Test
 	void createsTheDirectoryOfTheStoreIfMissing() throws IOException {
 		var sut = new FeedStoreImpl(directory.resolve("not-yet").toString());
 

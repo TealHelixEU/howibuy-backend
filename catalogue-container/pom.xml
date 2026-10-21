@@ -19,6 +19,7 @@
 		<module>catalogue</module>
 		<module>catalogue-dao</module>
 		<module>catalogue-dao-hibernate-reactive</module>
+		<module>catalogue-feeds</module>
 		<module>catalogue-jaxrs</module>
 		<module>catalogue-service-interfaces</module>
 		<module>catalogue-services</module>

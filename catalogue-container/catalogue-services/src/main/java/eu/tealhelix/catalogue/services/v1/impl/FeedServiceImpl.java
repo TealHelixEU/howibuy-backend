@@ -31,6 +31,7 @@ public class FeedServiceImpl implements FeedService {
 	private final DateTimeService dateTimeService;
 	private final UniAwaiter uniAwaiter;
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
+	private final IngestionRunDispatcher dispatcher;
 
 	@Inject
 	public FeedServiceImpl(
@@ -40,7 +41,8 @@ public class FeedServiceImpl implements FeedService {
 			FeedStore feedStore,
 			DateTimeService dateTimeService,
 			UniAwaiter uniAwaiter,
-			ReactivePersistenceContextFactory persistenceContextFactory
+			ReactivePersistenceContextFactory persistenceContextFactory,
+			IngestionRunDispatcher dispatcher
 	) {
 		this.authorization = authorization;
 		this.catalogueDao = catalogueDao;
@@ -49,12 +51,13 @@ public class FeedServiceImpl implements FeedService {
 		this.dateTimeService = dateTimeService;
 		this.uniAwaiter = uniAwaiter;
 		this.persistenceContextFactory = persistenceContextFactory;
+		this.dispatcher = dispatcher;
 	}
 
 	/**
 	 * The caller and the Catalogue are checked before the body is read, so a refused Feed costs nothing to store. The run
 	 * is recorded after the Feed is stored whole, so a run never points to a Feed that is not there; if the run cannot be
-	 * recorded, the Feed is removed again.
+	 * recorded, the Feed is removed again. The run is processed after the call returns.
 	 */
 	@Override
 	public IngestionRun receive(User caller, CatalogueId catalogueId, FeedType feedType, InputStream body) {
@@ -79,6 +82,7 @@ public class FeedServiceImpl implements FeedService {
 			feedStore.delete(storedFeed.path());
 			throw e;
 		}
+		dispatcher.wake(catalogueId);
 		return run;
 	}
 

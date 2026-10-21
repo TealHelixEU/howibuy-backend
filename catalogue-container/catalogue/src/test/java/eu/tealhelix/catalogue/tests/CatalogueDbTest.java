@@ -27,8 +27,9 @@ class CatalogueDbTest {
 		try (
 				var connection = dataSource.getConnection();
 				var statement = connection.createStatement();
+				// IN_RETAILER has no entity, therefore, JDBC
 				var resultSet = statement.executeQuery("""
-						SELECT c.id, r.name, c.country, c.primary_language, c.active
+						SELECT c.id, r.name, c.country, c.primary_language, array_to_string(c.accepted_languages, ',') AS accepted_languages, c.adapter, c.active
 						FROM IN_CATALOGUE c JOIN IN_RETAILER r ON r.id = c.retailer_id
 						ORDER BY c.id
 						""")
@@ -39,11 +40,13 @@ class CatalogueDbTest {
 						resultSet.getString("name"),
 						resultSet.getString("country"),
 						resultSet.getString("primary_language"),
+						resultSet.getString("accepted_languages"),
+						resultSet.getString("adapter"),
 						String.valueOf(resultSet.getBoolean("active"))
 				));
 			}
 		}
 
-		assertThat(catalogues).containsExactly(List.of("lime-fresh-gr", "Lime Fresh", "GR", "el", "true"));
+		assertThat(catalogues).containsExactly(List.of("lime-fresh-gr", "Lime Fresh", "GR", "el", "el,en", "test-jsonl", "true"));
 	}
 }

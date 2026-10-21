@@ -16,8 +16,25 @@
 		<!-- PROJECT -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>catalogue-feeds</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-testutils</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<!-- SPECS -->
+		<dependency>
+			<groupId>jakarta.enterprise</groupId>
+			<artifactId>jakarta.enterprise.cdi-api</artifactId>
+		</dependency>
+
+		<!-- OTHER -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<!-- FRAMEWORK TEST -->

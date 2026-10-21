@@ -36,10 +36,11 @@ tealhelix/
 ├── catalogue-container/          The Ingestion of Retailer Catalogues (own deployable and DB schema, see ADR 0006)
 │   ├── catalogue-dao/                      DAO interfaces
 │   ├── catalogue-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog of the Ingestion schema (IN_ tables)
+│   ├── catalogue-feeds/                    The adapter contract (FeedReader) and the adapters, one package per Retailer
 │   ├── catalogue-service-interfaces/       Service interfaces
-│   ├── catalogue-services/                 Service implementations, the feed store
+│   ├── catalogue-services/                 Service implementations, the feed store, the processing of the Feeds
 │   ├── catalogue-jaxrs/                    JAX-RS resources
-│   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb, @WithCatalogueDbAndKeycloak)
+│   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb, @WithCatalogueDbAndKeycloak, the JSON Lines adapter test-jsonl)
 │   └── catalogue/                          Quarkus deployable
 ├── howibuy-container/            The HowiBuy microservice
 │   ├── howibuy-dao/              DAO interfaces

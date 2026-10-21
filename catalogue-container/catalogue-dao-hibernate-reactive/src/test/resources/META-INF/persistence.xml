@@ -9,6 +9,9 @@
 		<class>eu.tealhelix.catalogue.dao.jpa.CatalogueEntity</class>
 		<class>eu.tealhelix.catalogue.dao.jpa.IngestionRejectEntity</class>
 		<class>eu.tealhelix.catalogue.dao.jpa.IngestionRunEntity</class>
+		<class>eu.tealhelix.catalogue.dao.jpa.ListingEntity</class>
+		<class>eu.tealhelix.catalogue.dao.jpa.RetailerProductEntity</class>
+		<class>eu.tealhelix.catalogue.dao.jpa.RetailerProductNameEntity</class>
 
 		<properties>
 			<!-- The DB connection properties are overridden in the code -->

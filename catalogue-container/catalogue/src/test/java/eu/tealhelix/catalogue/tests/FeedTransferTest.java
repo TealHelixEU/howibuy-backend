@@ -31,6 +31,8 @@ import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -40,7 +42,12 @@ import org.junit.jupiter.api.Test;
 @WithCatalogueDb
 class FeedTransferTest {
 	private static final String LIME_FRESH = "dc73176c-7069-4a4f-a74f-d60c4a5ec1ee";
-	private static final String FEEDS_PATH = "/api/catalogue/v1/catalogues/lime-fresh-gr/feeds?type=SNAPSHOT";
+	/**
+	 * A Catalogue of the tests, whose adapter does not exist, so that its runs fail at once instead of reading the
+	 * megabytes of random bytes sent here.
+	 */
+	private static final String CATALOGUE = "lime-fresh-transfer";
+	private static final String FEEDS_PATH = "/api/catalogue/v1/catalogues/" + CATALOGUE + "/feeds?type=SNAPSHOT";
 	private static final int MEGABYTE = 1024 * 1024;
 	private static final Duration WAIT = Duration.ofSeconds(30);
 
@@ -54,6 +61,19 @@ class FeedTransferTest {
 	URI baseUri;
 
 	private final Random random = new Random(42);
+
+	@BeforeEach
+	void createTheCatalogueOfTheTests() throws SQLException {
+		execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language, accepted_languages, adapter) VALUES "
+				+ "('" + CATALOGUE + "', '" + LIME_FRESH + "', 'GR', 'el', '{el}', 'no-such-adapter')");
+	}
+
+	@AfterEach
+	void removeTheCatalogueOfTheTests() throws SQLException, InterruptedException {
+		assertThat(eventually(() -> countRuns("status IN ('RECEIVED', 'PROCESSING')") == 0)).as("the runs of the tests are processed").isTrue();
+		execute("DELETE FROM IN_INGESTION_RUN WHERE catalogue_id = '" + CATALOGUE + "'");
+		execute("DELETE FROM IN_CATALOGUE WHERE id = '" + CATALOGUE + "'");
+	}
 
 	@Test
 	@TestSecurity(user = "lime_fresh", roles = "retailer")
@@ -83,7 +103,7 @@ class FeedTransferTest {
 	@TestSecurity(user = "lime_fresh", roles = "retailer")
 	@OidcSecurity(claims = {@Claim(key = "sub", value = LIME_FRESH), @Claim(key = "client_id", value = "lime_fresh")})
 	void aTransferCutOffMidwayLeavesNoRunAndNoFile() throws Exception {
-		var runsBefore = countRuns();
+		var runsBefore = countRuns("TRUE");
 		try (var socket = new Socket(baseUri.getHost(), baseUri.getPort())) {
 			var out = socket.getOutputStream();
 			out.write(("POST " + FEEDS_PATH + " HTTP/1.1\r\n"
@@ -98,7 +118,7 @@ class FeedTransferTest {
 		assertThat(eventually(() -> bytesBeingReceived() == 0 && filesBeingReceived() == 0))
 				.as("the part received is removed")
 				.isTrue();
-		assertThat(countRuns()).isEqualTo(runsBefore);
+		assertThat(countRuns("TRUE")).isEqualTo(runsBefore);
 	}
 
 	private void writeRandomBytes(OutputStream out, int count) throws IOException {
@@ -110,11 +130,22 @@ class FeedTransferTest {
 		out.flush();
 	}
 
-	private long countRuns() throws SQLException {
+	/**
+	 * @param condition A condition on the runs of the Catalogue of the tests, in SQL
+	 */
+	private long countRuns(String condition) {
 		try (var connection = dataSource.getConnection(); var statement = connection.createStatement();
-			 var resultSet = statement.executeQuery("SELECT COUNT(*) FROM IN_INGESTION_RUN")) {
+			 var resultSet = statement.executeQuery("SELECT COUNT(*) FROM IN_INGESTION_RUN WHERE catalogue_id = '" + CATALOGUE + "' AND " + condition)) {
 			resultSet.next();
 			return resultSet.getLong(1);
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void execute(String sql) throws SQLException {
+		try (var connection = dataSource.getConnection(); var statement = connection.createStatement()) {
+			statement.execute(sql);
 		}
 	}
 
