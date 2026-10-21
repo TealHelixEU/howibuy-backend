@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.FeedType;
+import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.common.types.Nullable;
@@ -13,7 +14,8 @@ import org.immutables.value.Value;
  * The receipt and processing of one Feed of a Catalogue, recorded so problems can be traced to a file and an adapter.
  */
 @Value.Immutable
-public interface IngestionRun {
+public interface IngestionRun extends HasIngestionRunId {
+	@Override
 	IngestionRunId getId();
 
 	CatalogueId getCatalogueId();

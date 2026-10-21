@@ -7,31 +7,31 @@ import java.util.Objects;
 import org.mockito.ArgumentMatcher;
 
 public interface CatalogueIdTestUtils {
-	class MatchesCatalogueId implements ArgumentMatcher<CatalogueId> {
+	class MatchesHasCatalogueId implements ArgumentMatcher<HasCatalogueId> {
 		private final CatalogueId catalogueId;
 
-		public MatchesCatalogueId(CatalogueId catalogueId) {
-			this.catalogueId = Objects.requireNonNull(catalogueId);
+		public MatchesHasCatalogueId(HasCatalogueId hasCatalogueId) {
+			this.catalogueId = Objects.requireNonNull(Objects.requireNonNull(hasCatalogueId).getId(), "hasCatalogueId.getId() must not be null");
 		}
 
 		@Override
-		public boolean matches(CatalogueId catalogueId) {
-			return catalogueId != null && Objects.equals(catalogueId.asString(), this.catalogueId.asString());
+		public boolean matches(HasCatalogueId hasCatalogueId) {
+			return hasCatalogueId != null && hasCatalogueId.getId() != null && Objects.equals(hasCatalogueId.getId().asString(), this.catalogueId.asString());
 		}
 
 		@Override
 		public Class<?> type() {
-			return CatalogueId.class;
+			return HasCatalogueId.class;
 		}
 
 		@Override
 		public String toString() {
-			return "CatalogueId(" + this.catalogueId.asString() + ")";
+			return "HasCatalogueId(" + this.catalogueId.asString() + ")";
 		}
 	}
 
-	static CatalogueId matchesCatalogueId(CatalogueId catalogueId) {
-		reportMatcher(new MatchesCatalogueId(catalogueId));
+	static HasCatalogueId matchesHasCatalogueId(HasCatalogueId hasCatalogueId) {
+		reportMatcher(new MatchesHasCatalogueId(hasCatalogueId));
 		return null;
 	}
 

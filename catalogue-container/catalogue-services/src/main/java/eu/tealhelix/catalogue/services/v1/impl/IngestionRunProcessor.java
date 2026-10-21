@@ -119,7 +119,7 @@ public class IngestionRunProcessor {
 				.build();
 		uniAwaiter.await(() -> persistenceContextFactory.withTransaction(tx -> forc(
 				ingestionRunDao.update(tx, started),
-				() -> ingestionRunDao.deleteRejects(tx, run.getId())
+				() -> ingestionRunDao.deleteRejects(tx, run)
 		)));
 		try {
 			var counts = apply(started, catalogue, reader);
@@ -187,14 +187,14 @@ public class IngestionRunProcessor {
 		}
 		return forc(
 				retailerProductDao.countActiveListings(tx, run.getCatalogueId()),
-				_ -> retailerProductDao.countUnseenListings(tx, run.getCatalogueId(), run.getId()),
+				_ -> retailerProductDao.countUnseenListings(tx, run.getCatalogueId(), run),
 				(active, missing) -> {
 					counts.missing = Math.toIntExact(missing);
 					if (missing > holdShare * active) {
 						return ingestionRunDao.update(tx, ImmutableIngestionRun.builder().from(run).status(IngestionRunStatus.HELD).counts(counts.toIngestionRunCounts()).build());
 					}
 					return forc(
-							retailerProductDao.deactivateUnseenListings(tx, run.getCatalogueId(), run.getId()),
+							retailerProductDao.deactivateUnseenListings(tx, run.getCatalogueId(), run),
 							deactivated -> {
 								counts.deactivated = deactivated;
 								return ingestionRunDao.update(tx, done(run, counts));
@@ -232,8 +232,8 @@ public class IngestionRunProcessor {
 				stored -> Uni.createFrom().item(BatchMerge.of(stored, records, catalogue)),
 				merge -> retailerProductDao.takeChangeSequences(tx, merge.changed().size()),
 				(merge, changeSequences) -> forc(
-						retailerProductDao.save(tx, catalogue.getId(), run.getId(), run.getReceivedAt(), merge.stamped(changeSequences)),
-						() -> ingestionRunDao.createRejects(tx, run.getId(), rejects)
+						retailerProductDao.save(tx, catalogue, run, run.getReceivedAt(), merge.stamped(changeSequences)),
+						() -> ingestionRunDao.createRejects(tx, run, rejects)
 				).replaceWith(merge.outcomes())
 		)));
 		counts.total += items.size();
@@ -264,9 +264,9 @@ public class IngestionRunProcessor {
 				retailerProductDao.holdChangeSequence(tx),
 				_ -> retailerProductDao.findProducts(tx, catalogue.getRetailerId(), productKeys),
 				stored -> Uni.createFrom().item(BatchDeletion.of(stored, records, catalogue)),
-				deletion -> retailerProductDao.deactivateListings(tx, catalogue.getRetailerId(), catalogue.getId(), deletion.listed()),
+				deletion -> retailerProductDao.deactivateListings(tx, catalogue.getRetailerId(), catalogue, deletion.listed()),
 				(deletion, deactivated) -> forc(
-						ingestionRunDao.createRejects(tx, run.getId(), Stream.concat(rejects.stream(), deletion.unlisted().stream()).toList()),
+						ingestionRunDao.createRejects(tx, run, Stream.concat(rejects.stream(), deletion.unlisted().stream()).toList()),
 						() -> Uni.createFrom().item(new DeletionOutcome(deletion, deactivated))
 				)
 		)));

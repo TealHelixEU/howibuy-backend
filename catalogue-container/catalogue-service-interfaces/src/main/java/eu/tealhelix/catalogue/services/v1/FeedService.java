@@ -3,7 +3,7 @@ package eu.tealhelix.catalogue.services.v1;
 import java.io.InputStream;
 
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
-import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
 import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.common.v1.model.User;
 
@@ -27,5 +27,5 @@ public interface FeedService {
 	 *                                                                            Catalogue is another Retailer's or inactive
 	 * @throws eu.tealhelix.common.types.entity.NotFoundException                If the Catalogue does not exist
 	 */
-	IngestionRun receive(User caller, CatalogueId catalogueId, FeedType feedType, InputStream body);
+	IngestionRun receive(User caller, HasCatalogueId catalogueId, FeedType feedType, InputStream body);
 }

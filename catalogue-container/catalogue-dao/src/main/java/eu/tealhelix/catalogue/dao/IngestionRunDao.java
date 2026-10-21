@@ -5,8 +5,9 @@ import java.util.List;
 
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
+import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -50,7 +51,7 @@ public interface IngestionRunDao {
 	 * @param catalogueId The Catalogue
 	 * @return The run, {@code null} if there is none to process now
 	 */
-	Uni<IngestionRun> findNextToProcess(ReactivePersistenceContext em, CatalogueId catalogueId);
+	Uni<IngestionRun> findNextToProcess(ReactivePersistenceContext em, HasCatalogueId catalogueId);
 
 	/**
 	 * Read the Catalogues that have runs {@link IngestionRunStatus#RECEIVED RECEIVED}.
@@ -78,7 +79,7 @@ public interface IngestionRunDao {
 	 * @param receivedAt  The time
 	 * @return Whether it has
 	 */
-	Uni<Boolean> hasSnapshotReceivedAfter(ReactivePersistenceContext em, CatalogueId catalogueId, LocalDateTime receivedAt);
+	Uni<Boolean> hasSnapshotReceivedAfter(ReactivePersistenceContext em, HasCatalogueId catalogueId, LocalDateTime receivedAt);
 
 	/**
 	 * Record the records a run rejected.
@@ -88,7 +89,7 @@ public interface IngestionRunDao {
 	 * @param rejects The rejects
 	 * @return Completes when the rejects are recorded
 	 */
-	Uni<Void> createRejects(ReactivePersistenceTxContext tx, IngestionRunId runId, List<IngestionReject> rejects);
+	Uni<Void> createRejects(ReactivePersistenceTxContext tx, HasIngestionRunId runId, List<IngestionReject> rejects);
 
 	/**
 	 * Delete every reject of a run.
@@ -97,7 +98,7 @@ public interface IngestionRunDao {
 	 * @param runId The run
 	 * @return Completes when the rejects are deleted
 	 */
-	Uni<Void> deleteRejects(ReactivePersistenceTxContext tx, IngestionRunId runId);
+	Uni<Void> deleteRejects(ReactivePersistenceTxContext tx, HasIngestionRunId runId);
 
 	/**
 	 * Read an Ingestion Run.
@@ -106,7 +107,7 @@ public interface IngestionRunDao {
 	 * @param runId The run
 	 * @return The run, {@code null} if it does not exist
 	 */
-	Uni<IngestionRun> find(ReactivePersistenceContext em, IngestionRunId runId);
+	Uni<IngestionRun> find(ReactivePersistenceContext em, HasIngestionRunId runId);
 
 	/**
 	 * Read a page of the records an Ingestion Run rejected, in the order they appear in its Feed.
@@ -117,5 +118,5 @@ public interface IngestionRunDao {
 	 * @param limit  How many rejects to read at most
 	 * @return The rejects of the page, empty past the last one
 	 */
-	Uni<List<IngestionReject>> findRejects(ReactivePersistenceContext em, IngestionRunId runId, int offset, int limit);
+	Uni<List<IngestionReject>> findRejects(ReactivePersistenceContext em, HasIngestionRunId runId, int offset, int limit);
 }

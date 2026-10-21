@@ -1,6 +1,6 @@
 package eu.tealhelix.catalogue.services.v1.types;
 
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
+import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 
 /**
@@ -15,14 +15,14 @@ public class IngestionRunNotReplayableException extends RuntimeException {
 	/**
 	 * For a run still waiting, processing or held.
 	 */
-	public static IngestionRunNotReplayableException unfinished(IngestionRunId runId, IngestionRunStatus status) {
-		return new IngestionRunNotReplayableException("Only a finished Ingestion Run is replayed, status: " + status + ", runId: " + runId.asString());
+	public static IngestionRunNotReplayableException unfinished(HasIngestionRunId runId, IngestionRunStatus status) {
+		return new IngestionRunNotReplayableException("Only a finished Ingestion Run is replayed, status: " + status + ", runId: " + runId.getId().asString());
 	}
 
 	/**
 	 * For a Snapshot whose replay would take off sale the Listings that the later Snapshot carries.
 	 */
-	public static IngestionRunNotReplayableException superseded(IngestionRunId runId) {
-		return new IngestionRunNotReplayableException("A later Snapshot of the Catalogue supersedes the Ingestion Run, runId: " + runId.asString());
+	public static IngestionRunNotReplayableException superseded(HasIngestionRunId runId) {
+		return new IngestionRunNotReplayableException("A later Snapshot of the Catalogue supersedes the Ingestion Run, runId: " + runId.getId().asString());
 	}
 }

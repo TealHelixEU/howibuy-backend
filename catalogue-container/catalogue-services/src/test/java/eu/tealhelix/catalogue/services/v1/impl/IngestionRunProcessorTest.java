@@ -1,5 +1,7 @@
 package eu.tealhelix.catalogue.services.v1.impl;
 
+import static eu.tealhelix.catalogue.v1.types.CatalogueIdTestUtils.matchesHasCatalogueId;
+import static eu.tealhelix.catalogue.v1.types.IngestionRunIdTestUtils.matchesHasIngestionRunId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -138,7 +140,7 @@ public class IngestionRunProcessorTest {
 	void setUp() {
 		sut = new IngestionRunProcessor(catalogueDao, ingestionRunDao, retailerProductDao, feedStore, dateTimeService, uniAwaiter, persistenceContextFactory, feedReaders, BATCH_SIZE, HOLD_SHARE);
 		lenient().when(feedReaders.stream()).thenAnswer(i -> Stream.of(new TestFeedReader()));
-		lenient().when(catalogueDao.find(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(catalogue("test-adapter")));
+		lenient().when(catalogueDao.find(any(), matchesHasCatalogueId(CATALOGUE))).thenReturn(Uni.createFrom().item(catalogue("test-adapter")));
 		lenient().when(dateTimeService.getNow()).thenReturn(NOW);
 		lenient().when(feedStore.open("rimi-lt/run.gz")).thenReturn(storedFeed);
 		lenient().when(ingestionRunDao.update(any(), any())).thenReturn(Uni.createFrom().voidItem());
@@ -159,15 +161,15 @@ public class IngestionRunProcessorTest {
 			sequencesTaken.add(count);
 			return Uni.createFrom().item(LongStream.range(first, first + count).boxed().toList());
 		});
-		lenient().when(retailerProductDao.save(any(), eq(CATALOGUE), eq(RUN_ID), eq(RECEIVED_AT), anyCollection())).thenAnswer(i -> {
+		lenient().when(retailerProductDao.save(any(), matchesHasCatalogueId(CATALOGUE), matchesHasIngestionRunId(RUN_ID), eq(RECEIVED_AT), anyCollection())).thenAnswer(i -> {
 			Collection<ProductChange> products = i.getArgument(4);
 			products.forEach(product -> database.put(product.getProductKey(), product));
 			return Uni.createFrom().voidItem();
 		});
-		lenient().when(retailerProductDao.countActiveListings(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(0L));
-		lenient().when(retailerProductDao.countUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(0L));
-		lenient().when(retailerProductDao.deactivateUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(0));
-		lenient().when(retailerProductDao.deactivateListings(any(), eq(RETAILER), eq(CATALOGUE), anyCollection())).thenAnswer(i -> {
+		lenient().when(retailerProductDao.countActiveListings(any(), matchesHasCatalogueId(CATALOGUE))).thenReturn(Uni.createFrom().item(0L));
+		lenient().when(retailerProductDao.countUnseenListings(any(), matchesHasCatalogueId(CATALOGUE), matchesHasIngestionRunId(RUN_ID))).thenReturn(Uni.createFrom().item(0L));
+		lenient().when(retailerProductDao.deactivateUnseenListings(any(), matchesHasCatalogueId(CATALOGUE), matchesHasIngestionRunId(RUN_ID))).thenReturn(Uni.createFrom().item(0));
+		lenient().when(retailerProductDao.deactivateListings(any(), eq(RETAILER), matchesHasCatalogueId(CATALOGUE), anyCollection())).thenAnswer(i -> {
 			Collection<ProductKey> keys = i.getArgument(3);
 			var deactivated = 0;
 			for (var key : keys) {
@@ -213,7 +215,7 @@ public class IngestionRunProcessorTest {
 		assertEquals(7L, database.get(new ProductKeyImpl("P-UNCHANGED")).getChangeSequence());
 		assertEquals(101L, database.get(new ProductKeyImpl("P-REPRICED")).getChangeSequence());
 		var rejects = ArgumentCaptor.<List<IngestionReject>>captor();
-		verify(ingestionRunDao, atLeastOnce()).createRejects(any(), eq(RUN_ID), rejects.capture());
+		verify(ingestionRunDao, atLeastOnce()).createRejects(any(), matchesHasIngestionRunId(RUN_ID), rejects.capture());
 		assertEquals(
 				List.of(reject(2, "P-UNREADABLE", "The price is not a number"), reject(5, null, "The product key is missing")),
 				rejects.getAllValues().stream().flatMap(List::stream).toList()
@@ -229,7 +231,7 @@ public class IngestionRunProcessorTest {
 		var order = inOrder(ingestionRunDao, feedStore);
 		var processing = ArgumentCaptor.forClass(IngestionRun.class);
 		order.verify(ingestionRunDao).update(any(), processing.capture());
-		order.verify(ingestionRunDao).deleteRejects(any(), eq(run(FeedType.DELTA).getId()));
+		order.verify(ingestionRunDao).deleteRejects(any(), matchesHasIngestionRunId(run(FeedType.DELTA)));
 		order.verify(feedStore).open("rimi-lt/run.gz");
 		assertEquals(
 				ImmutableIngestionRun.builder()
@@ -295,7 +297,7 @@ public class IngestionRunProcessorTest {
 
 	@Test
 	void aCatalogueWithAnUnknownAdapterFailsTheRun() {
-		when(catalogueDao.find(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(catalogue("missing-adapter")));
+		when(catalogueDao.find(any(), matchesHasCatalogueId(CATALOGUE))).thenReturn(Uni.createFrom().item(catalogue("missing-adapter")));
 
 		sut.process(run(FeedType.SNAPSHOT));
 
@@ -307,9 +309,9 @@ public class IngestionRunProcessorTest {
 	@Test
 	void aSnapshotDeactivatesTheListingsItDidNotCarryUpToTheShare() {
 		feed.add(record(1, "P-1", "1.29"));
-		when(retailerProductDao.countActiveListings(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(10L));
-		when(retailerProductDao.countUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(1L));
-		when(retailerProductDao.deactivateUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(1));
+		when(retailerProductDao.countActiveListings(any(), matchesHasCatalogueId(CATALOGUE))).thenReturn(Uni.createFrom().item(10L));
+		when(retailerProductDao.countUnseenListings(any(), matchesHasCatalogueId(CATALOGUE), matchesHasIngestionRunId(RUN_ID))).thenReturn(Uni.createFrom().item(1L));
+		when(retailerProductDao.deactivateUnseenListings(any(), matchesHasCatalogueId(CATALOGUE), matchesHasIngestionRunId(RUN_ID))).thenReturn(Uni.createFrom().item(1));
 
 		sut.process(run(FeedType.SNAPSHOT));
 
@@ -321,15 +323,15 @@ public class IngestionRunProcessorTest {
 				done.getCounts()
 		);
 		var deactivation = ArgumentCaptor.forClass(ReactivePersistenceTxContext.class);
-		verify(retailerProductDao).deactivateUnseenListings(deactivation.capture(), eq(CATALOGUE), eq(RUN_ID));
+		verify(retailerProductDao).deactivateUnseenListings(deactivation.capture(), matchesHasCatalogueId(CATALOGUE), matchesHasIngestionRunId(RUN_ID));
 		assertSame(deactivation.getValue(), lastUpdateTransaction(), "the deactivation commits with the end of the run");
 	}
 
 	@Test
 	void aSnapshotThatWouldDeactivateMoreThanTheShareIsHeld() {
 		feed.add(record(1, "P-1", "1.29"));
-		when(retailerProductDao.countActiveListings(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(10L));
-		when(retailerProductDao.countUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(2L));
+		when(retailerProductDao.countActiveListings(any(), matchesHasCatalogueId(CATALOGUE))).thenReturn(Uni.createFrom().item(10L));
+		when(retailerProductDao.countUnseenListings(any(), matchesHasCatalogueId(CATALOGUE), matchesHasIngestionRunId(RUN_ID))).thenReturn(Uni.createFrom().item(2L));
 
 		sut.process(run(FeedType.SNAPSHOT));
 
@@ -390,7 +392,7 @@ public class IngestionRunProcessorTest {
 				deactivatedKeys()
 		);
 		var rejects = ArgumentCaptor.<List<IngestionReject>>captor();
-		verify(ingestionRunDao, atLeastOnce()).createRejects(any(), eq(RUN_ID), rejects.capture());
+		verify(ingestionRunDao, atLeastOnce()).createRejects(any(), matchesHasIngestionRunId(RUN_ID), rejects.capture());
 		assertEquals(
 				List.of(
 						reject(2, null, "The record is not a JSON object"),
@@ -450,7 +452,7 @@ public class IngestionRunProcessorTest {
 	 */
 	private List<Set<ProductKey>> deactivatedKeys() {
 		var keys = ArgumentCaptor.<Collection<ProductKey>>captor();
-		verify(retailerProductDao, atLeastOnce()).deactivateListings(any(), eq(RETAILER), eq(CATALOGUE), keys.capture());
+		verify(retailerProductDao, atLeastOnce()).deactivateListings(any(), eq(RETAILER), matchesHasCatalogueId(CATALOGUE), keys.capture());
 		return keys.getAllValues().stream().filter(batch -> !batch.isEmpty()).<Set<ProductKey>>map(Set::copyOf).toList();
 	}
 

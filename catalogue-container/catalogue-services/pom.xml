@@ -83,6 +83,12 @@
 		<!-- PROJECT TEST -->
 		<dependency>
 			<groupId>eu.tealhelix</groupId>
+			<artifactId>catalogue-model-testutils</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
 			<artifactId>tealhelix-common-services-impl</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>

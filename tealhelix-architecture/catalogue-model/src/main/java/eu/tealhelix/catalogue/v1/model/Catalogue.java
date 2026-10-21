@@ -3,6 +3,7 @@ package eu.tealhelix.catalogue.v1.model;
 import java.util.Set;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
 import eu.tealhelix.common.v1.types.RetailerId;
 import org.immutables.value.Value;
 
@@ -10,7 +11,8 @@ import org.immutables.value.Value;
  * One of a Retailer's e-shops, serving one country with its own assortment and prices.
  */
 @Value.Immutable
-public interface Catalogue {
+public interface Catalogue extends HasCatalogueId {
+	@Override
 	CatalogueId getId();
 
 	RetailerId getRetailerId();

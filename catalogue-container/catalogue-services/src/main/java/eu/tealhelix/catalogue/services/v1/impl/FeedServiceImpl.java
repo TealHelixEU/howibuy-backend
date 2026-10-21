@@ -11,7 +11,7 @@ import eu.tealhelix.catalogue.services.v1.FeedService;
 import eu.tealhelix.catalogue.v1.model.Catalogue;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
-import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
 import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
@@ -60,15 +60,15 @@ public class FeedServiceImpl implements FeedService {
 	 * recorded, the Feed is removed again. The run is processed after the call returns.
 	 */
 	@Override
-	public IngestionRun receive(User caller, CatalogueId catalogueId, FeedType feedType, InputStream body) {
+	public IngestionRun receive(User caller, HasCatalogueId catalogueId, FeedType feedType, InputStream body) {
 		authorization.requireRetailer(caller);
 		var catalogue = uniAwaiter.await(() -> persistenceContextFactory.withoutTransaction(em -> catalogueDao.find(em, catalogueId)));
 		requireAcceptsFeedsOf(catalogue, catalogueId, caller);
 		var runId = new IngestionRunIdImpl(UUID.randomUUID().toString());
-		var storedFeed = feedStore.store(catalogueId, runId, body);
+		var storedFeed = feedStore.store(catalogueId.getId(), runId, body);
 		var run = ImmutableIngestionRun.builder()
 				.id(runId)
-				.catalogueId(catalogueId)
+				.catalogueId(catalogueId.getId())
 				.feedType(feedType)
 				.status(IngestionRunStatus.RECEIVED)
 				.receivedAt(dateTimeService.getNow())
@@ -82,17 +82,17 @@ public class FeedServiceImpl implements FeedService {
 			feedStore.delete(storedFeed.path());
 			throw e;
 		}
-		dispatcher.wake(catalogueId);
+		dispatcher.wake(catalogueId.getId());
 		return run;
 	}
 
-	private static void requireAcceptsFeedsOf(Catalogue catalogue, CatalogueId catalogueId, User caller) {
+	private static void requireAcceptsFeedsOf(Catalogue catalogue, HasCatalogueId catalogueId, User caller) {
 		if (catalogue == null) {
-			throw new NotFoundException(catalogueId, "No such Catalogue, catalogueId: " + catalogueId.asString());
+			throw new NotFoundException(catalogueId.getId(), "No such Catalogue, catalogueId: " + catalogueId.getId().asString());
 		} else if (!catalogue.getRetailerId().asUuid().equals(caller.getId().asUuid())) {
-			throw new NotAuthorizedException("The Catalogue belongs to another Retailer, catalogueId: " + catalogueId.asString());
+			throw new NotAuthorizedException("The Catalogue belongs to another Retailer, catalogueId: " + catalogueId.getId().asString());
 		} else if (!catalogue.isActive()) {
-			throw new NotAuthorizedException("The Catalogue does not accept Feeds, catalogueId: " + catalogueId.asString());
+			throw new NotAuthorizedException("The Catalogue does not accept Feeds, catalogueId: " + catalogueId.getId().asString());
 		}
 	}
 }

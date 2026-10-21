@@ -7,31 +7,31 @@ import java.util.Objects;
 import org.mockito.ArgumentMatcher;
 
 public interface IngestionRunIdTestUtils {
-	class MatchesIngestionRunId implements ArgumentMatcher<IngestionRunId> {
+	class MatchesHasIngestionRunId implements ArgumentMatcher<HasIngestionRunId> {
 		private final IngestionRunId ingestionRunId;
 
-		public MatchesIngestionRunId(IngestionRunId ingestionRunId) {
-			this.ingestionRunId = Objects.requireNonNull(ingestionRunId);
+		public MatchesHasIngestionRunId(HasIngestionRunId hasIngestionRunId) {
+			this.ingestionRunId = Objects.requireNonNull(Objects.requireNonNull(hasIngestionRunId).getId(), "hasIngestionRunId.getId() must not be null");
 		}
 
 		@Override
-		public boolean matches(IngestionRunId ingestionRunId) {
-			return ingestionRunId != null && Objects.equals(ingestionRunId.asString(), this.ingestionRunId.asString());
+		public boolean matches(HasIngestionRunId hasIngestionRunId) {
+			return hasIngestionRunId != null && hasIngestionRunId.getId() != null && Objects.equals(hasIngestionRunId.getId().asString(), this.ingestionRunId.asString());
 		}
 
 		@Override
 		public Class<?> type() {
-			return IngestionRunId.class;
+			return HasIngestionRunId.class;
 		}
 
 		@Override
 		public String toString() {
-			return "IngestionRunId(" + this.ingestionRunId.asString() + ")";
+			return "HasIngestionRunId(" + this.ingestionRunId.asString() + ")";
 		}
 	}
 
-	static IngestionRunId matchesIngestionRunId(IngestionRunId ingestionRunId) {
-		reportMatcher(new MatchesIngestionRunId(ingestionRunId));
+	static HasIngestionRunId matchesHasIngestionRunId(HasIngestionRunId hasIngestionRunId) {
+		reportMatcher(new MatchesHasIngestionRunId(hasIngestionRunId));
 		return null;
 	}
 

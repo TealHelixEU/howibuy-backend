@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import eu.tealhelix.catalogue.v1.model.ProductChange;
-import eu.tealhelix.catalogue.v1.types.CatalogueId;
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
+import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -61,7 +61,7 @@ public interface RetailerProductDao {
 	 *                    stored ones; all of them of the Retailer of the Catalogue
 	 * @return Completes when the products are stored
 	 */
-	Uni<Void> save(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId, LocalDateTime seenAt, Collection<ProductChange> products);
+	Uni<Void> save(ReactivePersistenceTxContext tx, HasCatalogueId catalogueId, HasIngestionRunId runId, LocalDateTime seenAt, Collection<ProductChange> products);
 
 	/**
 	 * Count the active Listings of a Catalogue.
@@ -70,7 +70,7 @@ public interface RetailerProductDao {
 	 * @param catalogueId The Catalogue
 	 * @return How many Listings of the Catalogue are active
 	 */
-	Uni<Long> countActiveListings(ReactivePersistenceContext em, CatalogueId catalogueId);
+	Uni<Long> countActiveListings(ReactivePersistenceContext em, HasCatalogueId catalogueId);
 
 	/**
 	 * Count the active Listings of a Catalogue that an Ingestion Run of it did not see.
@@ -80,7 +80,7 @@ public interface RetailerProductDao {
 	 * @param runId       The run
 	 * @return How many active Listings of the Catalogue the run did not see
 	 */
-	Uni<Long> countUnseenListings(ReactivePersistenceContext em, CatalogueId catalogueId, IngestionRunId runId);
+	Uni<Long> countUnseenListings(ReactivePersistenceContext em, HasCatalogueId catalogueId, HasIngestionRunId runId);
 
 	/**
 	 * Make the active Listings of a Catalogue that an Ingestion Run of it did not see inactive, and stamp their products
@@ -92,7 +92,7 @@ public interface RetailerProductDao {
 	 * @param runId       The run
 	 * @return How many Listings were made inactive
 	 */
-	Uni<Integer> deactivateUnseenListings(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId);
+	Uni<Integer> deactivateUnseenListings(ReactivePersistenceTxContext tx, HasCatalogueId catalogueId, HasIngestionRunId runId);
 
 	/**
 	 * Make the active Listings of some products in a Catalogue inactive, and stamp the products with new values of the
@@ -105,7 +105,7 @@ public interface RetailerProductDao {
 	 * @param productKeys The keys of the products; those without an active Listing in the Catalogue are left alone
 	 * @return How many Listings were made inactive
 	 */
-	Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, CatalogueId catalogueId, Collection<ProductKey> productKeys);
+	Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, HasCatalogueId catalogueId, Collection<ProductKey> productKeys);
 
 	/**
 	 * Hold the change sequence until the transaction ends, as for

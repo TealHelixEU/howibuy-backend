@@ -25,6 +25,8 @@ import eu.tealhelix.catalogue.v1.model.ImmutableListing;
 import eu.tealhelix.catalogue.v1.model.ImmutableProductChange;
 import eu.tealhelix.catalogue.v1.model.Listing;
 import eu.tealhelix.catalogue.v1.model.ProductChange;
+import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
@@ -87,7 +89,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 	 * many, and overflow the stack of the event loop.
 	 */
 	@Override
-	public Uni<Void> save(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId, LocalDateTime seenAt, Collection<ProductChange> products) {
+	public Uni<Void> save(ReactivePersistenceTxContext tx, HasCatalogueId catalogueId, HasIngestionRunId runId, LocalDateTime seenAt, Collection<ProductChange> products) {
 		if (products.isEmpty()) return Uni.createFrom().voidItem();
 		var retailerId = products.iterator().next().getRetailerId().asUuid();
 		return findEntities(tx, retailerId, products.stream().map(p -> p.getProductKey().asString()).toList()).flatMap(entities -> {
@@ -111,25 +113,25 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 	}
 
 	@Override
-	public Uni<Long> countActiveListings(ReactivePersistenceContext em, CatalogueId catalogueId) {
+	public Uni<Long> countActiveListings(ReactivePersistenceContext em, HasCatalogueId catalogueId) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(Long.class);
 		var listing = q.from(ListingEntity.class);
 		q.select(cb.count(listing.get(ListingEntity_.catalogueId)));
-		q.where(cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.asString()), cb.isTrue(listing.get(ListingEntity_.active)));
+		q.where(cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.getId().asString()), cb.isTrue(listing.get(ListingEntity_.active)));
 		return em.createQuery(q).getSingleResult();
 	}
 
 	@Override
-	public Uni<Long> countUnseenListings(ReactivePersistenceContext em, CatalogueId catalogueId, IngestionRunId runId) {
+	public Uni<Long> countUnseenListings(ReactivePersistenceContext em, HasCatalogueId catalogueId, HasIngestionRunId runId) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(Long.class);
 		var listing = q.from(ListingEntity.class);
 		q.select(cb.count(listing.get(ListingEntity_.catalogueId)));
 		q.where(
-				cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.asString()),
+				cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.getId().asString()),
 				cb.isTrue(listing.get(ListingEntity_.active)),
-				cb.notEqual(listing.get(ListingEntity_.lastSeenRunId), runId.asUuid())
+				cb.notEqual(listing.get(ListingEntity_.lastSeenRunId), runId.getId().asUuid())
 		);
 		return em.createQuery(q).getSingleResult();
 	}
@@ -139,7 +141,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 	 * express.
 	 */
 	@Override
-	public Uni<Integer> deactivateUnseenListings(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId) {
+	public Uni<Integer> deactivateUnseenListings(ReactivePersistenceTxContext tx, HasCatalogueId catalogueId, HasIngestionRunId runId) {
 		return holdChangeSequence(tx).chain(() -> tx.createNativeUpdate("""
 						WITH deactivated AS (
 							UPDATE IN_LISTING SET active = FALSE
@@ -149,8 +151,8 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 						UPDATE IN_RETAILER_PRODUCT p SET change_sequence = nextval('IN_CHANGE_SEQUENCE')
 						FROM deactivated d WHERE p.id = d.retailer_product_id
 						""")
-				.setParameter("catalogueId", catalogueId.asString())
-				.setParameter("runId", runId.asUuid())
+				.setParameter("catalogueId", catalogueId.getId().asString())
+				.setParameter("runId", runId.getId().asUuid())
 				.execute());
 	}
 
@@ -158,7 +160,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 	 * In SQL, for the reason of {@link #deactivateUnseenListings(ReactivePersistenceTxContext, CatalogueId, IngestionRunId)}.
 	 */
 	@Override
-	public Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, CatalogueId catalogueId, Collection<ProductKey> productKeys) {
+	public Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, HasCatalogueId catalogueId, Collection<ProductKey> productKeys) {
 		if (productKeys.isEmpty()) return Uni.createFrom().item(0);
 		return holdChangeSequence(tx).chain(() -> tx.createNativeUpdate("""
 						WITH deactivated AS (
@@ -173,7 +175,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 						""")
 				.setParameter("retailerId", retailerId.asUuid())
 				.setParameter("productKeys", productKeys.stream().map(ProductKey::asString).toList())
-				.setParameter("catalogueId", catalogueId.asString())
+				.setParameter("catalogueId", catalogueId.getId().asString())
 				.execute());
 	}
 
@@ -259,7 +261,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 	 * Names and Listings are changed in place, rather than replaced by new rows, because Hibernate flushes the inserts
 	 * before the deletes, and a new row would collide with the primary key of the one it replaces.
 	 */
-	private static void copyState(ProductChange product, RetailerProductEntity entity, CatalogueId catalogueId, IngestionRunId runId, LocalDateTime seenAt) {
+	private static void copyState(ProductChange product, RetailerProductEntity entity, HasCatalogueId catalogueId, HasIngestionRunId runId, LocalDateTime seenAt) {
 		entity.setCharacteristics(product.getCharacteristics());
 		entity.setTags(product.getTags());
 		entity.setInputHash(product.getInputHash());
@@ -274,10 +276,10 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 		entity.getListings().keySet().retainAll(listings.keySet());
 		listings.forEach((listingCatalogueId, listing) -> copyListing(listing, entity.getListings().computeIfAbsent(listingCatalogueId, c -> newListing(entity, c))));
 
-		var seen = entity.getListings().get(catalogueId.asString());
+		var seen = entity.getListings().get(catalogueId.getId().asString());
 		if (seen != null) {
 			seen.setLastSeenAt(seenAt);
-			seen.setLastSeenRunId(runId.asUuid());
+			seen.setLastSeenRunId(runId.getId().asUuid());
 		}
 	}
 

@@ -16,9 +16,10 @@ import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRunCounts;
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.model.IngestionRunCounts;
+import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.FeedType;
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
@@ -63,18 +64,18 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 	}
 
 	@Override
-	public Uni<IngestionRun> findNextToProcess(ReactivePersistenceContext em, CatalogueId catalogueId) {
+	public Uni<IngestionRun> findNextToProcess(ReactivePersistenceContext em, HasCatalogueId catalogueId) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(IngestionRunEntity.class);
 		var run = q.from(IngestionRunEntity.class);
 		var waitedFor = q.subquery(IngestionRunEntity.class);
 		var busy = waitedFor.from(IngestionRunEntity.class);
 		waitedFor.select(busy).where(
-				cb.equal(busy.get(IngestionRunEntity_.catalogueId), catalogueId.asString()),
+				cb.equal(busy.get(IngestionRunEntity_.catalogueId), catalogueId.getId().asString()),
 				busy.get(IngestionRunEntity_.status).in(IngestionRunStatus.PROCESSING, IngestionRunStatus.HELD)
 		);
 		q.where(
-				cb.equal(run.get(IngestionRunEntity_.catalogueId), catalogueId.asString()),
+				cb.equal(run.get(IngestionRunEntity_.catalogueId), catalogueId.getId().asString()),
 				cb.equal(run.get(IngestionRunEntity_.status), IngestionRunStatus.RECEIVED),
 				cb.not(cb.exists(waitedFor))
 		);
@@ -105,12 +106,12 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 	}
 
 	@Override
-	public Uni<Boolean> hasSnapshotReceivedAfter(ReactivePersistenceContext em, CatalogueId catalogueId, LocalDateTime receivedAt) {
+	public Uni<Boolean> hasSnapshotReceivedAfter(ReactivePersistenceContext em, HasCatalogueId catalogueId, LocalDateTime receivedAt) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(UUID.class);
 		var run = q.from(IngestionRunEntity.class);
 		q.select(run.get(IngestionRunEntity_.id)).where(
-				cb.equal(run.get(IngestionRunEntity_.catalogueId), catalogueId.asString()),
+				cb.equal(run.get(IngestionRunEntity_.catalogueId), catalogueId.getId().asString()),
 				cb.equal(run.get(IngestionRunEntity_.feedType), FeedType.SNAPSHOT),
 				cb.greaterThan(run.get(IngestionRunEntity_.receivedAt), receivedAt),
 				cb.notEqual(run.get(IngestionRunEntity_.status), IngestionRunStatus.FAILED)
@@ -119,31 +120,31 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 	}
 
 	@Override
-	public Uni<Void> createRejects(ReactivePersistenceTxContext tx, IngestionRunId runId, List<IngestionReject> rejects) {
+	public Uni<Void> createRejects(ReactivePersistenceTxContext tx, HasIngestionRunId runId, List<IngestionReject> rejects) {
 		if (rejects.isEmpty()) return Uni.createFrom().voidItem();
 		return tx.persistAll(rejects.stream().map(reject -> toEntity(runId, reject)).toArray());
 	}
 
 	@Override
-	public Uni<Void> deleteRejects(ReactivePersistenceTxContext tx, IngestionRunId runId) {
+	public Uni<Void> deleteRejects(ReactivePersistenceTxContext tx, HasIngestionRunId runId) {
 		var cb = tx.getCriteriaBuilder();
 		var d = cb.createCriteriaDelete(IngestionRejectEntity.class);
 		var reject = d.from(IngestionRejectEntity.class);
-		d.where(cb.equal(reject.get(IngestionRejectEntity_.ingestionRunId), runId.asUuid()));
+		d.where(cb.equal(reject.get(IngestionRejectEntity_.ingestionRunId), runId.getId().asUuid()));
 		return tx.createDelete(d).execute().replaceWithVoid();
 	}
 
 	@Override
-	public Uni<IngestionRun> find(ReactivePersistenceContext em, IngestionRunId runId) {
-		return em.find(IngestionRunEntity.class, runId.asUuid()).map(entity -> entity != null ? toIngestionRun(entity) : null);
+	public Uni<IngestionRun> find(ReactivePersistenceContext em, HasIngestionRunId runId) {
+		return em.find(IngestionRunEntity.class, runId.getId().asUuid()).map(entity -> entity != null ? toIngestionRun(entity) : null);
 	}
 
 	@Override
-	public Uni<List<IngestionReject>> findRejects(ReactivePersistenceContext em, IngestionRunId runId, int offset, int limit) {
+	public Uni<List<IngestionReject>> findRejects(ReactivePersistenceContext em, HasIngestionRunId runId, int offset, int limit) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(IngestionRejectEntity.class);
 		var reject = q.from(IngestionRejectEntity.class);
-		q.where(cb.equal(reject.get(IngestionRejectEntity_.ingestionRunId), runId.asUuid()));
+		q.where(cb.equal(reject.get(IngestionRejectEntity_.ingestionRunId), runId.getId().asUuid()));
 		q.orderBy(cb.asc(reject.get(IngestionRejectEntity_.position)));
 		return em.createQuery(q).setFirstResult(offset).setMaxResults(limit).getResultList()
 				.map(rejects -> rejects.stream().map(IngestionRunDaoImpl::toIngestionReject).toList());
@@ -179,9 +180,9 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 		return entity;
 	}
 
-	private static IngestionRejectEntity toEntity(IngestionRunId runId, IngestionReject reject) {
+	private static IngestionRejectEntity toEntity(HasIngestionRunId runId, IngestionReject reject) {
 		var entity = new IngestionRejectEntity();
-		entity.setIngestionRunId(runId.asUuid());
+		entity.setIngestionRunId(runId.getId().asUuid());
 		entity.setPosition(reject.getPosition());
 		entity.setProductKey(reject.getProductKey() != null ? reject.getProductKey().asString() : null);
 		entity.setReason(reject.getReason());
