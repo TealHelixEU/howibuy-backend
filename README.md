@@ -106,6 +106,14 @@ mvn package -Pdocker # to build the docker images too
 
 > **NOTE/WARNING:** As of the date of this writing, the Docker images are for development purposes only!
 
+The end-to-end tests run on `verify`, not on `package`. They start the Ingestion, HowiBuy and the Catalogue Sync from
+the jars the build made, against Postgres and Keycloak from the Docker images, so build the images first:
+
+```shell
+mvn package -Pdocker -DskipTests
+mvn verify
+```
+
 ### Creating/updating the DB
 
 The aggregating changelog root now lives in the `howibuy` deployable and `<include>`s per-module changelogs that
@@ -205,6 +213,10 @@ argument should be `-Pth-local-postgres`.
 ### From Docker
 
 **TODO**
+
+### A Feed through the whole pipeline
+
+See [the README of the Catalogue Sync](catalogue-sync-cli-container/README.md#a-feed-through-the-whole-pipeline).
 
 
 ## Releases
