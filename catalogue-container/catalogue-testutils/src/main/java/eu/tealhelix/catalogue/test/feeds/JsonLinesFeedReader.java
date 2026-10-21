@@ -17,6 +17,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.tealhelix.catalogue.feeds.DeletionItem;
+import eu.tealhelix.catalogue.feeds.DeletionRecord;
 import eu.tealhelix.catalogue.feeds.FeedItem;
 import eu.tealhelix.catalogue.feeds.FeedReader;
 import eu.tealhelix.catalogue.feeds.FeedRecord;
@@ -28,12 +30,14 @@ import eu.tealhelix.catalogue.feeds.RejectedRecord;
  * {"productKey": "p-1", "names": {"el": "Γάλα", "en": "Milk"}, "characteristics": {"fat": "2%"}, "tags": ["dairy"], "price": "1.29", "currency": "EUR"}
  * </pre>
  * A missing field is read as {@code null}, for the validation to reject. A line that is not a JSON object is rejected.
+ * A Deletion Feed has the product key alone on each line, e.g. {@code {"productKey": "p-1"}}.
  */
 @ApplicationScoped
 public class JsonLinesFeedReader implements FeedReader {
 	public static final String NAME = "test-jsonl";
 
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	private static final String NOT_AN_OBJECT = "The record is not a JSON object";
 
 	@Override
 	public String getName() {
@@ -51,15 +55,16 @@ public class JsonLinesFeedReader implements FeedReader {
 		return new BufferedReader(new InputStreamReader(feed, UTF_8)).lines().map(line -> read(position.incrementAndGet(), line));
 	}
 
+	@Override
+	public Stream<DeletionItem> readDeletions(InputStream feed) {
+		var position = new AtomicLong();
+		return new BufferedReader(new InputStreamReader(feed, UTF_8)).lines().map(line -> readDeletion(position.incrementAndGet(), line));
+	}
+
 	private static FeedItem read(long position, String line) {
-		JsonNode product;
-		try {
-			product = OBJECT_MAPPER.readTree(line);
-		} catch (JsonProcessingException e) {
-			product = null;
-		}
-		if (product == null || !product.isObject()) {
-			return new RejectedRecord(position, null, "The record is not a JSON object");
+		var product = readObject(line);
+		if (product == null) {
+			return new RejectedRecord(position, null, NOT_AN_OBJECT);
 		}
 		var productKey = text(product.get("productKey"));
 		BigDecimal price;
@@ -77,6 +82,26 @@ public class JsonLinesFeedReader implements FeedReader {
 				price,
 				text(product.get("currency"))
 		);
+	}
+
+	private static DeletionItem readDeletion(long position, String line) {
+		var deletion = readObject(line);
+		if (deletion == null) {
+			return new RejectedRecord(position, null, NOT_AN_OBJECT);
+		}
+		return new DeletionRecord(position, text(deletion.get("productKey")));
+	}
+
+	/**
+	 * @return The JSON object of the line, {@code null} if the line is not one
+	 */
+	private static JsonNode readObject(String line) {
+		try {
+			var value = OBJECT_MAPPER.readTree(line);
+			return value != null && value.isObject() ? value : null;
+		} catch (JsonProcessingException e) {
+			return null;
+		}
 	}
 
 	private static List<String> texts(JsonNode array) {

@@ -2,6 +2,7 @@ package eu.tealhelix.catalogue.services.v1.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -25,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
@@ -34,6 +36,8 @@ import jakarta.enterprise.inject.Instance;
 import eu.tealhelix.catalogue.dao.CatalogueDao;
 import eu.tealhelix.catalogue.dao.IngestionRunDao;
 import eu.tealhelix.catalogue.dao.RetailerProductDao;
+import eu.tealhelix.catalogue.feeds.DeletionItem;
+import eu.tealhelix.catalogue.feeds.DeletionRecord;
 import eu.tealhelix.catalogue.feeds.FeedItem;
 import eu.tealhelix.catalogue.feeds.FeedReader;
 import eu.tealhelix.catalogue.feeds.FeedRecord;
@@ -43,17 +47,21 @@ import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionReject;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRunCounts;
+import eu.tealhelix.catalogue.v1.model.ImmutableListing;
 import eu.tealhelix.catalogue.v1.model.ImmutableProductChange;
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
+import eu.tealhelix.catalogue.v1.model.Listing;
 import eu.tealhelix.catalogue.v1.model.ProductChange;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.FeedType;
+import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.v1.types.RetailerId;
@@ -76,9 +84,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class IngestionRunProcessorTest {
 	private static final RetailerId RETAILER = new GenericRetailerId("6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11");
 	private static final CatalogueId CATALOGUE = new CatalogueIdImpl("rimi-lt");
+	private static final IngestionRunId RUN_ID = new IngestionRunIdImpl("5d1c9a3e-0f4b-4a52-9e6d-2b7c8a1f3e01");
 	private static final LocalDateTime RECEIVED_AT = LocalDateTime.of(2026, 10, 21, 9, 0, 0);
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 21, 10, 0, 0);
 	private static final int BATCH_SIZE = 2;
+	private static final double HOLD_SHARE = 0.1;
+	private static final CatalogueId OTHER_CATALOGUE = new CatalogueIdImpl("rimi-lv");
 
 	@Mock
 	CatalogueDao catalogueDao;
@@ -111,6 +122,9 @@ public class IngestionRunProcessorTest {
 	/** What the test reader reads; a {@code null} item stands for a Feed that breaks off there. */
 	private final List<FeedItem> feed = new ArrayList<>();
 
+	/** What the test reader reads from a Deletion Feed. */
+	private final List<DeletionItem> deletions = new ArrayList<>();
+
 	/** The products in the database, by key, as the processor stores them. */
 	private final Map<ProductKey, ProductChange> database = new HashMap<>();
 
@@ -122,7 +136,7 @@ public class IngestionRunProcessorTest {
 
 	@BeforeEach
 	void setUp() {
-		sut = new IngestionRunProcessor(catalogueDao, ingestionRunDao, retailerProductDao, feedStore, dateTimeService, uniAwaiter, persistenceContextFactory, feedReaders, BATCH_SIZE);
+		sut = new IngestionRunProcessor(catalogueDao, ingestionRunDao, retailerProductDao, feedStore, dateTimeService, uniAwaiter, persistenceContextFactory, feedReaders, BATCH_SIZE, HOLD_SHARE);
 		lenient().when(feedReaders.stream()).thenAnswer(i -> Stream.of(new TestFeedReader()));
 		lenient().when(catalogueDao.find(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(catalogue("test-adapter")));
 		lenient().when(dateTimeService.getNow()).thenReturn(NOW);
@@ -144,10 +158,26 @@ public class IngestionRunProcessorTest {
 			sequencesTaken.add(count);
 			return Uni.createFrom().item(LongStream.range(first, first + count).boxed().toList());
 		});
-		lenient().when(retailerProductDao.save(any(), eq(CATALOGUE), eq(run(FeedType.SNAPSHOT).getId()), eq(RECEIVED_AT), anyCollection())).thenAnswer(i -> {
+		lenient().when(retailerProductDao.save(any(), eq(CATALOGUE), eq(RUN_ID), eq(RECEIVED_AT), anyCollection())).thenAnswer(i -> {
 			Collection<ProductChange> products = i.getArgument(4);
 			products.forEach(product -> database.put(product.getProductKey(), product));
 			return Uni.createFrom().voidItem();
+		});
+		lenient().when(retailerProductDao.countActiveListings(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(0L));
+		lenient().when(retailerProductDao.countUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(0L));
+		lenient().when(retailerProductDao.deactivateUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(0));
+		lenient().when(retailerProductDao.deactivateListings(any(), eq(RETAILER), eq(CATALOGUE), anyCollection())).thenAnswer(i -> {
+			Collection<ProductKey> keys = i.getArgument(3);
+			var deactivated = 0;
+			for (var key : keys) {
+				var product = database.get(key);
+				var listing = product != null ? product.getListings().stream().filter(l -> l.getCatalogueId().equals(CATALOGUE) && l.isActive()).findFirst() : Optional.<Listing>empty();
+				if (listing.isPresent()) {
+					database.put(key, ImmutableProductChange.copyOf(product).withListings(ImmutableListing.copyOf(listing.get()).withIsActive(false)));
+					deactivated++;
+				}
+			}
+			return Uni.createFrom().item(deactivated);
 		});
 	}
 
@@ -172,7 +202,7 @@ public class IngestionRunProcessorTest {
 						.startedAt(NOW)
 						.finishedAt(NOW)
 						.counts(ImmutableIngestionRunCounts.builder()
-								.total(5).valid(3).rejected(2).added(1).changed(1).unchanged(1).deactivated(0)
+								.total(5).valid(3).rejected(2).added(1).changed(1).unchanged(1).missing(0).deactivated(0)
 								.build())
 						.build(),
 				lastUpdate()
@@ -182,7 +212,7 @@ public class IngestionRunProcessorTest {
 		assertEquals(7L, database.get(new ProductKeyImpl("P-UNCHANGED")).getChangeSequence());
 		assertEquals(101L, database.get(new ProductKeyImpl("P-REPRICED")).getChangeSequence());
 		var rejects = ArgumentCaptor.<List<IngestionReject>>captor();
-		verify(ingestionRunDao, atLeastOnce()).createRejects(any(), eq(run(FeedType.SNAPSHOT).getId()), rejects.capture());
+		verify(ingestionRunDao, atLeastOnce()).createRejects(any(), eq(RUN_ID), rejects.capture());
 		assertEquals(
 				List.of(reject(2, "P-UNREADABLE", "The price is not a number"), reject(5, null, "The product key is missing")),
 				rejects.getAllValues().stream().flatMap(List::stream).toList()
@@ -247,7 +277,7 @@ public class IngestionRunProcessorTest {
 
 		assertEquals(IngestionRunStatus.DONE, lastUpdate().getStatus());
 		assertEquals(
-				ImmutableIngestionRunCounts.builder().total(0).valid(0).rejected(0).added(0).changed(0).unchanged(0).deactivated(0).build(),
+				ImmutableIngestionRunCounts.builder().total(0).valid(0).rejected(0).added(0).changed(0).unchanged(0).missing(0).deactivated(0).build(),
 				lastUpdate().getCounts()
 		);
 	}
@@ -274,11 +304,103 @@ public class IngestionRunProcessorTest {
 	}
 
 	@Test
-	void aDeletionFeedFailsTheRun() {
+	void aSnapshotDeactivatesTheListingsItDidNotCarryUpToTheShare() {
+		feed.add(record(1, "P-1", "1.29"));
+		when(retailerProductDao.countActiveListings(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(10L));
+		when(retailerProductDao.countUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(1L));
+		when(retailerProductDao.deactivateUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(1));
+
+		sut.process(run(FeedType.SNAPSHOT));
+
+		var done = lastUpdate();
+		assertEquals(IngestionRunStatus.DONE, done.getStatus());
+		assertEquals(NOW, done.getFinishedAt());
+		assertEquals(
+				ImmutableIngestionRunCounts.builder().total(1).valid(1).rejected(0).added(1).changed(0).unchanged(0).missing(1).deactivated(1).build(),
+				done.getCounts()
+		);
+		var deactivation = ArgumentCaptor.forClass(ReactivePersistenceTxContext.class);
+		verify(retailerProductDao).deactivateUnseenListings(deactivation.capture(), eq(CATALOGUE), eq(RUN_ID));
+		assertSame(deactivation.getValue(), lastUpdateTransaction(), "the deactivation commits with the end of the run");
+	}
+
+	@Test
+	void aSnapshotThatWouldDeactivateMoreThanTheShareIsHeld() {
+		feed.add(record(1, "P-1", "1.29"));
+		when(retailerProductDao.countActiveListings(any(), eq(CATALOGUE))).thenReturn(Uni.createFrom().item(10L));
+		when(retailerProductDao.countUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(2L));
+
+		sut.process(run(FeedType.SNAPSHOT));
+
+		var held = lastUpdate();
+		assertEquals(IngestionRunStatus.HELD, held.getStatus());
+		assertNull(held.getFinishedAt());
+		assertEquals(
+				ImmutableIngestionRunCounts.builder().total(1).valid(1).rejected(0).added(1).changed(0).unchanged(0).missing(2).deactivated(0).build(),
+				held.getCounts()
+		);
+		assertEquals(Set.of(new ProductKeyImpl("P-1")), database.keySet(), "the records are applied before the hold");
+		verify(retailerProductDao, never()).deactivateUnseenListings(any(), any(), any());
+	}
+
+	@Test
+	void aDeltaDeactivatesNothing() {
+		feed.add(record(1, "P-1", "1.29"));
+
+		sut.process(run(FeedType.DELTA));
+
+		var done = lastUpdate();
+		assertEquals(IngestionRunStatus.DONE, done.getStatus());
+		assertEquals(0, done.getCounts().getMissing());
+		assertEquals(0, done.getCounts().getDeactivated());
+		verify(retailerProductDao, never()).countUnseenListings(any(), any(), any());
+		verify(retailerProductDao, never()).deactivateUnseenListings(any(), any(), any());
+	}
+
+	@Test
+	void aDeletionFeedDeactivatesTheListingsOfItsProductsInTheCatalogue() {
+		givenStored(record(90, "P-ACTIVE", "1.29"), 7);
+		givenStored(record(91, "P-TWICE", "1.29"), 7);
+		givenStored(record(92, "P-INACTIVE", "1.29"), 7);
+		database.computeIfPresent(new ProductKeyImpl("P-INACTIVE"), (key, product) -> ImmutableProductChange.copyOf(product)
+				.withListings(ImmutableListing.copyOf(product.getListings().getFirst()).withIsActive(false)));
+		var elsewhere = ProductRecordMerger.merge(null, record(93, "P-ELSEWHERE", "1.29"), RETAILER, OTHER_CATALOGUE).product();
+		database.put(elsewhere.getProductKey(), elsewhere);
+		deletions.add(new DeletionRecord(1, "P-ACTIVE"));
+		deletions.add(new RejectedRecord(2, null, "The record is not a JSON object"));
+		deletions.add(new DeletionRecord(3, "P-INACTIVE"));
+		deletions.add(new DeletionRecord(4, "P-UNKNOWN"));
+		deletions.add(new DeletionRecord(5, null));
+		deletions.add(new DeletionRecord(6, "P-ELSEWHERE"));
+		deletions.add(new DeletionRecord(7, "P-TWICE"));
+		deletions.add(new DeletionRecord(8, "P-TWICE"));
+		deletions.add(new DeletionRecord(9, "P-ACTIVE"));
+
 		sut.process(run(FeedType.DELETION));
 
-		assertFailed("Deletion Feeds are not processed yet");
-		verify(feedStore, never()).open(any());
+		var done = lastUpdate();
+		assertEquals(IngestionRunStatus.DONE, done.getStatus());
+		assertEquals(
+				ImmutableIngestionRunCounts.builder().total(9).valid(5).rejected(4).added(0).changed(0).unchanged(3).missing(0).deactivated(2).build(),
+				done.getCounts()
+		);
+		assertEquals(
+				List.of(Set.of(new ProductKeyImpl("P-ACTIVE")), Set.of(new ProductKeyImpl("P-INACTIVE")), Set.of(new ProductKeyImpl("P-TWICE")), Set.of(new ProductKeyImpl("P-ACTIVE"))),
+				deactivatedKeys()
+		);
+		var rejects = ArgumentCaptor.<List<IngestionReject>>captor();
+		verify(ingestionRunDao, atLeastOnce()).createRejects(any(), eq(RUN_ID), rejects.capture());
+		assertEquals(
+				List.of(
+						reject(2, null, "The record is not a JSON object"),
+						reject(4, "P-UNKNOWN", "The Catalogue has no Listing of the product"),
+						reject(5, null, "The product key is missing"),
+						reject(6, "P-ELSEWHERE", "The Catalogue has no Listing of the product")
+				),
+				rejects.getAllValues().stream().flatMap(List::stream).toList()
+		);
+		verify(retailerProductDao, never()).save(any(), any(), any(), any(), anyCollection());
+		verify(retailerProductDao, never()).deactivateUnseenListings(any(), any(), any());
 	}
 
 	private void assertFailed(String error) {
@@ -287,6 +409,21 @@ public class IngestionRunProcessorTest {
 		assertEquals(error, run.getError());
 		assertEquals(NOW, run.getFinishedAt());
 		assertNull(run.getCounts());
+	}
+
+	/**
+	 * The keys handed to the deactivation, a set per batch that has any.
+	 */
+	private List<Set<ProductKey>> deactivatedKeys() {
+		var keys = ArgumentCaptor.<Collection<ProductKey>>captor();
+		verify(retailerProductDao, atLeastOnce()).deactivateListings(any(), eq(RETAILER), eq(CATALOGUE), keys.capture());
+		return keys.getAllValues().stream().filter(batch -> !batch.isEmpty()).<Set<ProductKey>>map(Set::copyOf).toList();
+	}
+
+	private ReactivePersistenceTxContext lastUpdateTransaction() {
+		var transactions = ArgumentCaptor.forClass(ReactivePersistenceTxContext.class);
+		verify(ingestionRunDao, atLeastOnce()).update(transactions.capture(), any());
+		return transactions.getAllValues().getLast();
 	}
 
 	private IngestionRun lastUpdate() {
@@ -302,7 +439,7 @@ public class IngestionRunProcessorTest {
 
 	private static IngestionRun run(FeedType feedType) {
 		return ImmutableIngestionRun.builder()
-				.id(new IngestionRunIdImpl("5d1c9a3e-0f4b-4a52-9e6d-2b7c8a1f3e01"))
+				.id(RUN_ID)
 				.catalogueId(CATALOGUE)
 				.feedType(feedType)
 				.status(IngestionRunStatus.RECEIVED)
@@ -355,6 +492,12 @@ public class IngestionRunProcessorTest {
 				if (item == null) throw new UncheckedIOException("The Feed breaks off, position: 2", new IOException("Unexpected end of input"));
 				return item;
 			});
+		}
+
+		@Override
+		public Stream<DeletionItem> readDeletions(InputStream in) {
+			assertEquals(storedFeed, in);
+			return deletions.stream();
 		}
 	}
 }

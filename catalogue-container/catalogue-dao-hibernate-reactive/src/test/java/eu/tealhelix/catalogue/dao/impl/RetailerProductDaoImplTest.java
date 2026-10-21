@@ -11,11 +11,13 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import eu.tealhelix.catalogue.dao.jpa.IngestionRunEntity;
 import eu.tealhelix.catalogue.v1.model.ImmutableListing;
@@ -152,6 +154,68 @@ public class RetailerProductDaoImplTest {
 	}
 
 	@Test
+	void countsTheActiveListingsOfACatalogueAndThoseARunDidNotSee(Mutiny.SessionFactory sessionFactory) {
+		var catalogue = createCatalogueWithRuns(sessionFactory);
+		var seen = newKey();
+		save(sessionFactory, catalogue.id(), catalogue.run(), SEEN_AT,
+				product(RETAILER, seen, 7, listing(catalogue.id(), "1.29", true)),
+				product(RETAILER, newKey(), 7, listing(catalogue.id(), "1.29", true)),
+				product(RETAILER, newKey(), 7, listing(catalogue.id(), "1.29", false)));
+		save(sessionFactory, catalogue.id(), catalogue.laterRun(), LATER, product(RETAILER, seen, 7, listing(catalogue.id(), "1.29", true)));
+
+		assertEquals(2, countActiveListings(sessionFactory, catalogue.id()));
+		assertEquals(1, countUnseenListings(sessionFactory, catalogue.id(), catalogue.laterRun()));
+	}
+
+	@Test
+	void deactivatesTheActiveListingsARunDidNotSeeAndStampsTheirProducts(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		var catalogue = createCatalogueWithRuns(sessionFactory);
+		var seen = product(RETAILER, newKey(), 7, listing(catalogue.id(), "1.29", true));
+		var unseen = product(RETAILER, newKey(), 7, listing(catalogue.id(), "0.99", true), listing(OTHER_CATALOGUE, "1.09", true));
+		var inactive = product(RETAILER, newKey(), 7, listing(catalogue.id(), "4.50", false));
+		save(sessionFactory, OTHER_CATALOGUE, OTHER_CATALOGUE_RUN, SEEN_AT, product(RETAILER, unseen.getProductKey(), 7, listing(OTHER_CATALOGUE, "1.09", true)));
+		save(sessionFactory, catalogue.id(), catalogue.run(), SEEN_AT, seen, unseen, inactive);
+		save(sessionFactory, catalogue.id(), catalogue.laterRun(), LATER, seen);
+		var latestStamp = takeChangeSequences(sessionFactory, 1).getFirst();
+
+		assertEquals(1, deactivateUnseenListings(sessionFactory, catalogue.id(), catalogue.laterRun()));
+
+		var products = findProducts(sessionFactory, RETAILER, seen.getProductKey(), unseen.getProductKey(), inactive.getProductKey());
+		assertEquals(seen, products.get(seen.getProductKey()));
+		assertEquals(inactive, products.get(inactive.getProductKey()));
+		var deactivated = products.get(unseen.getProductKey());
+		assertEquals(sortedByCatalogue(listing(catalogue.id(), "0.99", false), listing(OTHER_CATALOGUE, "1.09", true)), deactivated.getListings());
+		assertTrue(deactivated.getChangeSequence() > latestStamp, "Not stamped anew: " + deactivated.getChangeSequence());
+		assertEquals(seenByTheirRuns(catalogue), findSeen(unseen.getProductKey()));
+	}
+
+	@Test
+	void deactivatesTheActiveListingsOfSomeProductsAndStampsThem(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		var catalogue = createCatalogueWithRuns(sessionFactory);
+		var deleted = product(RETAILER, newKey(), 7, listing(catalogue.id(), "1.29", true), listing(OTHER_CATALOGUE, "1.39", true));
+		var kept = product(RETAILER, newKey(), 7, listing(catalogue.id(), "0.99", true));
+		var inactive = product(RETAILER, newKey(), 7, listing(catalogue.id(), "4.50", false));
+		save(sessionFactory, OTHER_CATALOGUE, OTHER_CATALOGUE_RUN, SEEN_AT, product(RETAILER, deleted.getProductKey(), 7, listing(OTHER_CATALOGUE, "1.39", true)));
+		save(sessionFactory, catalogue.id(), catalogue.run(), SEEN_AT, deleted, kept, inactive);
+		var latestStamp = takeChangeSequences(sessionFactory, 1).getFirst();
+
+		assertEquals(1, deactivateListings(sessionFactory, catalogue.id(), deleted.getProductKey(), inactive.getProductKey(), newKey()));
+
+		var products = findProducts(sessionFactory, RETAILER, deleted.getProductKey(), kept.getProductKey(), inactive.getProductKey());
+		assertEquals(kept, products.get(kept.getProductKey()));
+		assertEquals(inactive, products.get(inactive.getProductKey()));
+		var deactivated = products.get(deleted.getProductKey());
+		assertEquals(sortedByCatalogue(listing(catalogue.id(), "1.29", false), listing(OTHER_CATALOGUE, "1.39", true)), deactivated.getListings());
+		assertTrue(deactivated.getChangeSequence() > latestStamp, "Not stamped anew: " + deactivated.getChangeSequence());
+		assertEquals(seenByTheirRuns(catalogue), findSeen(deleted.getProductKey()));
+	}
+
+	@Test
+	void deactivatesNothingForNoKeys(Mutiny.SessionFactory sessionFactory) {
+		assertEquals(0, deactivateListings(sessionFactory, CATALOGUE));
+	}
+
+	@Test
 	void takesAscendingValuesOfTheChangeSequence(Mutiny.SessionFactory sessionFactory) {
 		var first = takeChangeSequences(sessionFactory, 3);
 		var second = takeChangeSequences(sessionFactory, 2);
@@ -168,6 +232,44 @@ public class RetailerProductDaoImplTest {
 	@Test
 	void takesNoValuesOfTheChangeSequence(Mutiny.SessionFactory sessionFactory) {
 		assertEquals(List.of(), takeChangeSequences(sessionFactory, 0));
+	}
+
+	/**
+	 * A Catalogue of its own for a test that counts or deactivates all the Listings of a Catalogue.
+	 */
+	private record TestCatalogue(CatalogueId id, IngestionRunId run, IngestionRunId laterRun) {
+	}
+
+	private static TestCatalogue createCatalogueWithRuns(Mutiny.SessionFactory sessionFactory) {
+		var catalogue = new TestCatalogue(
+				new CatalogueIdImpl("test-" + UUID.randomUUID().toString().substring(0, 8)),
+				new IngestionRunIdImpl(UUID.randomUUID().toString()),
+				new IngestionRunIdImpl(UUID.randomUUID().toString())
+		);
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> tx.persist(catalogue(catalogue.id(), RETAILER, "LT", "lt"))
+						.chain(() -> tx.persistAll(ingestionRun(catalogue.run(), catalogue.id()), ingestionRun(catalogue.laterRun(), catalogue.id()))))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		return catalogue;
+	}
+
+	/**
+	 * Listings in the order a product reads back with.
+	 */
+	private static List<Listing> sortedByCatalogue(Listing... listings) {
+		return Stream.of(listings).sorted(Comparator.comparing(l -> l.getCatalogueId().asString())).toList();
+	}
+
+	/**
+	 * What {@link #findSeen(ProductKey)} reads for a product that the first run of a test Catalogue and the run of
+	 * {@link #OTHER_CATALOGUE} carried at {@link #SEEN_AT}, and no run since.
+	 */
+	private static List<List<String>> seenByTheirRuns(TestCatalogue catalogue) {
+		return Stream.of(
+						List.of(catalogue.id().asString(), SEEN_AT.toString(), catalogue.run().asString()),
+						List.of(OTHER_CATALOGUE.asString(), SEEN_AT.toString(), OTHER_CATALOGUE_RUN.asString()))
+				.sorted(Comparator.comparing(List::getFirst))
+				.toList();
 	}
 
 	private static IngestionRunEntity ingestionRun(IngestionRunId runId, CatalogueId catalogueId) {
@@ -217,6 +319,34 @@ public class RetailerProductDaoImplTest {
 		var sut = new RetailerProductDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
 				.withTransaction(tx -> sut.takeChangeSequences(tx, count))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static long countActiveListings(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId) {
+		var sut = new RetailerProductDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.countActiveListings(em, catalogueId))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static long countUnseenListings(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId, IngestionRunId runId) {
+		var sut = new RetailerProductDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.countUnseenListings(em, catalogueId, runId))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static int deactivateUnseenListings(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId, IngestionRunId runId) {
+		var sut = new RetailerProductDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> sut.deactivateUnseenListings(tx, catalogueId, runId))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static int deactivateListings(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId, ProductKey... keys) {
+		var sut = new RetailerProductDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> sut.deactivateListings(tx, RETAILER, catalogueId, Set.of(keys)))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 

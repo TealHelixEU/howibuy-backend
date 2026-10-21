@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.tealhelix.catalogue.feeds.DeletionRecord;
 import eu.tealhelix.catalogue.feeds.FeedRecord;
 import eu.tealhelix.catalogue.v1.model.Catalogue;
 import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
@@ -125,6 +126,14 @@ class FeedRecordValidatorTest {
 		var tags = new ArrayList<String>();
 		tags.add(null);
 		assertFault("A tag is blank", withTags(tags));
+	}
+
+	@Test
+	void holdsADeletionToTheRulesOfTheProductKey() {
+		assertEquals(Optional.empty(), FeedRecordValidator.findFault(new DeletionRecord(3, "k".repeat(255))));
+		assertEquals(Optional.of("The product key is missing"), FeedRecordValidator.findFault(new DeletionRecord(3, null)));
+		assertEquals(Optional.of("The product key is missing"), FeedRecordValidator.findFault(new DeletionRecord(3, " ")));
+		assertEquals(Optional.of("The product key is longer than 255 characters"), FeedRecordValidator.findFault(new DeletionRecord(3, "k".repeat(256))));
 	}
 
 	private static void assertAccepted(FeedRecord record) {

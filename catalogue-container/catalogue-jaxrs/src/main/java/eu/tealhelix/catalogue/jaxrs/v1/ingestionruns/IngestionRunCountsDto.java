@@ -16,6 +16,8 @@ public record IngestionRunCountsDto(
 		int changed,
 		@Schema(description = "The records that changed nothing.")
 		int unchanged,
+		@Schema(description = "The active Listings of the Catalogue that a Snapshot did not carry, which it takes off sale.")
+		int missing,
 		@Schema(description = "The Listings taken off sale.")
 		int deactivated
 ) {

@@ -119,7 +119,7 @@ public class IngestionRunDaoImplTest {
 				.fileSize(1234L)
 				.fileSha256("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 				.counts(ImmutableIngestionRunCounts.builder()
-						.total(10).valid(8).rejected(2).added(3).changed(4).unchanged(1).deactivated(6)
+						.total(10).valid(8).rejected(2).added(3).changed(4).unchanged(1).missing(7).deactivated(6)
 						.build())
 				.error("The Feed ended before its last record")
 				.build();
@@ -150,13 +150,42 @@ public class IngestionRunDaoImplTest {
 				.startedAt(LocalDateTime.of(2026, 10, 20, 12, 0, 1))
 				.finishedAt(LocalDateTime.of(2026, 10, 20, 12, 0, 2))
 				.counts(ImmutableIngestionRunCounts.builder()
-						.total(3).valid(2).rejected(1).added(1).changed(1).unchanged(0).deactivated(0)
+						.total(3).valid(2).rejected(1).added(1).changed(1).unchanged(0).missing(0).deactivated(0)
 						.build())
 				.build();
 
 		inTransaction(sessionFactory, (sut, tx) -> sut.update(tx, done));
 
 		assertEquals(done, find(sessionFactory, received.getId()));
+	}
+
+	@Test
+	void updatesARunThatIsHeld(Mutiny.SessionFactory sessionFactory) {
+		var held = heldRun();
+		create(sessionFactory, held);
+		var done = ImmutableIngestionRun.builder()
+				.from(held)
+				.status(IngestionRunStatus.DONE)
+				.finishedAt(LocalDateTime.of(2026, 10, 20, 15, 0, 0))
+				.counts(ImmutableIngestionRunCounts.copyOf(held.getCounts()).withDeactivated(5))
+				.build();
+
+		assertTrue(updateHeld(sessionFactory, done));
+
+		assertEquals(done, find(sessionFactory, held.getId()));
+	}
+
+	@Test
+	void leavesARunThatIsNoLongerHeld(Mutiny.SessionFactory sessionFactory) {
+		var held = heldRun();
+		create(sessionFactory, held);
+		var discarded = ImmutableIngestionRun.builder().from(held).status(IngestionRunStatus.DISCARDED).finishedAt(LocalDateTime.of(2026, 10, 20, 15, 0, 0)).build();
+		assertTrue(updateHeld(sessionFactory, discarded));
+		var done = ImmutableIngestionRun.builder().from(held).status(IngestionRunStatus.DONE).finishedAt(LocalDateTime.of(2026, 10, 20, 15, 1, 0)).build();
+
+		assertFalse(updateHeld(sessionFactory, done));
+
+		assertEquals(discarded, find(sessionFactory, held.getId()));
 	}
 
 	@Test
@@ -249,6 +278,28 @@ public class IngestionRunDaoImplTest {
 		assertEquals(List.of(), findRejects(sessionFactory, RUN_WITH_REJECTS, 3, 10));
 	}
 
+	/**
+	 * A Snapshot held because it did not carry 5 of the active Listings of its Catalogue.
+	 */
+	private static IngestionRun heldRun() {
+		return ImmutableIngestionRun.builder()
+				.id(newRunId())
+				.catalogueId(CATALOGUE)
+				.feedType(FeedType.SNAPSHOT)
+				.status(IngestionRunStatus.HELD)
+				.adapter("test-adapter")
+				.adapterVersion("1")
+				.receivedAt(LocalDateTime.of(2026, 10, 20, 14, 0, 0))
+				.startedAt(LocalDateTime.of(2026, 10, 20, 14, 0, 1))
+				.filePath("test-gr/held.gz")
+				.fileSize(1234L)
+				.fileSha256("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+				.counts(ImmutableIngestionRunCounts.builder()
+						.total(4).valid(4).rejected(0).added(0).changed(1).unchanged(3).missing(5).deactivated(0)
+						.build())
+				.build();
+	}
+
 	private static CatalogueId createCatalogue(Mutiny.SessionFactory sessionFactory) {
 		var catalogueId = new CatalogueIdImpl("test-" + UUID.randomUUID().toString().substring(0, 8));
 		new ReactivePersistenceContextFactoryImpl(sessionFactory)
@@ -295,6 +346,13 @@ public class IngestionRunDaoImplTest {
 		var sut = new IngestionRunDaoImpl();
 		new ReactivePersistenceContextFactoryImpl(sessionFactory)
 				.withTransaction(tx -> work.apply(sut, tx))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static boolean updateHeld(Mutiny.SessionFactory sessionFactory, IngestionRun run) {
+		var sut = new IngestionRunDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> sut.updateHeld(tx, run))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 

@@ -57,6 +57,6 @@ class FeedWorkflowTest {
 
 		assertThat(run.getString("status")).isEqualTo("DONE");
 		assertThat(run.getMap("counts", String.class, Integer.class))
-				.isEqualTo(Map.of("total", 2, "valid", 2, "rejected", 0, "added", 2, "changed", 0, "unchanged", 0, "deactivated", 0));
+				.isEqualTo(Map.of("total", 2, "valid", 2, "rejected", 0, "added", 2, "changed", 0, "unchanged", 0, "missing", 0, "deactivated", 0));
 	}
 }

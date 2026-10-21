@@ -165,6 +165,12 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 			ReactiveUpdate m = mock(ReactiveUpdate.class, RETURNS_DEEP_STUBS);
 			return m;
 		}
+
+		@Override
+		public ReactiveUpdate createNativeUpdate(String sql) {
+			ReactiveUpdate m = mock(ReactiveUpdate.class, RETURNS_DEEP_STUBS);
+			return m;
+		}
 	}
 
 	private final List<MockReactivePersistenceTxContext> openedTransactions = new ArrayList<>();

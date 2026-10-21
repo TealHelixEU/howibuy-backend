@@ -16,6 +16,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import eu.tealhelix.catalogue.dao.RetailerProductDao;
 import eu.tealhelix.catalogue.dao.jpa.ListingEntity;
+import eu.tealhelix.catalogue.dao.jpa.ListingEntity_;
 import eu.tealhelix.catalogue.dao.jpa.RetailerProductEntity;
 import eu.tealhelix.catalogue.dao.jpa.RetailerProductEntity_;
 import eu.tealhelix.catalogue.dao.jpa.RetailerProductNameEntity;
@@ -75,6 +76,73 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 			}
 			return saved;
 		});
+	}
+
+	@Override
+	public Uni<Long> countActiveListings(ReactivePersistenceContext em, CatalogueId catalogueId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(Long.class);
+		var listing = q.from(ListingEntity.class);
+		q.select(cb.count(listing.get(ListingEntity_.catalogueId)));
+		q.where(cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.asString()), cb.isTrue(listing.get(ListingEntity_.active)));
+		return em.createQuery(q).getSingleResult();
+	}
+
+	@Override
+	public Uni<Long> countUnseenListings(ReactivePersistenceContext em, CatalogueId catalogueId, IngestionRunId runId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(Long.class);
+		var listing = q.from(ListingEntity.class);
+		q.select(cb.count(listing.get(ListingEntity_.catalogueId)));
+		q.where(
+				cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.asString()),
+				cb.isTrue(listing.get(ListingEntity_.active)),
+				cb.notEqual(listing.get(ListingEntity_.lastSeenRunId), runId.asUuid())
+		);
+		return em.createQuery(q).getSingleResult();
+	}
+
+	/**
+	 * In SQL, because each product takes a value of the change sequence of its own, which a criteria update cannot
+	 * express.
+	 */
+	@Override
+	public Uni<Integer> deactivateUnseenListings(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId) {
+		return tx.createNativeUpdate("""
+						WITH deactivated AS (
+							UPDATE IN_LISTING SET active = FALSE
+							WHERE catalogue_id = :catalogueId AND active AND last_seen_run_id <> :runId
+							RETURNING retailer_product_id
+						)
+						UPDATE IN_RETAILER_PRODUCT p SET change_sequence = nextval('IN_CHANGE_SEQUENCE')
+						FROM deactivated d WHERE p.id = d.retailer_product_id
+						""")
+				.setParameter("catalogueId", catalogueId.asString())
+				.setParameter("runId", runId.asUuid())
+				.execute();
+	}
+
+	/**
+	 * In SQL, for the reason of {@link #deactivateUnseenListings(ReactivePersistenceTxContext, CatalogueId, IngestionRunId)}.
+	 */
+	@Override
+	public Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, CatalogueId catalogueId, Collection<ProductKey> productKeys) {
+		if (productKeys.isEmpty()) return Uni.createFrom().item(0);
+		return tx.createNativeUpdate("""
+						WITH deactivated AS (
+							UPDATE IN_LISTING l SET active = FALSE
+							FROM IN_RETAILER_PRODUCT p
+							WHERE p.id = l.retailer_product_id AND p.retailer_id = :retailerId AND p.product_key IN (:productKeys)
+								AND l.catalogue_id = :catalogueId AND l.active
+							RETURNING l.retailer_product_id
+						)
+						UPDATE IN_RETAILER_PRODUCT p SET change_sequence = nextval('IN_CHANGE_SEQUENCE')
+						FROM deactivated d WHERE p.id = d.retailer_product_id
+						""")
+				.setParameter("retailerId", retailerId.asUuid())
+				.setParameter("productKeys", productKeys.stream().map(ProductKey::asString).toList())
+				.setParameter("catalogueId", catalogueId.asString())
+				.execute();
 	}
 
 	/**

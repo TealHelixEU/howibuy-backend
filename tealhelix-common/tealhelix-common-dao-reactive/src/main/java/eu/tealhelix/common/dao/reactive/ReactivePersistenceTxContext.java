@@ -36,4 +36,10 @@ public interface ReactivePersistenceTxContext extends ReactivePersistenceContext
 	 * {@link ReactiveUpdate}.
 	 */
 	<R> ReactiveUpdate createDelete(CriteriaDelete<R> criteriaDelete);
+
+	/**
+	 * An update in the SQL of the database, for the changes that a criteria update cannot express. The persistence
+	 * context does not see what it changes: the entities it holds keep the state they had.
+	 */
+	ReactiveUpdate createNativeUpdate(String sql);
 }

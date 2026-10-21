@@ -83,6 +83,7 @@
 			<column name="count_added" type="INTEGER" remarks="The records new to the Catalogue" />
 			<column name="count_changed" type="INTEGER" remarks="The records that changed a Retailer Product or its Listing" />
 			<column name="count_unchanged" type="INTEGER" remarks="The records that changed nothing" />
+			<column name="count_missing" type="INTEGER" remarks="The active Listings of the Catalogue that a Snapshot did not carry, which it takes off sale" />
 			<column name="count_deactivated" type="INTEGER" remarks="The Listings taken off sale" />
 			<column name="error" type="TEXT" remarks="Why the run failed; null otherwise" />
 		</createTable>
@@ -177,6 +178,9 @@
 		</createTable>
 		<addForeignKeyConstraint baseTableName="IN_LISTING" baseColumnNames="retailer_product_id" constraintName="FK_LISTING__RETAILER_PRODUCT_ID__RETAILER_PRODUCT__ID" referencedTableName="IN_RETAILER_PRODUCT" referencedColumnNames="id" />
 		<addForeignKeyConstraint baseTableName="IN_LISTING" baseColumnNames="catalogue_id" constraintName="FK_LISTING__CATALOGUE_ID__CATALOGUE__ID" referencedTableName="IN_CATALOGUE" referencedColumnNames="id" />
+		<createIndex tableName="IN_LISTING" indexName="IX_IN_LISTING__CATALOGUE_ID">
+			<column name="catalogue_id" />
+		</createIndex>
 		<addForeignKeyConstraint baseTableName="IN_LISTING" baseColumnNames="last_seen_run_id" constraintName="FK_LISTING__LAST_SEEN_RUN_ID__INGESTION_RUN__ID" referencedTableName="IN_INGESTION_RUN" referencedColumnNames="id" />
 	</changeSet>
 

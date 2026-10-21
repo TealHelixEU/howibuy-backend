@@ -25,6 +25,9 @@ public interface IngestionRunCounts {
 	/** The records that changed nothing. */
 	int getUnchanged();
 
+	/** The active Listings of the Catalogue that a Snapshot did not carry, which it takes off sale. */
+	int getMissing();
+
 	/** The Listings taken off sale. */
 	int getDeactivated();
 }

@@ -58,7 +58,7 @@ public interface IngestionRun {
 	String getFileSha256();
 
 	/**
-	 * What the processing found and did; {@code null} until it finishes.
+	 * What the processing found and did; {@code null} until the whole Feed is applied.
 	 */
 	@Nullable
 	IngestionRunCounts getCounts();

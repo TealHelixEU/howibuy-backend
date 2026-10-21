@@ -39,6 +39,16 @@ public interface TealHelixAuthorization {
 	void requireRetailer(User user);
 
 	/**
+	 * Ensure that the given user is an operator.
+	 *
+	 * @param user The user to check
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException If the user is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException    If the user does not have the
+	 *                                                                            {@code OPERATOR} role
+	 */
+	void requireOperator(User user);
+
+	/**
 	 * Ensure that the given user has impersonation rights, returning a failure with a {@code NotAuthorizedException}
 	 * if they do not. Retailers have them.
 	 *

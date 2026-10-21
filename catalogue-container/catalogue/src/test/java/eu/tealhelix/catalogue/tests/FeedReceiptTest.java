@@ -197,7 +197,9 @@ class FeedReceiptTest {
 		assertThat(openApiDocument.getMap("paths")).containsKeys(
 				"/api/catalogue/v1/catalogues/{catalogueId}/feeds",
 				"/api/catalogue/v1/ingestion-runs/{id}",
-				"/api/catalogue/v1/ingestion-runs/{id}/rejects"
+				"/api/catalogue/v1/ingestion-runs/{id}/rejects",
+				"/api/catalogue/v1/ingestion-runs/{id}/confirmation",
+				"/api/catalogue/v1/ingestion-runs/{id}/discard"
 		);
 	}
 

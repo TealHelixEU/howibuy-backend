@@ -31,6 +31,16 @@ public interface IngestionRunDao {
 	Uni<Void> update(ReactivePersistenceTxContext tx, IngestionRun run);
 
 	/**
+	 * Store the status, the end, and the counts of an Ingestion Run, provided that it is still {@link IngestionRunStatus#HELD
+	 * HELD}, so that of two callers deciding on a held run, only the first one does.
+	 *
+	 * @param tx  The persistence context
+	 * @param run The run, which exists
+	 * @return Whether the run was stored; {@code false} if it is no longer held
+	 */
+	Uni<Boolean> updateHeld(ReactivePersistenceTxContext tx, IngestionRun run);
+
+	/**
 	 * Read the run of a Catalogue to process next: its oldest {@link IngestionRunStatus#RECEIVED RECEIVED} run, unless one
 	 * of its runs is {@link IngestionRunStatus#PROCESSING PROCESSING} or {@link IngestionRunStatus#HELD HELD}, which later
 	 * runs wait for.

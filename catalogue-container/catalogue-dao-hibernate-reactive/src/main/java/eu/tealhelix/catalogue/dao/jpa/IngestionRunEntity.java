@@ -73,6 +73,9 @@ public class IngestionRunEntity {
 	@Column(name = "count_unchanged")
 	private Integer countUnchanged;
 
+	@Column(name = "count_missing")
+	private Integer countMissing;
+
 	@Column(name = "count_deactivated")
 	private Integer countDeactivated;
 
@@ -221,6 +224,14 @@ public class IngestionRunEntity {
 
 	public void setCountUnchanged(Integer countUnchanged) {
 		this.countUnchanged = countUnchanged;
+	}
+
+	public Integer getCountMissing() {
+		return countMissing;
+	}
+
+	public void setCountMissing(Integer countMissing) {
+		this.countMissing = countMissing;
 	}
 
 	public Integer getCountDeactivated() {

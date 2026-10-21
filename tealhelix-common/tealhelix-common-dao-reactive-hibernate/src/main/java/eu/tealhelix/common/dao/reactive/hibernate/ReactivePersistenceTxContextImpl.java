@@ -62,4 +62,9 @@ class ReactivePersistenceTxContextImpl extends ReactivePersistenceContextImpl im
 	public <R> ReactiveUpdate createDelete(CriteriaDelete<R> criteriaDelete) {
 		return new ReactiveUpdateImpl(session.createQuery(criteriaDelete));
 	}
+
+	@Override
+	public ReactiveUpdate createNativeUpdate(String sql) {
+		return new ReactiveUpdateImpl(session.createNativeMutationQuery(sql));
+	}
 }

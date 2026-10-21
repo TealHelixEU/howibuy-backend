@@ -50,4 +50,46 @@ public interface RetailerProductDao {
 	 * @return Completes when the products are stored
 	 */
 	Uni<Void> save(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId, LocalDateTime seenAt, Collection<ProductChange> products);
+
+	/**
+	 * Count the active Listings of a Catalogue.
+	 *
+	 * @param em          The persistence context
+	 * @param catalogueId The Catalogue
+	 * @return How many Listings of the Catalogue are active
+	 */
+	Uni<Long> countActiveListings(ReactivePersistenceContext em, CatalogueId catalogueId);
+
+	/**
+	 * Count the active Listings of a Catalogue that an Ingestion Run of it did not see.
+	 *
+	 * @param em          The persistence context
+	 * @param catalogueId The Catalogue
+	 * @param runId       The run
+	 * @return How many active Listings of the Catalogue the run did not see
+	 */
+	Uni<Long> countUnseenListings(ReactivePersistenceContext em, CatalogueId catalogueId, IngestionRunId runId);
+
+	/**
+	 * Make the active Listings of a Catalogue that an Ingestion Run of it did not see inactive, and stamp their products
+	 * with new values of the change sequence. When the Listings were last seen stays as it was.
+	 *
+	 * @param tx          The persistence context, which holds none of the products
+	 * @param catalogueId The Catalogue
+	 * @param runId       The run
+	 * @return How many Listings were made inactive
+	 */
+	Uni<Integer> deactivateUnseenListings(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId);
+
+	/**
+	 * Make the active Listings of some products in a Catalogue inactive, and stamp the products with new values of the
+	 * change sequence. When the Listings were last seen stays as it was.
+	 *
+	 * @param tx          The persistence context, whose copies of the products keep their earlier state
+	 * @param retailerId  The Retailer of the Catalogue
+	 * @param catalogueId The Catalogue
+	 * @param productKeys The keys of the products; those without an active Listing in the Catalogue are left alone
+	 * @return How many Listings were made inactive
+	 */
+	Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, CatalogueId catalogueId, Collection<ProductKey> productKeys);
 }

@@ -8,13 +8,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import eu.tealhelix.catalogue.feeds.DeletionRecord;
 import eu.tealhelix.catalogue.feeds.FeedRecord;
 import eu.tealhelix.catalogue.v1.model.Catalogue;
 
 /**
  * The rules every record of every Feed is held to, whichever adapter read it. A record that passes them can be stored,
  * and every active Listing has a name in the primary language of its Catalogue to fall back to. A blank value counts as
- * missing. Missing characteristics and tags count as none.
+ * missing. Missing characteristics and tags count as none. A record of a Deletion Feed carries the product key alone,
+ * which is held to the same rules.
  */
 public final class FeedRecordValidator {
 	static final int MAX_PRODUCT_KEY_LENGTH = 255;
@@ -38,6 +40,14 @@ public final class FeedRecordValidator {
 				.or(() -> findCurrencyFault(record.currency()))
 				.or(() -> findCharacteristicsFault(record.characteristics()))
 				.or(() -> findTagsFault(record.tags()));
+	}
+
+	/**
+	 * @param record The record of a Deletion Feed
+	 * @return The first rule the record breaks, as the reason to reject it; empty if it breaks none
+	 */
+	public static Optional<String> findFault(DeletionRecord record) {
+		return findProductKeyFault(record.productKey());
 	}
 
 	private static Optional<String> findProductKeyFault(String productKey) {

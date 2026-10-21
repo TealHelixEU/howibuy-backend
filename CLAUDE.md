@@ -196,8 +196,8 @@ The SPA fires several requests at once right after login, so a new Keycloak user
 profile. The losers get `EntityAlreadyExistsException` from the DAO and read the winner's row back. Expect Hibernate to
 log each lost insert as a WARN on `org.hibernate.orm.jdbc.error` (`SQLState: 23505`, `duplicate key ...
 uq_th_user_profile__idm_id`). This is expected noise, not a bug; don't silence that logger, it also reports real
-constraint errors. Avoiding it would need `INSERT ... ON CONFLICT DO NOTHING`, which the persistence abstraction can't
-issue.
+constraint errors. Avoiding it would need `INSERT ... ON CONFLICT DO NOTHING`, which the persistence abstraction can
+issue only as native SQL (`ReactivePersistenceTxContext.createNativeUpdate`), outside the entity mapping.
 
 ## Data Objects Between Layers
 Any data object shared internally between the DAO and service layers belongs in the `howibuy-services-model`

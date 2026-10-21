@@ -19,9 +19,12 @@ import jakarta.inject.Inject;
 
 import eu.tealhelix.catalogue.dao.CatalogueDao;
 import eu.tealhelix.catalogue.dao.IngestionRunDao;
+import eu.tealhelix.catalogue.dao.RetailerProductDao;
+import eu.tealhelix.catalogue.services.v1.types.IngestionRunNotHeldException;
 import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionReject;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
+import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRunCounts;
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
@@ -31,6 +34,7 @@ import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
+import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
@@ -44,6 +48,7 @@ import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import io.smallrye.mutiny.Uni;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
+import org.jboss.weld.junit5.auto.ExcludeBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -78,6 +83,15 @@ public class IngestionRunServiceImplTest {
 			.fileSize(17)
 			.fileSha256("372c3f4cc881b55653a9c026ce87f1455636e0a1fbea9f1af2b3435442a85bd1")
 			.build();
+	private static final IngestionRun HELD_RUN = ImmutableIngestionRun.builder()
+			.from(RUN)
+			.status(IngestionRunStatus.HELD)
+			.adapter("test-adapter")
+			.adapterVersion("1")
+			.startedAt(LocalDateTime.of(2026, 10, 20, 12, 30, 16))
+			.counts(ImmutableIngestionRunCounts.builder().total(4).valid(4).rejected(0).added(0).changed(1).unchanged(3).missing(3).deactivated(0).build())
+			.build();
+	private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 20, 15, 0, 0);
 	private static final List<IngestionReject> REJECTS = List.of(ImmutableIngestionReject.builder().position(2).reason("No price").build());
 
 	@Produces
@@ -87,6 +101,19 @@ public class IngestionRunServiceImplTest {
 	@Produces
 	@Mock
 	IngestionRunDao mockIngestionRunDao;
+
+	@Produces
+	@Mock
+	RetailerProductDao mockRetailerProductDao;
+
+	@Produces
+	@Mock
+	DateTimeService mockDateTimeService;
+
+	@Produces
+	@ExcludeBean
+	@Mock
+	IngestionRunDispatcher mockDispatcher;
 
 	@Produces
 	@RegisterExtension
@@ -172,6 +199,87 @@ public class IngestionRunServiceImplTest {
 		sut.find(RETAILER_USER, RUN_ID).await().atMost(WAIT);
 
 		assertEquals(List.of(), mockReactivePersistenceContextFactory.getOpenedTransactions());
+	}
+
+	@Test
+	void anOperatorConfirmsAHeldRunWhichTakesTheMissingListingsOffSale() {
+		givenTheHeldRun();
+		when(mockRetailerProductDao.deactivateUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(3));
+		var done = ImmutableIngestionRun.builder()
+				.from(HELD_RUN)
+				.status(IngestionRunStatus.DONE)
+				.finishedAt(NOW)
+				.counts(ImmutableIngestionRunCounts.copyOf(HELD_RUN.getCounts()).withDeactivated(3))
+				.build();
+		when(mockIngestionRunDao.updateHeld(any(), eq(done))).thenReturn(Uni.createFrom().item(true));
+
+		assertEquals(done, sut.confirm(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+
+		var transactions = mockReactivePersistenceContextFactory.getOpenedTransactions();
+		assertEquals(1, transactions.size());
+		verify(mockRetailerProductDao).deactivateUnseenListings(transactions.getFirst(), CATALOGUE, RUN_ID);
+		verify(mockIngestionRunDao).updateHeld(transactions.getFirst(), done);
+		verify(mockDispatcher).wake(CATALOGUE);
+	}
+
+	@Test
+	void anOperatorDiscardsAHeldRunWhichTakesNothingOffSale() {
+		givenTheHeldRun();
+		var discarded = ImmutableIngestionRun.builder().from(HELD_RUN).status(IngestionRunStatus.DISCARDED).finishedAt(NOW).build();
+		when(mockIngestionRunDao.updateHeld(any(), eq(discarded))).thenReturn(Uni.createFrom().item(true));
+
+		assertEquals(discarded, sut.discard(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+
+		verifyNoInteractions(mockRetailerProductDao);
+		verify(mockDispatcher).wake(CATALOGUE);
+	}
+
+	@Test
+	void onlyAnOperatorDecidesOnAHeldRun() {
+		for (var caller : List.of(RETAILER_USER, CATALOGUE_SYNC_USER, PERSON_WITHOUT_ROLES)) {
+			assertThrows(NotAuthorizedException.class, () -> sut.confirm(caller, RUN_ID), caller.getRoles().toString());
+			assertThrows(NotAuthorizedException.class, () -> sut.discard(caller, RUN_ID), caller.getRoles().toString());
+		}
+		assertThrows(NotAuthenticatedException.class, () -> sut.confirm(null, RUN_ID));
+		assertThrows(NotAuthenticatedException.class, () -> sut.discard(null, RUN_ID));
+		verifyNoInteractions(mockIngestionRunDao, mockRetailerProductDao, mockDispatcher);
+	}
+
+	@Test
+	void aRunThatIsNotHeldIsNeitherConfirmedNorDiscarded() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(RUN));
+
+		var confirmation = assertThrows(IngestionRunNotHeldException.class, () -> sut.confirm(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+		assertThrows(IngestionRunNotHeldException.class, () -> sut.discard(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+
+		assertEquals("The Ingestion Run is not held, status: RECEIVED, runId: " + RUN_ID.asString(), confirmation.getMessage());
+		verifyNoInteractions(mockRetailerProductDao, mockDispatcher);
+		verify(mockIngestionRunDao, never()).updateHeld(any(), any());
+	}
+
+	@Test
+	void aRunThatAnotherOperatorDecidedOnMeanwhileIsAConflict() {
+		givenTheHeldRun();
+		when(mockRetailerProductDao.deactivateUnseenListings(any(), eq(CATALOGUE), eq(RUN_ID))).thenReturn(Uni.createFrom().item(3));
+		when(mockIngestionRunDao.updateHeld(any(), any())).thenReturn(Uni.createFrom().item(false));
+
+		assertThrows(IngestionRunNotHeldException.class, () -> sut.confirm(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+		assertThrows(IngestionRunNotHeldException.class, () -> sut.discard(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+
+		verifyNoInteractions(mockDispatcher);
+	}
+
+	@Test
+	void anUnknownRunIsNeitherConfirmedNorDiscarded() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().nullItem());
+
+		assertThrows(NotFoundException.class, () -> sut.confirm(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+		assertThrows(NotFoundException.class, () -> sut.discard(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+	}
+
+	private void givenTheHeldRun() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(HELD_RUN));
+		when(mockDateTimeService.getNow()).thenReturn(NOW);
 	}
 
 	private void givenTheRunOfTheRetailer() {

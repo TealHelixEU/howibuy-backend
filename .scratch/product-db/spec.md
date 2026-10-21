@@ -320,6 +320,7 @@ table name, e.g. `PK_IN_LISTING`.
   - `new`
   - `changed`
   - `unchanged`
+  - `missing` - the active Listings of the Catalogue that a Snapshot did not carry
   - `deactivated`
 - `error`
 

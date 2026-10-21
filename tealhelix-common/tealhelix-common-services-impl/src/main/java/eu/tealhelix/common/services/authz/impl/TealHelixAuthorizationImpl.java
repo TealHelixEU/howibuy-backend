@@ -48,6 +48,15 @@ public class TealHelixAuthorizationImpl implements TealHelixAuthorization {
 	}
 
 	@Override
+	public void requireOperator(User user) {
+		if (user == null || user.isUnauthenticated()) {
+			throw new NotAuthenticatedException(REQUIRES_VALID_AUTHENTICATED_USER);
+		} else if (!user.isOperator()) {
+			throw new NotAuthorizedException("This operation is accessible only to operators");
+		}
+	}
+
+	@Override
 	public Uni<Void> authorizeImpersonation(User currentUser) {
 		return currentUser.isRetailer() ? Uni.createFrom().voidItem() : Uni.createFrom().failure(new NotAuthorizedException());
 	}

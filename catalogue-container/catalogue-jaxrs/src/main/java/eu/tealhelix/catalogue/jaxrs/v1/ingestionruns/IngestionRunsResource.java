@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -40,7 +41,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @SecurityRequirement(name = BEARER_AUTH)
 public class IngestionRunsResource {
 	private static final String FORBIDDEN = "The caller is neither the Retailer of the run's Catalogue nor an operator.";
+	private static final String NOT_AN_OPERATOR = "The caller is not an operator.";
 	private static final String NOT_FOUND = "There is no such Ingestion Run.";
+	private static final String NOT_HELD = "The run is not held: it never was, or it has been confirmed or discarded already.";
 
 	@Inject
 	IngestionRunService ingestionRunService;
@@ -89,6 +92,54 @@ public class IngestionRunsResource {
 				.map(rejects -> rejects.stream().map(IngestionRunsResource::toDto).toList());
 	}
 
+	@Operation(summary = "Confirm a held Snapshot",
+			description = "Takes the active Listings of the Catalogue that the Snapshot did not carry off sale, and ends the run DONE. The later runs of the Catalogue, which waited for it, are processed next.")
+	@APIResponse(responseCode = "200", description = "The run, done.")
+	@APIResponse(responseCode = "400", description = "The id is not a UUID.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)
+	@APIResponse(responseCode = "403", description = NOT_AN_OPERATOR)
+	@APIResponse(responseCode = "404", description = NOT_FOUND,
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "409", description = NOT_HELD,
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@POST
+	@Path("{id}/confirmation")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<IngestionRunDto> confirm(
+			@Context SecurityContext securityContext,
+			@Parameter(description = "The id of the run.") @PathParam("id") String id
+	) {
+		var user = CurrentUser.of(securityContext);
+		return Uni.createFrom().item(() -> runId(id))
+				.flatMap(runId -> ingestionRunService.confirm(user, runId))
+				.map(IngestionRunsResource::toDto);
+	}
+
+	@Operation(summary = "Discard a held Snapshot",
+			description = "Ends the run DISCARDED, taking nothing off sale; the products it applied before it was held stay as they are. The later runs of the Catalogue, which waited for it, are processed next.")
+	@APIResponse(responseCode = "200", description = "The run, discarded.")
+	@APIResponse(responseCode = "400", description = "The id is not a UUID.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)
+	@APIResponse(responseCode = "403", description = NOT_AN_OPERATOR)
+	@APIResponse(responseCode = "404", description = NOT_FOUND,
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "409", description = NOT_HELD,
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@POST
+	@Path("{id}/discard")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<IngestionRunDto> discard(
+			@Context SecurityContext securityContext,
+			@Parameter(description = "The id of the run.") @PathParam("id") String id
+	) {
+		var user = CurrentUser.of(securityContext);
+		return Uni.createFrom().item(() -> runId(id))
+				.flatMap(runId -> ingestionRunService.discard(user, runId))
+				.map(IngestionRunsResource::toDto);
+	}
+
 	private static IngestionRunId runId(String id) {
 		try {
 			return new IngestionRunIdImpl(UUID.fromString(id).toString());
@@ -117,7 +168,7 @@ public class IngestionRunsResource {
 				run.getFileSize(),
 				run.getFileSha256(),
 				counts != null
-						? new IngestionRunCountsDto(counts.getTotal(), counts.getValid(), counts.getRejected(), counts.getAdded(), counts.getChanged(), counts.getUnchanged(), counts.getDeactivated())
+						? new IngestionRunCountsDto(counts.getTotal(), counts.getValid(), counts.getRejected(), counts.getAdded(), counts.getChanged(), counts.getUnchanged(), counts.getMissing(), counts.getDeactivated())
 						: null,
 				run.getError()
 		);

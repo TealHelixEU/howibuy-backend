@@ -37,6 +37,29 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 	}
 
 	@Override
+	public Uni<Boolean> updateHeld(ReactivePersistenceTxContext tx, IngestionRun run) {
+		var entity = toEntity(run);
+		var cb = tx.getCriteriaBuilder();
+		var u = cb.createCriteriaUpdate(IngestionRunEntity.class);
+		var stored = u.from(IngestionRunEntity.class);
+		u.set(stored.get(IngestionRunEntity_.status), entity.getStatus());
+		u.set(stored.get(IngestionRunEntity_.finishedAt), entity.getFinishedAt());
+		u.set(stored.get(IngestionRunEntity_.countTotal), entity.getCountTotal());
+		u.set(stored.get(IngestionRunEntity_.countValid), entity.getCountValid());
+		u.set(stored.get(IngestionRunEntity_.countRejected), entity.getCountRejected());
+		u.set(stored.get(IngestionRunEntity_.countAdded), entity.getCountAdded());
+		u.set(stored.get(IngestionRunEntity_.countChanged), entity.getCountChanged());
+		u.set(stored.get(IngestionRunEntity_.countUnchanged), entity.getCountUnchanged());
+		u.set(stored.get(IngestionRunEntity_.countMissing), entity.getCountMissing());
+		u.set(stored.get(IngestionRunEntity_.countDeactivated), entity.getCountDeactivated());
+		u.where(
+				cb.equal(stored.get(IngestionRunEntity_.id), entity.getId()),
+				cb.equal(stored.get(IngestionRunEntity_.status), IngestionRunStatus.HELD)
+		);
+		return tx.createUpdate(u).execute().map(updated -> updated == 1);
+	}
+
+	@Override
 	public Uni<IngestionRun> findNextToProcess(ReactivePersistenceContext em, CatalogueId catalogueId) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(IngestionRunEntity.class);
@@ -131,6 +154,7 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 			entity.setCountAdded(counts.getAdded());
 			entity.setCountChanged(counts.getChanged());
 			entity.setCountUnchanged(counts.getUnchanged());
+			entity.setCountMissing(counts.getMissing());
 			entity.setCountDeactivated(counts.getDeactivated());
 		}
 		entity.setError(run.getError());
@@ -177,6 +201,7 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 				.added(entity.getCountAdded())
 				.changed(entity.getCountChanged())
 				.unchanged(entity.getCountUnchanged())
+				.missing(entity.getCountMissing())
 				.deactivated(entity.getCountDeactivated())
 				.build();
 	}
