@@ -130,6 +130,43 @@ public class IngestionRunDaoImplTest {
 	}
 
 	@Test
+	void readsBackAReplay(Mutiny.SessionFactory sessionFactory) {
+		var catalogueId = createCatalogue(sessionFactory);
+		var original = createRun(sessionFactory, catalogueId, FeedType.DELTA, IngestionRunStatus.FAILED, LocalDateTime.of(2026, 10, 20, 8, 0, 0));
+		var replay = ImmutableIngestionRun.builder()
+				.from(find(sessionFactory, original))
+				.id(newRunId())
+				.status(IngestionRunStatus.RECEIVED)
+				.replayOfRunId(original)
+				.build();
+
+		create(sessionFactory, replay);
+
+		assertEquals(replay, find(sessionFactory, replay.getId()));
+	}
+
+	@Test
+	void aLaterSnapshotIsFoundUnlessItFailed(Mutiny.SessionFactory sessionFactory) {
+		var catalogueId = createCatalogue(sessionFactory);
+		var otherCatalogueId = createCatalogue(sessionFactory);
+		var receivedAt = LocalDateTime.of(2026, 10, 20, 8, 0, 0);
+		createRun(sessionFactory, catalogueId, FeedType.SNAPSHOT, IngestionRunStatus.DONE, receivedAt);
+		createRun(sessionFactory, catalogueId, FeedType.SNAPSHOT, IngestionRunStatus.DONE, receivedAt.minusHours(1));
+		createRun(sessionFactory, catalogueId, FeedType.SNAPSHOT, IngestionRunStatus.FAILED, receivedAt.plusHours(1));
+		createRun(sessionFactory, catalogueId, FeedType.DELTA, IngestionRunStatus.DONE, receivedAt.plusHours(1));
+		createRun(sessionFactory, catalogueId, FeedType.DELETION, IngestionRunStatus.DONE, receivedAt.plusHours(1));
+		createRun(sessionFactory, otherCatalogueId, FeedType.SNAPSHOT, IngestionRunStatus.DONE, receivedAt.plusHours(1));
+
+		assertFalse(hasSnapshotReceivedAfter(sessionFactory, catalogueId, receivedAt), "only the same receipt, earlier ones, failed ones, other types and other Catalogues");
+
+		for (var status : List.of(IngestionRunStatus.RECEIVED, IngestionRunStatus.PROCESSING, IngestionRunStatus.HELD, IngestionRunStatus.DONE, IngestionRunStatus.DISCARDED)) {
+			var later = createCatalogue(sessionFactory);
+			createRun(sessionFactory, later, FeedType.SNAPSHOT, status, receivedAt.plusSeconds(1));
+			assertTrue(hasSnapshotReceivedAfter(sessionFactory, later, receivedAt), "a later Snapshot " + status);
+		}
+	}
+
+	@Test
 	void updatesARun(Mutiny.SessionFactory sessionFactory) {
 		var received = ImmutableIngestionRun.builder()
 				.id(newRunId())
@@ -309,10 +346,14 @@ public class IngestionRunDaoImplTest {
 	}
 
 	private static IngestionRunId createRun(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId, IngestionRunStatus status, LocalDateTime receivedAt) {
+		return createRun(sessionFactory, catalogueId, FeedType.SNAPSHOT, status, receivedAt);
+	}
+
+	private static IngestionRunId createRun(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId, FeedType feedType, IngestionRunStatus status, LocalDateTime receivedAt) {
 		var run = ImmutableIngestionRun.builder()
 				.id(newRunId())
 				.catalogueId(catalogueId)
-				.feedType(FeedType.SNAPSHOT)
+				.feedType(feedType)
 				.status(status)
 				.receivedAt(receivedAt)
 				.filePath(catalogueId.asString() + "/run.gz")
@@ -360,6 +401,13 @@ public class IngestionRunDaoImplTest {
 		var sut = new IngestionRunDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
 				.withoutTransaction(em -> sut.findNextToProcess(em, catalogueId))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static boolean hasSnapshotReceivedAfter(Mutiny.SessionFactory sessionFactory, CatalogueId catalogueId, LocalDateTime receivedAt) {
+		var sut = new IngestionRunDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.hasSnapshotReceivedAfter(em, catalogueId, receivedAt))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 

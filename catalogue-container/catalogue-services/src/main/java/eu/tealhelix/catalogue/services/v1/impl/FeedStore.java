@@ -31,6 +31,14 @@ public interface FeedStore {
 	InputStream open(String path);
 
 	/**
+	 * Tell whether a Feed is stored.
+	 *
+	 * @param path Where the Feed is stored, as {@link StoredFeed#path()} tells
+	 * @return Whether it is there
+	 */
+	boolean exists(String path);
+
+	/**
 	 * Remove a stored Feed; nothing happens if it is not there.
 	 *
 	 * @param path Where the Feed is stored, as {@link StoredFeed#path()} tells

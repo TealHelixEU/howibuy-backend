@@ -31,6 +31,8 @@ public record IngestionRunDto(
 		@Schema(description = "What the processing found and did; null until it finishes.")
 		IngestionRunCountsDto counts,
 		@Schema(description = "Why the run failed; null otherwise.")
-		String error
+		String error,
+		@Schema(description = "The run whose stored Feed this run processes again; null if this run received its Feed itself.")
+		String replayOfRunId
 ) {
 }

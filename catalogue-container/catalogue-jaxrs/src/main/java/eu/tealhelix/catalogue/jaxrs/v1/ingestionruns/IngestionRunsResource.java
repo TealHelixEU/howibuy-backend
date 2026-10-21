@@ -16,7 +16,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.UriInfo;
 
 import eu.tealhelix.catalogue.jaxrs.authentication.CurrentUser;
 import eu.tealhelix.catalogue.services.v1.IngestionRunService;
@@ -140,6 +142,36 @@ public class IngestionRunsResource {
 				.map(IngestionRunsResource::toDto);
 	}
 
+	@Operation(summary = "Replay a finished Ingestion Run",
+			description = "Records a new run that processes the run's stored Feed again, with the adapter the Catalogue has now, e.g. after a fix of the adapter. "
+					+ "The new run shares the Feed's file and receipt, and waits its turn among the runs of the Catalogue in order of receipt; the run replayed stays as it is. "
+					+ "A Snapshot is refused once a later Snapshot of its Catalogue has been received and has not failed, since it would take off sale what the later one carries. "
+					+ "Any other replay out of order is the operator's to repair, by replaying the later Feeds of the Catalogue as well, in order.")
+	@APIResponse(responseCode = "202", description = "The new run, which waits to be processed. The Location header names it.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = IngestionRunDto.class)))
+	@APIResponse(responseCode = "400", description = "The id is not a UUID.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)
+	@APIResponse(responseCode = "403", description = NOT_AN_OPERATOR)
+	@APIResponse(responseCode = "404", description = "There is no such Ingestion Run, or its Feed is no longer stored.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "409", description = "The run has not finished: it waits, is processing or is held. Or it is a Snapshot that a later Snapshot supersedes.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@POST
+	@Path("{id}/replay")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<Response> replay(
+			@Context SecurityContext securityContext,
+			@Context UriInfo uriInfo,
+			@Parameter(description = "The id of the run.") @PathParam("id") String id
+	) {
+		var user = CurrentUser.of(securityContext);
+		var runs = uriInfo.getBaseUriBuilder().path(IngestionRunsResource.class);
+		return Uni.createFrom().item(() -> runId(id))
+				.flatMap(runId -> ingestionRunService.replay(user, runId))
+				.map(replay -> Response.accepted(toDto(replay)).location(runs.path(replay.getId().asString()).build()).build());
+	}
+
 	private static IngestionRunId runId(String id) {
 		try {
 			return new IngestionRunIdImpl(UUID.fromString(id).toString());
@@ -170,7 +202,8 @@ public class IngestionRunsResource {
 				counts != null
 						? new IngestionRunCountsDto(counts.getTotal(), counts.getValid(), counts.getRejected(), counts.getAdded(), counts.getChanged(), counts.getUnchanged(), counts.getMissing(), counts.getDeactivated())
 						: null,
-				run.getError()
+				run.getError(),
+				run.getReplayOfRunId() != null ? run.getReplayOfRunId().asString() : null
 		);
 	}
 

@@ -74,4 +74,25 @@ public interface IngestionRunService {
 	 * @throws eu.tealhelix.catalogue.services.v1.types.IngestionRunNotHeldException If the run is not held
 	 */
 	Uni<IngestionRun> discard(User caller, IngestionRunId runId);
+
+	/**
+	 * Replay a finished Ingestion Run: record a new run that processes its stored Feed again, with the adapter the
+	 * Catalogue has now, e.g. after a fix of the adapter. The new run shares the Feed's file and receipt, and waits its
+	 * turn among the runs of the Catalogue in order of receipt. The run replayed stays as it is.
+	 * <p>
+	 * A Snapshot is not replayed once a later Snapshot of its Catalogue has been received and has not failed, because
+	 * its replay would take off sale the Listings that the later one carries. Any other replay out of order is the
+	 * operator's to repair: replaying the later Feeds of the Catalogue as well, in order, brings back what they did.
+	 *
+	 * @param caller The caller, an operator
+	 * @param runId  The run, {@link eu.tealhelix.catalogue.v1.types.IngestionRunStatus#DONE DONE},
+	 *               {@link eu.tealhelix.catalogue.v1.types.IngestionRunStatus#FAILED FAILED} or
+	 *               {@link eu.tealhelix.catalogue.v1.types.IngestionRunStatus#DISCARDED DISCARDED}
+	 * @return The new run, {@link eu.tealhelix.catalogue.v1.types.IngestionRunStatus#RECEIVED RECEIVED}
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException             If the caller is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException                If the caller is not an operator
+	 * @throws eu.tealhelix.common.types.entity.NotFoundException                            If the run does not exist, or its Feed is no longer stored
+	 * @throws eu.tealhelix.catalogue.services.v1.types.IngestionRunNotReplayableException If the run has not finished, or a later Snapshot supersedes it
+	 */
+	Uni<IngestionRun> replay(User caller, IngestionRunId runId);
 }

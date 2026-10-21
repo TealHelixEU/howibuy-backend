@@ -130,6 +130,14 @@ After the whole stream of a **Snapshot**:
 A **Delta** never deactivates anything. A **Deletion** Feed carries only retailer product ids, and its Listings are made
 inactive.
 
+**Replay** (user story 17): `POST /api/v1/ingestion-runs/{id}/replay` (operator) records a new run on the stored Feed of
+a `DONE`, `FAILED` or `DISCARDED` run, with `replay_of_run_id` pointing to it, and answers `202` with the new run. The
+new run shares the Feed's file and `received_at`, so it queues in the Feeds' order of receipt and its Listings keep the
+true `last_seen_at`. It is processed with the adapter the Catalogue has now. The run replayed is never modified. A
+Snapshot is refused (`409`) once a later Snapshot of its Catalogue that has not failed exists, because it would take off
+sale what the later one carries. Any other replay out of order is the operator's to repair, by replaying the later Feeds
+as well, in order. A run that has not finished is refused (`409`), and a Feed no longer stored is `404`.
+
 **Eviction** (scheduled, in Ingestion): a Listing that has been inactive with `last_seen_at` older than the configured
 threshold is deleted. A Retailer Product left without Listings becomes a tombstone (`removed = true`, `removed_at`,
 stamped) and loses its names. Tombstones are purged after a much longer period, which bounds how far behind Catalogue
@@ -261,7 +269,7 @@ neither changes a product that the other has read.
   `User.isService()` becomes `isPerson()` (its inverse), and `TealHelixAuthorization.requireUserNotService` becomes
   `requirePerson`.
 - `authorizeImpersonation` requires `RETAILER`. The Sync endpoints of both services require `CATALOGUE_SYNC`. Feed
-  pushes require `RETAILER`. The operator endpoints (held runs, re-opening, previews) require `OPERATOR`.
+  pushes require `RETAILER`. The operator endpoints (held runs, replays, re-opening, previews) require `OPERATOR`.
 - `tealhelix-realm.json` gains the realm roles `retailer`, `catalogue-sync` and `operator`, and a `catalogue-sync`
   client with a service account. The existing `lime_fresh` service account gets `retailer`, and `bob@krusty-krab.com`
   gets `operator` for local use.
@@ -329,6 +337,7 @@ table name, e.g. `PK_IN_LISTING`.
   - `missing` - the active Listings of the Catalogue that a Snapshot did not carry
   - `deactivated`
 - `error`
+- `replay_of_run_id` - the run whose stored Feed this run processes again
 
 #### IN_INGESTION_RUN statuses
 

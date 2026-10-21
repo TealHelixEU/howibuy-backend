@@ -2,7 +2,10 @@ package eu.tealhelix.catalogue.services.v1.impl;
 
 import static eu.tealhelix.common.utils.UniComprehensions.forc;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -12,12 +15,15 @@ import eu.tealhelix.catalogue.dao.IngestionRunDao;
 import eu.tealhelix.catalogue.dao.RetailerProductDao;
 import eu.tealhelix.catalogue.services.v1.IngestionRunService;
 import eu.tealhelix.catalogue.services.v1.types.IngestionRunNotHeldException;
+import eu.tealhelix.catalogue.services.v1.types.IngestionRunNotReplayableException;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRunCounts;
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
+import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
+import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -31,12 +37,15 @@ import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class IngestionRunServiceImpl implements IngestionRunService {
+	private static final Set<IngestionRunStatus> REPLAYABLE = EnumSet.of(IngestionRunStatus.DONE, IngestionRunStatus.FAILED, IngestionRunStatus.DISCARDED);
+
 	private final TealHelixAuthorization authorization;
 	private final CatalogueDao catalogueDao;
 	private final IngestionRunDao ingestionRunDao;
 	private final RetailerProductDao retailerProductDao;
 	private final DateTimeService dateTimeService;
 	private final IngestionRunDispatcher dispatcher;
+	private final FeedStore feedStore;
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
 
 	@Inject
@@ -47,6 +56,7 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 			RetailerProductDao retailerProductDao,
 			DateTimeService dateTimeService,
 			IngestionRunDispatcher dispatcher,
+			FeedStore feedStore,
 			ReactivePersistenceContextFactory persistenceContextFactory
 	) {
 		this.authorization = authorization;
@@ -55,6 +65,7 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 		this.retailerProductDao = retailerProductDao;
 		this.dateTimeService = dateTimeService;
 		this.dispatcher = dispatcher;
+		this.feedStore = feedStore;
 		this.persistenceContextFactory = persistenceContextFactory;
 	}
 
@@ -103,6 +114,33 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 	}
 
 	/**
+	 * The new run is processed after it is committed, so that the processing finds it.
+	 */
+	@Override
+	public Uni<IngestionRun> replay(User caller, IngestionRunId runId) {
+		authorization.requireOperator(caller);
+		return persistenceContextFactory.withTransaction(tx -> forc(
+						ingestionRunDao.find(tx, runId),
+						run -> requireReplayable(tx, runId, run),
+						replayed -> {
+							IngestionRun replay = ImmutableIngestionRun.builder()
+									.id(new IngestionRunIdImpl(UUID.randomUUID().toString()))
+									.catalogueId(replayed.getCatalogueId())
+									.feedType(replayed.getFeedType())
+									.status(IngestionRunStatus.RECEIVED)
+									.receivedAt(replayed.getReceivedAt())
+									.filePath(replayed.getFilePath())
+									.fileSize(replayed.getFileSize())
+									.fileSha256(replayed.getFileSha256())
+									.replayOfRunId(runId)
+									.build();
+							return ingestionRunDao.create(tx, replay).replaceWith(replay);
+						}
+				))
+				.invoke(replay -> dispatcher.wake(replay.getCatalogueId()));
+	}
+
+	/**
 	 * Decide on a held run in one transaction, and then have the runs of its Catalogue that waited for it processed.
 	 *
 	 * @param decision Given the held run, ends it
@@ -129,6 +167,28 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 		return ingestionRunDao.updateHeld(tx, decided).flatMap(stored -> stored
 				? Uni.createFrom().item(decided)
 				: Uni.createFrom().failure(new IngestionRunNotHeldException(decided.getId())));
+	}
+
+	/**
+	 * Looking for the Feed in the store blocks for as long as a lookup of a local file takes.
+	 */
+	private Uni<IngestionRun> requireReplayable(ReactivePersistenceContext em, IngestionRunId runId, IngestionRun run) {
+		if (run == null) {
+			return Uni.createFrom().failure(new NotFoundException(runId, "No such Ingestion Run, runId: " + runId.asString()));
+		} else if (!REPLAYABLE.contains(run.getStatus())) {
+			return Uni.createFrom().failure(IngestionRunNotReplayableException.unfinished(runId, run.getStatus()));
+		}
+		var superseded = run.getFeedType() == FeedType.SNAPSHOT
+				? ingestionRunDao.hasSnapshotReceivedAfter(em, run.getCatalogueId(), run.getReceivedAt())
+				: Uni.createFrom().item(false);
+		return superseded.flatMap(later -> {
+			if (later) {
+				return Uni.createFrom().failure(IngestionRunNotReplayableException.superseded(runId));
+			} else if (!feedStore.exists(run.getFilePath())) {
+				return Uni.createFrom().failure(new NotFoundException(runId, "The Feed of the Ingestion Run is no longer stored, runId: " + runId.asString()));
+			}
+			return Uni.createFrom().item(run);
+		});
 	}
 
 	private static void requirePage(int offset, int limit) {

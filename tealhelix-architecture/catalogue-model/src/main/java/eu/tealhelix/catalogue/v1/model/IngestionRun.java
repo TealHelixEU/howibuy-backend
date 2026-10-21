@@ -68,4 +68,11 @@ public interface IngestionRun {
 	 */
 	@Nullable
 	String getError();
+
+	/**
+	 * The run whose stored Feed this run processes again; {@code null} if this run received its Feed itself. A replay
+	 * shares the Feed of the run it replays, and so its file and {@linkplain #getReceivedAt() receipt}.
+	 */
+	@Nullable
+	IngestionRunId getReplayOfRunId();
 }

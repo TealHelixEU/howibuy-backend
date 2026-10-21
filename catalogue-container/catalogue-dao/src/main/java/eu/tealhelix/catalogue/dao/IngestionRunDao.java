@@ -1,5 +1,6 @@
 package eu.tealhelix.catalogue.dao;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
@@ -67,6 +68,17 @@ public interface IngestionRunDao {
 	 * @return How many runs were reset
 	 */
 	Uni<Integer> resetProcessing(ReactivePersistenceTxContext tx);
+
+	/**
+	 * Tell whether a Catalogue has a Snapshot received after a time that has not {@link IngestionRunStatus#FAILED
+	 * FAILED}: one processed, or one waiting to be.
+	 *
+	 * @param em          The persistence context
+	 * @param catalogueId The Catalogue
+	 * @param receivedAt  The time
+	 * @return Whether it has
+	 */
+	Uni<Boolean> hasSnapshotReceivedAfter(ReactivePersistenceContext em, CatalogueId catalogueId, LocalDateTime receivedAt);
 
 	/**
 	 * Record the records a run rejected.

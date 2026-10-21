@@ -113,6 +113,16 @@ public class FeedStoreImplTest {
 		sut.delete("test-gr/" + newRunId().asString() + ".gz");
 	}
 
+	@Test
+	void tellsWhetherAFeedIsStored() {
+		var sut = new FeedStoreImpl(directory.toString());
+		var storedFeed = sut.store(CATALOGUE, newRunId(), new ByteArrayInputStream(new byte[]{1}));
+
+		assertTrue(sut.exists(storedFeed.path()));
+		sut.delete(storedFeed.path());
+		assertFalse(sut.exists(storedFeed.path()));
+	}
+
 	private static IngestionRunId newRunId() {
 		return new IngestionRunIdImpl(UUID.randomUUID().toString());
 	}

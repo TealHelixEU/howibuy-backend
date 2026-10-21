@@ -1,6 +1,8 @@
 package eu.tealhelix.catalogue.dao.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import eu.tealhelix.catalogue.dao.IngestionRunDao;
@@ -15,6 +17,7 @@ import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.model.IngestionRunCounts;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
@@ -102,6 +105,20 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 	}
 
 	@Override
+	public Uni<Boolean> hasSnapshotReceivedAfter(ReactivePersistenceContext em, CatalogueId catalogueId, LocalDateTime receivedAt) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(UUID.class);
+		var run = q.from(IngestionRunEntity.class);
+		q.select(run.get(IngestionRunEntity_.id)).where(
+				cb.equal(run.get(IngestionRunEntity_.catalogueId), catalogueId.asString()),
+				cb.equal(run.get(IngestionRunEntity_.feedType), FeedType.SNAPSHOT),
+				cb.greaterThan(run.get(IngestionRunEntity_.receivedAt), receivedAt),
+				cb.notEqual(run.get(IngestionRunEntity_.status), IngestionRunStatus.FAILED)
+		);
+		return em.createQuery(q).setMaxResults(1).getResultList().map(runs -> !runs.isEmpty());
+	}
+
+	@Override
 	public Uni<Void> createRejects(ReactivePersistenceTxContext tx, IngestionRunId runId, List<IngestionReject> rejects) {
 		if (rejects.isEmpty()) return Uni.createFrom().voidItem();
 		return tx.persistAll(rejects.stream().map(reject -> toEntity(runId, reject)).toArray());
@@ -158,6 +175,7 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 			entity.setCountDeactivated(counts.getDeactivated());
 		}
 		entity.setError(run.getError());
+		entity.setReplayOfRunId(run.getReplayOfRunId() != null ? run.getReplayOfRunId().asUuid() : null);
 		return entity;
 	}
 
@@ -186,6 +204,7 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 				.fileSha256(entity.getFileSha256())
 				.counts(toCounts(entity))
 				.error(entity.getError())
+				.replayOfRunId(entity.getReplayOfRunId() != null ? new IngestionRunIdImpl(entity.getReplayOfRunId().toString()) : null)
 				.build();
 	}
 

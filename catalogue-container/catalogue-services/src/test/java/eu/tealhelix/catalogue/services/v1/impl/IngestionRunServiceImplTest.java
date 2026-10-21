@@ -1,11 +1,13 @@
 package eu.tealhelix.catalogue.services.v1.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -21,6 +23,7 @@ import eu.tealhelix.catalogue.dao.CatalogueDao;
 import eu.tealhelix.catalogue.dao.IngestionRunDao;
 import eu.tealhelix.catalogue.dao.RetailerProductDao;
 import eu.tealhelix.catalogue.services.v1.types.IngestionRunNotHeldException;
+import eu.tealhelix.catalogue.services.v1.types.IngestionRunNotReplayableException;
 import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionReject;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
@@ -56,7 +59,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Who may read which Ingestion Run and its rejects, and which pages of rejects are refused, with the database mocked.
+ * Who may read which Ingestion Run and its rejects, and which pages of rejects are refused; the decisions on held runs;
+ * which runs are replayed and how. The database and the feed store are mocked.
  */
 @EnableAutoWeld
 @AddBeanClasses(TealHelixAuthorizationImpl.class)
@@ -114,6 +118,10 @@ public class IngestionRunServiceImplTest {
 	@ExcludeBean
 	@Mock
 	IngestionRunDispatcher mockDispatcher;
+
+	@Produces
+	@Mock
+	FeedStore mockFeedStore;
 
 	@Produces
 	@RegisterExtension
@@ -275,6 +283,115 @@ public class IngestionRunServiceImplTest {
 
 		assertThrows(NotFoundException.class, () -> sut.confirm(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
 		assertThrows(NotFoundException.class, () -> sut.discard(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+	}
+
+	@Test
+	void anOperatorReplaysAFinishedRunOnItsStoredFeed() {
+		for (var status : List.of(IngestionRunStatus.DONE, IngestionRunStatus.FAILED, IngestionRunStatus.DISCARDED)) {
+			var finished = finished(FeedType.DELTA, status);
+			when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished));
+			when(mockFeedStore.exists(RUN.getFilePath())).thenReturn(true);
+			when(mockIngestionRunDao.create(any(), any())).thenReturn(Uni.createFrom().voidItem());
+
+			var replay = sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT);
+
+			assertNotEquals(RUN_ID, replay.getId(), status.name());
+			assertEquals(ImmutableIngestionRun.builder()
+					.id(replay.getId())
+					.catalogueId(CATALOGUE)
+					.feedType(FeedType.DELTA)
+					.status(IngestionRunStatus.RECEIVED)
+					.receivedAt(RUN.getReceivedAt())
+					.filePath(RUN.getFilePath())
+					.fileSize(RUN.getFileSize())
+					.fileSha256(RUN.getFileSha256())
+					.replayOfRunId(RUN_ID)
+					.build(), replay, status.name());
+			verify(mockIngestionRunDao).create(mockReactivePersistenceContextFactory.getOpenedTransactions().getLast(), replay);
+			verify(mockIngestionRunDao, never()).update(any(), any());
+			verify(mockDispatcher).wake(CATALOGUE);
+			reset(mockIngestionRunDao, mockDispatcher);
+		}
+	}
+
+	@Test
+	void aSnapshotIsReplayedWhileNoLaterSnapshotSupersedesIt() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished(FeedType.SNAPSHOT, IngestionRunStatus.DONE)));
+		when(mockIngestionRunDao.hasSnapshotReceivedAfter(any(), eq(CATALOGUE), eq(RUN.getReceivedAt()))).thenReturn(Uni.createFrom().item(false));
+		when(mockFeedStore.exists(RUN.getFilePath())).thenReturn(true);
+		when(mockIngestionRunDao.create(any(), any())).thenReturn(Uni.createFrom().voidItem());
+
+		assertEquals(RUN_ID, sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT).getReplayOfRunId());
+	}
+
+	@Test
+	void aSnapshotThatALaterSnapshotSupersedesIsNotReplayed() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished(FeedType.SNAPSHOT, IngestionRunStatus.DONE)));
+		when(mockIngestionRunDao.hasSnapshotReceivedAfter(any(), eq(CATALOGUE), eq(RUN.getReceivedAt()))).thenReturn(Uni.createFrom().item(true));
+
+		var e = assertThrows(IngestionRunNotReplayableException.class, () -> sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+
+		assertEquals("A later Snapshot of the Catalogue supersedes the Ingestion Run, runId: " + RUN_ID.asString(), e.getMessage());
+		verify(mockIngestionRunDao, never()).create(any(), any());
+		verifyNoInteractions(mockDispatcher);
+	}
+
+	@Test
+	void aRunThatHasNotFinishedIsNotReplayed() {
+		for (var status : List.of(IngestionRunStatus.RECEIVED, IngestionRunStatus.PROCESSING, IngestionRunStatus.HELD)) {
+			when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(ImmutableIngestionRun.copyOf(RUN).withStatus(status)));
+
+			var e = assertThrows(IngestionRunNotReplayableException.class, () -> sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+
+			assertEquals("Only a finished Ingestion Run is replayed, status: " + status + ", runId: " + RUN_ID.asString(), e.getMessage());
+		}
+		verify(mockIngestionRunDao, never()).create(any(), any());
+		verifyNoInteractions(mockDispatcher);
+	}
+
+	@Test
+	void aRunWhoseFeedIsNoLongerStoredIsNotReplayed() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished(FeedType.DELTA, IngestionRunStatus.DONE)));
+		when(mockFeedStore.exists(RUN.getFilePath())).thenReturn(false);
+
+		var e = assertThrows(NotFoundException.class, () -> sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+
+		assertEquals("The Feed of the Ingestion Run is no longer stored, runId: " + RUN_ID.asString(), e.getMessage());
+		verify(mockIngestionRunDao, never()).create(any(), any());
+		verifyNoInteractions(mockDispatcher);
+	}
+
+	@Test
+	void anUnknownRunIsNotReplayed() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().nullItem());
+
+		assertThrows(NotFoundException.class, () -> sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
+		verifyNoInteractions(mockDispatcher);
+	}
+
+	@Test
+	void onlyAnOperatorReplaysARun() {
+		for (var caller : List.of(RETAILER_USER, CATALOGUE_SYNC_USER, PERSON_WITHOUT_ROLES)) {
+			assertThrows(NotAuthorizedException.class, () -> sut.replay(caller, RUN_ID), caller.getRoles().toString());
+		}
+		assertThrows(NotAuthenticatedException.class, () -> sut.replay(null, RUN_ID));
+		verifyNoInteractions(mockIngestionRunDao, mockFeedStore, mockDispatcher);
+	}
+
+	/**
+	 * The run, processed to its end with the adapter of the time.
+	 */
+	private static IngestionRun finished(FeedType feedType, IngestionRunStatus status) {
+		return ImmutableIngestionRun.builder()
+				.from(RUN)
+				.feedType(feedType)
+				.status(status)
+				.adapter("test-adapter")
+				.adapterVersion("1")
+				.startedAt(LocalDateTime.of(2026, 10, 20, 12, 30, 16))
+				.finishedAt(LocalDateTime.of(2026, 10, 20, 12, 31, 0))
+				.error(status == IngestionRunStatus.FAILED ? "The Feed cannot be read" : null)
+				.build();
 	}
 
 	private void givenTheHeldRun() {

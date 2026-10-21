@@ -75,6 +75,11 @@ public class FeedStoreImpl implements FeedStore {
 	}
 
 	@Override
+	public boolean exists(String path) {
+		return Files.exists(resolve(path));
+	}
+
+	@Override
 	public void delete(String path) {
 		deleteIfExists(resolve(path));
 	}

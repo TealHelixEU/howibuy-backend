@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
 
+import eu.tealhelix.catalogue.test.feeds.JsonLinesFeedReader;
+
 /**
  * A Catalogue of Lime Fresh for one test alone (primary language {@code el}, also {@code en}), in the format of the
  * tests' adapter, and what the test reads back of its products. A Snapshot takes the Listings it does not carry off sale,
@@ -28,10 +30,17 @@ final class TestCatalogue {
 	}
 
 	static TestCatalogue create(DataSource dataSource) throws SQLException {
+		return create(dataSource, JsonLinesFeedReader.NAME);
+	}
+
+	/**
+	 * @param adapter The name of the adapter of its Feeds
+	 */
+	static TestCatalogue create(DataSource dataSource, String adapter) throws SQLException {
 		var name = UUID.randomUUID().toString().substring(0, 8);
 		var catalogue = new TestCatalogue(dataSource, "test-" + name, name + "-");
 		catalogue.execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language, accepted_languages, adapter) VALUES "
-				+ "('" + catalogue.id + "', '" + LIME_FRESH + "', 'GR', 'el', '{el,en}', 'test-jsonl')");
+				+ "('" + catalogue.id + "', '" + LIME_FRESH + "', 'GR', 'el', '{el,en}', '" + adapter + "')");
 		return catalogue;
 	}
 

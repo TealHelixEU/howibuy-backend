@@ -82,6 +82,9 @@ public class IngestionRunEntity {
 	@Column(name = "error", length = Integer.MAX_VALUE)
 	private String error;
 
+	@Column(name = "replay_of_run_id")
+	private UUID replayOfRunId;
+
 	public UUID getId() {
 		return id;
 	}
@@ -248,5 +251,13 @@ public class IngestionRunEntity {
 
 	public void setError(String error) {
 		this.error = error;
+	}
+
+	public UUID getReplayOfRunId() {
+		return replayOfRunId;
+	}
+
+	public void setReplayOfRunId(UUID replayOfRunId) {
+		this.replayOfRunId = replayOfRunId;
 	}
 }
