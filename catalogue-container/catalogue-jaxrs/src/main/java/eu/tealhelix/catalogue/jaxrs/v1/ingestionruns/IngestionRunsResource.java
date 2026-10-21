@@ -2,6 +2,7 @@ package eu.tealhelix.catalogue.jaxrs.v1.ingestionruns;
 
 import static eu.tealhelix.catalogue.jaxrs.v1.CatalogueOpenApiTagNames.INGESTION_RUNS;
 import static eu.tealhelix.catalogue.jaxrs.v1.CatalogueOpenApiTagNames.INGESTION_RUNS_DESC;
+import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 
@@ -66,9 +67,11 @@ public class IngestionRunsResource {
 			@Parameter(description = "The id of the run.") @PathParam("id") String id
 	) {
 		var user = CurrentUser.of(securityContext);
-		return Uni.createFrom().item(() -> runId(id))
-				.flatMap(runId -> ingestionRunService.find(user, runId))
-				.map(IngestionRunsResource::toDto);
+		return forcm(
+				Uni.createFrom().item(() -> runId(id)),
+				runId -> ingestionRunService.find(user, runId),
+				IngestionRunsResource::toDto
+		);
 	}
 
 	@Operation(summary = "Read the records an Ingestion Run rejected", description = "A page of them, in the order they appear in the Feed. The run's counts tell how many there are.")
@@ -89,9 +92,11 @@ public class IngestionRunsResource {
 			@Parameter(description = "How many rejects to read at most, from 1 to " + IngestionRunService.MAX_REJECTS_PER_PAGE + ".", required = true) @QueryParam("limit") Integer limit
 	) {
 		var user = CurrentUser.of(securityContext);
-		return Uni.createFrom().item(() -> runId(id))
-				.flatMap(runId -> ingestionRunService.findRejects(user, runId, offset != null ? offset : 0, required("limit", limit)))
-				.map(rejects -> rejects.stream().map(IngestionRunsResource::toDto).toList());
+		return forcm(
+				Uni.createFrom().item(() -> runId(id)),
+				runId -> ingestionRunService.findRejects(user, runId, offset != null ? offset : 0, required("limit", limit)),
+				rejects -> rejects.stream().map(IngestionRunsResource::toDto).toList()
+		);
 	}
 
 	@Operation(summary = "Confirm a held Snapshot",
@@ -113,9 +118,11 @@ public class IngestionRunsResource {
 			@Parameter(description = "The id of the run.") @PathParam("id") String id
 	) {
 		var user = CurrentUser.of(securityContext);
-		return Uni.createFrom().item(() -> runId(id))
-				.flatMap(runId -> ingestionRunService.confirm(user, runId))
-				.map(IngestionRunsResource::toDto);
+		return forcm(
+				Uni.createFrom().item(() -> runId(id)),
+				runId -> ingestionRunService.confirm(user, runId),
+				IngestionRunsResource::toDto
+		);
 	}
 
 	@Operation(summary = "Discard a held Snapshot",
@@ -137,9 +144,11 @@ public class IngestionRunsResource {
 			@Parameter(description = "The id of the run.") @PathParam("id") String id
 	) {
 		var user = CurrentUser.of(securityContext);
-		return Uni.createFrom().item(() -> runId(id))
-				.flatMap(runId -> ingestionRunService.discard(user, runId))
-				.map(IngestionRunsResource::toDto);
+		return forcm(
+				Uni.createFrom().item(() -> runId(id)),
+				runId -> ingestionRunService.discard(user, runId),
+				IngestionRunsResource::toDto
+		);
 	}
 
 	@Operation(summary = "Replay a finished Ingestion Run",
@@ -167,9 +176,11 @@ public class IngestionRunsResource {
 	) {
 		var user = CurrentUser.of(securityContext);
 		var runs = uriInfo.getBaseUriBuilder().path(IngestionRunsResource.class);
-		return Uni.createFrom().item(() -> runId(id))
-				.flatMap(runId -> ingestionRunService.replay(user, runId))
-				.map(replay -> Response.accepted(toDto(replay)).location(runs.path(replay.getId().asString()).build()).build());
+		return forcm(
+				Uni.createFrom().item(() -> runId(id)),
+				runId -> ingestionRunService.replay(user, runId),
+				replay -> Response.accepted(toDto(replay)).location(runs.path(replay.getId().asString()).build()).build()
+		);
 	}
 
 	private static IngestionRunId runId(String id) {
