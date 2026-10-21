@@ -43,7 +43,8 @@ tealhelix/
 │   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb, @WithCatalogueDbAndKeycloak)
 │   └── catalogue/                          Quarkus deployable
 ├── catalogue-sync-cli-container/ The Catalogue Sync, which carries the Product Changes from the Ingestion into HowiBuy
-│   └── catalogue-sync-cli/                 Quarkus command-mode deployable, REST clients of both services, no database
+│   ├── catalogue-sync-cli/                 Quarkus command-mode deployable, REST clients of both services, no database
+│   └── catalogue-sync-e2e/                 End-to-end tests (failsafe, `mvn verify`): the three deployables as processes
 ├── howibuy-container/            The HowiBuy microservice
 │   ├── howibuy-dao/              DAO interfaces
 │   ├── howibuy-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog

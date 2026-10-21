@@ -17,5 +17,6 @@
 
 	<modules>
 		<module>catalogue-sync-cli</module>
+		<module>catalogue-sync-e2e</module>
 	</modules>
 </project>

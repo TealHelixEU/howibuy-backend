@@ -26,6 +26,13 @@ public enum ServiceAccount {
 		this.clientSecret = clientSecret;
 	}
 
+	/**
+	 * @return The secret of the client, for a client that obtains its access tokens itself
+	 */
+	public String clientSecret() {
+		return clientSecret;
+	}
+
 	public String accessToken(GenericContainer<?> keycloak) {
 		return RestAssured
 				.given()

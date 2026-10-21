@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>eu.tealhelix</groupId>
+		<artifactId>catalogue-sync-cli-container</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>catalogue-sync-e2e</artifactId>
+
+	<name>Catalogue Sync: End-to-end tests</name>
+	<description>The whole pipeline, Feed to Ingestion to HowiBuy, with the deployables just built running as separate processes against real databases and a real IDM</description>
+
+	<properties>
+		<deployables.directory>${project.basedir}/../..</deployables.directory>
+	</properties>
+
+	<dependencies>
+		<!-- PROJECT TEST -->
+		<!--
+			The tests run the deployables from their build directories, not from the classpath; the dependencies only
+			make the reactor build them first.
+		-->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>catalogue</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>catalogue-sync-cli</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>howibuy</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-testutils</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- TEST -->
+		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!--
+				The module has nothing but its tests, so it makes no artifact; without classes of its own, the incremental
+				compilation of the tests warns that it finds none
+			-->
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<useIncrementalCompilation>false</useIncrementalCompilation>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<skipIfEmpty>true</skipIfEmpty>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-install-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<systemPropertyVariables>
+						<!-- The test utilities bring the JBoss LogManager, which must be the JUL LogManager -->
+						<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+						<e2e.ingestion.jar>${deployables.directory}/catalogue-container/catalogue/target/quarkus-app/quarkus-run.jar</e2e.ingestion.jar>
+						<e2e.howibuy.jar>${deployables.directory}/howibuy-container/howibuy/target/quarkus-app/quarkus-run.jar</e2e.howibuy.jar>
+						<e2e.catalogue-sync.jar>${deployables.directory}/catalogue-sync-cli-container/catalogue-sync-cli/target/quarkus-app/quarkus-run.jar</e2e.catalogue-sync.jar>
+						<e2e.logs.directory>${project.build.directory}/e2e-logs</e2e.logs.directory>
+						<e2e.feed-store.directory>${project.build.directory}/e2e-feed-store</e2e.feed-store.directory>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

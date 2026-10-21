@@ -1,0 +1,10 @@
+{"productKey": "e2e-milk", "names": {"el": "Γάλα φρέσκο", "en": "Fresh milk"}, "characteristics": {"fat": "3.5%"}, "tags": ["dairy"], "price": "1.39", "currency": "EUR"}
+{"productKey": "e2e-yoghurt", "names": {"el": "Γιαούρτι στραγγιστό", "en": "Strained yoghurt"}, "characteristics": {"fat": "2%"}, "tags": ["dairy"], "price": "2.15", "currency": "EUR"}
+{"productKey": "e2e-feta", "names": {"el": "Φέτα", "en": "Feta"}, "characteristics": {}, "tags": ["dairy", "cheese"], "price": "4.80", "currency": "EUR"}
+{"productKey": "e2e-bread", "names": {"el": "Ψωμί χωριάτικο", "en": "Village bread"}, "characteristics": {}, "tags": ["bakery"], "price": "1.10", "currency": "EUR"}
+{"productKey": "e2e-olive-oil", "names": {"el": "Ελαιόλαδο εξαιρετικό παρθένο", "en": "Extra virgin olive oil"}, "characteristics": {"volume": "1l"}, "tags": [], "price": "9.90", "currency": "EUR"}
+{"productKey": "e2e-tomatoes", "names": {"el": "Ντομάτες", "en": "Tomatoes"}, "characteristics": {"origin": "GR"}, "tags": ["vegetables"], "price": "1.95", "currency": "EUR"}
+{"productKey": "e2e-lentils", "names": {"el": "Φακές", "en": "Lentils"}, "characteristics": {"weight": "500g"}, "tags": ["legumes"], "price": "1.70", "currency": "EUR"}
+{"productKey": "e2e-honey", "names": {"el": "Μέλι θυμαρίσιο", "en": "Thyme honey"}, "characteristics": {}, "tags": [], "price": "7.40", "currency": "EUR"}
+{"productKey": "e2e-eggs", "names": {"el": "Αυγά ελευθέρας βοσκής", "en": "Free-range eggs"}, "characteristics": {"count": "6"}, "tags": [], "price": "2.60", "currency": "EUR"}
+{"productKey": "e2e-chicken", "names": {"el": "Κοτόπουλο ολόκληρο", "en": "Whole chicken"}, "characteristics": {}, "tags": ["meat"], "price": "6.30", "currency": "EUR"}
