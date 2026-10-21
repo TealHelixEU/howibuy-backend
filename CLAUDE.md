@@ -42,6 +42,8 @@ tealhelix/
 │   ├── catalogue-jaxrs/                    JAX-RS resources
 │   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb, @WithCatalogueDbAndKeycloak)
 │   └── catalogue/                          Quarkus deployable
+├── catalogue-sync-cli-container/ The Catalogue Sync, which carries the Product Changes from the Ingestion into HowiBuy
+│   └── catalogue-sync-cli/                 Quarkus command-mode deployable, REST clients of both services, no database
 ├── howibuy-container/            The HowiBuy microservice
 │   ├── howibuy-dao/              DAO interfaces
 │   ├── howibuy-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog
@@ -55,13 +57,14 @@ tealhelix/
     └── tealhelix-docker-keycloak/
 ```
 
-Dependency rule: only the `*-deployable` modules (`howibuy/`, `catalogue/`) and `*-testutils` may depend on Quarkus.
+Dependency rule: only the `*-deployable` modules (`howibuy/`, `catalogue/`, `catalogue-sync-cli/`) and `*-testutils` may depend on Quarkus.
 Everything else stays framework-agnostic so the artifacts remain reusable. When upgrading a dependency whose version is
 dictated by Quarkus, look for the XML comment marker next to its `version.*` property in the root [pom.xml](pom.xml) and
 bump the bundle together.
 
 `catalogue-*` and the `howibuy-*`/`sfc-*` modules never depend on each other; a `bannedDependencies` rule in each
-container pom enforces it. The modules of `tealhelix-architecture` are common ground that every container may use, so
+container pom enforces it. The Catalogue Sync knows both only through HTTP, so the `catalogue-sync-cli` pom bans all of
+them. The modules of `tealhelix-architecture` are common ground that every container may use, so
 the rule lists them as exceptions; add a new architecture module to those lists.
 
 Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule 5 in

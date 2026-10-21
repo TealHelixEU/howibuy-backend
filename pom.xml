@@ -13,6 +13,7 @@
 
 	<modules>
 		<module>catalogue-container</module>
+		<module>catalogue-sync-cli-container</module>
 		<module>howibuy-container</module>
 		<module>tealhelix-architecture</module>
 		<module>tealhelix-common</module>
