@@ -47,15 +47,6 @@ final class TestCatalogue {
 		execute("DELETE FROM IN_RETAILER_PRODUCT WHERE product_key LIKE '" + prefix + "%'");
 	}
 
-	/**
-	 * Make a product of the test a tombstone, as the eviction does when it deletes the last Listing of a product.
-	 */
-	void removeProduct(String productKey) throws SQLException {
-		execute("DELETE FROM IN_LISTING WHERE retailer_product_id IN (SELECT id FROM IN_RETAILER_PRODUCT WHERE product_key = '" + productKey + "')");
-		execute("DELETE FROM IN_RETAILER_PRODUCT_NAME WHERE retailer_product_id IN (SELECT id FROM IN_RETAILER_PRODUCT WHERE product_key = '" + productKey + "')");
-		execute("UPDATE IN_RETAILER_PRODUCT SET removed = TRUE, change_sequence = nextval('IN_CHANGE_SEQUENCE') WHERE product_key = '" + productKey + "'");
-	}
-
 	String id() {
 		return id;
 	}
@@ -81,6 +72,19 @@ final class TestCatalogue {
 			}
 		}
 		return changeSequences;
+	}
+
+	/**
+	 * The id that the Ingestion gave a product of the test.
+	 */
+	String productId(String productKey) throws SQLException {
+		try (var connection = dataSource.getConnection(); var statement = connection.prepareStatement("SELECT id FROM IN_RETAILER_PRODUCT WHERE product_key = ?")) {
+			statement.setString(1, productKey);
+			try (var resultSet = statement.executeQuery()) {
+				resultSet.next();
+				return resultSet.getString(1);
+			}
+		}
 	}
 
 	String inputHash(String productKey) throws SQLException {

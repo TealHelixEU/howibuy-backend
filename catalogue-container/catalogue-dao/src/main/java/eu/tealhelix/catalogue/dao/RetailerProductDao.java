@@ -106,4 +106,43 @@ public interface RetailerProductDao {
 	 * @return How many Listings were made inactive
 	 */
 	Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, CatalogueId catalogueId, Collection<ProductKey> productKeys);
+
+	/**
+	 * Hold the change sequence until the transaction ends, as for
+	 * {@link #takeChangeSequences(ReactivePersistenceTxContext, int)}, before the transaction reads the products it changes.
+	 * The other transactions that change products then cannot change them in between.
+	 *
+	 * @param tx The persistence context
+	 * @return Completes when the transaction holds the change sequence
+	 */
+	Uni<Void> holdChangeSequence(ReactivePersistenceTxContext tx);
+
+	/**
+	 * Delete the inactive Listings that were last seen before a time, of every Catalogue.
+	 *
+	 * @param tx             The persistence context, which holds none of the products
+	 * @param lastSeenBefore The time
+	 * @return How many Listings were deleted
+	 */
+	Uni<Integer> deleteInactiveListings(ReactivePersistenceTxContext tx, LocalDateTime lastSeenBefore);
+
+	/**
+	 * Make the products left without Listings tombstones: forget their names, and stamp them with new values of the change
+	 * sequence, which the transaction holds as for {@link #takeChangeSequences(ReactivePersistenceTxContext, int)}. The
+	 * tombstones stay as they were.
+	 *
+	 * @param tx        The persistence context, which holds none of the products
+	 * @param removedAt When the products became tombstones
+	 * @return How many products became tombstones
+	 */
+	Uni<Integer> removeUnlistedProducts(ReactivePersistenceTxContext tx, LocalDateTime removedAt);
+
+	/**
+	 * Delete the tombstones that were made before a time.
+	 *
+	 * @param tx            The persistence context, which holds none of the products
+	 * @param removedBefore The time
+	 * @return How many tombstones were deleted
+	 */
+	Uni<Integer> purgeRemovedProducts(ReactivePersistenceTxContext tx, LocalDateTime removedBefore);
 }

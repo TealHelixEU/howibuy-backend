@@ -131,8 +131,11 @@ A **Delta** never deactivates anything. A **Deletion** Feed carries only retaile
 inactive.
 
 **Eviction** (scheduled, in Ingestion): a Listing that has been inactive with `last_seen_at` older than the configured
-threshold is deleted. A Retailer Product left without Listings becomes a tombstone (`removed = true`, stamped). Tombstones
-are purged after a much longer period, which bounds how far behind Catalogue Sync may fall.
+threshold is deleted. A Retailer Product left without Listings becomes a tombstone (`removed = true`, `removed_at`,
+stamped) and loses its names. Tombstones are purged after a much longer period, which bounds how far behind Catalogue
+Sync may fall. A tombstone that a Feed carries again comes back with the same id. The eviction runs in one transaction
+that holds the change sequence from its start, and every batch of a Feed holds it before it reads its products, so
+neither changes a product that the other has read.
 
 ### Change cursor
 
@@ -144,6 +147,9 @@ are purged after a much longer period, which bounds how far behind Catalogue Syn
   product changed five times between two reads appears once.
 - `GET /api/v1/product-changes?after=N&limit=M` (sync service account) answers the entries and the cursor to continue
   from.
+- A stamping transaction holds the change sequence (a transaction-scoped advisory lock) from its first stamp until it
+  ends, so transactions commit in the order of their values, and a reader never moves past a value that is not visible
+  yet. The batches of the Feeds and the eviction take it at their start (see "Eviction").
 
 ### Catalogue Sync
 

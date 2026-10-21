@@ -1,8 +1,12 @@
 package eu.tealhelix.catalogue.tests;
 
 import static eu.tealhelix.catalogue.tests.TestFeeds.awaitTheEndOf;
+import static eu.tealhelix.catalogue.tests.TestFeeds.deletion;
 import static eu.tealhelix.catalogue.tests.TestFeeds.feed;
 import static eu.tealhelix.catalogue.tests.TestFeeds.product;
+import static eu.tealhelix.catalogue.tests.TestProductChanges.changeOf;
+import static eu.tealhelix.catalogue.tests.TestProductChanges.changesAfter;
+import static eu.tealhelix.catalogue.tests.TestProductChanges.endOfTheChanges;
 import static io.restassured.RestAssured.given;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,19 +22,22 @@ import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.catalogue.services.v1.FeedService;
+import eu.tealhelix.catalogue.services.v1.impl.ProductEviction;
+import eu.tealhelix.catalogue.services.v1.impl.UniAwaiter;
 import eu.tealhelix.catalogue.test.quarkus.WithCatalogueDb;
 import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
+import eu.tealhelix.common.services.generic.DateTimeService;
+import eu.tealhelix.common.test.time.TestClock;
 import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
-import io.restassured.path.json.JsonPath;
-import io.restassured.path.json.config.JsonPathConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,13 +54,18 @@ import org.junit.jupiter.api.Test;
 class ProductChangesTest {
 	static final String CATALOGUE_SYNC = "518cae6a-f2b2-4454-b74d-f2404feab2f5";
 	private static final User LIME_FRESH = new UserImpl(new UserIdImpl(TestCatalogue.LIME_FRESH), null, null, false, false, Set.of(Role.RETAILER));
-	private static final JsonPathConfig EXACT_NUMBERS = new JsonPathConfig(JsonPathConfig.NumberReturnType.BIG_DECIMAL);
 
 	@Inject
 	DataSource dataSource;
 
 	@Inject
 	FeedService feedService;
+
+	@Inject
+	ProductEviction productEviction;
+
+	@Inject
+	UniAwaiter uniAwaiter;
 
 	private TestCatalogue catalogue;
 
@@ -123,20 +136,23 @@ class ProductChangesTest {
 	}
 
 	/**
-	 * Products are removed by the eviction, which the test stands in for in the database.
+	 * Products are removed by the eviction, which runs on a clock of the test's, 91 days after milk was taken off sale.
 	 */
 	@Test
 	void aRemovedProductIsReadAsItsIdentityAlone() throws Exception {
+		var now = LocalDateTime.now();
+		var clock = new TestClock(now);
+		QuarkusMock.installMockForType(clock, DateTimeService.class);
 		process("SNAPSHOT", feed(product(catalogue.key("milk"), Map.of("el", "Γάλα"), "1.29")));
+		process("DELETION", feed(deletion(catalogue.key("milk"))));
 		var start = endOfTheChanges();
-		catalogue.removeProduct(catalogue.key("milk"));
+		clock.set(now.plusDays(91));
+		uniAwaiter.await(productEviction::evict);
 
-		var page = changesAfter(start, 10);
+		var removed = changeOf(start, catalogue.key("milk"));
 
-		assertThat(page.getList("products")).hasSize(1);
-		var removed = page.getMap("products[0]");
 		assertThat(removed).containsEntry("productKey", catalogue.key("milk")).containsEntry("retailerId", TestCatalogue.LIME_FRESH).containsEntry("removed", true);
-		assertThat(page.getLong("products[0].changeSequence")).isEqualTo(catalogue.changeSequences().get(catalogue.key("milk")));
+		assertThat(((Number) removed.get("changeSequence")).longValue()).isEqualTo(catalogue.changeSequences().get(catalogue.key("milk")));
 		assertThat(removed.get("inputHash")).isNull();
 		assertThat(removed.get("names")).isNull();
 		assertThat(removed.get("characteristics")).isNull();
@@ -174,26 +190,6 @@ class ProductChangesTest {
 	@OidcSecurity(claims = @Claim(key = "sub", value = FeedDeactivationTest.OPERATOR))
 	void anOperatorReadsNoChanges() {
 		given().when().get("/api/catalogue/v1/product-changes").then().statusCode(403);
-	}
-
-	/**
-	 * Read the changes up to the last one.
-	 *
-	 * @return The value of the change sequence that the next change will follow
-	 */
-	private long endOfTheChanges() {
-		long after = 0;
-		JsonPath page;
-		while (!(page = changesAfter(after, 1000)).getList("products").isEmpty()) {
-			after = page.getLong("toSequence");
-		}
-		return after;
-	}
-
-	private static JsonPath changesAfter(long after, int limit) {
-		return given().when().get("/api/catalogue/v1/product-changes?after=" + after + "&limit=" + limit)
-				.then().statusCode(200)
-				.extract().jsonPath().using(EXACT_NUMBERS);
 	}
 
 	/**

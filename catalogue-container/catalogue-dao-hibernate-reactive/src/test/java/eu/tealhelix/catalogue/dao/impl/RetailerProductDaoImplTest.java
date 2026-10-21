@@ -5,11 +5,13 @@ import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.math.BigDecimal;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -68,6 +70,13 @@ public class RetailerProductDaoImplTest {
 	private static final IngestionRunId OTHER_RETAILERS_RUN = new IngestionRunIdImpl("5d1c9a3e-0f4b-4a52-9e6d-2b7c8a1f3e04");
 	private static final LocalDateTime SEEN_AT = LocalDateTime.of(2026, 10, 21, 10, 0, 0);
 	private static final LocalDateTime LATER = LocalDateTime.of(2026, 10, 22, 10, 0, 0);
+	/**
+	 * The tests that evict, make tombstones and purge choose times before {@link #SEEN_AT}, each apart from the others',
+	 * so that the rows they leave behind are never theirs to evict or purge.
+	 */
+	private static final LocalDateTime LONG_AGO = LocalDateTime.of(2025, 1, 10, 10, 0, 0);
+	private static final LocalDateTime REMOVED_AT = LocalDateTime.of(2025, 6, 1, 3, 30, 0);
+	private static final LocalDateTime PURGED_REMOVED_AT = LocalDateTime.of(2019, 3, 1, 3, 30, 0);
 	private static final Currency EUR = Currency.getInstance("EUR");
 	/**
 	 * Above the values of the change sequence that the tests give their products by hand.
@@ -313,6 +322,105 @@ public class RetailerProductDaoImplTest {
 	}
 
 	@Test
+	void deletesTheInactiveListingsLastSeenBeforeATime(Mutiny.SessionFactory sessionFactory) {
+		var evicted = product(RETAILER, newKey(), 7, listing(CATALOGUE, "1.29", false), listing(OTHER_CATALOGUE, "1.39", true));
+		var active = product(RETAILER, newKey(), 7, listing(CATALOGUE, "0.99", true));
+		var recentlyInactive = product(RETAILER, newKey(), 7, listing(CATALOGUE, "4.50", false));
+		save(sessionFactory, OTHER_CATALOGUE, OTHER_CATALOGUE_RUN, SEEN_AT, product(RETAILER, evicted.getProductKey(), 7, listing(OTHER_CATALOGUE, "1.39", true)));
+		save(sessionFactory, CATALOGUE, RUN, LONG_AGO, evicted, active);
+		save(sessionFactory, CATALOGUE, RUN, SEEN_AT, recentlyInactive);
+
+		assertEquals(1, deleteInactiveListings(sessionFactory, LONG_AGO.plusDays(1)));
+
+		var products = findProducts(sessionFactory, RETAILER, evicted.getProductKey(), active.getProductKey(), recentlyInactive.getProductKey());
+		assertEquals(ImmutableProductChange.copyOf(evicted).withListings(listing(OTHER_CATALOGUE, "1.39", true)), products.get(evicted.getProductKey()));
+		assertEquals(active, products.get(active.getProductKey()));
+		assertEquals(recentlyInactive, products.get(recentlyInactive.getProductKey()));
+	}
+
+	@Test
+	void makesTheProductsLeftWithoutListingsTombstonesOnce(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		var unlisted = product(RETAILER, newKey(), 7, listing(CATALOGUE, "1.29", false));
+		var listedElsewhere = product(RETAILER, newKey(), 7, listing(CATALOGUE, "0.99", false), listing(OTHER_CATALOGUE, "1.09", true));
+		save(sessionFactory, OTHER_CATALOGUE, OTHER_CATALOGUE_RUN, SEEN_AT, product(RETAILER, listedElsewhere.getProductKey(), 7, listing(OTHER_CATALOGUE, "1.09", true)));
+		save(sessionFactory, CATALOGUE, RUN, LONG_AGO, unlisted, listedElsewhere);
+		deleteInactiveListings(sessionFactory, LONG_AGO.plusDays(1));
+		var latestStamp = takeChangeSequences(sessionFactory, 1).getFirst();
+
+		assertEquals(1, removeUnlistedProducts(sessionFactory, REMOVED_AT));
+		var tombstone = findProducts(sessionFactory, RETAILER, unlisted.getProductKey()).get(unlisted.getProductKey());
+		assertEquals(0, removeUnlistedProducts(sessionFactory, REMOVED_AT.plusDays(1)));
+
+		assertTrue(tombstone.isRemoved(), "Not a tombstone");
+		assertEquals(Map.of(), tombstone.getNames());
+		assertEquals(List.of(), tombstone.getListings());
+		assertTrue(tombstone.getChangeSequence() > latestStamp, "Not stamped anew: " + tombstone.getChangeSequence());
+		var products = findProducts(sessionFactory, RETAILER, unlisted.getProductKey(), listedElsewhere.getProductKey());
+		assertEquals(tombstone, products.get(unlisted.getProductKey()));
+		assertEquals(ImmutableProductChange.copyOf(listedElsewhere).withListings(listing(OTHER_CATALOGUE, "1.09", true)), products.get(listedElsewhere.getProductKey()));
+		assertEquals(REMOVED_AT, findRemovedAt(unlisted.getProductKey()));
+	}
+
+	@Test
+	void revivesATombstoneWithTheSameId(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		var product = product(RETAILER, newKey(), 7, listing(CATALOGUE, "1.29", false));
+		save(sessionFactory, CATALOGUE, RUN, LONG_AGO, product);
+		var id = findId(product.getProductKey());
+		deleteInactiveListings(sessionFactory, LONG_AGO.plusDays(1));
+		removeUnlistedProducts(sessionFactory, REMOVED_AT);
+		var revived = product(RETAILER, product.getProductKey(), 9, listing(CATALOGUE, "1.19", true));
+
+		save(sessionFactory, CATALOGUE, LATER_RUN, LATER, revived);
+
+		assertEquals(Map.of(revived.getProductKey(), revived), findProducts(sessionFactory, RETAILER, product.getProductKey()));
+		assertEquals(id, findId(product.getProductKey()));
+		assertNull(findRemovedAt(product.getProductKey()));
+	}
+
+	@Test
+	void purgesTheTombstonesMadeBeforeATime(Mutiny.SessionFactory sessionFactory) {
+		var purged = product(RETAILER, newKey(), 7, listing(CATALOGUE, "1.29", false));
+		var kept = product(RETAILER, newKey(), 7, listing(CATALOGUE, "0.99", false));
+		var listed = product(RETAILER, newKey(), 7, listing(CATALOGUE, "4.50", true));
+		save(sessionFactory, CATALOGUE, RUN, LONG_AGO, purged, listed);
+		deleteInactiveListings(sessionFactory, LONG_AGO.plusDays(1));
+		removeUnlistedProducts(sessionFactory, PURGED_REMOVED_AT);
+		save(sessionFactory, CATALOGUE, RUN, LONG_AGO, kept);
+		deleteInactiveListings(sessionFactory, LONG_AGO.plusDays(1));
+		removeUnlistedProducts(sessionFactory, PURGED_REMOVED_AT.plusMonths(6));
+
+		assertEquals(1, purgeRemovedProducts(sessionFactory, PURGED_REMOVED_AT.plusMonths(3)));
+
+		var products = findProducts(sessionFactory, RETAILER, purged.getProductKey(), kept.getProductKey(), listed.getProductKey());
+		assertEquals(Set.of(kept.getProductKey(), listed.getProductKey()), products.keySet());
+		assertTrue(products.get(kept.getProductKey()).isRemoved(), "Not a tombstone");
+		assertEquals(listed, products.get(listed.getProductKey()));
+	}
+
+	@Test
+	void takingValuesWaitsForATransactionHoldingTheChangeSequenceBeforeItTakesAny(Mutiny.SessionFactory sessionFactory) throws Exception {
+		var sut = new RetailerProductDaoImpl();
+
+		var outcome = stampWhileHeld(sessionFactory, tx -> sut.holdChangeSequence(tx).replaceWith(0L), tx -> sut.takeChangeSequences(tx, 1));
+
+		assertEquals(1, outcome.stamped().size());
+	}
+
+	@Test
+	void makingTombstonesWaitsForATransactionHoldingTheChangeSequence(Mutiny.SessionFactory sessionFactory) throws Exception {
+		var sut = new RetailerProductDaoImpl();
+		var unlisted = product(RETAILER, newKey(), 7, listing(CATALOGUE, "1.29", false));
+		save(sessionFactory, CATALOGUE, RUN, LONG_AGO, unlisted);
+		deleteInactiveListings(sessionFactory, LONG_AGO.plusDays(1));
+
+		var outcome = stampWhileHeld(sessionFactory, tx -> sut.removeUnlistedProducts(tx, REMOVED_AT));
+
+		assertEquals(1, outcome.stamped());
+		var stamp = findProducts(sessionFactory, RETAILER, unlisted.getProductKey()).get(unlisted.getProductKey()).getChangeSequence();
+		assertTrue(stamp > outcome.held(), "Stamped before the held value: " + stamp + ", " + outcome);
+	}
+
+	@Test
 	void takingValuesOfTheChangeSequenceWaitsForATransactionHoldingIt(Mutiny.SessionFactory sessionFactory) throws Exception {
 		var sut = new RetailerProductDaoImpl();
 
@@ -441,17 +549,27 @@ public class RetailerProductDaoImplTest {
 
 	/**
 	 * Run a stamp while another transaction holds a value of the change sequence it took, and check that the stamp waits
-	 * for that transaction to end. The transactions are told apart from the database's locks. The holding transaction
-	 * goes on, when told to end, on the event loop of its session, as Hibernate Reactive requires.
+	 * for that transaction to end.
 	 */
 	private static <T> HeldStamp<T> stampWhileHeld(Mutiny.SessionFactory sessionFactory, Function<ReactivePersistenceTxContext, Uni<T>> stamp) throws Exception {
 		var sut = new RetailerProductDaoImpl();
+		return stampWhileHeld(sessionFactory, tx -> sut.takeChangeSequences(tx, 1).map(List::getFirst), stamp);
+	}
+
+	/**
+	 * Run a stamp while another transaction holds the change sequence, and check that the stamp waits for that
+	 * transaction to end. The transactions are told apart from the database's locks. The holding transaction goes on,
+	 * when told to end, on the event loop of its session, as Hibernate Reactive requires.
+	 *
+	 * @param hold What the holding transaction does to hold the change sequence, answering the value it took
+	 */
+	private static <T> HeldStamp<T> stampWhileHeld(Mutiny.SessionFactory sessionFactory, Function<ReactivePersistenceTxContext, Uni<Long>> hold, Function<ReactivePersistenceTxContext, Uni<T>> stamp) throws Exception {
 		var persistenceContextFactory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
 		var end = new CompletableFuture<Void>();
 		var holding = persistenceContextFactory
 				.withTransaction(tx -> {
 					var context = Vertx.currentContext();
-					return sut.takeChangeSequences(tx, 1).call(() -> Uni.createFrom().completionStage(end).emitOn(task -> context.runOnContext(v -> task.run())));
+					return hold.apply(tx).call(() -> Uni.createFrom().completionStage(end).emitOn(task -> context.runOnContext(v -> task.run())));
 				})
 				.subscribeAsCompletionStage();
 		try {
@@ -461,7 +579,7 @@ public class RetailerProductDaoImplTest {
 
 			assertFalse(stamping.isDone(), "The stamp did not wait");
 			end.complete(null);
-			var held = holding.get(ASYNC_WAIT_SECONDS, SECONDS).getFirst();
+			var held = holding.get(ASYNC_WAIT_SECONDS, SECONDS);
 			return new HeldStamp<>(held, stamping.get(ASYNC_WAIT_SECONDS, SECONDS));
 		} finally {
 			end.complete(null);
@@ -542,6 +660,59 @@ public class RetailerProductDaoImplTest {
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
 				.withTransaction(tx -> sut.deactivateListings(tx, RETAILER, catalogueId, Set.of(keys)))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static int deleteInactiveListings(Mutiny.SessionFactory sessionFactory, LocalDateTime lastSeenBefore) {
+		var sut = new RetailerProductDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> sut.deleteInactiveListings(tx, lastSeenBefore))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static int removeUnlistedProducts(Mutiny.SessionFactory sessionFactory, LocalDateTime removedAt) {
+		var sut = new RetailerProductDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> sut.removeUnlistedProducts(tx, removedAt))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static int purgeRemovedProducts(Mutiny.SessionFactory sessionFactory, LocalDateTime removedBefore) {
+		var sut = new RetailerProductDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> sut.purgeRemovedProducts(tx, removedBefore))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	/**
+	 * Reads with plain JDBC, not JPA: the id is assigned by the DAO and never read from it.
+	 */
+	private static String findId(ProductKey key) throws SQLException {
+		return findColumn("id", key, rs -> rs.getString(1));
+	}
+
+	/**
+	 * Reads with plain JDBC, not JPA: the test is about the mapping of the column, which reading through that same mapping
+	 * could not check.
+	 */
+	private static LocalDateTime findRemovedAt(ProductKey key) throws SQLException {
+		return findColumn("removed_at", key, rs -> rs.getTimestamp(1) != null ? rs.getTimestamp(1).toLocalDateTime() : null);
+	}
+
+	private interface ColumnReader<T> {
+		T read(ResultSet resultSet) throws SQLException;
+	}
+
+	private static <T> T findColumn(String column, ProductKey key, ColumnReader<T> reader) throws SQLException {
+		try (
+				var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+				var s = c.prepareStatement("SELECT " + column + " FROM IN_RETAILER_PRODUCT WHERE product_key = ?")
+		) {
+			s.setString(1, key.asString());
+			try (var rs = s.executeQuery()) {
+				rs.next();
+				return reader.read(rs);
+			}
+		}
 	}
 
 	/**

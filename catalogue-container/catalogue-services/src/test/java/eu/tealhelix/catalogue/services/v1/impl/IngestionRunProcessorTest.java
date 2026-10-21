@@ -144,6 +144,7 @@ public class IngestionRunProcessorTest {
 		lenient().when(ingestionRunDao.update(any(), any())).thenReturn(Uni.createFrom().voidItem());
 		lenient().when(ingestionRunDao.deleteRejects(any(), any())).thenReturn(Uni.createFrom().voidItem());
 		lenient().when(ingestionRunDao.createRejects(any(), any(), any())).thenReturn(Uni.createFrom().voidItem());
+		lenient().when(retailerProductDao.holdChangeSequence(any())).thenReturn(Uni.createFrom().voidItem());
 		lenient().when(retailerProductDao.findProducts(any(), eq(RETAILER), anyCollection())).thenAnswer(i -> {
 			Collection<ProductKey> keys = i.getArgument(2);
 			var found = new HashMap<ProductKey, ProductChange>();
@@ -401,6 +402,39 @@ public class IngestionRunProcessorTest {
 		);
 		verify(retailerProductDao, never()).save(any(), any(), any(), any(), anyCollection());
 		verify(retailerProductDao, never()).deactivateUnseenListings(any(), any(), any());
+	}
+
+	/**
+	 * Otherwise the eviction could change the products of a batch between their reading and their saving.
+	 */
+	@Test
+	void eachBatchHoldsTheChangeSequenceBeforeItReadsItsProducts() {
+		feed.add(record(1, "P-1", "1.29"));
+		feed.add(record(2, "P-2", "1.29"));
+		feed.add(record(3, "P-3", "1.29"));
+
+		sut.process(run(FeedType.DELTA));
+
+		var order = inOrder(retailerProductDao);
+		for (int batch = 0; batch < 2; batch++) {
+			order.verify(retailerProductDao).holdChangeSequence(any());
+			order.verify(retailerProductDao).findProducts(any(), eq(RETAILER), anyCollection());
+		}
+	}
+
+	@Test
+	void eachBatchOfADeletionFeedHoldsTheChangeSequenceBeforeItReadsItsProducts() {
+		deletions.add(new DeletionRecord(1, "P-1"));
+		deletions.add(new DeletionRecord(2, "P-2"));
+		deletions.add(new DeletionRecord(3, "P-3"));
+
+		sut.process(run(FeedType.DELETION));
+
+		var order = inOrder(retailerProductDao);
+		for (int batch = 0; batch < 2; batch++) {
+			order.verify(retailerProductDao).holdChangeSequence(any());
+			order.verify(retailerProductDao).findProducts(any(), eq(RETAILER), anyCollection());
+		}
 	}
 
 	private void assertFailed(String error) {

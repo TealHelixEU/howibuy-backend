@@ -135,6 +135,7 @@
 			<column name="removed" type="BOOLEAN" defaultValueBoolean="false" remarks="Whether the product is a tombstone, left without Listings">
 				<constraints nullable="false" notNullConstraintName="NL_IN_RETAILER_PRODUCT__REMOVED" />
 			</column>
+			<column name="removed_at" type="TIMESTAMP" remarks="When the product became a tombstone, which it is purged a while after; null while it is not one" />
 		</createTable>
 		<addUniqueConstraint tableName="IN_RETAILER_PRODUCT" columnNames="retailer_id, product_key" constraintName="UQ_IN_RETAILER_PRODUCT__RETAILER_ID_PRODUCT_KEY" />
 		<addForeignKeyConstraint baseTableName="IN_RETAILER_PRODUCT" baseColumnNames="retailer_id" constraintName="FK_RETAILER_PRODUCT__RETAILER_ID__RETAILER__ID" referencedTableName="IN_RETAILER" referencedColumnNames="id" />

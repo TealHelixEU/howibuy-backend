@@ -2,6 +2,7 @@ package eu.tealhelix.catalogue.dao.jpa;
 
 import static jakarta.persistence.CascadeType.ALL;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,9 @@ public class RetailerProductEntity {
 
 	@Column(name = "removed")
 	private boolean removed;
+
+	@Column(name = "removed_at")
+	private LocalDateTime removedAt;
 
 	@OneToMany(mappedBy = "retailerProduct", cascade = ALL, orphanRemoval = true)
 	@MapKey(name = "lang")
@@ -116,6 +120,14 @@ public class RetailerProductEntity {
 
 	public void setRemoved(boolean removed) {
 		this.removed = removed;
+	}
+
+	public LocalDateTime getRemovedAt() {
+		return removedAt;
+	}
+
+	public void setRemovedAt(LocalDateTime removedAt) {
+		this.removedAt = removedAt;
 	}
 
 	public Map<String, RetailerProductNameEntity> getNames() {

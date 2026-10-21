@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,7 @@ import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.common.services.generic.DateTimeService;
-import eu.tealhelix.common.services.generic.impl.DateTimeServiceImpl;
+import eu.tealhelix.common.test.time.TestClock;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
@@ -77,7 +76,7 @@ public class CompassOverviewTest {
 	@ConfigProperty(name = "sfc.seconds-per-question")
 	int secondsPerQuestion;
 
-	private final MutableClock clock = new MutableClock();
+	private final TestClock clock = new TestClock();
 
 	@BeforeEach
 	void setUp() throws SQLException {
@@ -268,25 +267,6 @@ public class CompassOverviewTest {
 		@Override
 		public Uni<User> processToken(String token) {
 			return Uni.createFrom().item(END_USER);
-		}
-	}
-
-	/** A clock whose "now" the test sets, so stability-window eligibility is exercised without real time passing. */
-	private static final class MutableClock extends DateTimeServiceImpl {
-		private volatile LocalDateTime now;
-
-		void set(LocalDateTime now) {
-			this.now = now;
-		}
-
-		@Override
-		public LocalDateTime getNow() {
-			return now;
-		}
-
-		@Override
-		public long currentTimeMillis() {
-			return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 		}
 	}
 }

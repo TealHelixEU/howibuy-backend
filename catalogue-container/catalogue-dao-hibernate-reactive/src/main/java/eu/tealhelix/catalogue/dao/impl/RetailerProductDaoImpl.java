@@ -177,13 +177,58 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 				.execute());
 	}
 
+	@Override
+	public Uni<Integer> deleteInactiveListings(ReactivePersistenceTxContext tx, LocalDateTime lastSeenBefore) {
+		var cb = tx.getCriteriaBuilder();
+		var d = cb.createCriteriaDelete(ListingEntity.class);
+		var listing = d.from(ListingEntity.class);
+		d.where(cb.isFalse(listing.get(ListingEntity_.active)), cb.lessThan(listing.get(ListingEntity_.lastSeenAt), lastSeenBefore));
+		return tx.createDelete(d).execute();
+	}
+
+	/**
+	 * In SQL, for the reason of {@link #deactivateUnseenListings(ReactivePersistenceTxContext, CatalogueId, IngestionRunId)}.
+	 * The names are deleted first, while their products are not tombstones yet.
+	 */
+	@Override
+	public Uni<Integer> removeUnlistedProducts(ReactivePersistenceTxContext tx, LocalDateTime removedAt) {
+		return holdChangeSequence(tx)
+				.chain(() -> tx.createNativeUpdate("""
+								DELETE FROM IN_RETAILER_PRODUCT_NAME n
+								USING IN_RETAILER_PRODUCT p
+								WHERE n.retailer_product_id = p.id AND NOT p.removed
+									AND NOT EXISTS (SELECT 1 FROM IN_LISTING l WHERE l.retailer_product_id = p.id)
+								""")
+						.execute())
+				.chain(() -> tx.createNativeUpdate("""
+								UPDATE IN_RETAILER_PRODUCT p SET removed = TRUE, removed_at = :removedAt, change_sequence = nextval('IN_CHANGE_SEQUENCE')
+								WHERE NOT p.removed
+									AND NOT EXISTS (SELECT 1 FROM IN_LISTING l WHERE l.retailer_product_id = p.id)
+								""")
+						.setParameter("removedAt", removedAt)
+						.execute());
+	}
+
+	/**
+	 * A tombstone has neither names nor Listings, so deleting its row is enough.
+	 */
+	@Override
+	public Uni<Integer> purgeRemovedProducts(ReactivePersistenceTxContext tx, LocalDateTime removedBefore) {
+		var cb = tx.getCriteriaBuilder();
+		var d = cb.createCriteriaDelete(RetailerProductEntity.class);
+		var product = d.from(RetailerProductEntity.class);
+		d.where(cb.isTrue(product.get(RetailerProductEntity_.removed)), cb.lessThan(product.get(RetailerProductEntity_.removedAt), removedBefore));
+		return tx.createDelete(d).execute();
+	}
+
 	/**
 	 * Hold the change sequence until the transaction ends, after the transaction holding it ends. Otherwise a transaction
 	 * that took values could commit after one that took greater values, and a reader of the changes who read the greater
 	 * values first would never read the others. The advisory lock is keyed by the sequence's object id, which no other
-	 * object of the database shares.
+	 * object of the database shares. A transaction may take it again while it holds it.
 	 */
-	private static Uni<Void> holdChangeSequence(ReactivePersistenceTxContext tx) {
+	@Override
+	public Uni<Void> holdChangeSequence(ReactivePersistenceTxContext tx) {
 		return tx.createNativeQuery("SELECT 1 FROM pg_advisory_xact_lock(CAST(CAST(CAST('IN_CHANGE_SEQUENCE' AS regclass) AS oid) AS bigint))", Integer.class)
 				.getSingleResult()
 				.replaceWithVoid();
@@ -220,6 +265,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 		entity.setInputHash(product.getInputHash());
 		entity.setChangeSequence(product.getChangeSequence());
 		entity.setRemoved(product.isRemoved());
+		if (!product.isRemoved()) entity.setRemovedAt(null);
 
 		entity.getNames().keySet().retainAll(product.getNames().keySet());
 		product.getNames().forEach((lang, name) -> entity.getNames().computeIfAbsent(lang, l -> newName(entity, l)).setName(name));

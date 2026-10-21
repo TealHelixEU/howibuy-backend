@@ -209,7 +209,9 @@ public class IngestionRunProcessor {
 	}
 
 	/**
-	 * Apply a batch of items in one transaction: the valid records to their products, the others as rejects.
+	 * Apply a batch of items in one transaction: the valid records to their products, the others as rejects. The
+	 * transaction holds the change sequence before it reads the products, so that the eviction cannot change them before
+	 * they are saved.
 	 */
 	private void applyBatch(IngestionRun run, Catalogue catalogue, List<FeedItem> items, Counts counts) {
 		var rejects = new ArrayList<IngestionReject>();
@@ -225,7 +227,8 @@ public class IngestionRunProcessor {
 		}
 		Set<ProductKey> productKeys = records.stream().map(r -> new ProductKeyImpl(r.productKey())).collect(Collectors.toSet());
 		var outcomes = uniAwaiter.await(() -> persistenceContextFactory.withTransaction(tx -> forc(
-				retailerProductDao.findProducts(tx, catalogue.getRetailerId(), productKeys),
+				retailerProductDao.holdChangeSequence(tx),
+				_ -> retailerProductDao.findProducts(tx, catalogue.getRetailerId(), productKeys),
 				stored -> Uni.createFrom().item(BatchMerge.of(stored, records, catalogue)),
 				merge -> retailerProductDao.takeChangeSequences(tx, merge.changed().size()),
 				(merge, changeSequences) -> forc(
@@ -241,7 +244,8 @@ public class IngestionRunProcessor {
 	/**
 	 * Apply a batch of the items of a Deletion Feed in one transaction: the Listings of the products in the Catalogue are
 	 * made inactive, and the records of products without a Listing there are rejected. A Listing already inactive is left
-	 * as it was.
+	 * as it was. The transaction holds the change sequence before it reads the products, as in
+	 * {@link #applyBatch(IngestionRun, Catalogue, List, Counts)}.
 	 */
 	private void applyDeletions(IngestionRun run, Catalogue catalogue, List<DeletionItem> items, Counts counts) {
 		var rejects = new ArrayList<IngestionReject>();
@@ -257,7 +261,8 @@ public class IngestionRunProcessor {
 		}
 		Set<ProductKey> productKeys = records.stream().map(r -> new ProductKeyImpl(r.productKey())).collect(Collectors.toSet());
 		var outcome = uniAwaiter.await(() -> persistenceContextFactory.withTransaction(tx -> forc(
-				retailerProductDao.findProducts(tx, catalogue.getRetailerId(), productKeys),
+				retailerProductDao.holdChangeSequence(tx),
+				_ -> retailerProductDao.findProducts(tx, catalogue.getRetailerId(), productKeys),
 				stored -> Uni.createFrom().item(BatchDeletion.of(stored, records, catalogue)),
 				deletion -> retailerProductDao.deactivateListings(tx, catalogue.getRetailerId(), catalogue.getId(), deletion.listed()),
 				(deletion, deactivated) -> forc(
