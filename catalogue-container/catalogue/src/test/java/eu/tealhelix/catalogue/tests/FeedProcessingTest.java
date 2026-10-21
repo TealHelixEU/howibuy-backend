@@ -155,7 +155,7 @@ class FeedProcessingTest {
 				"not json"
 		).getBytes(UTF_8)));
 		execute("INSERT INTO IN_INGESTION_RUN (id, catalogue_id, feed_type, status, adapter, adapter_version, received_at, started_at, file_path, file_size, file_sha256) VALUES "
-				+ "('" + runId + "', '" + catalogue.id() + "', 'DELTA', 'PROCESSING', 'test-jsonl', '1', now(), now(), '" + storedFeed.path() + "', " + storedFeed.size() + ", '" + storedFeed.sha256() + "')");
+				+ "('" + runId + "', '" + catalogue.id() + "', 'DELTA', 'PROCESSING', 'jsonl', '1', now(), now(), '" + storedFeed.path() + "', " + storedFeed.size() + ", '" + storedFeed.sha256() + "')");
 		execute("INSERT INTO IN_INGESTION_REJECT (ingestion_run_id, position, product_key, reason) VALUES ('" + runId + "', 2, NULL, 'The record is not a JSON object')");
 
 		dispatcher.recover();

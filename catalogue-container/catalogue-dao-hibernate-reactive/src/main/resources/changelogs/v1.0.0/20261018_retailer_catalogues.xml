@@ -212,7 +212,7 @@
 			<column name="country">GR</column>
 			<column name="primary_language">el</column>
 			<column name="accepted_languages">{el,en}</column>
-			<column name="adapter">test-jsonl</column>
+			<column name="adapter">jsonl</column>
 		</insert>
 	</changeSet>
 </databaseChangeLog>

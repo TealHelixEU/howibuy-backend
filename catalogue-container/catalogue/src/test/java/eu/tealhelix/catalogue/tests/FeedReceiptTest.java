@@ -49,8 +49,8 @@ class FeedReceiptTest {
 	void createTheCataloguesOfTheTests() throws SQLException {
 		execute("INSERT INTO IN_RETAILER (id, name) VALUES ('" + OTHER_RETAILER + "', 'Other Retailer')");
 		execute("INSERT INTO IN_CATALOGUE (id, retailer_id, country, primary_language, accepted_languages, adapter, active) VALUES "
-				+ "('other-lt', '" + OTHER_RETAILER + "', 'LT', 'lt', '{lt}', 'test-jsonl', TRUE), "
-				+ "('lime-fresh-cy', '" + LIME_FRESH + "', 'CY', 'el', '{el}', 'test-jsonl', FALSE)");
+				+ "('other-lt', '" + OTHER_RETAILER + "', 'LT', 'lt', '{lt}', 'jsonl', TRUE), "
+				+ "('lime-fresh-cy', '" + LIME_FRESH + "', 'CY', 'el', '{el}', 'jsonl', FALSE)");
 	}
 
 	@AfterEach
@@ -89,7 +89,7 @@ class FeedReceiptTest {
 		assertThat(run.getString("catalogueId")).isEqualTo("lime-fresh-gr");
 		assertThat(run.getString("feedType")).isEqualTo("SNAPSHOT");
 		assertThat(run.getString("status")).isEqualTo("DONE");
-		assertThat(run.getString("adapter")).isEqualTo("test-jsonl");
+		assertThat(run.getString("adapter")).isEqualTo("jsonl");
 		assertThat(run.getString("adapterVersion")).isEqualTo("1");
 		assertThat(run.getString("receivedAt")).isNotNull();
 		assertThat(run.getString("startedAt")).isNotNull();

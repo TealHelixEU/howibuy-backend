@@ -1,4 +1,4 @@
-package eu.tealhelix.catalogue.test.feeds;
+package eu.tealhelix.catalogue.feeds.jsonl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -25,7 +25,8 @@ import eu.tealhelix.catalogue.feeds.FeedRecord;
 import eu.tealhelix.catalogue.feeds.RejectedRecord;
 
 /**
- * The adapter of the tests, named {@value #NAME}: a Feed of JSON Lines, one product per line, e.g.
+ * The adapter of a format of our own, named {@value #NAME}, for a Retailer that has none to offer: a Feed of JSON Lines,
+ * one product per line, e.g.
  * <pre>
  * {"productKey": "p-1", "names": {"el": "Γάλα", "en": "Milk"}, "characteristics": {"fat": "2%"}, "tags": ["dairy"], "price": "1.29", "currency": "EUR"}
  * </pre>
@@ -34,7 +35,7 @@ import eu.tealhelix.catalogue.feeds.RejectedRecord;
  */
 @ApplicationScoped
 public class JsonLinesFeedReader implements FeedReader {
-	public static final String NAME = "test-jsonl";
+	public static final String NAME = "jsonl";
 
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 	private static final String NOT_AN_OBJECT = "The record is not a JSON object";

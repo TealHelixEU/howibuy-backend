@@ -9,7 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import eu.tealhelix.catalogue.feeds.DeletionItem;
 import eu.tealhelix.catalogue.feeds.FeedItem;
 import eu.tealhelix.catalogue.feeds.FeedReader;
-import eu.tealhelix.catalogue.test.feeds.JsonLinesFeedReader;
+import eu.tealhelix.catalogue.feeds.jsonl.JsonLinesFeedReader;
 
 /**
  * An adapter of the tests, named {@value #NAME}, that a test breaks and fixes: version {@value #BROKEN} cannot read any

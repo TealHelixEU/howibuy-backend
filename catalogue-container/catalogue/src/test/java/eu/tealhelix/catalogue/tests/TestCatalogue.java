@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
 
-import eu.tealhelix.catalogue.test.feeds.JsonLinesFeedReader;
+import eu.tealhelix.catalogue.feeds.jsonl.JsonLinesFeedReader;
 
 /**
  * A Catalogue of Lime Fresh for one test alone (primary language {@code el}, also {@code en}), in the format of the

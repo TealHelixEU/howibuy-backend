@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
 
 /**
- * Feeds in the format of the tests' adapter, {@code test-jsonl}, waiting for their runs to be processed, and reading the
+ * Feeds in the format of the adapter {@code jsonl}, waiting for their runs to be processed, and reading the
  * runs back, through the endpoints as the caller of the test and from the database.
  */
 final class TestFeeds {
