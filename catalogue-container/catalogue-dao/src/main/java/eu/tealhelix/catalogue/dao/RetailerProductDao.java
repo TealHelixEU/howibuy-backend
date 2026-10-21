@@ -29,7 +29,19 @@ public interface RetailerProductDao {
 	Uni<Map<ProductKey, ProductChange>> findProducts(ReactivePersistenceContext em, RetailerId retailerId, Collection<ProductKey> productKeys);
 
 	/**
-	 * Take values of the global change sequence, which grows with every value taken.
+	 * Read the products that changed after a value of the change sequence, each in its current state.
+	 *
+	 * @param em    The persistence context
+	 * @param after The value of the change sequence
+	 * @param limit How many products to read at most
+	 * @return The products whose change sequence is greater than {@code after}, the lowest first
+	 */
+	Uni<List<ProductChange>> findChangesAfter(ReactivePersistenceContext em, long after, int limit);
+
+	/**
+	 * Take values of the global change sequence, which grows with every value taken. The transaction holds the change
+	 * sequence until it ends, so that the values become visible in the order they were taken; the other transactions
+	 * that take values, or stamp products, wait for it.
 	 *
 	 * @param tx    The persistence context
 	 * @param count How many values to take
@@ -72,7 +84,8 @@ public interface RetailerProductDao {
 
 	/**
 	 * Make the active Listings of a Catalogue that an Ingestion Run of it did not see inactive, and stamp their products
-	 * with new values of the change sequence. When the Listings were last seen stays as it was.
+	 * with new values of the change sequence, which the transaction holds as for
+	 * {@link #takeChangeSequences(ReactivePersistenceTxContext, int)}. When the Listings were last seen stays as it was.
 	 *
 	 * @param tx          The persistence context, which holds none of the products
 	 * @param catalogueId The Catalogue
@@ -83,7 +96,8 @@ public interface RetailerProductDao {
 
 	/**
 	 * Make the active Listings of some products in a Catalogue inactive, and stamp the products with new values of the
-	 * change sequence. When the Listings were last seen stays as it was.
+	 * change sequence, which the transaction holds as for {@link #takeChangeSequences(ReactivePersistenceTxContext, int)}.
+	 * When the Listings were last seen stays as it was.
 	 *
 	 * @param tx          The persistence context, whose copies of the products keep their earlier state
 	 * @param retailerId  The Retailer of the Catalogue

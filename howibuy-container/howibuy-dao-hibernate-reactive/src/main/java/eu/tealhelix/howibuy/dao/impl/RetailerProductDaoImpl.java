@@ -2,6 +2,7 @@ package eu.tealhelix.howibuy.dao.impl;
 
 import static jakarta.persistence.criteria.JoinType.LEFT;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,15 +36,21 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 		}
 	}
 
+	/**
+	 * The changes are applied to the products in memory, and the products created and those removed are handed to the
+	 * session in one call each: a chain of a call per change would nest as deep as the changes are many, and overflow the
+	 * stack of the event loop.
+	 */
 	@Override
 	public Uni<Void> apply(ReactivePersistenceTxContext tx, List<ProductChange> changes) {
 		if (changes.isEmpty()) return Uni.createFrom().voidItem();
 		return findProducts(tx, changes).flatMap(products -> {
-			Uni<Void> applied = Uni.createFrom().voidItem();
+			var created = new ArrayList<RetailerProductEntity>();
+			var removed = new ArrayList<RetailerProductEntity>();
 			for (var change : changes) {
-				applied = applied.chain(() -> apply(tx, products, change));
+				apply(products, created, removed, change);
 			}
-			return applied;
+			return tx.removeAll(removed.toArray()).chain(() -> tx.persistAll(created.toArray()));
 		});
 	}
 
@@ -70,27 +77,33 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 				.collect(Collectors.toMap(ExternalKey::of, Function.identity(), (a, b) -> a, HashMap::new)));
 	}
 
-	private Uni<Void> apply(ReactivePersistenceTxContext tx, Map<ExternalKey, RetailerProductEntity> products, ProductChange change) {
+	/**
+	 * Apply a change to the products in memory.
+	 *
+	 * @param products The products, by external key, which the change may add to or remove from
+	 * @param created  The products to persist, which the change may add to or remove from
+	 * @param removed  The stored products to remove, which the change may add to
+	 */
+	private static void apply(Map<ExternalKey, RetailerProductEntity> products, List<RetailerProductEntity> created, List<RetailerProductEntity> removed, ProductChange change) {
 		var key = ExternalKey.of(change);
 		var product = products.get(key);
 		if (change.isRemoved()) {
-			if (product == null) {
-				return Uni.createFrom().voidItem();
-			} else {
+			if (product != null) {
 				products.remove(key);
-				return tx.remove(product);
+				if (!created.remove(product)) {
+					removed.add(product);
+				}
 			}
 		} else if (product == null) {
-			var created = new RetailerProductEntity();
-			created.setId(UUID.randomUUID());
-			created.setRetailerId(key.retailerId());
-			created.setProductKey(key.productKey());
-			copyState(change, created);
-			products.put(key, created);
-			return tx.persist(created).replaceWithVoid();
+			var newProduct = new RetailerProductEntity();
+			newProduct.setId(UUID.randomUUID());
+			newProduct.setRetailerId(key.retailerId());
+			newProduct.setProductKey(key.productKey());
+			copyState(change, newProduct);
+			products.put(key, newProduct);
+			created.add(newProduct);
 		} else {
 			copyState(change, product);
-			return Uni.createFrom().voidItem();
 		}
 	}
 

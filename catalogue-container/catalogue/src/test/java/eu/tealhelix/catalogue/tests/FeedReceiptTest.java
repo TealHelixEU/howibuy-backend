@@ -199,7 +199,8 @@ class FeedReceiptTest {
 				"/api/catalogue/v1/ingestion-runs/{id}",
 				"/api/catalogue/v1/ingestion-runs/{id}/rejects",
 				"/api/catalogue/v1/ingestion-runs/{id}/confirmation",
-				"/api/catalogue/v1/ingestion-runs/{id}/discard"
+				"/api/catalogue/v1/ingestion-runs/{id}/discard",
+				"/api/catalogue/v1/product-changes"
 		);
 	}
 

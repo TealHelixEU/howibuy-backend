@@ -73,6 +73,11 @@ Mutiny (`io.smallrye.mutiny`) is exempt from that rule — see Dependencies rule
   Scala's for comprehensions. Use these methods in preference over `Uni.flatMap` chains. Do not hesitate to add missing
   overloads, using the existing ones as templates. `forc` for chains of `Uni.flatMap`, `forcm` for the same chains that
   require a simple `map` operation at the end.
+- Never chain a `Uni` once per item of an unbounded collection (`u = u.chain(() -> tx.persist(item))` in a loop). Calls
+  that complete at once, like `persist` of an entity with an assigned id, nest one level per item, and a few hundred
+  items overflow the stack of the event loop; Mutiny swallows the `StackOverflowError` and the transaction hangs without
+  a trace. Do the per-item work in memory and make one call (`persistAll`, `removeAll`), and give the DAO tests one case
+  at least as large as the production batch or page.
 
 ## Persistence
 

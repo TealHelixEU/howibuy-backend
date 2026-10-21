@@ -3,6 +3,7 @@ package eu.tealhelix.catalogue.dao.impl;
 import static jakarta.persistence.criteria.JoinType.LEFT;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Currency;
@@ -34,6 +35,7 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import io.smallrye.mutiny.Uni;
+import org.hibernate.query.criteria.JpaSubQuery;
 
 @ApplicationScoped
 public class RetailerProductDaoImpl implements RetailerProductDao {
@@ -45,36 +47,66 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 						.collect(Collectors.toMap(ProductChange::getProductKey, Function.identity())));
 	}
 
+	/**
+	 * The page of products is chosen in a subquery of the query that fetches them with their names and Listings: a
+	 * fetching query cannot be limited in the database, and a second query, after the one choosing the page, could read
+	 * products stamped anew in between.
+	 */
+	@Override
+	public Uni<List<ProductChange>> findChangesAfter(ReactivePersistenceContext em, long after, int limit) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(RetailerProductEntity.class);
+		var product = q.from(RetailerProductEntity.class);
+		product.fetch(RetailerProductEntity_.names, LEFT);
+		product.fetch(RetailerProductEntity_.listings, LEFT);
+		var page = (JpaSubQuery<UUID>) q.subquery(UUID.class);
+		var changed = page.from(RetailerProductEntity.class);
+		page.select(changed.get(RetailerProductEntity_.id))
+				.where(cb.greaterThan(changed.get(RetailerProductEntity_.changeSequence), after))
+				.orderBy(cb.asc(changed.get(RetailerProductEntity_.changeSequence)))
+				.fetch(limit);
+		q.select(product).distinct(true);
+		q.where(product.get(RetailerProductEntity_.id).in(page));
+		return em.createQuery(q).getResultList().map(products -> products.stream()
+				.sorted(Comparator.comparingLong(RetailerProductEntity::getChangeSequence))
+				.map(RetailerProductDaoImpl::toProductChange)
+				.toList());
+	}
+
 	@Override
 	public Uni<List<Long>> takeChangeSequences(ReactivePersistenceTxContext tx, int count) {
 		if (count == 0) return Uni.createFrom().item(List.of());
-		return tx.createNativeQuery("SELECT nextval('IN_CHANGE_SEQUENCE') FROM generate_series(1, :count)", Long.class)
+		return holdChangeSequence(tx).chain(() -> tx.createNativeQuery("SELECT nextval('IN_CHANGE_SEQUENCE') FROM generate_series(1, :count)", Long.class)
 				.setParameter("count", count)
 				.getResultList()
-				.map(values -> values.stream().sorted().toList());
+				.map(values -> values.stream().sorted().toList()));
 	}
 
+	/**
+	 * The new products are persisted in one call: a chain of a call per product would nest as deep as the products are
+	 * many, and overflow the stack of the event loop.
+	 */
 	@Override
 	public Uni<Void> save(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId, LocalDateTime seenAt, Collection<ProductChange> products) {
 		if (products.isEmpty()) return Uni.createFrom().voidItem();
 		var retailerId = products.iterator().next().getRetailerId().asUuid();
 		return findEntities(tx, retailerId, products.stream().map(p -> p.getProductKey().asString()).toList()).flatMap(entities -> {
-			Uni<Void> saved = Uni.createFrom().voidItem();
+			var created = new ArrayList<RetailerProductEntity>();
 			for (var product : products) {
 				var entity = entities.get(product.getProductKey().asString());
 				if (entity == null) {
-					var created = new RetailerProductEntity();
-					created.setId(UUID.randomUUID());
-					created.setRetailerId(retailerId);
-					created.setProductKey(product.getProductKey().asString());
-					copyState(product, created, catalogueId, runId, seenAt);
-					entities.put(created.getProductKey(), created);
-					saved = saved.chain(() -> tx.persist(created).replaceWithVoid());
+					var newEntity = new RetailerProductEntity();
+					newEntity.setId(UUID.randomUUID());
+					newEntity.setRetailerId(retailerId);
+					newEntity.setProductKey(product.getProductKey().asString());
+					copyState(product, newEntity, catalogueId, runId, seenAt);
+					entities.put(newEntity.getProductKey(), newEntity);
+					created.add(newEntity);
 				} else {
 					copyState(product, entity, catalogueId, runId, seenAt);
 				}
 			}
-			return saved;
+			return created.isEmpty() ? Uni.createFrom().voidItem() : tx.persistAll(created.toArray());
 		});
 	}
 
@@ -108,7 +140,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 	 */
 	@Override
 	public Uni<Integer> deactivateUnseenListings(ReactivePersistenceTxContext tx, CatalogueId catalogueId, IngestionRunId runId) {
-		return tx.createNativeUpdate("""
+		return holdChangeSequence(tx).chain(() -> tx.createNativeUpdate("""
 						WITH deactivated AS (
 							UPDATE IN_LISTING SET active = FALSE
 							WHERE catalogue_id = :catalogueId AND active AND last_seen_run_id <> :runId
@@ -119,7 +151,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 						""")
 				.setParameter("catalogueId", catalogueId.asString())
 				.setParameter("runId", runId.asUuid())
-				.execute();
+				.execute());
 	}
 
 	/**
@@ -128,7 +160,7 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 	@Override
 	public Uni<Integer> deactivateListings(ReactivePersistenceTxContext tx, RetailerId retailerId, CatalogueId catalogueId, Collection<ProductKey> productKeys) {
 		if (productKeys.isEmpty()) return Uni.createFrom().item(0);
-		return tx.createNativeUpdate("""
+		return holdChangeSequence(tx).chain(() -> tx.createNativeUpdate("""
 						WITH deactivated AS (
 							UPDATE IN_LISTING l SET active = FALSE
 							FROM IN_RETAILER_PRODUCT p
@@ -142,7 +174,19 @@ public class RetailerProductDaoImpl implements RetailerProductDao {
 				.setParameter("retailerId", retailerId.asUuid())
 				.setParameter("productKeys", productKeys.stream().map(ProductKey::asString).toList())
 				.setParameter("catalogueId", catalogueId.asString())
-				.execute();
+				.execute());
+	}
+
+	/**
+	 * Hold the change sequence until the transaction ends, after the transaction holding it ends. Otherwise a transaction
+	 * that took values could commit after one that took greater values, and a reader of the changes who read the greater
+	 * values first would never read the others. The advisory lock is keyed by the sequence's object id, which no other
+	 * object of the database shares.
+	 */
+	private static Uni<Void> holdChangeSequence(ReactivePersistenceTxContext tx) {
+		return tx.createNativeQuery("SELECT 1 FROM pg_advisory_xact_lock(CAST(CAST(CAST('IN_CHANGE_SEQUENCE' AS regclass) AS oid) AS bigint))", Integer.class)
+				.getSingleResult()
+				.replaceWithVoid();
 	}
 
 	/**

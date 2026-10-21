@@ -12,6 +12,7 @@ import java.util.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.IntStream;
 
 import eu.tealhelix.catalogue.v1.model.ImmutableListing;
 import eu.tealhelix.catalogue.v1.model.ImmutableProductChange;
@@ -184,6 +185,19 @@ public class RetailerProductDaoImplTest {
 		assertEquals(Map.of("el", "Φέτα"), names(RETAILER, "feta"));
 		assertEquals(Map.of(CATALOGUE_GR, "4.5000 EUR active"), listings(RETAILER, "feta"));
 		assertEquals(2, scalar("SELECT change_sequence FROM TH_RETAILER_PRODUCT WHERE retailer_id = '" + RETAILER + "' AND product_key = 'feta'"));
+	}
+
+	/**
+	 * As many changes as the largest page of the change cursor of the Ingestion.
+	 */
+	@Test
+	void appliesManyChangesAtOnce(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		apply(sessionFactory, IntStream.rangeClosed(1, 1000)
+				.mapToObj(i -> product(RETAILER, "product-" + i, i, "h" + i, Map.of("el", "Προϊόν " + i), Map.of(), List.of(), listing(CATALOGUE_GR, "1.99", true)))
+				.toArray(ProductChange[]::new));
+
+		assertEquals(1000, scalar("SELECT count(*) FROM TH_RETAILER_PRODUCT"));
+		assertEquals(1000, scalar("SELECT count(*) FROM TH_LISTING"));
 	}
 
 	private static void apply(Mutiny.SessionFactory sessionFactory, ProductChange... changes) {

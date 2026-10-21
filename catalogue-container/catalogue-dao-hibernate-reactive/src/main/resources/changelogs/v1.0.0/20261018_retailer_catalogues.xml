@@ -138,6 +138,9 @@
 		</createTable>
 		<addUniqueConstraint tableName="IN_RETAILER_PRODUCT" columnNames="retailer_id, product_key" constraintName="UQ_IN_RETAILER_PRODUCT__RETAILER_ID_PRODUCT_KEY" />
 		<addForeignKeyConstraint baseTableName="IN_RETAILER_PRODUCT" baseColumnNames="retailer_id" constraintName="FK_RETAILER_PRODUCT__RETAILER_ID__RETAILER__ID" referencedTableName="IN_RETAILER" referencedColumnNames="id" />
+		<createIndex tableName="IN_RETAILER_PRODUCT" indexName="IX_IN_RETAILER_PRODUCT__CHANGE_SEQUENCE">
+			<column name="change_sequence" />
+		</createIndex>
 
 		<createTable tableName="IN_RETAILER_PRODUCT_NAME" remarks="The name of a Retailer Product in one language">
 			<column name="retailer_product_id" type="UUID" remarks="The product this name belongs to; part of the primary key">
