@@ -282,17 +282,22 @@ public class OpenApiContractTest {
 	/**
 	 * The Catalogue Sync and operators read the pending products and record the attempts made outside this application.
 	 * Recording answers 204 with no body, and an attempt made from an input hash that is no longer the product's is
-	 * refused with 409 and a message, which the caller handles by reading the pending products again.
+	 * refused with 409 and a message, which the caller handles by reading the pending products again. They also read the
+	 * Classifications to review.
 	 */
 	@Test
 	void documentsTheClassification() {
 		var document = openApiDocument();
 		var findPending = operation(document, "get", "/api/howibuy/v1/classifications/pending");
 		var recordAttempt = operation(document, "post", "/api/howibuy/v1/classification-attempts");
+		var findToReview = operation(document, "get", "/api/howibuy/v1/classifications/review");
 
 		assertEquals("#/components/schemas/PendingProductDto",
 				at(findPending, "responses", "200", "content", "application/json", "schema", "items", "$ref"),
 				"the pending products are answered as a list");
+		assertEquals("#/components/schemas/ClassificationToReviewDto",
+				at(findToReview, "responses", "200", "content", "application/json", "schema", "items", "$ref"),
+				"the Classifications to review are answered as a list");
 		assertEquals("#/components/schemas/ClassificationAttemptRequest",
 				at(recordAttempt, "requestBody", "content", "application/json", "schema", "$ref"),
 				"an attempt is sent as the request body");
@@ -303,7 +308,7 @@ public class OpenApiContractTest {
 					at(recordAttempt, "responses", status, "content", "application/json", "schema", "$ref"),
 					"a refused attempt answers a message, status: " + status);
 		}
-		for (var operation : List.of(findPending, recordAttempt)) {
+		for (var operation : List.of(findPending, recordAttempt, findToReview)) {
 			assertNotNull(at(operation, "responses", "403", "description"), "a caller other than the Catalogue Sync or an operator is documented");
 		}
 	}

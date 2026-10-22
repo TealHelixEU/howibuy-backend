@@ -5,8 +5,9 @@ import static jakarta.persistence.criteria.JoinType.LEFT;
 
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +31,10 @@ import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
 import eu.tealhelix.howibuy.services.model.ProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
+import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassification;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttempt;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.ImmutablePendingProduct;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
@@ -61,9 +65,34 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		q.orderBy(cb.asc(product.get(RetailerProductEntity_.changeSequence)));
 		return forcm(
 				em.createQuery(q).setMaxResults(limit).getResultList(),
-				products -> findLanguages(em, products.stream().map(row -> row.get(id)).toList()),
-				(products, languages) -> products.stream()
-						.map(row -> toPendingProduct(row.get(id), row.get(inputHash), languages.getOrDefault(row.get(id), Set.of())))
+				products -> findNames(em, products.stream().map(row -> row.get(id)).toList()),
+				(products, names) -> products.stream()
+						.map(row -> toPendingProduct(row.get(id), row.get(inputHash), names.getOrDefault(row.get(id), Map.of()).keySet()))
+						.toList()
+		);
+	}
+
+	/**
+	 * The attempts and the names are read after the Classifications, one query each for all the products.
+	 */
+	@Override
+	public Uni<List<ClassificationToReview>> findToReview(ReactivePersistenceContext em, int limit) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(ClassificationEntity.class);
+		var classification = q.from(ClassificationEntity.class);
+		var product = classification.join(RetailerProductEntity.class);
+		product.on(cb.equal(product.get(RetailerProductEntity_.id), classification.get(ClassificationEntity_.retailerProductId)));
+		q.where(
+				cb.isTrue(classification.get(ClassificationEntity_.needsReview)),
+				cb.equal(classification.get(ClassificationEntity_.inputHash), product.get(RetailerProductEntity_.inputHash))
+		);
+		q.orderBy(cb.asc(classification.get(ClassificationEntity_.resolvedAt)), cb.asc(classification.get(ClassificationEntity_.retailerProductId)));
+		return forcm(
+				em.createQuery(q).setMaxResults(limit).getResultList(),
+				classifications -> findAttemptsOfClassifications(em, classifications.stream().map(ClassificationEntity::getRetailerProductId).toList()),
+				(classifications, attempts) -> findNames(em, classifications.stream().map(ClassificationEntity::getRetailerProductId).toList()),
+				(classifications, attempts, names) -> classifications.stream()
+						.map(entity -> toClassificationToReview(entity, names.getOrDefault(entity.getRetailerProductId(), Map.of()), attempts.getOrDefault(entity.getRetailerProductId(), List.of())))
 						.toList()
 		);
 	}
@@ -73,10 +102,10 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		return tx.find(RetailerProductEntity.class, productId.getId().asUuid(), PESSIMISTIC_WRITE)
 				.flatMap(product -> product == null ? Uni.createFrom().nullItem() : forcm(
 						tx.find(RetailerEntity.class, product.getRetailerId()),
-						retailer -> findLanguages(tx, List.of(product.getId())),
-						(retailer, languages) -> ImmutableProductToClassify.builder()
+						retailer -> findNames(tx, List.of(product.getId())),
+						(retailer, names) -> ImmutableProductToClassify.builder()
 								.inputHash(product.getInputHash())
-								.languages(languages.getOrDefault(product.getId(), Set.of()))
+								.languages(names.getOrDefault(product.getId(), Map.of()).keySet())
 								.classificationLanguage(retailer.getClassificationLanguage())
 								.build()
 				));
@@ -123,24 +152,49 @@ public class ClassificationDaoImpl implements ClassificationDao {
 	}
 
 	/**
-	 * @return The languages each product is named in, in the order of their codes
+	 * @return The names of each product by their language, in the order of the language codes
 	 */
-	private static Uni<Map<UUID, Set<String>>> findLanguages(ReactivePersistenceContext em, List<UUID> productIds) {
+	private static Uni<Map<UUID, Map<String, String>>> findNames(ReactivePersistenceContext em, List<UUID> productIds) {
 		if (productIds.isEmpty()) return Uni.createFrom().item(Map.of());
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createTupleQuery();
 		var name = q.from(RetailerProductNameEntity.class);
 		var productId = name.get(RetailerProductNameEntity_.retailerProduct).get(RetailerProductEntity_.id);
 		var lang = name.get(RetailerProductNameEntity_.lang);
-		q.select(cb.tuple(productId, lang));
+		var text = name.get(RetailerProductNameEntity_.name);
+		q.select(cb.tuple(productId, lang, text));
 		q.where(productId.in(productIds));
 		q.orderBy(cb.asc(lang));
 		return em.createQuery(q).getResultList().map(rows -> {
-			var languages = new HashMap<UUID, Set<String>>();
+			var names = new HashMap<UUID, Map<String, String>>();
 			for (Tuple row : rows) {
-				languages.computeIfAbsent(row.get(productId), p -> new LinkedHashSet<>()).add(row.get(lang));
+				names.computeIfAbsent(row.get(productId), p -> new LinkedHashMap<>()).put(row.get(lang), row.get(text));
 			}
-			return languages;
+			return names;
+		});
+	}
+
+	/**
+	 * @return The attempts of each product made from the input hash of its Classification, the latest first
+	 */
+	private static Uni<Map<UUID, List<ClassificationAttempt>>> findAttemptsOfClassifications(ReactivePersistenceContext em, List<UUID> productIds) {
+		if (productIds.isEmpty()) return Uni.createFrom().item(Map.of());
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(ClassificationAttemptEntity.class);
+		var attempt = q.from(ClassificationAttemptEntity.class);
+		var classification = attempt.join(ClassificationEntity.class);
+		classification.on(
+				cb.equal(classification.get(ClassificationEntity_.retailerProductId), attempt.get(ClassificationAttemptEntity_.retailerProductId)),
+				cb.equal(classification.get(ClassificationEntity_.inputHash), attempt.get(ClassificationAttemptEntity_.inputHash))
+		);
+		q.where(attempt.get(ClassificationAttemptEntity_.retailerProductId).in(productIds));
+		q.orderBy(cb.desc(attempt.get(ClassificationAttemptEntity_.createdAt)));
+		return em.createQuery(q).getResultList().map(entities -> {
+			var attempts = new HashMap<UUID, List<ClassificationAttempt>>();
+			for (var entity : entities) {
+				attempts.computeIfAbsent(entity.getRetailerProductId(), p -> new ArrayList<>()).add(toClassificationAttempt(entity));
+			}
+			return attempts;
 		});
 	}
 
@@ -151,6 +205,15 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		entity.setResolvedAt(classification.getResolvedAt());
 	}
 
+	private static Classification toClassification(ClassificationEntity entity) {
+		return ImmutableClassification.builder()
+				.archetypeProductId(entity.getArchetypeProductId() != null ? new ArchetypeProductIdImpl(entity.getArchetypeProductId().toString()) : null)
+				.inputHash(entity.getInputHash())
+				.isNeedsReview(entity.isNeedsReview())
+				.resolvedAt(entity.getResolvedAt())
+				.build();
+	}
+
 	private static ClassificationAttempt toClassificationAttempt(ClassificationAttemptEntity entity) {
 		return ImmutableClassificationAttempt.builder()
 				.language(entity.getLang())
@@ -159,6 +222,15 @@ public class ClassificationDaoImpl implements ClassificationDao {
 				.archetypeProductId(entity.getArchetypeProductId() != null ? new ArchetypeProductIdImpl(entity.getArchetypeProductId().toString()) : null)
 				.inputHash(entity.getInputHash())
 				.createdAt(entity.getCreatedAt())
+				.build();
+	}
+
+	private static ClassificationToReview toClassificationToReview(ClassificationEntity entity, Map<String, String> names, List<ClassificationAttempt> attempts) {
+		return ImmutableClassificationToReview.builder()
+				.id(new RetailerProductIdImpl(entity.getRetailerProductId().toString()))
+				.names(names)
+				.classification(toClassification(entity))
+				.attempts(attempts)
 				.build();
 	}
 

@@ -21,7 +21,8 @@ import eu.tealhelix.howibuy.services.v1.classification.ClassificationResolution;
 import eu.tealhelix.howibuy.services.v1.classification.Resolution;
 import eu.tealhelix.howibuy.services.v1.types.InputHashConflictException;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
-import eu.tealhelix.howibuy.v1.model.ClassificationAttemptData;
+import eu.tealhelix.howibuy.v1.model.ClassificationAttemptInput;
+import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassification;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttempt;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
@@ -55,14 +56,19 @@ public class ClassificationServiceImpl implements ClassificationService {
 	@Override
 	public Uni<List<PendingProduct>> findPending(User caller, int limit) {
 		authorization.requireCatalogueSyncOrOperator(caller);
-		if (limit < 1 || limit > MAX_PENDING_PER_PAGE) {
-			throw BadInputValueException.fromInputNameAndHint("limit", "It must be from 1 to " + MAX_PENDING_PER_PAGE);
-		}
+		requireLimitOfPage(limit);
 		return persistenceContextFactory.withoutTransaction(em -> classificationDao.findPending(em, limit));
 	}
 
 	@Override
-	public Uni<Void> recordAttempt(User caller, HasRetailerProductId productId, ClassificationAttemptData attempt) {
+	public Uni<List<ClassificationToReview>> findToReview(User caller, int limit) {
+		authorization.requireCatalogueSyncOrOperator(caller);
+		requireLimitOfPage(limit);
+		return persistenceContextFactory.withoutTransaction(em -> classificationDao.findToReview(em, limit));
+	}
+
+	@Override
+	public Uni<Void> recordAttempt(User caller, HasRetailerProductId productId, ClassificationAttemptInput attempt) {
 		authorization.requireCatalogueSyncOrOperator(caller);
 		if (attempt.getClassifier() == Classifier.LLM) {
 			throw BadInputValueException.fromInputNameAndHint("classifier", "The attempts of the LLM are made by HowiBuy itself");
@@ -82,10 +88,16 @@ public class ClassificationServiceImpl implements ClassificationService {
 		));
 	}
 
+	private static void requireLimitOfPage(int limit) {
+		if (limit < 1 || limit > MAX_PER_PAGE) {
+			throw BadInputValueException.fromInputNameAndHint("limit", "It must be from 1 to " + MAX_PER_PAGE);
+		}
+	}
+
 	/**
 	 * The input hash is compared before the language, because the names of a product that changed may be others.
 	 */
-	private Uni<ProductToClassify> requireAttemptOf(ReactivePersistenceContext em, HasRetailerProductId productId, ProductToClassify product, ClassificationAttemptData attempt) {
+	private Uni<ProductToClassify> requireAttemptOf(ReactivePersistenceContext em, HasRetailerProductId productId, ProductToClassify product, ClassificationAttemptInput attempt) {
 		if (product == null) {
 			return Uni.createFrom().failure(new NotFoundException(productId.getId(), "No such Retailer Product, retailerProductId: " + productId.getId().asString()));
 		} else if (!product.getInputHash().equals(attempt.getInputHash())) {

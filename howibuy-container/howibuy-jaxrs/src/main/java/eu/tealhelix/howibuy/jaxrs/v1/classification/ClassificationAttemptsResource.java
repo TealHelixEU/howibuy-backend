@@ -20,8 +20,8 @@ import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
 import eu.tealhelix.howibuy.services.v1.ClassificationService;
-import eu.tealhelix.howibuy.v1.model.ClassificationAttemptData;
-import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttemptData;
+import eu.tealhelix.howibuy.v1.model.ClassificationAttemptInput;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttemptInput;
 import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import eu.tealhelix.howibuy.v1.types.impl.RetailerProductIdImpl;
@@ -60,9 +60,9 @@ public class ClassificationAttemptsResource {
 				.flatMap(attempt -> classificationService.recordAttempt(user, new RetailerProductIdImpl(uuid("retailerProductId", request.retailerProductId())), attempt));
 	}
 
-	private static ClassificationAttemptData toAttempt(ClassificationAttemptRequest request) {
+	private static ClassificationAttemptInput toAttempt(ClassificationAttemptRequest request) {
 		if (request == null) throw RequiredInputMissingException.fromRequiredInputName("body");
-		return ImmutableClassificationAttemptData.builder()
+		return ImmutableClassificationAttemptInput.builder()
 				.inputHash(requiredText("inputHash", request.inputHash()))
 				.language(requiredText("language", request.language()))
 				.classifier(classifier(requiredText("classifier", request.classifier())))

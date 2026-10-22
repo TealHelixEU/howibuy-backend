@@ -3,13 +3,10 @@ package eu.tealhelix.howibuy.v1.model;
 import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.Classifier;
-import org.immutables.value.Value;
 
 /**
- * One classifier's answer to which archetype a Retailer Product is, from its name in one language, as the classifier
- * gives it.
+ * One classifier's answer to which archetype a Retailer Product is, from its name in one language.
  */
-@Value.Immutable
 public interface ClassificationAttemptData {
 	/**
 	 * The language of the product name the attempt was made from.

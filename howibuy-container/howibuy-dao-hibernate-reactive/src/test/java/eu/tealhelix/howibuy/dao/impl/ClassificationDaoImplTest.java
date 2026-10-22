@@ -44,8 +44,10 @@ import eu.tealhelix.howibuy.dao.jpa.values.SocialImpact;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
+import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassification;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttempt;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.Classifier;
@@ -288,11 +290,133 @@ public class ClassificationDaoImplTest {
 				rows("SELECT archetype_product_id, input_hash, needs_review, resolved_at FROM TH_CLASSIFICATION WHERE retailer_product_id = '" + id.asString() + "'"));
 	}
 
+	@Test
+	void aClassificationToReviewIsFoundWithTheNamesOfTheProductAndTheAttemptsOfItsInputHashTheLatestFirst(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h2", Map.of("en", "Yoghurt", "el", "Γιαούρτι")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		var stale = attempt("el", Classifier.MANUAL, YOGHURT, "h1", 0);
+		var greek = attempt("el", Classifier.EXPERT, YOGHURT, "h2", 1);
+		var english = attempt("en", Classifier.EXPERT, null, "h2", 2);
+		var classification = classification(YOGHURT, "h2", true, 2);
+		persist(sessionFactory, review(id, classification, stale, greek, english));
+
+		var toReview = findToReview(sessionFactory, 10);
+
+		assertEquals(List.of(ImmutableClassificationToReview.builder()
+				.id(id)
+				.names(Map.of("el", "Γιαούρτι", "en", "Yoghurt"))
+				.classification(classification)
+				.attempts(List.of(english, greek))
+				.build()), toReview);
+		assertEquals(List.of("el", "en"), List.copyOf(toReview.getFirst().getNames().keySet()), "the names in the order of their languages");
+	}
+
+	@Test
+	void aClassificationThatNeedsNoReviewIsNotFound(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		persist(sessionFactory, review(id, classification(YOGHURT, "h1", false, 0), attempt("el", Classifier.EXPERT, YOGHURT, "h1", 0)));
+
+		assertEquals(List.of(), findToReview(sessionFactory, 10));
+	}
+
+	/**
+	 * The product is pending again, and the Classification resolved from its new names decides whether it needs review.
+	 */
+	@Test
+	void aClassificationToReviewOfAProductChangedSinceIsNotFound(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		persist(sessionFactory, review(id, classification(YOGHURT, "h1", true, 0), attempt("el", Classifier.EXPERT, YOGHURT, "h1", 0)));
+
+		apply(sessionFactory, product("yoghurt", 2, "h2", Map.of("el", "Γιαούρτι στραγγιστό")));
+
+		assertEquals(List.of(), findToReview(sessionFactory, 10));
+	}
+
+	@Test
+	void theOldestResolutionsComeFirstUpToTheLimit(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				product("feta", 1, "h1", Map.of("el", "Φέτα")),
+				product("yoghurt", 2, "h2", Map.of("el", "Γιαούρτι")),
+				product("honey", 3, "h3", Map.of("el", "Μέλι")));
+		var ids = findPending(sessionFactory, 10).stream().collect(Collectors.toMap(PendingProduct::getInputHash, PendingProduct::getId));
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), classification(YOGHURT, "h1", true, 3), attempt("el", Classifier.EXPERT, YOGHURT, "h1", 3)));
+		fixtures.addAll(review(ids.get("h2"), classification(YOGHURT, "h2", true, 1), attempt("el", Classifier.EXPERT, YOGHURT, "h2", 1)));
+		fixtures.addAll(review(ids.get("h3"), classification(YOGHURT, "h3", true, 2), attempt("el", Classifier.EXPERT, YOGHURT, "h3", 2)));
+		persist(sessionFactory, fixtures);
+
+		var toReview = findToReview(sessionFactory, 2);
+
+		assertEquals(List.of(ids.get("h2"), ids.get("h3")), toReview.stream().map(ClassificationToReview::getId).toList());
+	}
+
+	/**
+	 * As many products as the largest page asked for.
+	 */
+	@Test
+	void findsManyClassificationsToReviewAtOnce(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, IntStream.rangeClosed(1, 1000)
+				.mapToObj(i -> product("product-" + i, i, "h" + i, Map.of("el", "Προϊόν " + i, "en", "Product " + i)))
+				.toArray(ProductChange[]::new));
+		var fixtures = new ArrayList<>();
+		for (var product : findPending(sessionFactory, 1000)) {
+			var hash = product.getInputHash();
+			fixtures.addAll(review(product.getId(), classification(YOGHURT, hash, true, 0), attempt("el", Classifier.EXPERT, YOGHURT, hash, 0), attempt("en", Classifier.EXPERT, null, hash, 0)));
+		}
+		persist(sessionFactory, fixtures);
+
+		var toReview = findToReview(sessionFactory, 1000);
+
+		assertEquals(1000, toReview.size());
+		assertEquals(Set.of(Set.of("el", "en")), toReview.stream().map(product -> product.getNames().keySet()).collect(Collectors.toSet()));
+		assertEquals(Set.of(2), toReview.stream().map(product -> product.getAttempts().size()).collect(Collectors.toSet()));
+	}
+
 	private static List<PendingProduct> findPending(Mutiny.SessionFactory sessionFactory, int limit) {
 		var sut = new ClassificationDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
 				.withoutTransaction(em -> sut.findPending(em, limit))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static List<ClassificationToReview> findToReview(Mutiny.SessionFactory sessionFactory, int limit) {
+		var sut = new ClassificationDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.findToReview(em, limit))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	/**
+	 * @return The entities of the Classification of the product and of its attempts
+	 */
+	private static List<Object> review(RetailerProductId id, Classification classification, ClassificationAttempt... attempts) {
+		var entities = new ArrayList<>();
+		for (var attempt : attempts) {
+			var entity = new ClassificationAttemptEntity();
+			entity.setId(UUID.randomUUID());
+			entity.setRetailerProductId(id.asUuid());
+			entity.setLang(attempt.getLanguage());
+			entity.setClassifier(attempt.getClassifier());
+			entity.setClassifierVersion(attempt.getClassifierVersion());
+			entity.setArchetypeProductId(attempt.getArchetypeProductId() != null ? attempt.getArchetypeProductId().asUuid() : null);
+			entity.setInputHash(attempt.getInputHash());
+			entity.setCreatedAt(attempt.getCreatedAt());
+			entities.add(entity);
+		}
+		var entity = new ClassificationEntity();
+		entity.setRetailerProductId(id.asUuid());
+		entity.setArchetypeProductId(classification.getArchetypeProductId() != null ? classification.getArchetypeProductId().asUuid() : null);
+		entity.setInputHash(classification.getInputHash());
+		entity.setNeedsReview(classification.isNeedsReview());
+		entity.setResolvedAt(classification.getResolvedAt());
+		entities.add(entity);
+		return entities;
+	}
+
+	private static void persist(Mutiny.SessionFactory sessionFactory, List<Object> entities) {
+		sessionFactory.withTransaction(session -> session.persistAll(entities.toArray())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
 	/**

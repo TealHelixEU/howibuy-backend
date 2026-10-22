@@ -2,6 +2,7 @@ package eu.tealhelix.howibuy.tests;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
@@ -34,14 +35,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Finding the pending products and recording Classification Attempts against a real database, with the products
- * brought in through the Catalogue Changes as the Catalogue Sync brings them. The stored Classification is asserted
- * over JDBC. JWT decoding is faked (a stubbed {@link TokenHelper}).
+ * Finding the pending products, recording Classification Attempts and finding the Classifications to review against a
+ * real database, with the products brought in through the Catalogue Changes as the Catalogue Sync brings them. The
+ * stored Classification is asserted over JDBC. JWT decoding is faked (a stubbed {@link TokenHelper}).
  */
 @QuarkusTest
 @WithTestResource(value = PostgresTestResource.class, initArgs = @ResourceArg(name = "contexts", value = "appdata"))
 public class ClassificationsTest {
 	private static final String BASE = "/api/howibuy/v1";
+	private static final String ISO_DATE_TIME = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*";
 
 	private static final String RETAILER_ID = "6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11";
 	private static final String CATALOGUE_GR = "test-gr";
@@ -124,6 +126,43 @@ public class ClassificationsTest {
 	}
 
 	@Test
+	void attemptsThatDisagreeAreReviewedWithTheNamesOfTheProductAndTheAttemptsTheLatestFirst() throws SQLException {
+		execute("UPDATE TH_RETAILER SET classification_language = 'en' WHERE id = '" + RETAILER_ID + "'");
+		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt"));
+		var id = productId("yoghurt");
+		postAttempt("operator", attempt(id, "h1", "en", "EXPERT", otherArchetype), 204);
+		postAttempt("operator", attempt(id, "h1", "el", "EXPERT", archetype), 204);
+
+		as("sync").get(BASE + "/classifications/review?limit=10")
+				.then()
+				.statusCode(200)
+				.contentType(JSON)
+				.body("size()", equalTo(1))
+				.body("[0].retailerProductId", equalTo(id))
+				.body("[0].names", equalTo(Map.of("el", "Γιαούρτι", "en", "Yoghurt")))
+				.body("[0].inputHash", equalTo("h1"))
+				.body("[0].archetypeProductId", equalTo(otherArchetype))
+				.body("[0].resolvedAt", matchesPattern(ISO_DATE_TIME))
+				.body("[0].attempts.language", equalTo(List.of("el", "en")))
+				.body("[0].attempts.classifier", equalTo(List.of("EXPERT", "EXPERT")))
+				.body("[0].attempts.classifierVersion", equalTo(List.of("test", "test")))
+				.body("[0].attempts.archetypeProductId", equalTo(List.of(archetype, otherArchetype)))
+				.body("[0].attempts[0].createdAt", matchesPattern(ISO_DATE_TIME));
+	}
+
+	@Test
+	void aManualAttemptSettlesAReview() {
+		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt"));
+		var id = productId("yoghurt");
+		postAttempt("operator", attempt(id, "h1", "en", "EXPERT", otherArchetype), 204);
+		postAttempt("operator", attempt(id, "h1", "el", "EXPERT", archetype), 204);
+
+		postAttempt("operator", attempt(id, "h1", "el", "MANUAL", archetype), 204);
+
+		as("operator").get(BASE + "/classifications/review?limit=10").then().statusCode(200).body("size()", equalTo(0));
+	}
+
+	@Test
 	void aProductChangedAfterItsClassificationIsPendingAgain() {
 		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι"));
 		postAttempt("operator", attempt(productId("yoghurt"), "h1", "el", "MANUAL", archetype), 204);
@@ -144,7 +183,7 @@ public class ClassificationsTest {
 		applyProduct("yoghurt", 2, "h2", Map.of("el", "Γιαούρτι στραγγιστό"));
 
 		postAttempt("operator", attempt(id, "h1", "el", "MANUAL", archetype), 409)
-				.body("message", equalTo("The input hash is not the product's current one, inputHash: h1"));
+				.body("message", equalTo("The input hash is not the product's current one, product id: " + id + ", inputHash: h1"));
 
 		assertNothingRecorded();
 	}
@@ -175,11 +214,13 @@ public class ClassificationsTest {
 	}
 
 	@Test
-	void thePendingProductsAreFoundFromOneToAThousandAtATime() {
-		for (var limit : List.of("0", "1001")) {
-			as("sync").get(BASE + "/classifications/pending?limit=" + limit).then().statusCode(400);
+	void thePendingProductsAndTheClassificationsToReviewAreFoundFromOneToAThousandAtATime() {
+		for (var path : List.of("/classifications/pending", "/classifications/review")) {
+			for (var limit : List.of("0", "1001")) {
+				as("sync").get(BASE + path + "?limit=" + limit).then().statusCode(400);
+			}
+			as("sync").get(BASE + path).then().statusCode(400);
 		}
-		as("sync").get(BASE + "/classifications/pending").then().statusCode(400);
 	}
 
 	@Test
@@ -187,6 +228,7 @@ public class ClassificationsTest {
 		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι"));
 
 		as("retailer").get(BASE + "/classifications/pending?limit=10").then().statusCode(403);
+		as("retailer").get(BASE + "/classifications/review?limit=10").then().statusCode(403);
 		postAttempt("retailer", attempt(productId("yoghurt"), "h1", "el", "MANUAL", archetype), 403);
 
 		assertNothingRecorded();

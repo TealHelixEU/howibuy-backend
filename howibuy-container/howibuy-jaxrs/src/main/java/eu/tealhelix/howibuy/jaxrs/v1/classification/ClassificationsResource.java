@@ -19,7 +19,10 @@ import jakarta.ws.rs.core.MediaType;
 
 import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
 import eu.tealhelix.howibuy.services.v1.ClassificationService;
+import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
+import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -51,7 +54,7 @@ public class ClassificationsResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<List<PendingProductDto>> findPending(
 			@Context ContainerRequestContext crc,
-			@Parameter(description = "How many products to read at most, from 1 to " + ClassificationService.MAX_PENDING_PER_PAGE + ".", required = true) @QueryParam("limit") Integer limit
+			@Parameter(description = "How many products to read at most, from 1 to " + ClassificationService.MAX_PER_PAGE + ".", required = true) @QueryParam("limit") Integer limit
 	) {
 		var user = currentUser(crc);
 		return Uni.createFrom().item(() -> required("limit", limit))
@@ -59,7 +62,48 @@ public class ClassificationsResource {
 				.map(products -> products.stream().map(ClassificationsResource::toDto).toList());
 	}
 
+	@Operation(
+			summary = "Read the Classifications to review",
+			description = "The products whose current Classification was resolved from attempts that disagree, the one resolved longest ago first, with their names and the attempts. A manual attempt settles a review. A product changed since its Classification was resolved is pending instead.")
+	@APIResponse(responseCode = "200", description = "The Classifications to review, as many as the limit at most.")
+	@APIResponse(responseCode = "400", description = "The limit is missing or out of its range.",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
+	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)
+	@APIResponse(responseCode = "403", description = FORBIDDEN)
+	@GET
+	@Path("review")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Uni<List<ClassificationToReviewDto>> findToReview(
+			@Context ContainerRequestContext crc,
+			@Parameter(description = "How many products to read at most, from 1 to " + ClassificationService.MAX_PER_PAGE + ".", required = true) @QueryParam("limit") Integer limit
+	) {
+		var user = currentUser(crc);
+		return Uni.createFrom().item(() -> required("limit", limit))
+				.flatMap(checkedLimit -> classificationService.findToReview(user, checkedLimit))
+				.map(products -> products.stream().map(ClassificationsResource::toDto).toList());
+	}
+
 	private static PendingProductDto toDto(PendingProduct product) {
 		return new PendingProductDto(product.getId().asString(), product.getInputHash(), product.getLanguages());
+	}
+
+	private static ClassificationToReviewDto toDto(ClassificationToReview product) {
+		var classification = product.getClassification();
+		return new ClassificationToReviewDto(
+				product.getId().asString(),
+				product.getNames(),
+				classification.getInputHash(),
+				asString(classification.getArchetypeProductId()),
+				classification.getResolvedAt(),
+				product.getAttempts().stream().map(ClassificationsResource::toDto).toList()
+		);
+	}
+
+	private static ClassificationAttemptDto toDto(ClassificationAttempt attempt) {
+		return new ClassificationAttemptDto(attempt.getLanguage(), attempt.getClassifier().name(), attempt.getClassifierVersion(), asString(attempt.getArchetypeProductId()), attempt.getCreatedAt());
+	}
+
+	private static String asString(ArchetypeProductId id) {
+		return id != null ? id.asString() : null;
 	}
 }

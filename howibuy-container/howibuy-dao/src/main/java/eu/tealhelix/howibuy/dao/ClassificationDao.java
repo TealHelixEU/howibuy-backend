@@ -7,6 +7,7 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.howibuy.services.model.ProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
+import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
 import io.smallrye.mutiny.Uni;
@@ -21,6 +22,16 @@ public interface ClassificationDao {
 	 * @return The products, the one whose current state came with the oldest Product Change first
 	 */
 	Uni<List<PendingProduct>> findPending(ReactivePersistenceContext em, int limit);
+
+	/**
+	 * Find the products whose Classification needs review, leaving out those changed since it was resolved, which are
+	 * pending again.
+	 *
+	 * @param em    The persistence context
+	 * @param limit The most products to find
+	 * @return The products, the one whose Classification was resolved longest ago first
+	 */
+	Uni<List<ClassificationToReview>> findToReview(ReactivePersistenceContext em, int limit);
 
 	/**
 	 * Find a product to record a Classification Attempt of, and lock its row until the transaction ends, so that the

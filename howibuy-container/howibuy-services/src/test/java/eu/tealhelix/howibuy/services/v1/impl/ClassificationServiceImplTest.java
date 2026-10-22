@@ -38,10 +38,12 @@ import eu.tealhelix.howibuy.services.v1.classification.impl.ClassificationResolu
 import eu.tealhelix.howibuy.services.v1.types.InputHashConflictException;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
-import eu.tealhelix.howibuy.v1.model.ClassificationAttemptData;
+import eu.tealhelix.howibuy.v1.model.ClassificationAttemptInput;
+import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassification;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttempt;
-import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttemptData;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttemptInput;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.ImmutablePendingProduct;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
@@ -61,9 +63,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Which callers may classify, which attempts are refused before anything is stored, and the order of the steps of
- * recording an attempt, with the database mocked. How the Classification is resolved is covered by
- * {@code ClassificationResolutionImplTest}, and what the steps store by {@code ClassificationDaoImplTest}.
+ * Which callers may classify or read the Classifications to review, which attempts are refused before anything is
+ * stored, and the order of the steps of recording an attempt, with the database mocked. How the Classification is
+ * resolved is covered by {@code ClassificationResolutionImplTest}, and what the steps store by
+ * {@code ClassificationDaoImplTest}.
  */
 @EnableAutoWeld
 @AddBeanClasses({TealHelixAuthorizationImpl.class, ClassificationResolutionImpl.class})
@@ -119,8 +122,37 @@ public class ClassificationServiceImplTest {
 	}
 
 	@Test
+	void theCatalogueSyncAndOperatorsFindTheClassificationsToReviewOutsideATransaction() {
+		var toReview = List.<ClassificationToReview>of(ImmutableClassificationToReview.builder()
+				.id(PRODUCT)
+				.putNames("el", "Γιαούρτι")
+				.classification(ImmutableClassification.builder().archetypeProductId(YOGHURT).inputHash("h1").isNeedsReview(true).resolvedAt(LocalDateTime.of(2026, 10, 22, 12, 0)).build())
+				.addAttempts(attempt("el", Classifier.EXPERT, YOGHURT, "h1", LocalDateTime.of(2026, 10, 22, 12, 0)))
+				.build());
+		when(mockClassificationDao.findToReview(any(), eq(1000))).thenReturn(Uni.createFrom().item(toReview));
+
+		assertEquals(toReview, sut.findToReview(CATALOGUE_SYNC_USER, 1000).await().atMost(WAIT));
+		assertEquals(toReview, sut.findToReview(OPERATOR_USER, 1000).await().atMost(WAIT));
+		assertTrue(mockReactivePersistenceContextFactory.getOpenedTransactions().isEmpty(), "no transaction opened");
+	}
+
+	@Test
+	void onlyTheCatalogueSyncAndOperatorsFindTheClassificationsToReview() {
+		assertThrows(NotAuthenticatedException.class, () -> sut.findToReview(null, 10));
+		assertThrows(NotAuthorizedException.class, () -> sut.findToReview(RETAILER_USER, 10));
+		verifyNoInteractions(mockClassificationDao);
+	}
+
+	@Test
+	void theClassificationsToReviewAreFoundFromOneToAThousandAtATime() {
+		assertBadInput("limit", "It must be from 1 to 1000", assertThrows(BadInputValueException.class, () -> sut.findToReview(OPERATOR_USER, 0)));
+		assertBadInput("limit", "It must be from 1 to 1000", assertThrows(BadInputValueException.class, () -> sut.findToReview(OPERATOR_USER, 1001)));
+		verifyNoInteractions(mockClassificationDao);
+	}
+
+	@Test
 	void anAttemptIsRecordedAndTheClassificationResolvedInOneTransactionWithTheProductLocked() {
-		var attempt = attemptData("en", Classifier.EXPERT, FETA, "h1");
+		var attempt = attemptInput("en", Classifier.EXPERT, FETA, "h1");
 		givenTheProduct("h1", Set.of("el", "en"), "el");
 		when(mockArchetypeProductDao.requireProductExists(any(), eq(FETA))).thenReturn(Uni.createFrom().voidItem());
 		when(mockClassificationDao.recordAttempt(any(), eq(PRODUCT), any())).thenReturn(Uni.createFrom().voidItem());
@@ -159,7 +191,7 @@ public class ClassificationServiceImplTest {
 				.thenReturn(Uni.createFrom().item(List.of(attempt("el", Classifier.MANUAL, null, "h1", LocalDateTime.of(2026, 10, 22, 12, 0)))));
 		when(mockClassificationDao.saveClassification(any(), eq(PRODUCT), any())).thenReturn(Uni.createFrom().voidItem());
 
-		sut.recordAttempt(CATALOGUE_SYNC_USER, PRODUCT, attemptData("el", Classifier.MANUAL, null, "h1")).await().atMost(WAIT);
+		sut.recordAttempt(CATALOGUE_SYNC_USER, PRODUCT, attemptInput("el", Classifier.MANUAL, null, "h1")).await().atMost(WAIT);
 
 		verifyNoInteractions(mockArchetypeProductDao);
 		var classificationCaptor = ArgumentCaptor.forClass(Classification.class);
@@ -170,7 +202,7 @@ public class ClassificationServiceImplTest {
 
 	@Test
 	void onlyTheCatalogueSyncAndOperatorsRecordAnAttempt() {
-		var attempt = attemptData("el", Classifier.MANUAL, YOGHURT, "h1");
+		var attempt = attemptInput("el", Classifier.MANUAL, YOGHURT, "h1");
 
 		assertThrows(NotAuthenticatedException.class, () -> sut.recordAttempt(null, PRODUCT, attempt));
 		assertThrows(NotAuthorizedException.class, () -> sut.recordAttempt(RETAILER_USER, PRODUCT, attempt));
@@ -179,7 +211,7 @@ public class ClassificationServiceImplTest {
 
 	@Test
 	void anAttemptOfTheLlmIsRefused() {
-		var failure = assertThrows(BadInputValueException.class, () -> sut.recordAttempt(OPERATOR_USER, PRODUCT, attemptData("el", Classifier.LLM, YOGHURT, "h1")));
+		var failure = assertThrows(BadInputValueException.class, () -> sut.recordAttempt(OPERATOR_USER, PRODUCT, attemptInput("el", Classifier.LLM, YOGHURT, "h1")));
 
 		assertBadInput("classifier", "The attempts of the LLM are made by HowiBuy itself", failure);
 		assertNothingTouched();
@@ -189,7 +221,7 @@ public class ClassificationServiceImplTest {
 	void anAttemptOfAnUnknownProductIsNotFound() {
 		when(mockClassificationDao.findLockedProductToClassify(any(), eq(PRODUCT))).thenReturn(Uni.createFrom().nullItem());
 
-		var failure = recordAndExpectFailure(attemptData("el", Classifier.MANUAL, YOGHURT, "h1"));
+		var failure = recordAndExpectFailure(attemptInput("el", Classifier.MANUAL, YOGHURT, "h1"));
 
 		assertInstanceOf(NotFoundException.class, failure);
 		assertEquals("No such Retailer Product, retailerProductId: " + PRODUCT.asString(), failure.getMessage());
@@ -200,10 +232,10 @@ public class ClassificationServiceImplTest {
 	void anAttemptMadeFromAnotherInputHashIsAConflict() {
 		givenTheProduct("h2", Set.of("el"), "el");
 
-		var failure = recordAndExpectFailure(attemptData("el", Classifier.MANUAL, YOGHURT, "h1"));
+		var failure = recordAndExpectFailure(attemptInput("el", Classifier.MANUAL, YOGHURT, "h1"));
 
 		assertInstanceOf(InputHashConflictException.class, failure);
-		assertEquals("The input hash is not the product's current one, inputHash: h1", failure.getMessage());
+		assertEquals("The input hash is not the product's current one, product id: " + PRODUCT.asString() + ", inputHash: h1", failure.getMessage());
 		assertNothingRecorded();
 	}
 
@@ -211,7 +243,7 @@ public class ClassificationServiceImplTest {
 	void anAttemptInALanguageTheProductIsNotNamedInIsRefused() {
 		givenTheProduct("h1", Set.of("el"), "el");
 
-		var failure = recordAndExpectFailure(attemptData("en", Classifier.MANUAL, YOGHURT, "h1"));
+		var failure = recordAndExpectFailure(attemptInput("en", Classifier.MANUAL, YOGHURT, "h1"));
 
 		assertBadInput("language", "The product is not named in it, language: en", failure);
 		assertNothingRecorded();
@@ -223,7 +255,7 @@ public class ClassificationServiceImplTest {
 		var notFound = new NotFoundException(YOGHURT, "No such Archetype Product, archetypeProductId: " + YOGHURT.asString());
 		when(mockArchetypeProductDao.requireProductExists(any(), eq(YOGHURT))).thenReturn(Uni.createFrom().failure(notFound));
 
-		var failure = recordAndExpectFailure(attemptData("el", Classifier.MANUAL, YOGHURT, "h1"));
+		var failure = recordAndExpectFailure(attemptInput("el", Classifier.MANUAL, YOGHURT, "h1"));
 
 		assertEquals(notFound, failure);
 		assertNothingRecorded();
@@ -237,7 +269,7 @@ public class ClassificationServiceImplTest {
 				.build()));
 	}
 
-	private Throwable recordAndExpectFailure(ClassificationAttemptData attempt) {
+	private Throwable recordAndExpectFailure(ClassificationAttemptInput attempt) {
 		return sut.recordAttempt(OPERATOR_USER, PRODUCT, attempt)
 				.subscribe().withSubscriber(UniAssertSubscriber.create())
 				.awaitFailure(WAIT)
@@ -260,8 +292,8 @@ public class ClassificationServiceImplTest {
 		assertEquals(hint, badInput.getHint());
 	}
 
-	private static ClassificationAttemptData attemptData(String language, Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash) {
-		return ImmutableClassificationAttemptData.builder()
+	private static ClassificationAttemptInput attemptInput(String language, Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash) {
+		return ImmutableClassificationAttemptInput.builder()
 				.language(language)
 				.classifier(classifier)
 				.classifierVersion("test")
@@ -272,7 +304,7 @@ public class ClassificationServiceImplTest {
 
 	private static ClassificationAttempt attempt(String language, Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash, LocalDateTime createdAt) {
 		return ImmutableClassificationAttempt.builder()
-				.from(attemptData(language, classifier, archetypeProductId, inputHash))
+				.from(attemptInput(language, classifier, archetypeProductId, inputHash))
 				.createdAt(createdAt)
 				.build();
 	}
