@@ -6,6 +6,7 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.v1.types.HasArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.HasArchetypeProductId;
 import io.smallrye.mutiny.Uni;
 
 public interface ArchetypeProductDao {
@@ -22,4 +23,12 @@ public interface ArchetypeProductDao {
 	 * for the lifetime of the application, as it is reference data that only changes on redeployment.
 	 */
 	Uni<List<ArchetypeProductImpacts>> retrieveAllWithImpacts(ReactivePersistenceContext em);
+
+	/**
+	 * @param em        The persistence context
+	 * @param productId The archetype product
+	 * @return A {@code Uni} completing if the archetype product exists, failing with a
+	 *         {@link eu.tealhelix.common.types.entity.NotFoundException} if it does not
+	 */
+	Uni<Void> requireProductExists(ReactivePersistenceContext em, HasArchetypeProductId productId);
 }

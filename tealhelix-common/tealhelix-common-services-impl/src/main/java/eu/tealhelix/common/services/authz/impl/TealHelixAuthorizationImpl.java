@@ -39,6 +39,15 @@ public class TealHelixAuthorizationImpl implements TealHelixAuthorization {
 	}
 
 	@Override
+	public void requireCatalogueSyncOrOperator(User user) {
+		if (user == null || user.isUnauthenticated()) {
+			throw new NotAuthenticatedException(REQUIRES_VALID_AUTHENTICATED_USER);
+		} else if (!user.isCatalogueSync() && !user.isOperator()) {
+			throw new NotAuthorizedException("This operation is accessible only to the Catalogue Sync and operators");
+		}
+	}
+
+	@Override
 	public void requireRetailer(User user) {
 		if (user == null || user.isUnauthenticated()) {
 			throw new NotAuthenticatedException(REQUIRES_VALID_AUTHENTICATED_USER);

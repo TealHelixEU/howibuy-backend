@@ -19,6 +19,9 @@ public class RetailerEntity {
 	@Column(name = "active")
 	private boolean active;
 
+	@Column(name = "classification_language")
+	private String classificationLanguage;
+
 	public UUID getId() {
 		return id;
 	}
@@ -41,5 +44,13 @@ public class RetailerEntity {
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+
+	public String getClassificationLanguage() {
+		return classificationLanguage;
+	}
+
+	public void setClassificationLanguage(String classificationLanguage) {
+		this.classificationLanguage = classificationLanguage;
 	}
 }

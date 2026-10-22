@@ -9,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.Tuple;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
+import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity_;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity;
@@ -18,6 +19,7 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.v1.types.HasArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.HasArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
@@ -58,6 +60,13 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 						l3category.get(ArchetypeCategoryEntity_.name)))
 				.orderBy(cb.asc(root.get(ArchetypeProductEntity_.agbCode)));
 		return em.createQuery(q).getResultList().map(ArchetypeProductDaoImpl::toArchetypeProductImpacts);
+	}
+
+	@Override
+	public Uni<Void> requireProductExists(ReactivePersistenceContext em, HasArchetypeProductId productId) {
+		return em.find(ArchetypeProductEntity.class, productId.getId().asUuid())
+				.onItem().ifNull().failWith(() -> new NotFoundException(productId.getId(), "No such Archetype Product, archetypeProductId: " + productId.getId().asString()))
+				.replaceWithVoid();
 	}
 
 	private static List<ArchetypeProductImpacts> toArchetypeProductImpacts(List<Tuple> tuples) {

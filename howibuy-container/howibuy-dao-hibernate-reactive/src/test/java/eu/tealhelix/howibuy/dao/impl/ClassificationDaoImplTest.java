@@ -2,17 +2,23 @@ package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -21,17 +27,32 @@ import eu.tealhelix.catalogue.v1.model.ImmutableProductChange;
 import eu.tealhelix.catalogue.v1.model.ProductChange;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
+import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity;
+import eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
+import eu.tealhelix.howibuy.dao.jpa.values.AnimalWelfareImpact;
+import eu.tealhelix.howibuy.dao.jpa.values.EnvironmentalImpact;
+import eu.tealhelix.howibuy.dao.jpa.values.SocialImpact;
+import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
+import eu.tealhelix.howibuy.v1.model.Classification;
+import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassification;
+import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttempt;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.RetailerProductId;
+import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
+import eu.tealhelix.howibuy.v1.types.impl.RetailerProductIdImpl;
+import io.smallrye.mutiny.Uni;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +64,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * A product is pending while it has no Classification, or its Classification was resolved from another input hash than
- * its current one.
+ * its current one. Recording an attempt locks the product, and stores the attempt and the Classification.
  */
 @Testcontainers
 public class ClassificationDaoImplTest {
@@ -51,6 +72,8 @@ public class ClassificationDaoImplTest {
 
 	private static final UUID RETAILER = UUID.fromString("6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11");
 	private static final String CATALOGUE = "test-gr";
+	private static final ArchetypeProductId YOGHURT = new ArchetypeProductIdImpl("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a01");
+	private static final LocalDateTime T0 = LocalDateTime.of(2026, 10, 22, 12, 0);
 
 	@Container
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
@@ -71,13 +94,28 @@ public class ClassificationDaoImplTest {
 		retailer.setId(RETAILER);
 		retailer.setName("Test Retailer");
 		retailer.setActive(true);
+		retailer.setClassificationLanguage("el");
 		var catalogue = new CatalogueEntity();
 		catalogue.setId(CATALOGUE);
 		catalogue.setRetailerId(RETAILER);
 		catalogue.setCountry("GR");
 		catalogue.setPrimaryLanguage("el");
 		catalogue.setActive(true);
-		sessionFactory.withTransaction(session -> session.persistAll(retailer, catalogue)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		var category = new ArchetypeCategoryEntity();
+		category.setId(UUID.fromString("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a00"));
+		category.setLevel((short) 3);
+		category.setName("Yoghurts");
+		var archetype = new ArchetypeProductEntity();
+		archetype.setId(YOGHURT.asUuid());
+		archetype.setCategory(category);
+		archetype.setName("Yoghurt");
+		archetype.setAgbCode("agb-y");
+		archetype.setEnvironmentalImpact(new EnvironmentalImpact());
+		archetype.setSocialImpact(new SocialImpact());
+		archetype.setAnimalWelfareImpact(new AnimalWelfareImpact());
+		archetype.setNutriScore("Nutriscore_A");
+		sessionFactory.withTransaction(session -> session.persistAll(retailer, catalogue, category).chain(() -> session.persist(archetype)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
 	@BeforeEach
@@ -173,6 +211,83 @@ public class ClassificationDaoImplTest {
 		assertEquals(Set.of(Set.of("el", "en")), pending.stream().map(PendingProduct::getLanguages).collect(Collectors.toSet()));
 	}
 
+	@Test
+	void findsTheProductToClassifyWithItsLanguagesAndItsRetailersClassificationLanguage(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+
+		var product = inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().findLockedProductToClassify(tx, id));
+
+		assertEquals(ImmutableProductToClassify.builder().inputHash("h1").languages(Set.of("el", "en")).classificationLanguage("el").build(), product);
+	}
+
+	@Test
+	void anUnknownProductToClassifyIsNotFound(Mutiny.SessionFactory sessionFactory) {
+		var product = inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().findLockedProductToClassify(tx, new RetailerProductIdImpl(UUID.randomUUID().toString())));
+
+		assertNull(product);
+	}
+
+	/**
+	 * Another transaction asking for the lock without waiting is refused while the one that found the product runs.
+	 */
+	@Test
+	void theProductToClassifyStaysLockedUntilTheTransactionEnds(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+
+		var refusal = inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().findLockedProductToClassify(tx, id)
+				.map(product -> assertThrows(SQLException.class, () -> lockWithoutWaiting(id))));
+
+		assertEquals("55P03", refusal.getSQLState(), "lock_not_available");
+	}
+
+	@Test
+	void findsTheAttemptsMadeFromAnInputHash(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h2", Map.of("el", "Γιαούρτι", "en", "Yoghurt")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		var stale = attempt("el", Classifier.LLM, YOGHURT, "h1", 0);
+		var greek = attempt("el", Classifier.EXPERT, YOGHURT, "h2", 1);
+		var english = attempt("en", Classifier.LLM, null, "h2", 2);
+		var dao = new ClassificationDaoImpl();
+		inTransaction(sessionFactory, tx -> dao.recordAttempt(tx, id, stale)
+				.chain(() -> dao.recordAttempt(tx, id, greek))
+				.chain(() -> dao.recordAttempt(tx, id, english)));
+
+		var attempts = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> dao.findAttempts(em, id, "h2"))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(Set.of(greek, english), Set.copyOf(attempts));
+	}
+
+	@Test
+	void savingAClassificationReplacesTheOneBefore(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		apply(sessionFactory, product("yoghurt", 1, "h2", Map.of("el", "Γιαούρτι")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		var dao = new ClassificationDaoImpl();
+		inTransaction(sessionFactory, tx -> dao.saveClassification(tx, id, classification(YOGHURT, "h1", true, 0)));
+
+		inTransaction(sessionFactory, tx -> dao.saveClassification(tx, id, classification(null, "h2", false, 1)));
+
+		assertEquals(
+				List.of("null|h2|false|" + T0.plusMinutes(1)),
+				rows("SELECT archetype_product_id, input_hash, needs_review, resolved_at FROM TH_CLASSIFICATION WHERE retailer_product_id = '" + id.asString() + "'"));
+		assertEquals(List.of(), findPending(sessionFactory, 10));
+	}
+
+	@Test
+	void savesTheArchetypeOfAClassification(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+
+		inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().saveClassification(tx, id, classification(YOGHURT, "h1", true, 0)));
+
+		assertEquals(
+				List.of(YOGHURT.asString() + "|h1|true|" + T0),
+				rows("SELECT archetype_product_id, input_hash, needs_review, resolved_at FROM TH_CLASSIFICATION WHERE retailer_product_id = '" + id.asString() + "'"));
+	}
+
 	private static List<PendingProduct> findPending(Mutiny.SessionFactory sessionFactory, int limit) {
 		var sut = new ClassificationDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
@@ -199,6 +314,30 @@ public class ClassificationDaoImplTest {
 		classification.setNeedsReview(false);
 		classification.setResolvedAt(now);
 		sessionFactory.withTransaction(session -> session.persistAll(attempt, classification)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static <T> T inTransaction(Mutiny.SessionFactory sessionFactory, Function<ReactivePersistenceTxContext, Uni<T>> work) {
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory).withTransaction(work).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static ClassificationAttempt attempt(String language, Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash, int minutesLater) {
+		return ImmutableClassificationAttempt.builder()
+				.language(language)
+				.classifier(classifier)
+				.classifierVersion("test")
+				.archetypeProductId(archetypeProductId)
+				.inputHash(inputHash)
+				.createdAt(T0.plusMinutes(minutesLater))
+				.build();
+	}
+
+	private static Classification classification(ArchetypeProductId archetypeProductId, String inputHash, boolean needsReview, int minutesLater) {
+		return ImmutableClassification.builder()
+				.archetypeProductId(archetypeProductId)
+				.inputHash(inputHash)
+				.isNeedsReview(needsReview)
+				.resolvedAt(T0.plusMinutes(minutesLater))
+				.build();
 	}
 
 	private static void apply(Mutiny.SessionFactory sessionFactory, ProductChange... changes) {
@@ -252,6 +391,33 @@ public class ClassificationDaoImplTest {
 		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()); var s = c.createStatement(); var rs = s.executeQuery(sql)) {
 			rs.next();
 			return rs.getLong(1);
+		}
+	}
+
+	private static void lockWithoutWaiting(RetailerProductId id) throws SQLException {
+		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+				var s = c.prepareStatement("SELECT id FROM TH_RETAILER_PRODUCT WHERE id = ? FOR UPDATE NOWAIT")) {
+			s.setObject(1, id.asUuid());
+			s.executeQuery().close();
+		}
+	}
+
+	/**
+	 * @return Each row, its columns joined by {@code |}
+	 */
+	private static List<String> rows(String sql) throws SQLException {
+		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()); var s = c.createStatement(); var rs = s.executeQuery(sql)) {
+			var rows = new ArrayList<String>();
+			var columns = rs.getMetaData().getColumnCount();
+			while (rs.next()) {
+				var row = new StringJoiner("|");
+				for (int i = 1; i <= columns; i++) {
+					var value = rs.getObject(i);
+					row.add(value instanceof Timestamp timestamp ? timestamp.toLocalDateTime().toString() : String.valueOf(value));
+				}
+				rows.add(row.toString());
+			}
+			return rows;
 		}
 	}
 }

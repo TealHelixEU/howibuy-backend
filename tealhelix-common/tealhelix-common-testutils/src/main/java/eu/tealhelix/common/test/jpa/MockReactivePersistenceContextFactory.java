@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -52,6 +53,9 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 	}
 
 	public record FindAction(Class<?> entityClass, Object id) implements PersistenceAction {
+	}
+
+	public record LockingFindAction(Class<?> entityClass, Object id, LockModeType lockMode) implements PersistenceAction {
 	}
 
 	public record FlushAction() implements PersistenceAction {
@@ -108,7 +112,6 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 
 	public static class MockReactivePersistenceTxContext extends MockReactivePersistenceContext implements ReactivePersistenceTxContext {
 		private boolean markedForRollback;
-		private final List<PersistenceAction> actions = new ArrayList<>();
 
 		@Override
 		public boolean isMarkedForRollback() {
@@ -121,6 +124,12 @@ public class MockReactivePersistenceContextFactory implements ReactivePersistenc
 				actions.add(new RollbackAction());
 			}
 			markedForRollback = true;
+		}
+
+		@Override
+		public <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockMode) {
+			actions.add(new LockingFindAction(entityClass, id, lockMode));
+			return Uni.createFrom().nullItem();
 		}
 
 		@Override

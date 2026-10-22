@@ -5,11 +5,13 @@ import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CATALOGUE_CHANGES;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CATALOGUE_CHANGES_DESC;
+import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.required;
+import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.requiredText;
+import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.uuid;
 
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -114,24 +116,6 @@ public class CatalogueChangesResource {
 				.currency(currency(requiredText("currency", dto.currency())))
 				.isActive(dto.active())
 				.build();
-	}
-
-	private static <T> T required(String inputName, T value) {
-		if (value == null) throw RequiredInputMissingException.fromRequiredInputName(inputName);
-		return value;
-	}
-
-	private static String requiredText(String inputName, String value) {
-		RequiredInputMissingException.throwIfRequiredInputMissing(inputName, value);
-		return value;
-	}
-
-	private static String uuid(String inputName, String value) {
-		try {
-			return UUID.fromString(requiredText(inputName, value)).toString();
-		} catch (IllegalArgumentException e) {
-			throw BadInputValueException.fromInputNameAndHint(inputName, "It must be a UUID");
-		}
 	}
 
 	private static Currency currency(String code) {

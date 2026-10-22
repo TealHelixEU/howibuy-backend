@@ -29,6 +29,17 @@ public interface TealHelixAuthorization {
 	void requireCatalogueSync(User user);
 
 	/**
+	 * Ensure that the given user is the Catalogue Sync or an operator, who keep the Retailer Products classified.
+	 *
+	 * @param user The user to check
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException If the user is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException    If the user has neither the
+	 *                                                                            {@code CATALOGUE_SYNC} nor the
+	 *                                                                            {@code OPERATOR} role
+	 */
+	void requireCatalogueSyncOrOperator(User user);
+
+	/**
 	 * Ensure that the given user is a Retailer.
 	 *
 	 * @param user The user to check

@@ -36,6 +36,7 @@ import static eu.tealhelix.howibuy.v1.types.SustainabilityIndicator.WORKING_TIME
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -47,6 +48,7 @@ import java.util.stream.IntStream;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
+import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.values.AnimalWelfareImpact;
@@ -276,6 +278,30 @@ public class ArchetypeProductDaoImplTest {
 				"a product with no health score is still part of the range the others are normalised against, "
 						+ "so the corpus is loaded whole and thinned later");
 		assertEquals("Nutriscore_B", productOf(corpus, ORANGE_JUICE).getNutriScore());
+	}
+
+	@Test
+	void aStoredProductExists(Mutiny.SessionFactory sessionFactory) {
+		var sut = new ArchetypeProductDaoImpl();
+
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.requireProductExists(em, WHOLE_MILK))
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitItem(WAIT);
+	}
+
+	@Test
+	void anUnknownProductIsNotFound(Mutiny.SessionFactory sessionFactory) {
+		var sut = new ArchetypeProductDaoImpl();
+		var unknown = new ArchetypeProductIdImpl("00000000-0000-0000-0000-000000000299");
+
+		var failure = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.requireProductExists(em, unknown))
+				.subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(WAIT).getFailure();
+
+		assertInstanceOf(NotFoundException.class, failure);
+		assertEquals("No such Archetype Product, archetypeProductId: 00000000-0000-0000-0000-000000000299", failure.getMessage());
 	}
 
 	private static List<ArchetypeProductImpacts> retrieveCorpus(Mutiny.SessionFactory sessionFactory) {

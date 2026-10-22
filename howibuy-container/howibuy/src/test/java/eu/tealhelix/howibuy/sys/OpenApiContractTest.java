@@ -198,7 +198,7 @@ public class OpenApiContractTest {
 
 		var declared = tags.stream().map(tag -> String.valueOf(tag.get("name"))).collect(Collectors.toSet());
 		assertEquals(
-				Set.of("Product assessment", "Session handoff", "Token exchange", "Catalogue changes", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
+				Set.of("Product assessment", "Session handoff", "Token exchange", "Catalogue changes", "Classification", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
 				declared,
 				"the API is grouped by what its parts do");
 		var ungrouped = new ArrayList<String>();
@@ -276,6 +276,35 @@ public class OpenApiContractTest {
 				"a page not starting at the cursor answers a message");
 		for (var operation : List.of(readCursor, apply)) {
 			assertNotNull(at(operation, "responses", "403", "description"), "a caller other than the Catalogue Sync is documented");
+		}
+	}
+
+	/**
+	 * The Catalogue Sync and operators read the pending products and record the attempts made outside this application.
+	 * Recording answers 204 with no body, and an attempt made from an input hash that is no longer the product's is
+	 * refused with 409 and a message, which the caller handles by reading the pending products again.
+	 */
+	@Test
+	void documentsTheClassification() {
+		var document = openApiDocument();
+		var findPending = operation(document, "get", "/api/howibuy/v1/classifications/pending");
+		var recordAttempt = operation(document, "post", "/api/howibuy/v1/classification-attempts");
+
+		assertEquals("#/components/schemas/PendingProductDto",
+				at(findPending, "responses", "200", "content", "application/json", "schema", "items", "$ref"),
+				"the pending products are answered as a list");
+		assertEquals("#/components/schemas/ClassificationAttemptRequest",
+				at(recordAttempt, "requestBody", "content", "application/json", "schema", "$ref"),
+				"an attempt is sent as the request body");
+		assertNotNull(at(recordAttempt, "responses", "204", "description"), "recording documents its empty success outcome");
+		assertNull(at(recordAttempt, "responses", "201"), "recording does not promise a Created it never sends");
+		for (var status : List.of("400", "404", "409")) {
+			assertEquals("#/components/schemas/SingleMessageResponse",
+					at(recordAttempt, "responses", status, "content", "application/json", "schema", "$ref"),
+					"a refused attempt answers a message, status: " + status);
+		}
+		for (var operation : List.of(findPending, recordAttempt)) {
+			assertNotNull(at(operation, "responses", "403", "description"), "a caller other than the Catalogue Sync or an operator is documented");
 		}
 	}
 

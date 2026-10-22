@@ -10,6 +10,9 @@ public interface HowiBuyOpenApiTagNames {
 	String CATALOGUE_CHANGES = "Catalogue changes";
 	String CATALOGUE_CHANGES_DESC = "The receiving end of the Product Changes that the Catalogue Sync carries over from the Ingestion: the cursor of how far they have been applied, and the application of a page of them. For the Catalogue Sync only.";
 
+	String CLASSIFICATION = "Classification";
+	String CLASSIFICATION_DESC = "The matching of each Retailer Product to at most one Archetype Product: the products waiting to be classified, and the recording of the attempts made outside this application, by an expert or one of us, from which each product's Classification is resolved. For the Catalogue Sync and operators only.";
+
 	String TOKEN_EXCHANGE = "Token exchange";
 	String TOKEN_EXCHANGE_DESC = "Exchange of a retailer's service-account token for one that acts as a user of that retailer, for a retailer calling this application on a user's behalf.";
 }

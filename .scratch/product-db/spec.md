@@ -19,7 +19,7 @@ customer can put in the basket.
 Retailers send us their product data per Catalogue (one per country e-shop). A separate **Ingestion** deployable stores
 each Feed, parses it with a per-Retailer adapter, keeps the current state of every Retailer Product and Listing in its own
 database, and exposes what changed through an ordered cursor. A **Catalogue Sync** component carries those changes into
-HowiBuy. HowiBuy keeps the products, has them classified offline (LLM, WP3 or a person) to at most one Archetype Product
+HowiBuy. HowiBuy keeps the products, has them classified offline (LLM, an expert or a person) to at most one Archetype Product
 each, and answers an assessment by looking the scanned product up. The three Alternatives become real Retailer Products,
 listed and active in the user's Catalogue.
 
@@ -46,7 +46,7 @@ User (via retailer token: Retailer + Catalogue) ──assess──▶ HowiBuy: l
 10. As a retailer's customer scanning a product that is no longer listed, I still want it assessed.
 11. As a retailer, when a product is not assessed, I want to know whether it is unknown, not classified yet, or matches no archetype.
 12. As an operator, I want to classify the pending products at a pace I control, and re-classify selectively after the classifier improves.
-13. As an operator, I want WP3 or a person to record a Classification, and to have it take precedence over the LLM's.
+13. As an operator, I want an expert or a person to record a Classification, and to have it take precedence over the LLM's.
 14. As an operator, I want products whose per-language Classification Attempts disagree to be flagged for review.
 15. As an operator, I want to confirm or discard an Ingestion Run held by the sanity check.
 16. As an operator, I want every Ingestion Run and every Classification Attempt recorded, so problems can be traced to a file, adapter or classifier version.
@@ -178,19 +178,21 @@ neither changes a product that the other has read.
 
 ### HowiBuy: Classification
 
-- `GET /api/v1/classifications/pending?limit=M`: pending products, oldest change first, with the languages they are
-  named in.
+- `GET /api/v1/classifications/pending?limit=M`: pending products, oldest change first, with their input hash and the
+  languages they are named in.
 - `POST /api/v1/llm-classifications` `{retailerProductId, language}`: runs the identification half of the current LLM
   pipeline (glossary, guidance, taxonomy descent) on the product's name in that language, records a Classification
   Attempt and resolves the Classification. Malformed LLM replies (`FAILURE_OTHER`) are not recorded, so the product stays
   pending.
 - `POST /api/v1/classification-attempts`
-  `{retailerProductId, language?, classifier, archetypeProductId | null}`: records an attempt made elsewhere (WP3, a
-  person). `null` means "no matching archetype".
+  `{retailerProductId, inputHash, language, classifier, classifierVersion, archetypeProductId | null}`: records an
+  attempt made elsewhere (an expert, one of us). `null` means "no matching archetype". `409` when `inputHash` is no
+  longer the product's current one, because the product changed while it was being classified.
 - Every attempt records its classifier and **classifier version** (LLM model + prompt + glossary version, or the
   source's own label) and the input hash it was made from.
 - Resolution policy (`ClassificationResolution`, swappable): consider only the attempts made from the current input
-  hash. A manual attempt beats WP3, which beats the LLM. Among equals, agreement resolves. Disagreement resolves to the attempt
+  hash, and of those the latest per classifier and language. A manual attempt beats an expert one, which beats the
+  LLM. Among equals, agreement resolves. Disagreement resolves to the attempt
   in the Retailer's classification language (`TH_RETAILER.classification_language`), a column of its own because one
   product can be listed in Catalogues with different primary languages. If there is none (the product is
   not sold in that language), the remaining attempts are ordered by language code. A disagreement always sets

@@ -1,5 +1,6 @@
 package eu.tealhelix.common.dao.reactive.hibernate;
 
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
@@ -16,6 +17,11 @@ class ReactivePersistenceTxContextImpl extends ReactivePersistenceContextImpl im
 	public ReactivePersistenceTxContextImpl(Mutiny.SessionFactory sessionFactory, Session session, Transaction transaction) {
 		super(sessionFactory, session);
 		this.transaction = transaction;
+	}
+
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockMode) {
+		return session.find(entityClass, id, lockMode);
 	}
 
 	@Override

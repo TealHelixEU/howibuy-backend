@@ -1,5 +1,6 @@
 package eu.tealhelix.common.dao.reactive;
 
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
@@ -15,6 +16,18 @@ import io.smallrye.mutiny.Uni;
  * In the case of Hibernate Reactive, this wraps a {@code Mutiny.Transaction} <em>and</em> a {@code Mutiny.Session}.
  */
 public interface ReactivePersistenceTxContext extends ReactivePersistenceContext {
+	/**
+	 * Find an entity and lock its row until the transaction ends, e.g. so that the changes that depend on its state
+	 * happen one after the other.
+	 *
+	 * @param entityClass The class of the entity
+	 * @param id          The id of the entity
+	 * @param lockMode    The lock, e.g. {@code PESSIMISTIC_WRITE} to wait for other transactions holding it
+	 * @param <T>         The type of the entity
+	 * @return The entity, {@code null} if there is none with this id
+	 */
+	<T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockMode);
+
 	<T> Uni<T> persist(T entity);
 
 	Uni<Void> persistAll(Object... entities);
