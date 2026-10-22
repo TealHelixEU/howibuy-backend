@@ -29,5 +29,5 @@ public interface ProductAssessmentOutcome extends HasProductKey {
 	 * Diagnostic data for the assessment, has to be activated explicitly.
 	 */
 	@Nullable
-	ProductAssessmentOutcomeDiagnostics getDiagnostics();
+	MatchDiagnostics getDiagnostics();
 }

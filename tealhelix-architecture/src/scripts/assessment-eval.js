@@ -369,7 +369,7 @@ function columnIndex(header, name) {
 function extractDiagnostics(json) {
 	const d = json && json.diagnostics;
 	if (!d) return null;
-	return { l1: d.l1Category ?? null, l2: d.l2Category ?? null, l3: d.l3Category ?? null, product: d.product ?? null };
+	return { l1: d.l1Category ?? null, l2: d.l2Category ?? null, l3: d.l3Category ?? null, product: d.archetypeProduct ?? null };
 }
 
 // Reads the archetype data and returns a map from archetype product name to its Nutri-Score grade

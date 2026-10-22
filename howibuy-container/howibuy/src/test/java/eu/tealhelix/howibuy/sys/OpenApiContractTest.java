@@ -124,6 +124,25 @@ public class OpenApiContractTest {
 	}
 
 	/**
+	 * The diagnostics of an assessment say how far the matching of the product got: the SAFAD taxonomy path it
+	 * descended and the archetype product it ended at. The evaluation of the classification reads them from the wire.
+	 */
+	@Test
+	void describesTheMatchDiagnosticsOfTheOutcome() {
+		given()
+				.accept("application/json")
+				.when().get("/api/howibuy/v1/openapi")
+				.then()
+				.statusCode(200)
+				.body("components.schemas.ProductAssessmentOutcome.properties.diagnostics.'$ref'",
+						equalTo("#/components/schemas/MatchDiagnostics"))
+				.body("components.schemas.MatchDiagnostics.properties.l1Category.type", equalTo("string"))
+				.body("components.schemas.MatchDiagnostics.properties.l2Category.type", equalTo("string"))
+				.body("components.schemas.MatchDiagnostics.properties.l3Category.type", equalTo("string"))
+				.body("components.schemas.MatchDiagnostics.properties.archetypeProduct.type", equalTo("string"));
+	}
+
+	/**
 	 * An assessment answers with three alternatives, each naming the archetype product it recommends, the SAFAD
 	 * taxonomy path that archetype sits in and the two overall scores that put it there. All of it is what the
 	 * front-end shows the user, so it belongs to the published contract rather than only to the Java type.

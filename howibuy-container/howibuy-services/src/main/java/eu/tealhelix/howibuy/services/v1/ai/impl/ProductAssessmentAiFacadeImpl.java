@@ -10,7 +10,7 @@ import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiService;
-import eu.tealhelix.howibuy.v1.model.ProductData;
+import eu.tealhelix.howibuy.v1.model.ProductBaseData;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
@@ -27,19 +27,19 @@ public class ProductAssessmentAiFacadeImpl implements ProductAssessmentAiFacade 
 	}
 
 	@Override
-	public Uni<AiSelection> extractL1Category(ProductData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
+	public Uni<AiSelection> extractL1Category(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
 		return classify(productData, categories, recognizedTerms,
 				p -> aiService.extractL1Category(p.lang(), p.name(), p.enrichment(), p.characteristics(), p.tags(), p.candidates()));
 	}
 
 	@Override
-	public Uni<AiSelection> extractSubcategory(ProductData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
+	public Uni<AiSelection> extractSubcategory(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
 		return classify(productData, categories, recognizedTerms,
 				p -> aiService.extractSubcategory(p.lang(), p.name(), p.enrichment(), p.characteristics(), p.tags(), p.candidates()));
 	}
 
 	@Override
-	public Uni<AiSelection> extractArchetypeProduct(ProductData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance) {
+	public Uni<AiSelection> extractArchetypeProduct(ProductBaseData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance) {
 		return classify(productData, products, recognizedTerms,
 				p -> aiService.extractArchetypeProduct(p.lang(), p.name(), p.enrichment(), p.characteristics(), p.tags(), p.candidates(), categoryGuidance));
 	}
@@ -50,7 +50,7 @@ public class ProductAssessmentAiFacadeImpl implements ProductAssessmentAiFacade 
 	 * and re-emits the result on the caller's Vert.x context. Each level supplies {@code aiCall}, which picks the AI
 	 * service method and passes any extra, level-specific fields (the leaf level adds its category guidance).
 	 */
-	private Uni<AiSelection> classify(ProductData productData, List<String> candidates, List<FoodTerm> recognizedTerms, AiCall aiCall) {
+	private Uni<AiSelection> classify(ProductBaseData productData, List<String> candidates, List<FoodTerm> recognizedTerms, AiCall aiCall) {
 		String lang = Objects.requireNonNull(productData.getLanguage()).getDisplayLanguage(Locale.ENGLISH);
 		String enrichment = RenderingHelper.renderEnrichment(recognizedTerms);
 		String characteristics = RenderingHelper.renderTheProductCharacteristics(Objects.requireNonNull(productData.getCharacteristics()));

@@ -3,7 +3,7 @@ package eu.tealhelix.howibuy.services.v1.ai;
 import java.util.List;
 
 import eu.tealhelix.howibuy.services.model.FoodTerm;
-import eu.tealhelix.howibuy.v1.model.ProductData;
+import eu.tealhelix.howibuy.v1.model.ProductBaseData;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -22,9 +22,9 @@ import io.smallrye.mutiny.Uni;
  * the AI sees, giving it world knowledge the model may lack. They are the same at every level of the descent.
  */
 public interface ProductAssessmentAiFacade {
-	Uni<AiSelection> extractL1Category(ProductData productData, List<String> categories, List<FoodTerm> recognizedTerms);
+	Uni<AiSelection> extractL1Category(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms);
 
-	Uni<AiSelection> extractSubcategory(ProductData productData, List<String> categories, List<FoodTerm> recognizedTerms);
+	Uni<AiSelection> extractSubcategory(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms);
 
-	Uni<AiSelection> extractArchetypeProduct(ProductData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance);
+	Uni<AiSelection> extractArchetypeProduct(ProductBaseData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance);
 }

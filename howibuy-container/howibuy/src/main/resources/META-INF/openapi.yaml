@@ -89,7 +89,7 @@ components:
             The overall score of the archetype recommended in its place, measured under that same criterion. The pair
             is what explains the recommendation, and it never falls below the reference.
 
-    ProductAssessmentOutcomeDiagnostics:
+    MatchDiagnostics:
       description: >-
         The path the classification actually took: the SAFAD taxonomy it descended and the archetype it ended at. A
         level is absent when the classification did not reach it, which is how a failed assessment says how far it got.
@@ -100,7 +100,7 @@ components:
           description: The category below that one.
         l3Category:
           description: The leaf category the assessed product was placed in.
-        product:
+        archetypeProduct:
           description: The name of the archetype product within that leaf that the assessed product was matched to.
 
     ProductAssessmentOutcomeType:

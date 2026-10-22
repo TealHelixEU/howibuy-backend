@@ -2,11 +2,6 @@ package eu.tealhelix.howibuy.services.v1.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -19,25 +14,15 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
-import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
-import eu.tealhelix.howibuy.dao.ArchetypeCategoryDao;
-import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.scoring.v1.SubstitutionSettings;
-import eu.tealhelix.howibuy.services.model.ArchetypeCategory;
-import eu.tealhelix.howibuy.services.model.ArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
-import eu.tealhelix.howibuy.services.model.FoodTerm;
-import eu.tealhelix.howibuy.services.model.ImmutableArchetypeCategory;
-import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProduct;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
-import eu.tealhelix.howibuy.services.model.ImmutableFoodTerm;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.services.model.Substitutability;
-import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
-import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
-import eu.tealhelix.howibuy.services.v1.enrichment.FoodTermGlossary;
+import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
+import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductData;
 import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
@@ -53,18 +38,14 @@ import org.jboss.weld.junit5.auto.EnableAutoWeld;
 import org.jboss.weld.junit5.auto.ExcludeBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @EnableAutoWeld
-@AddBeanClasses({SingleProductAssessor.class, ProductClassificationGuidance.class})
+@AddBeanClasses(SingleProductAssessor.class)
 @ExtendWith(MockitoExtension.class)
 public class SingleProductAssessorTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
-
-	// At every level the intended pick is the first candidate (index 0) in the lists below.
-	private static final AiSelection FIRST = new AiSelection.Match(0);
 
 	private static final ProductData PRODUCT = ImmutableProductData.builder()
 			.productKey(new ProductKeyImpl("product-key"))
@@ -74,229 +55,68 @@ public class SingleProductAssessorTest {
 			.currency(Currency.getInstance("EUR"))
 			.build();
 
-	private static final ArchetypeCategoryId L1_BEVERAGES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000001");
 	private static final ArchetypeCategoryId L2_JUICES = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000002");
-	private static final ArchetypeCategoryId L3_ORANGE = new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-000000000003");
 
-	/** The category the AI picks at each level of every successful descent below. */
-	private static final ArchetypeCategory BEVERAGES = category(L1_BEVERAGES, "Beverages");
-	private static final ArchetypeCategory JUICES = category(L2_JUICES, "Juices");
-	private static final ArchetypeCategory ORANGE_JUICE = category(L3_ORANGE, "Orange juice");
-
-	private static final List<ArchetypeCategory> L1_CATEGORIES = List.of(
-			BEVERAGES, category(new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-0000000000ff"), "Dairy"));
-	private static final List<ArchetypeCategory> L2_CATEGORIES = List.of(
-			JUICES, category(new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-0000000000fe"), "Other"));
-	private static final List<ArchetypeCategory> L3_CATEGORIES = List.of(
-			ORANGE_JUICE, category(new ArchetypeCategoryIdImpl("00000000-0000-0000-0000-0000000000fd"), "Apple juice"));
-	/** The archetype the AI picks at the last level of every successful descent below, and a better one beside it. */
+	/** The archetype the product matches, and a better one beside it. */
 	private static final ArchetypeProductId PICKED_ARCHETYPE = new ArchetypeProductIdImpl("00000000-0000-0000-0000-0000000000fc");
 	private static final ArchetypeProductId BETTER_ARCHETYPE = new ArchetypeProductIdImpl("00000000-0000-0000-0000-0000000000fb");
 
-	private static final List<ArchetypeProduct> PRODUCTS = List.of(
-			product(PICKED_ARCHETYPE, "Tropicana"),
-			product(BETTER_ARCHETYPE, "Store brand"));
-
-	@Produces
-	@Mock
-	ArchetypeCategoryDao archetypeCategoryDao;
-
-	@Produces
-	@Mock
-	ArchetypeProductDao archetypeProductDao;
-
-	@Produces
-	@Mock
-	ProductAssessmentAiFacade productAssessmentAiFacade;
+	private static final MatchDiagnostics MATCHED_PATH = diagnostics("Beverages", "Juices", "Orange juice", "Tropicana");
+	private static final MatchDiagnostics PARTIAL_PATH = diagnostics("Beverages", "Juices", null, null);
 
 	@Produces
 	@Mock
 	@ExcludeBean
-	FoodTermGlossary foodTermGlossary;
+	ArchetypeMatching archetypeMatching;
 
 	@Produces
 	@Mock
 	@ExcludeBean
 	ArchetypeCorpus archetypeCorpus;
 
-	@Produces
-	@RegisterExtension
-	private MockReactivePersistenceContextFactory mockPersistenceContextFactory = new MockReactivePersistenceContextFactory();
-
 	@Inject
 	SingleProductAssessor sut;
 
 	@Test
-	void descendsAllFourLevelsAndReportsTheMatchedPath() {
-		mockGlossary(List.of());
+	void reportsTheMatchedPathForTheProductKeyWhenAnArchetypeMatches() {
+		mockMatching(new ArchetypeMatchOutcome.Matched(PICKED_ARCHETYPE, MATCHED_PATH));
 		mockArchetypeCorpus("Nutriscore_C");
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
 
 		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType());
 		assertEquals(PRODUCT.getProductKey(), outcome.getProductKey());
-		assertEquals("Beverages", outcome.getDiagnostics().getL1Category());
-		assertEquals("Juices", outcome.getDiagnostics().getL2Category());
-		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category());
-		assertEquals("Tropicana", outcome.getDiagnostics().getProduct());
+		assertEquals(MATCHED_PATH, outcome.getDiagnostics());
 	}
 
 	@Test
-	void feedsTheGlossaryMatchesForTheProductLanguageIntoEveryLevel() {
-		var vlita = ImmutableFoodTerm.builder()
-				.term("Βλήτα").canonicalEn("amaranth greens").description("a leafy green vegetable").build();
-		mockGlossary(List.of(vlita));
-		mockArchetypeCorpus("Nutriscore_C");
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(FIRST);
-
-		assess();
-
-		verify(foodTermGlossary).match(eq("en"), eq("Freshly squeezed orange juice"));
-		verify(productAssessmentAiFacade).extractL1Category(any(), any(), eq(List.of(vlita)));
-		verify(productAssessmentAiFacade, times(2)).extractSubcategory(any(), any(), eq(List.of(vlita)));
-		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), eq(List.of(vlita)), any());
-	}
-
-	@Test
-	void reportsFailureToIdentifyWhenAiFindsNoSubcategory() {
-		mockGlossary(List.of());
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(new AiSelection.None());
+	void reportsFailureToIdentifyWithThePathTakenWhenNoArchetypeMatches() {
+		mockMatching(new ArchetypeMatchOutcome.NoMatch(PARTIAL_PATH));
 
 		var outcome = assess();
 
 		assertEquals(ProductAssessmentOutcomeType.FAILURE_TO_IDENTIFY, outcome.getType());
-		assertEquals("Beverages", outcome.getDiagnostics().getL1Category());
-		assertNull(outcome.getDiagnostics().getL2Category());
-		assertNull(outcome.getDiagnostics().getL3Category());
-		assertNull(outcome.getDiagnostics().getProduct());
+		assertEquals(PRODUCT.getProductKey(), outcome.getProductKey());
+		assertEquals(PARTIAL_PATH, outcome.getDiagnostics());
+		assertNull(outcome.getBestScientificAlternative());
 	}
 
 	@Test
-	void reportsFailureToIdentifyWhenAiFindsNoArchetypeProduct() {
-		mockGlossary(List.of());
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(new AiSelection.None());
-
-		var outcome = assess();
-
-		assertEquals(ProductAssessmentOutcomeType.FAILURE_TO_IDENTIFY, outcome.getType());
-		assertEquals("Beverages", outcome.getDiagnostics().getL1Category());
-		assertEquals("Juices", outcome.getDiagnostics().getL2Category());
-		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category());
-		assertNull(outcome.getDiagnostics().getProduct());
-	}
-
-	@Test
-	void reportsFailureOtherWhenAiPicksACategoryOutsideTheCandidates() {
-		mockGlossary(List.of());
-		mockL1Categories();
-		mockExtractL1(new AiSelection.Malformed("Confectionery"));
+	void reportsFailureOtherWithThePathTakenWhenTheReplyOfTheAiIsMalformed() {
+		mockMatching(new ArchetypeMatchOutcome.Malformed(PARTIAL_PATH, "category", "Confectionery"));
 
 		var outcome = assess();
 
 		assertEquals(ProductAssessmentOutcomeType.FAILURE_OTHER, outcome.getType());
-	}
-
-	@Test
-	void reportsFailureOtherWhenAiPicksAProductOutsideTheCandidates() {
-		mockGlossary(List.of());
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(new AiSelection.Malformed("A product the AI made up"));
-
-		var outcome = assess();
-
-		assertEquals(ProductAssessmentOutcomeType.FAILURE_OTHER, outcome.getType());
-		assertEquals("Beverages", outcome.getDiagnostics().getL1Category());
-		assertEquals("Juices", outcome.getDiagnostics().getL2Category());
-		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category());
-		assertNull(outcome.getDiagnostics().getProduct());
-	}
-
-	@Test
-	void resolvesEachCategoryLevelFromTheGlossaryHintWithoutCallingTheAi() {
-		var term = ImmutableFoodTerm.builder()
-				.term("orange").canonicalEn("orange").description("a citrus fruit")
-				.categoryHintL1("Beverages").categoryHintL2("Juices").categoryHintL3("Orange juice")
-				.build();
-		mockGlossary(List.of(term));
-		mockArchetypeCorpus("Nutriscore_C");
-		mockL1Categories();
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(FIRST);
-
-		var outcome = assess();
-
-		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType());
-		assertEquals("Beverages", outcome.getDiagnostics().getL1Category());
-		assertEquals("Juices", outcome.getDiagnostics().getL2Category());
-		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category());
-		assertEquals("Tropicana", outcome.getDiagnostics().getProduct());
-		verify(productAssessmentAiFacade, never()).extractL1Category(any(), any(), any());
-		verify(productAssessmentAiFacade, never()).extractSubcategory(any(), any(), any());
-		verify(productAssessmentAiFacade).extractArchetypeProduct(any(), any(), any(), any());
-	}
-
-	@Test
-	void fallsBackToTheAiForALevelWhereRecognizedTermsHintConflictingCandidates() {
-		var juice = ImmutableFoodTerm.builder()
-				.term("juice").canonicalEn("juice").description("a drink").categoryHintL1("Beverages").build();
-		var milk = ImmutableFoodTerm.builder()
-				.term("milk").canonicalEn("milk").description("a dairy drink").categoryHintL1("Dairy").build();
-		mockGlossary(List.of(juice, milk));
-		mockArchetypeCorpus("Nutriscore_C");
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(FIRST);
-
-		var outcome = assess();
-
-		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType());
-		verify(productAssessmentAiFacade).extractL1Category(any(), any(), any());
+		assertEquals(PRODUCT.getProductKey(), outcome.getProductKey());
+		assertEquals(PARTIAL_PATH, outcome.getDiagnostics());
+		assertNull(outcome.getBestScientificAlternative());
 	}
 
 	@Test
 	void reportsTheBestAlternativeFromTheScoredCorpusForTheMatchedArchetype() {
-		mockGlossary(List.of());
+		mockMatching(new ArchetypeMatchOutcome.Matched(PICKED_ARCHETYPE, MATCHED_PATH));
 		mockArchetypeCorpus("Nutriscore_C");
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
 
@@ -314,34 +134,31 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void reportsNoSuggestionWhenTheMatchedArchetypeIsOutsideTheNutriScoreScheme() {
-		mockGlossary(List.of());
+		mockMatching(new ArchetypeMatchOutcome.Matched(PICKED_ARCHETYPE, MATCHED_PATH));
 		mockArchetypeCorpus("0");
-		mockL1Categories();
-		mockExtractL1(FIRST);
-		mockSubcategoriesOf(BEVERAGES, L2_CATEGORIES);
-		mockExtractSubcategory(FIRST, FIRST);
-		mockSubcategoriesOf(JUICES, L3_CATEGORIES);
-		mockProductsOf(ORANGE_JUICE);
-		mockExtractArchetypeProduct(FIRST);
 
 		var outcome = assess();
 
 		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType(),
-				"the descent succeeded; it is the recommendation that has nothing to say");
+				"the matching succeeded; it is the recommendation that has nothing to say");
 		assertEquals(AlternativeForProductType.NO_SUGGESTION, outcome.getBestPersonalAlternative().getType());
 		assertEquals(AlternativeForProductType.NO_SUGGESTION, outcome.getBestScientificAlternative().getType());
 		assertEquals(AlternativeForProductType.NO_SUGGESTION, outcome.getBestCombinedAlternative().getType());
-		assertEquals("Orange juice", outcome.getDiagnostics().getL3Category(), "and the matched path is still reported");
+		assertEquals(MATCHED_PATH, outcome.getDiagnostics(), "and the matched path is still reported");
 	}
 
 	private ProductAssessmentOutcome assess() {
 		return sut.assessOne(PRODUCT, ScientificWeights.profile()).await().atMost(WAIT);
 	}
 
+	private void mockMatching(ArchetypeMatchOutcome outcome) {
+		when(archetypeMatching.match(PRODUCT)).thenReturn(Uni.createFrom().item(outcome));
+	}
+
 	/**
 	 * A corpus of the two candidate archetypes alone. Their indicator values are all zero, so every dimension has a
 	 * zero range and normalises flat, leaving the Nutri-Score the only thing that tells the two apart: the store brand
-	 * is graded A and the one the AI picks only C.
+	 * is graded A and the one the product matches only C.
 	 */
 	private void mockArchetypeCorpus(String pickedProductNutriScore) {
 		var corpus = List.of(
@@ -363,53 +180,20 @@ public class SingleProductAssessorTest {
 				.name(name)
 				.agbCode(agbCode)
 				.l2CategoryId(L2_JUICES)
-				.l1CategoryName(BEVERAGES.getName())
-				.l2CategoryName(JUICES.getName())
-				.l3CategoryName(ORANGE_JUICE.getName())
+				.l1CategoryName("Beverages")
+				.l2CategoryName("Juices")
+				.l3CategoryName("Orange juice")
 				.indicatorValues(values)
 				.nutriScore(nutriScore)
 				.build();
 	}
 
-	private void mockGlossary(List<FoodTerm> matches) {
-		when(foodTermGlossary.match(any(), any())).thenReturn(Uni.createFrom().item(matches));
-	}
-
-	private void mockL1Categories() {
-		when(archetypeCategoryDao.retrieveL1Categories(any())).thenReturn(Uni.createFrom().item(L1_CATEGORIES));
-	}
-
-	private void mockSubcategoriesOf(ArchetypeCategory parent, List<ArchetypeCategory> subcategories) {
-		when(archetypeCategoryDao.retrieveSubcategories(any(), eq(parent))).thenReturn(Uni.createFrom().item(subcategories));
-	}
-
-	private void mockProductsOf(ArchetypeCategory category) {
-		when(archetypeProductDao.retrieveProductsInCategory(any(), eq(category))).thenReturn(Uni.createFrom().item(PRODUCTS));
-	}
-
-	private void mockExtractL1(AiSelection pick) {
-		when(productAssessmentAiFacade.extractL1Category(any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
-	}
-
-	private void mockExtractSubcategory(AiSelection pick) {
-		when(productAssessmentAiFacade.extractSubcategory(any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
-	}
-
-	private void mockExtractSubcategory(AiSelection pick1, AiSelection pick2) {
-		when(productAssessmentAiFacade.extractSubcategory(any(), any(), any()))
-				.thenReturn(Uni.createFrom().item(pick1))
-				.thenReturn(Uni.createFrom().item(pick2));
-	}
-
-	private void mockExtractArchetypeProduct(AiSelection pick) {
-		when(productAssessmentAiFacade.extractArchetypeProduct(any(), any(), any(), any())).thenReturn(Uni.createFrom().item(pick));
-	}
-
-	private static ArchetypeCategory category(ArchetypeCategoryId id, String name) {
-		return ImmutableArchetypeCategory.builder().id(id).name(name).build();
-	}
-
-	private static ArchetypeProduct product(ArchetypeProductId id, String name) {
-		return ImmutableArchetypeProduct.builder().id(id).name(name).build();
+	private static MatchDiagnostics diagnostics(String l1Category, String l2Category, String l3Category, String archetypeProduct) {
+		return ImmutableMatchDiagnostics.builder()
+				.l1Category(l1Category)
+				.l2Category(l2Category)
+				.l3Category(l3Category)
+				.archetypeProduct(archetypeProduct)
+				.build();
 	}
 }
