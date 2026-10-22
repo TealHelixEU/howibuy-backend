@@ -302,7 +302,7 @@ public class OpenApiContractTest {
 	 * The Catalogue Sync and operators read the pending products and record the attempts made outside this application.
 	 * Recording answers 204 with no body, and an attempt made from an input hash that is no longer the product's is
 	 * refused with 409 and a message, which the caller handles by reading the pending products again. They also read the
-	 * Classifications to review.
+	 * Classifications to review, each attempt with the path its matching took, as an assessment carries it.
 	 */
 	@Test
 	void documentsTheClassification() {
@@ -317,6 +317,9 @@ public class OpenApiContractTest {
 		assertEquals("#/components/schemas/ClassificationToReviewDto",
 				at(findToReview, "responses", "200", "content", "application/json", "schema", "items", "$ref"),
 				"the Classifications to review are answered as a list");
+		assertEquals("#/components/schemas/MatchDiagnostics",
+				at(schemas(document), "ClassificationAttemptDto", "properties", "diagnostics", "$ref"),
+				"an attempt carries the diagnostics of an assessment");
 		assertEquals("#/components/schemas/ClassificationAttemptRequest",
 				at(recordAttempt, "requestBody", "content", "application/json", "schema", "$ref"),
 				"an attempt is sent as the request body");

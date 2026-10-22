@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -48,6 +49,8 @@ import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassification;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttempt;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationToReview;
+import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
+import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.Classifier;
@@ -250,7 +253,7 @@ public class ClassificationDaoImplTest {
 		var id = findPending(sessionFactory, 10).getFirst().getId();
 		var stale = attempt("el", Classifier.LLM, YOGHURT, "h1", 0);
 		var greek = attempt("el", Classifier.EXPERT, YOGHURT, "h2", 1);
-		var english = attempt("en", Classifier.LLM, null, "h2", 2);
+		var english = attempt("en", Classifier.LLM, YOGHURT, "h2", 2, diagnostics("Dairy", "Fermented milk", "Yoghurts", "Yoghurt"));
 		var dao = new ClassificationDaoImpl();
 		inTransaction(sessionFactory, tx -> dao.recordAttempt(tx, id, stale)
 				.chain(() -> dao.recordAttempt(tx, id, greek))
@@ -261,6 +264,31 @@ public class ClassificationDaoImplTest {
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
 		assertEquals(Set.of(greek, english), Set.copyOf(attempts));
+	}
+
+	/**
+	 * The levels the matching did not reach are left out, so a matching that reached none stores an empty object. An
+	 * attempt without diagnostics stores none.
+	 */
+	@Test
+	void storesTheDiagnosticsOfAnAttemptAsAnObjectOfTheLevelsReached(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		var dao = new ClassificationDaoImpl();
+		inTransaction(sessionFactory, tx -> dao.recordAttempt(tx, id, attempt("el", Classifier.LLM, null, "h1", 0, diagnostics("Dairy", "Fermented milk", null, null)))
+				.chain(() -> dao.recordAttempt(tx, id, attempt("en", Classifier.LLM, null, "h1", 1, diagnostics(null, null, null, null))))
+				.chain(() -> dao.recordAttempt(tx, id, attempt("el", Classifier.EXPERT, YOGHURT, "h1", 2))));
+
+		var attempts = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> dao.findAttempts(em, id, "h1"))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(
+				List.of("LLM|{\"l1Category\": \"Dairy\", \"l2Category\": \"Fermented milk\"}", "LLM|{}", "EXPERT|null"),
+				rows("SELECT classifier, diagnostics::text FROM TH_CLASSIFICATION_ATTEMPT ORDER BY created_at"));
+		assertEquals(
+				Set.of(Optional.of(diagnostics("Dairy", "Fermented milk", null, null)), Optional.of(diagnostics(null, null, null, null)), Optional.empty()),
+				attempts.stream().map(attempt -> Optional.ofNullable(attempt.getDiagnostics())).collect(Collectors.toSet()));
 	}
 
 	@Test
@@ -445,6 +473,10 @@ public class ClassificationDaoImplTest {
 	}
 
 	private static ClassificationAttempt attempt(String language, Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash, int minutesLater) {
+		return attempt(language, classifier, archetypeProductId, inputHash, minutesLater, null);
+	}
+
+	private static ClassificationAttempt attempt(String language, Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash, int minutesLater, MatchDiagnostics diagnostics) {
 		return ImmutableClassificationAttempt.builder()
 				.language(language)
 				.classifier(classifier)
@@ -452,6 +484,16 @@ public class ClassificationDaoImplTest {
 				.archetypeProductId(archetypeProductId)
 				.inputHash(inputHash)
 				.createdAt(T0.plusMinutes(minutesLater))
+				.diagnostics(diagnostics)
+				.build();
+	}
+
+	private static MatchDiagnostics diagnostics(String l1Category, String l2Category, String l3Category, String archetypeProduct) {
+		return ImmutableMatchDiagnostics.builder()
+				.l1Category(l1Category)
+				.l2Category(l2Category)
+				.l3Category(l3Category)
+				.archetypeProduct(archetypeProduct)
 				.build();
 	}
 

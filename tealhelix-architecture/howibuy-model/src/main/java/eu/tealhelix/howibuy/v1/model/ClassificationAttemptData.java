@@ -31,4 +31,11 @@ public interface ClassificationAttemptData {
 	 * The classification input hash of the product when the attempt was made.
 	 */
 	String getInputHash();
+
+	/**
+	 * The path the matching of the classifier took through the SAFAD taxonomy; {@code null} for a classifier that does
+	 * not tell it, such as one of us or an expert.
+	 */
+	@Nullable
+	MatchDiagnostics getDiagnostics();
 }

@@ -3,6 +3,7 @@ package eu.tealhelix.howibuy.dao.jpa;
 import static jakarta.persistence.EnumType.STRING;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,6 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import eu.tealhelix.howibuy.v1.types.Classifier;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "TH_CLASSIFICATION_ATTEMPT")
@@ -40,6 +43,10 @@ public class ClassificationAttemptEntity {
 
 	@Column(name = "created_at")
 	private LocalDateTime createdAt;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(name = "diagnostics")
+	private Map<String, String> diagnostics;
 
 	public UUID getId() {
 		return id;
@@ -103,5 +110,13 @@ public class ClassificationAttemptEntity {
 
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
+	}
+
+	public Map<String, String> getDiagnostics() {
+		return diagnostics;
+	}
+
+	public void setDiagnostics(Map<String, String> diagnostics) {
+		this.diagnostics = diagnostics;
 	}
 }

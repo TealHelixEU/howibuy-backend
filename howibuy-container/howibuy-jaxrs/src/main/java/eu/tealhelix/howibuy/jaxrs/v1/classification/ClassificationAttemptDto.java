@@ -2,6 +2,7 @@ package eu.tealhelix.howibuy.jaxrs.v1.classification;
 
 import java.time.LocalDateTime;
 
+import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "One classifier's answer to which Archetype Product a Retailer Product is, made from the product's name in one language, as recorded.")
@@ -15,6 +16,8 @@ public record ClassificationAttemptDto(
 		@Schema(description = "The Archetype Product the classifier matched the product to; null when it matched none.")
 		String archetypeProductId,
 		@Schema(description = "When the attempt was recorded.")
-		LocalDateTime createdAt
+		LocalDateTime createdAt,
+		@Schema(description = "The path the matching of the classifier took through the SAFAD taxonomy; null for a classifier that does not tell it, such as one of us or an expert.")
+		MatchDiagnostics diagnostics
 ) {
 }

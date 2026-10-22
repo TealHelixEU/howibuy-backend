@@ -35,7 +35,9 @@ import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassification;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttempt;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationToReview;
+import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ImmutablePendingProduct;
+import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
@@ -44,6 +46,11 @@ import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class ClassificationDaoImpl implements ClassificationDao {
+	private static final String L1_CATEGORY = "l1Category";
+	private static final String L2_CATEGORY = "l2Category";
+	private static final String L3_CATEGORY = "l3Category";
+	private static final String ARCHETYPE_PRODUCT = "archetypeProduct";
+
 	/**
 	 * The products are read first and their languages after them, rather than fetching the names with the products:
 	 * Hibernate cannot limit the rows of a query that fetches a collection, and would read every pending product.
@@ -122,6 +129,7 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		entity.setArchetypeProductId(attempt.getArchetypeProductId() != null ? attempt.getArchetypeProductId().asUuid() : null);
 		entity.setInputHash(attempt.getInputHash());
 		entity.setCreatedAt(attempt.getCreatedAt());
+		entity.setDiagnostics(attempt.getDiagnostics() != null ? toMap(attempt.getDiagnostics()) : null);
 		return tx.persist(entity).replaceWithVoid();
 	}
 
@@ -222,6 +230,32 @@ public class ClassificationDaoImpl implements ClassificationDao {
 				.archetypeProductId(entity.getArchetypeProductId() != null ? new ArchetypeProductIdImpl(entity.getArchetypeProductId().toString()) : null)
 				.inputHash(entity.getInputHash())
 				.createdAt(entity.getCreatedAt())
+				.diagnostics(entity.getDiagnostics() != null ? toMatchDiagnostics(entity.getDiagnostics()) : null)
+				.build();
+	}
+
+	/**
+	 * @return The names of the levels the matching reached, by the name of their level
+	 */
+	private static Map<String, String> toMap(MatchDiagnostics diagnostics) {
+		var levels = new LinkedHashMap<String, String>();
+		putIfReached(levels, L1_CATEGORY, diagnostics.getL1Category());
+		putIfReached(levels, L2_CATEGORY, diagnostics.getL2Category());
+		putIfReached(levels, L3_CATEGORY, diagnostics.getL3Category());
+		putIfReached(levels, ARCHETYPE_PRODUCT, diagnostics.getArchetypeProduct());
+		return levels;
+	}
+
+	private static void putIfReached(Map<String, String> levels, String level, String name) {
+		if (name != null) levels.put(level, name);
+	}
+
+	private static MatchDiagnostics toMatchDiagnostics(Map<String, String> levels) {
+		return ImmutableMatchDiagnostics.builder()
+				.l1Category(levels.get(L1_CATEGORY))
+				.l2Category(levels.get(L2_CATEGORY))
+				.l3Category(levels.get(L3_CATEGORY))
+				.archetypeProduct(levels.get(ARCHETYPE_PRODUCT))
 				.build();
 	}
 

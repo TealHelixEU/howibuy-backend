@@ -150,6 +150,29 @@ public class ClassificationsTest {
 				.body("[0].attempts[0].createdAt", matchesPattern(ISO_DATE_TIME));
 	}
 
+	/**
+	 * The language model's attempt is stored with the path its matching took, which the review shows; the experts' have
+	 * none.
+	 */
+	@Test
+	void theReviewShowsThePathTheMatchingOfAnAttemptTook() throws SQLException {
+		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt"));
+		var id = productId("yoghurt");
+		execute("INSERT INTO TH_CLASSIFICATION_ATTEMPT (id, retailer_product_id, lang, classifier, classifier_version, archetype_product_id, input_hash, created_at, diagnostics) "
+				+ "VALUES (gen_random_uuid(), '" + id + "', 'el', 'LLM', 'test', '" + archetype + "', 'h1', now() - interval '1 minute', "
+				+ "'{\"l1Category\": \"Dairy\", \"l2Category\": \"Fermented milk\", \"l3Category\": \"Yoghurts\", \"archetypeProduct\": \"Yoghurt\"}')");
+		postAttempt("operator", attempt(id, "h1", "en", "EXPERT", otherArchetype), 204);
+		postAttempt("operator", attempt(id, "h1", "el", "EXPERT", archetype), 204);
+
+		as("sync").get(BASE + "/classifications/review?limit=10")
+				.then()
+				.statusCode(200)
+				.body("[0].attempts.classifier", equalTo(List.of("EXPERT", "EXPERT", "LLM")))
+				.body("[0].attempts[0].diagnostics", equalTo(null))
+				.body("[0].attempts[1].diagnostics", equalTo(null))
+				.body("[0].attempts[2].diagnostics", equalTo(Map.of("l1Category", "Dairy", "l2Category", "Fermented milk", "l3Category", "Yoghurts", "archetypeProduct", "Yoghurt")));
+	}
+
 	@Test
 	void aManualAttemptSettlesAReview() {
 		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt"));

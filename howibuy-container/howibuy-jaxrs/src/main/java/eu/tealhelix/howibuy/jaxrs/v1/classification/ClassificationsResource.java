@@ -100,7 +100,7 @@ public class ClassificationsResource {
 	}
 
 	private static ClassificationAttemptDto toDto(ClassificationAttempt attempt) {
-		return new ClassificationAttemptDto(attempt.getLanguage(), attempt.getClassifier().name(), attempt.getClassifierVersion(), asString(attempt.getArchetypeProductId()), attempt.getCreatedAt());
+		return new ClassificationAttemptDto(attempt.getLanguage(), attempt.getClassifier().name(), attempt.getClassifierVersion(), asString(attempt.getArchetypeProductId()), attempt.getCreatedAt(), attempt.getDiagnostics());
 	}
 
 	private static String asString(ArchetypeProductId id) {

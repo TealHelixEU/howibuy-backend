@@ -91,17 +91,18 @@ components:
 
     MatchDiagnostics:
       description: >-
-        The path the classification actually took: the SAFAD taxonomy it descended and the archetype it ended at. A
-        level is absent when the classification did not reach it, which is how a failed assessment says how far it got.
+        The path the matching of a product actually took, in an assessment or a Classification Attempt: the SAFAD
+        taxonomy it descended and the archetype it ended at. A level is null when the matching did not reach it, which
+        is how a product matched to no archetype says how far it got.
       properties:
         l1Category:
-          description: The top-level category the assessed product was placed in.
+          description: The top-level category the product was placed in.
         l2Category:
           description: The category below that one.
         l3Category:
-          description: The leaf category the assessed product was placed in.
+          description: The leaf category the product was placed in.
         archetypeProduct:
-          description: The name of the archetype product within that leaf that the assessed product was matched to.
+          description: The name of the archetype product within that leaf that the product was matched to.
 
     ProductAssessmentOutcomeType:
       description: >-

@@ -172,6 +172,12 @@
 		</createIndex>
 	</changeSet>
 
+	<changeSet id="llm_classifications" author="nikospara">
+		<addColumn tableName="TH_CLASSIFICATION_ATTEMPT">
+			<column name="diagnostics" type="JSONB" remarks="The path the classifier's matching took through the SAFAD taxonomy, a JSON object of the names of the levels it reached; null for a classifier that does not tell it" />
+		</addColumn>
+	</changeSet>
+
 	<changeSet id="dev_retailer_catalogues" author="nikospara" context="@dev">
 		<comment>
 			The Catalogue of the realm's development Retailer, Lime Fresh, with the same id as in the Ingestion's IN_CATALOGUE.
