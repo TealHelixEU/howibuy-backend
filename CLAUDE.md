@@ -20,6 +20,7 @@ tealhelix/
 │   └── catalogue-model/          Retailer Catalogue types shared by Ingestion, Catalogue Sync and HowiBuy
 │   └── catalogue-model-testutils/   Framework-free test utilities of the Catalogue types
 │   └── howibuy-model/            HowiBuy domain entities
+│   └── howibuy-model-testutils/  Framework-free test utilities of the HowiBuy types
 │   └── howibuy-model-json/       Map the HowiBuy model to JSON with Jackson
 │   └── src
 │       └── site

@@ -207,9 +207,9 @@ classifies.
 _Avoid_: import, replication, classification run
 
 **Classification**:
-The match of a Retailer Product to an Archetype Product, made ahead of time by any classifier: the
-LLM, WP3 or a person. A Retailer Product has at most one Classification, whatever languages it is
-named in. It may conclude that no archetype matches.
+The match of a Retailer Product to an Archetype Product, made ahead of time by any Classifier. A
+Retailer Product has at most one Classification, whatever languages it is named in. It may conclude
+that no archetype matches.
 _Avoid_: recognition, identification, categorisation, assessment (that is the request-time step)
 
 **Classification Attempt**:
@@ -218,3 +218,10 @@ product's Classification is resolved from its attempts, and attempts that disagr
 for review and resolved by the Retailer's classification language. Each attempt records its
 classifier and classifier version; there is no other record of a classification run.
 _Avoid_: try, guess, run
+
+**Classifier**:
+Who made a Classification Attempt, one of three, in order of precedence. **Manual**: one of us,
+such as an operator correcting a Classification or settling one flagged for review. **Expert**: a
+domain source we trust but do not run, such as WP3. **LLM**: the language model HowiBuy runs. A
+higher one's attempts outweigh a lower one's.
+_Avoid_: source, WP3 (for the classifier), person (an expert is one too)

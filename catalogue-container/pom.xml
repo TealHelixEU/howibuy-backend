@@ -49,6 +49,7 @@
 									</excludes>
 									<includes>
 										<include>eu.tealhelix:howibuy-model</include>
+										<include>eu.tealhelix:howibuy-model-testutils</include>
 										<include>eu.tealhelix:howibuy-model-json</include>
 										<include>eu.tealhelix:sfc-model</include>
 									</includes>

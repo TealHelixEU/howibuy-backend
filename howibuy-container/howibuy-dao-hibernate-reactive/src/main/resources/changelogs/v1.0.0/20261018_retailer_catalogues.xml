@@ -108,6 +108,70 @@
 		</insert>
 	</changeSet>
 
+	<changeSet id="classifications" author="nikospara">
+		<addColumn tableName="TH_RETAILER">
+			<column name="classification_language" type="VARCHAR(8)" remarks="ISO 639-1 code of the language whose Classification Attempt wins when the attempts of a product disagree; null orders them by language code alone" />
+		</addColumn>
+
+		<createTable tableName="TH_CLASSIFICATION" remarks="The one match of a Retailer Product to an Archetype Product, resolved from its Classification Attempts">
+			<column name="retailer_product_id" type="UUID" remarks="The primary key, the product classified">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_CLASSIFICATION" />
+			</column>
+			<column name="archetype_product_id" type="UUID" remarks="The archetype the product matches; null when no archetype matches" />
+			<column name="input_hash" type="VARCHAR(64)" remarks="The classification input hash of the product the Classification was resolved from; another than the product's current one makes the product pending">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__INPUT_HASH" />
+			</column>
+			<column name="needs_review" type="BOOLEAN" remarks="Whether the attempts it was resolved from disagree">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__NEEDS_REVIEW" />
+			</column>
+			<column name="resolved_at" type="TIMESTAMP" remarks="When the Classification was last resolved">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__RESOLVED_AT" />
+			</column>
+		</createTable>
+		<!-- A product removed by the Ingestion takes its Classification with it -->
+		<addForeignKeyConstraint baseTableName="TH_CLASSIFICATION" baseColumnNames="retailer_product_id" constraintName="FK_CLASSIFICATION__RETAILER_PRODUCT_ID__RETAILER_PRODUCT__ID" referencedTableName="TH_RETAILER_PRODUCT" referencedColumnNames="id" onDelete="CASCADE" />
+		<addForeignKeyConstraint baseTableName="TH_CLASSIFICATION" baseColumnNames="archetype_product_id" constraintName="FK_CLASSIFICATION__ARCHETYPE_PRODUCT_ID__ARCHETYPE_PRODUCT__ID" referencedTableName="TH_ARCHETYPE_PRODUCT" referencedColumnNames="id" />
+		<createIndex tableName="TH_CLASSIFICATION" indexName="IX_TH_CLASSIFICATION__NEEDS_REVIEW_RESOLVED_AT">
+			<column name="needs_review" />
+			<column name="resolved_at" />
+		</createIndex>
+
+		<createTable tableName="TH_CLASSIFICATION_ATTEMPT" remarks="One classifier's match of a Retailer Product, made from the product's name in one language">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_CLASSIFICATION_ATTEMPT" />
+			</column>
+			<column name="retailer_product_id" type="UUID" remarks="The product classified">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__RETAILER_PRODUCT_ID" />
+			</column>
+			<column name="lang" type="VARCHAR(8)" remarks="ISO 639-1 code of the language of the name the attempt was made from">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__LANG" />
+			</column>
+			<column name="classifier" type="VARCHAR(10)" remarks="Who made the attempt: MANUAL, EXPERT or LLM, in order of precedence">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__CLASSIFIER" />
+			</column>
+			<column name="classifier_version" type="VARCHAR(255)" remarks="The version of the classifier: the LLM model, prompt and glossary, or the classifier's own label">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__CLASSIFIER_VERSION" />
+			</column>
+			<column name="archetype_product_id" type="UUID" remarks="The archetype the classifier matched the product to; null when it matched none" />
+			<column name="input_hash" type="VARCHAR(64)" remarks="The classification input hash of the product the attempt was made from">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__INPUT_HASH" />
+			</column>
+			<column name="created_at" type="TIMESTAMP" remarks="When the attempt was recorded">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__CREATED_AT" />
+			</column>
+		</createTable>
+		<!--
+			The target is left out of the names, which would otherwise exceed the 63 characters of a Postgres identifier even
+			without the target column; the name of the source column already tells it
+		-->
+		<addForeignKeyConstraint baseTableName="TH_CLASSIFICATION_ATTEMPT" baseColumnNames="retailer_product_id" constraintName="FK_CLASSIFICATION_ATTEMPT__RETAILER_PRODUCT_ID" referencedTableName="TH_RETAILER_PRODUCT" referencedColumnNames="id" onDelete="CASCADE" />
+		<addForeignKeyConstraint baseTableName="TH_CLASSIFICATION_ATTEMPT" baseColumnNames="archetype_product_id" constraintName="FK_CLASSIFICATION_ATTEMPT__ARCHETYPE_PRODUCT_ID" referencedTableName="TH_ARCHETYPE_PRODUCT" referencedColumnNames="id" />
+		<createIndex tableName="TH_CLASSIFICATION_ATTEMPT" indexName="IX_TH_CLASSIFICATION_ATTEMPT__RETAILER_PRODUCT_ID_INPUT_HASH">
+			<column name="retailer_product_id" />
+			<column name="input_hash" />
+		</createIndex>
+	</changeSet>
+
 	<changeSet id="dev_retailer_catalogues" author="nikospara" context="@dev">
 		<comment>
 			The Catalogue of the realm's development Retailer, Lime Fresh, with the same id as in the Ingestion's IN_CATALOGUE.
@@ -118,5 +182,15 @@
 			<column name="country">GR</column>
 			<column name="primary_language">el</column>
 		</insert>
+	</changeSet>
+
+	<changeSet id="dev_classifications" author="nikospara" context="@dev">
+		<comment>
+			The realm's development Retailer, Lime Fresh, classifies in the primary language of its Catalogue.
+		</comment>
+		<update tableName="TH_RETAILER">
+			<column name="classification_language">el</column>
+			<where>id = 'dc73176c-7069-4a4f-a74f-d60c4a5ec1ee'</where>
+		</update>
 	</changeSet>
 </databaseChangeLog>

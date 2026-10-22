@@ -25,7 +25,7 @@ The work is split into three parts with narrow contracts between them:
    exposes the identification half of today's LLM pipeline as a "classify this product"
    operation, so the LLM pipeline keeps living next to the taxonomy, glossary and guidance it
    reads. A separate `classify` command of the Catalogue Sync tool works through the pending
-   products at a pace the operator controls. WP3 and people record their Classifications through
+   products at a pace the operator controls. Experts and people record their Classifications through
    HowiBuy too.
 
 ## Considered Options

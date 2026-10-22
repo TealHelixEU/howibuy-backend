@@ -11,6 +11,8 @@
 		<class>eu.tealhelix.howibuy.dao.jpa.ArchetypeSubstitutabilityEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.CatalogueChangeCursorEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.CatalogueEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.ClassificationEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.ConsentEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.FoodTermEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.CorrelationIdEntity</class>

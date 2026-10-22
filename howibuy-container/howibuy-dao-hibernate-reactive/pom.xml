@@ -45,6 +45,11 @@
 			<artifactId>tealhelix-common-types</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-utils</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 		<!-- PROJECT TEST -->
 		<dependency>

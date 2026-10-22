@@ -19,6 +19,7 @@
 		<module>catalogue-model</module>
 		<module>catalogue-model-testutils</module>
 		<module>howibuy-model</module>
+		<module>howibuy-model-testutils</module>
 		<module>howibuy-model-json</module>
 		<module>sfc-model</module>
 	</modules>
