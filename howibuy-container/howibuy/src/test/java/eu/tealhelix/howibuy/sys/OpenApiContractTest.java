@@ -365,6 +365,25 @@ public class OpenApiContractTest {
 		assertNotNull(at(classify, "responses", "403", "description"), "a caller other than the Catalogue Sync or an operator is documented");
 	}
 
+	@Test
+	void documentsThePreviewOfTheClassificationWithTheLlm() {
+		var document = openApiDocument();
+		var preview = operation(document, "post", "/api/howibuy/v1/llm-classification-previews");
+
+		assertEquals("#/components/schemas/LlmClassificationPreviewRequest",
+				at(preview, "requestBody", "content", "application/json", "schema", "$ref"),
+				"the product data is sent as the request body");
+		assertEquals("#/components/schemas/LlmClassificationPreviewResponse",
+				at(preview, "responses", "200", "content", "application/json", "schema", "$ref"));
+		var response = at(schemas(document), "LlmClassificationPreviewResponse", "properties");
+		assertEquals("#/components/schemas/LlmClassificationOutcome", at(response, "outcome", "$ref"), "the outcome is the classification's");
+		assertEquals("#/components/schemas/MatchDiagnostics", at(response, "diagnostics", "$ref"));
+		assertEquals("#/components/schemas/SingleMessageResponse",
+				at(preview, "responses", "400", "content", "application/json", "schema", "$ref"),
+				"refused product data answers a message");
+		assertNotNull(at(preview, "responses", "403", "description"), "a caller other than an operator is documented");
+	}
+
 	/**
 	 * Every operation but two is reached with a bearer token, so the scheme is declared once and each operation states
 	 * that it needs it — which is also what puts the Authorize button in Swagger UI. Redeeming a handoff ticket carries

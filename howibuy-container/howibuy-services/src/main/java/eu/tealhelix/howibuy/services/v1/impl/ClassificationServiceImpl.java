@@ -4,6 +4,7 @@ import static eu.tealhelix.common.utils.UniComprehensions.forc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -20,6 +21,7 @@ import eu.tealhelix.howibuy.services.model.ProductToClassify;
 import eu.tealhelix.howibuy.services.v1.ClassificationService;
 import eu.tealhelix.howibuy.services.v1.classification.ClassificationResolution;
 import eu.tealhelix.howibuy.services.v1.classification.Resolution;
+import eu.tealhelix.howibuy.services.v1.types.ArchetypeMatchOutcome;
 import eu.tealhelix.howibuy.services.v1.types.InputHashConflictException;
 import eu.tealhelix.howibuy.services.v1.types.LlmClassification;
 import eu.tealhelix.howibuy.v1.model.Classification;
@@ -109,6 +111,16 @@ public class ClassificationServiceImpl implements ClassificationService {
 					case ArchetypeMatchOutcome.Malformed malformed -> Uni.createFrom().<LlmClassification>item(new LlmClassification.Malformed(malformed.diagnostics()));
 				}
 		);
+	}
+
+	@Override
+	public Uni<ArchetypeMatchOutcome> previewWithLlm(User caller, String language, String name, Map<String, String> characteristics, List<String> tags) {
+		authorization.requireOperator(caller);
+		var product = TrimmedProductBaseData.of(language, name, characteristics, tags);
+		if (product.getName().isEmpty()) {
+			throw BadInputValueException.fromInputNameAndHint("name", "It must not be blank");
+		}
+		return archetypeMatching.match(product);
 	}
 
 	private Uni<LlmClassification> recordLlmAttempt(HasRetailerProductId productId, String language, String inputHash, ArchetypeProductId archetypeProductId, MatchDiagnostics diagnostics) {

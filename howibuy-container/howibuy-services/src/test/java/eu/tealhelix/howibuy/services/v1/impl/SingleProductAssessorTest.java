@@ -20,6 +20,7 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.services.model.Substitutability;
+import eu.tealhelix.howibuy.services.v1.types.ArchetypeMatchOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;

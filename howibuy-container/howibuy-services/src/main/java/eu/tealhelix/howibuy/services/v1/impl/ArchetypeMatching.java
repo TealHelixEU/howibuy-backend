@@ -19,6 +19,7 @@ import eu.tealhelix.howibuy.services.model.FoodTerm;
 import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.services.v1.enrichment.FoodTermGlossary;
+import eu.tealhelix.howibuy.services.v1.types.ArchetypeMatchOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ProductBaseData;

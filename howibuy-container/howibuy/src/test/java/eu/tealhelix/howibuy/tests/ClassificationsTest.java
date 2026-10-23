@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -277,6 +278,66 @@ public class ClassificationsTest {
 	}
 
 	@Test
+	void anOperatorPreviewsTheMatchOfTheLlmWithNothingStored() throws SQLException {
+		givenTheLlmReplies(new AiSelection.Match(0));
+
+		var response = postLlmClassificationPreview("operator", llmClassificationPreview(" Γιαούρτι ", "el", Map.of("Λιπαρά", "2%"), List.of("ψυγείου")), 200)
+				.contentType(JSON)
+				.body("outcome", equalTo("MATCHED"))
+				.extract();
+
+		String matched = response.path("archetypeProductId");
+		assertEquals(rows("SELECT name FROM TH_ARCHETYPE_PRODUCT WHERE id = '" + matched + "'"), List.of(response.<String>path("diagnostics.archetypeProduct")));
+		assertEquals(List.of(), rows("SELECT id::text FROM TH_RETAILER_PRODUCT"));
+		assertNothingRecorded();
+	}
+
+	@Test
+	void theLlmPreviewsThatNoArchetypeMatchesAProduct() {
+		givenTheLlmReplies(new AiSelection.None());
+
+		postLlmClassificationPreview("operator", llmClassificationPreview("Σαπούνι", "el", null, null), 200)
+				.body("outcome", equalTo("NO_MATCH"))
+				.body("archetypeProductId", equalTo(null))
+				.body("diagnostics", equalTo(NO_LEVEL_REACHED));
+	}
+
+	/**
+	 * The malformed reply is logged as a warning, captured here.
+	 */
+	@Test
+	void theLlmPreviewsAMalformedReply() {
+		givenTheLlmReplies(new AiSelection.Malformed("42"));
+		var warnings = new ArrayList<String>();
+
+		capturingTheWarningsOf(ArchetypeMatching.class, warnings, () -> postLlmClassificationPreview("operator", llmClassificationPreview("Σαπούνι", "el", null, null), 200)
+				.body("outcome", equalTo("MALFORMED_REPLY"))
+				.body("archetypeProductId", equalTo(null))
+				.body("diagnostics", equalTo(NO_LEVEL_REACHED)));
+
+		assertEquals(List.of("AI selection was not a valid candidate number, kind: category, raw reply: '42'"), warnings);
+	}
+
+	@Test
+	void onlyOperatorsPreviewTheMatchOfTheLlmOfProductDataWithANameAndALanguage() {
+		givenTheLlmReplies(new AiSelection.Match(0));
+
+		postLlmClassificationPreview("operator", llmClassificationPreview(null, "el", null, null), 400)
+				.body("message", equalTo("Required input 'name' is missing."));
+		postLlmClassificationPreview("operator", llmClassificationPreview(" ", "el", null, null), 400);
+		postLlmClassificationPreview("operator", llmClassificationPreview("Γιαούρτι", null, null, null), 400)
+				.body("message", equalTo("Required input 'language' is missing."));
+		var unvaluedCharacteristic = new HashMap<String, String>();
+		unvaluedCharacteristic.put("Λιπαρά", null);
+		postLlmClassificationPreview("operator", llmClassificationPreview("Γιαούρτι", "el", unvaluedCharacteristic, null), 400)
+				.body("message", equalTo("The value of input 'characteristics' is illegal."));
+		postLlmClassificationPreview("operator", llmClassificationPreview("Γιαούρτι", "el", null, Arrays.asList("ψυγείου", null)), 400)
+				.body("message", equalTo("The value of input 'tags' is illegal."));
+		postLlmClassificationPreview("sync", llmClassificationPreview("Γιαούρτι", "el", null, null), 403);
+		postLlmClassificationPreview("retailer", llmClassificationPreview("Γιαούρτι", "el", null, null), 403);
+	}
+
+	@Test
 	void aManualAttemptSettlesAReview() {
 		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt"));
 		var id = productId("yoghurt");
@@ -376,6 +437,19 @@ public class ClassificationsTest {
 		var request = new HashMap<String, Object>();
 		request.put("retailerProductId", retailerProductId);
 		request.put("language", language);
+		return request;
+	}
+
+	private static ValidatableResponse postLlmClassificationPreview(String token, Map<String, Object> request, int expectedStatus) {
+		return as(token).contentType(JSON).body(request).post(BASE + "/llm-classification-previews").then().statusCode(expectedStatus);
+	}
+
+	private static Map<String, Object> llmClassificationPreview(String name, String language, Map<String, String> characteristics, List<String> tags) {
+		var request = new HashMap<String, Object>();
+		request.put("name", name);
+		request.put("language", language);
+		request.put("characteristics", characteristics);
+		request.put("tags", tags);
 		return request;
 	}
 

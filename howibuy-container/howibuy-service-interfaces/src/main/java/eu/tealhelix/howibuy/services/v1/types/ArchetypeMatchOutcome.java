@@ -1,10 +1,10 @@
-package eu.tealhelix.howibuy.services.v1.impl;
+package eu.tealhelix.howibuy.services.v1.types;
 
 import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 
 /**
- * How the {@link ArchetypeMatching} of one product ended, with the path it took through the taxonomy. The type
+ * How the matching of one product to an Archetype Product ended, with the path it took through the taxonomy. The type
  * is {@code sealed} so its callers switch over the cases exhaustively: adding a case becomes a compile error until
  * every caller handles it.
  */

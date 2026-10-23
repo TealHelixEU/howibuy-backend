@@ -7,6 +7,7 @@ import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.howibuy.services.v1.types.ArchetypeMatchOutcome;
 import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;

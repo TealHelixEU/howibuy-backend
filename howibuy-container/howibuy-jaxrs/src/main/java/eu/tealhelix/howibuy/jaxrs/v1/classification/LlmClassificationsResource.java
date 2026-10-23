@@ -5,6 +5,7 @@ import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION_DESC;
+import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.required;
 import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.requiredText;
 import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.uuid;
 
@@ -17,7 +18,6 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
-import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
 import eu.tealhelix.howibuy.services.v1.ClassificationService;
 import eu.tealhelix.howibuy.services.v1.types.LlmClassification;
@@ -55,25 +55,20 @@ public class LlmClassificationsResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<LlmClassificationResponse> classify(@Context ContainerRequestContext crc, LlmClassificationRequest request) {
 		var user = currentUser(crc);
-		return Uni.createFrom().item(() -> requireBody(request))
+		return Uni.createFrom().item(() -> required("body", request))
 				.flatMap(body -> classificationService.classifyWithLlm(user, new RetailerProductIdImpl(uuid("retailerProductId", body.retailerProductId())), requiredText("language", body.language())))
 				.map(LlmClassificationsResource::toResponse);
-	}
-
-	private static LlmClassificationRequest requireBody(LlmClassificationRequest request) {
-		if (request == null) throw RequiredInputMissingException.fromRequiredInputName("body");
-		return request;
 	}
 
 	private static LlmClassificationResponse toResponse(LlmClassification classification) {
 		return switch (classification) {
 			case LlmClassification.Recorded recorded -> new LlmClassificationResponse(
-					recorded.attempt().getArchetypeProductId() != null ? LlmClassificationResponse.Outcome.MATCHED : LlmClassificationResponse.Outcome.NO_MATCH,
+					recorded.attempt().getArchetypeProductId() != null ? LlmClassificationOutcome.MATCHED : LlmClassificationOutcome.NO_MATCH,
 					ClassificationsResource.toDto(recorded.attempt()),
 					toDto(recorded.classification()),
 					recorded.attempt().getDiagnostics()
 			);
-			case LlmClassification.Malformed malformed -> new LlmClassificationResponse(LlmClassificationResponse.Outcome.MALFORMED_REPLY, null, null, malformed.diagnostics());
+			case LlmClassification.Malformed malformed -> new LlmClassificationResponse(LlmClassificationOutcome.MALFORMED_REPLY, null, null, malformed.diagnostics());
 		};
 	}
 

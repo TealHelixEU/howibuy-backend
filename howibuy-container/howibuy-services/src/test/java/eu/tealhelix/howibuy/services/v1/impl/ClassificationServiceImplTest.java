@@ -39,6 +39,7 @@ import eu.tealhelix.howibuy.dao.ClassificationDao;
 import eu.tealhelix.howibuy.services.model.ImmutableProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
 import eu.tealhelix.howibuy.services.v1.classification.impl.ClassificationResolutionImpl;
+import eu.tealhelix.howibuy.services.v1.types.ArchetypeMatchOutcome;
 import eu.tealhelix.howibuy.services.v1.types.InputHashConflictException;
 import eu.tealhelix.howibuy.services.v1.types.LlmClassification;
 import eu.tealhelix.howibuy.v1.model.Classification;
@@ -411,6 +412,51 @@ public class ClassificationServiceImplTest {
 
 		assertInstanceOf(InputHashConflictException.class, failure);
 		assertNothingRecorded();
+	}
+
+	@Test
+	void anOperatorPreviewsTheMatchingOfTheLlmWithNothingStored() {
+		var outcome = new ArchetypeMatchOutcome.Matched(YOGHURT, diagnostics("Dairy", "Fermented milk", "Yoghurts", "Yoghurt"));
+		givenTheMatchingEndsWith(outcome);
+
+		assertEquals(outcome, sut.previewWithLlm(OPERATOR_USER, "el", "Γιαούρτι", Map.of(), List.of()).await().atMost(WAIT));
+
+		assertNothingTouched();
+	}
+
+	/**
+	 * The posted text is trimmed and its Unicode composed as the stored products' is, so that a preview matches a
+	 * product as its classification would.
+	 */
+	@Test
+	void theLlmPreviewsTheMatchingOfTheProductDataAsTheStoredProductsAreClassified() {
+		givenTheMatchingEndsWith(new ArchetypeMatchOutcome.NoMatch(diagnostics(null, null, null, null)));
+
+		sut.previewWithLlm(OPERATOR_USER, "el", " Γιαούρτι\t", Map.of(" Λιπαρά ", " 2% "), List.of(" ψυγείου ")).await().atMost(WAIT);
+
+		var productCaptor = ArgumentCaptor.forClass(ProductBaseData.class);
+		verify(mockArchetypeMatching).match(productCaptor.capture());
+		var product = productCaptor.getValue();
+		assertEquals(Locale.forLanguageTag("el"), product.getLanguage());
+		assertEquals("Γιαούρτι", product.getName());
+		assertEquals(Map.of("Λιπαρά", "2%"), product.getCharacteristics());
+		assertEquals(List.of("ψυγείου"), product.getTags());
+	}
+
+	@Test
+	void productDataWithABlankNameIsNotPreviewed() {
+		var failure = assertThrows(BadInputValueException.class, () -> sut.previewWithLlm(OPERATOR_USER, "el", " \t", Map.of(), List.of()));
+
+		assertBadInput("name", "It must not be blank", failure);
+		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@Test
+	void onlyOperatorsPreviewTheMatchingOfTheLlm() {
+		assertThrows(NotAuthenticatedException.class, () -> sut.previewWithLlm(null, "el", "Γιαούρτι", Map.of(), List.of()));
+		assertThrows(NotAuthorizedException.class, () -> sut.previewWithLlm(CATALOGUE_SYNC_USER, "el", "Γιαούρτι", Map.of(), List.of()));
+		assertThrows(NotAuthorizedException.class, () -> sut.previewWithLlm(RETAILER_USER, "el", "Γιαούρτι", Map.of(), List.of()));
+		verifyNoInteractions(mockArchetypeMatching);
 	}
 
 	private void givenTheClassificationInput(Map<String, String> names, Map<String, String> characteristics, List<String> tags) {

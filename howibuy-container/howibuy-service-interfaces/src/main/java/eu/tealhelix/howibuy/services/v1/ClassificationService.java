@@ -1,8 +1,10 @@
 package eu.tealhelix.howibuy.services.v1;
 
 import java.util.List;
+import java.util.Map;
 
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.howibuy.services.v1.types.ArchetypeMatchOutcome;
 import eu.tealhelix.howibuy.services.v1.types.LlmClassification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttemptInput;
 import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
@@ -66,4 +68,18 @@ public interface ClassificationService {
 	 *         LLM worked
 	 */
 	Uni<LlmClassification> classifyWithLlm(User caller, HasRetailerProductId productId, String language);
+
+	/**
+	 * Match product data to an Archetype Product with the LLM, as {@link #classifyWithLlm} matches a stored product,
+	 * storing nothing.
+	 *
+	 * @param caller          The caller, who must be an operator
+	 * @param language        The language the product data is written in
+	 * @param name            The name of the product
+	 * @param characteristics The characteristics of the product
+	 * @param tags            The tags of the product
+	 * @return How the matching ended
+	 * @throws eu.tealhelix.common.types.validation.BadInputValueException if the name is blank
+	 */
+	Uni<ArchetypeMatchOutcome> previewWithLlm(User caller, String language, String name, Map<String, String> characteristics, List<String> tags);
 }
