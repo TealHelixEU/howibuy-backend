@@ -9,7 +9,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { scoreRow, looksLikeNormalizationArtifact, nutriScoreGrade, identityConflict, missSeverity, errorAction, choiceToAction } = require('./assessment-eval.js');
+const { scoreRow, looksLikeNormalizationArtifact, nutriScoreGrade, identityConflict, missSeverity, isCommitted, errorAction, choiceToAction } = require('./assessment-eval.js');
 
 const EXPECTED = {
 	l1: 'Milk and dairy products',
@@ -114,6 +114,13 @@ test('missSeverity: within the right pool, a grade change is grade-shift and a m
 	// same grade, no identity conflict -> near-equivalent output
 	assert.equal(missSeverity(3, 'C', 'C', "Emmental cheese, from cow's milk", "Emmental cheese, grated, from cow's milk"), 'cosmetic');
 	assert.equal(missSeverity(2, 'E', 'E', 'Butter oil or concentrated butter', 'Butter, 80% fat, lightly salted'), 'cosmetic');
+});
+
+test('isCommitted: only a match is a committed answer; a no match, a malformed reply or a failure is not', () => {
+	assert.equal(isCommitted('MATCHED'), true);
+	assert.equal(isCommitted('NO_MATCH'), false);
+	assert.equal(isCommitted('MALFORMED_REPLY'), false);
+	assert.equal(isCommitted('HTTP_500'), false);
 });
 
 // --- the --on-error policy ---------------------------------------------------

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-// Runs the product-assessment eval harness: for every row of the ground-truth CSV it invokes the backend
-// /assessment/single endpoint with the product name, then scores how far the classifier's diagnostics
-// (L1/L2/L3 category + archetype product) agree with the hand-matched ground truth.
+// Runs the classification eval harness: for every row of the ground-truth CSV it posts the product name to the
+// backend's preview of the classification with the LLM (/llm-classification-previews, which stores nothing), then
+// scores how far the matching's diagnostics (L1/L2/L3 category + archetype product) agree with the hand-matched
+// ground truth.
 //
 // The output CSV is the input CSV verbatim plus nine columns:
 //   Assessed L1 cat, Assessed L2 cat, Assessed L3 cat, Assessed product, Outcome type, Score,
@@ -13,8 +14,8 @@
 // is the metric.
 //
 // "Miss severity" is a per-miss triage annotation. It is filled only for answers the classifier committed
-// to (Outcome type SUCCESS) that are nonetheless wrong -- the "confidently wrong" false positives, which
-// matter more than an honest decline (a FAILURE_ outcome). It is one of, worst first:
+// to (Outcome type MATCHED) that are nonetheless wrong -- the "confidently wrong" false positives, which
+// matter more than an honest decline (NO_MATCH) or a MALFORMED_REPLY. It is one of, worst first:
 //   identity    -- the two archetypes name a conflicting animal/milk species, or one is raw and the other
 //                  cooked: the label is materially wrong whatever score it would display.
 //   category    -- L1 or L2 is wrong (score <= 1): the recommendation pool itself is wrong.
@@ -24,24 +25,22 @@
 // The grade per archetype is read from the imported archetype data (--archetypes); the Expected/Assessed
 // Nutri-Score columns show the two grades behind the grade-shift/cosmetic split.
 //
-// Authentication mirrors the manual flow: this script shells out to the sibling keycloak-auth-service.js
-// (service-account client-credentials token) and correlation-id.js (impersonation token), and re-acquires
-// them transparently if a request comes back 401 (token expiry).
+// The preview is for operators only. This script logs the operator in through the sibling keycloak-auth.sh
+// (the code flow of a person, so it needs bash, curl, sed and jq, and logs in to the Keycloak that script names),
+// and logs in again transparently if a request comes back 401 (token expiry).
 //
 // Usage:
-//   ./assessment-eval.js -p <service-account-secret> [options]
-//   TH_SVC_SECRET=... ./assessment-eval.js [options]
+//   ./assessment-eval.js -p <operator-password> [options]
+//   TH_OPERATOR_PASSWORD=... ./assessment-eval.js [options]
 // Options:
 //   -i, --input <csv>        ground-truth CSV (default: ../data/kritis/test_data_kritis_filled.csv)
 //   -o, --output <csv>       results CSV (default: <input dir>/<input name>-results.csv)
 //       --archetypes <csv>   archetype data providing the Nutri-Score grade per archetype
 //                            (default: the imported howibuy archetype_product.csv)
 //       --base <url>         howibuy v1 base URL (default: http://localhost:8180/api/howibuy/v1)
-//       --keycloak <url>     Keycloak base URL (default: http://localhost:8280)
-//   -u, --client <id>        service-account client id (default: lime_fresh)
-//   -p, --secret <secret>    service-account client secret (or env TH_SVC_SECRET)
-//   -c, --correlation-id <s> correlation id for impersonation (default: abc)
-//   -l, --language <code>    ProductData language (default: el -- the glossary is Greek)
+//   -u, --user <username>    the operator's username (default: bob@krusty-krab.com)
+//   -p, --password <pwd>     the operator's password (or env TH_OPERATOR_PASSWORD)
+//   -l, --language <code>    the language of the product names (default: el -- the glossary is Greek)
 //       --limit <n>          process only the first n data rows (for a quick smoke run)
 //       --on-error <mode>    what to do when a request fails (a non-200 response or a transport error):
 //                            stop     -- (default) abort at once, report the statistics gathered so far and
@@ -64,6 +63,7 @@ const http = require('node:http');
 const https = require('node:https');
 const path = require('node:path');
 const readline = require('node:readline');
+const os = require('node:os');
 const { execFileSync } = require('node:child_process');
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ function identityConflict(expectedProduct, assessedProduct) {
 }
 
 // Triages a miss by how much it costs, worst first (see the header comment). Returns '' for an exact match
-// (score 4), which is not a miss. Callers fill this only for committed answers (Outcome type SUCCESS); an
+// (score 4), which is not a miss. Callers fill this only for committed answers (Outcome type MATCHED); an
 // honest decline is not a false positive and carries no severity.
 function missSeverity(score, expectedGrade, assessedGrade, expectedProduct, assessedProduct) {
 	if (score === 4) return '';
@@ -128,6 +128,12 @@ function missSeverity(score, expectedGrade, assessedGrade, expectedProduct, asse
 	if (identityConflict(expectedProduct, assessedProduct)) return 'identity';
 	if (expectedGrade == null || assessedGrade == null || expectedGrade !== assessedGrade) return 'grade-shift';
 	return 'cosmetic';
+}
+
+// True for an outcome the classifier committed to: a match. A no match, a malformed reply or a failed request
+// is not, so it carries no miss severity.
+function isCommitted(type) {
+	return type === 'MATCHED';
 }
 
 // True when two strings differ only by letter case or by whitespace -- i.e. a "mismatch" that is really a
@@ -281,14 +287,12 @@ function request(urlString, { method = 'GET', headers = {}, body } = {}) {
 	});
 }
 
-// Runs the two sibling auth scripts (via the current node binary, so PATH need not contain node) and returns
-// the impersonation token to put in the Authorization header.
-function acquireImpersonationToken(cfg) {
-	const run = (script, scriptArgs) =>
-		execFileSync(process.execPath, [path.join(__dirname, script), ...scriptArgs], { encoding: 'utf8' }).trim();
-
-	const serviceToken = run('keycloak-auth-service.js', ['-i', cfg.keycloak, '-u', cfg.client, '-p', cfg.secret]);
-	return run('correlation-id.js', ['-s', cfg.base, '-c', cfg.correlationId, '-a', serviceToken]);
+// Logs the operator in through the sibling keycloak-auth.sh and returns the access token to put in the
+// Authorization header. The cookie jar of the login goes to the temp directory, not the working directory.
+function acquireOperatorToken(cfg) {
+	const cookie = path.join(os.tmpdir(), `assessment-eval-${process.pid}.cookie.jar`);
+	return execFileSync(path.join(__dirname, 'keycloak-auth.sh'), ['-u', cfg.user, '-p', cfg.password, '--cookie', cookie],
+			{ encoding: 'utf8' }).trim();
 }
 
 function fail(message) {
@@ -307,10 +311,8 @@ function parseArgs(argv) {
 		archetypes: path.resolve(__dirname, '..', '..', '..', 'howibuy-container', 'howibuy-dao-hibernate-reactive',
 			'src', 'main', 'resources', 'db', 'archetype', 'archetype_product.csv'),
 		base: 'http://localhost:8180/api/howibuy/v1',
-		keycloak: 'http://localhost:8280',
-		client: 'lime_fresh',
-		secret: process.env.TH_SVC_SECRET,
-		correlationId: 'abc',
+		user: 'bob@krusty-krab.com',
+		password: process.env.TH_OPERATOR_PASSWORD,
 		language: 'el',
 		limit: Infinity,
 		onError: 'stop',
@@ -324,10 +326,8 @@ function parseArgs(argv) {
 			case '-o': case '--output': cfg.output = argv[++i]; break;
 			case '--archetypes': cfg.archetypes = argv[++i]; break;
 			case '--base': cfg.base = argv[++i]; break;
-			case '--keycloak': cfg.keycloak = argv[++i]; break;
-			case '-u': case '--client': cfg.client = argv[++i]; break;
-			case '-p': case '--secret': cfg.secret = argv[++i]; break;
-			case '-c': case '--correlation-id': cfg.correlationId = argv[++i]; break;
+			case '-u': case '--user': cfg.user = argv[++i]; break;
+			case '-p': case '--password': cfg.password = argv[++i]; break;
 			case '-l': case '--language': cfg.language = argv[++i]; break;
 			case '--limit': cfg.limit = Number(argv[++i]); break;
 			case '--on-error': cfg.onError = norm(argv[++i]).toLowerCase(); break;
@@ -341,7 +341,7 @@ function parseArgs(argv) {
 				fail(`Unknown argument: ${arg}`);
 		}
 	}
-	if (!cfg.secret) fail('Service-account secret is required (-p|--secret or TH_SVC_SECRET)');
+	if (!cfg.password) fail('The operator\'s password is required (-p|--password or TH_OPERATOR_PASSWORD)');
 	if (!ON_ERROR_MODES.includes(cfg.onError)) fail(`--on-error must be one of ${ON_ERROR_MODES.join('|')}, got: ${cfg.onError}`);
 	if (!Number.isInteger(cfg.maxRetries) || cfg.maxRetries < 0) fail(`--max-retries must be a non-negative integer, got: ${cfg.maxRetries}`);
 	if (!(cfg.retryAfterSeconds >= 0)) fail(`--retry-after-seconds must be a non-negative number, got: ${cfg.retryAfterSeconds}`);
@@ -365,7 +365,7 @@ function columnIndex(header, name) {
 	return i;
 }
 
-// Extracts {l1,l2,l3,product} from a /assessment/single response body, or null if the shape is unexpected.
+// Extracts {l1,l2,l3,product} from a preview response body, or null if the shape is unexpected.
 function extractDiagnostics(json) {
 	const d = json && json.diagnostics;
 	if (!d) return null;
@@ -391,16 +391,16 @@ function loadNutriScoreGrades(csvPath) {
 
 const NO_DIAGNOSTICS = { l1: null, l2: null, l3: null, product: null };
 
-// One call to /assessment/single, re-acquiring the token once when it comes back rejected. Returns the
-// row's outcome; a `failure` field (the full response, for diagnostics) marks it as a request failure and
-// hands it to the --on-error policy. A 200 the classifier declined to answer is an outcome, not a failure.
+// One call to the preview, logging in again once when the token comes back rejected. Returns the row's
+// outcome; a `failure` field (the full response, for diagnostics) marks it as a request failure and hands it
+// to the --on-error policy. A 200 the classifier declined to answer is an outcome, not a failure.
 async function attemptAssessment(cfg, url, session, requestBody) {
 	let response;
 	try {
 		response = await postAssessment(url, session.token, requestBody);
-		if (response.status === 401 || response.status === 403) {
-			console.error('  token rejected, re-acquiring...');
-			session.token = acquireImpersonationToken(cfg);
+		if (response.status === 401) {
+			console.error('  token rejected, logging in again...');
+			session.token = acquireOperatorToken(cfg);
 			response = await postAssessment(url, session.token, requestBody);
 		}
 	} catch (err) {
@@ -421,7 +421,7 @@ async function attemptAssessment(cfg, url, session, requestBody) {
 	}
 	const diagnostics = extractDiagnostics(json);
 	if (!diagnostics) return { type: 'NO_DIAGNOSTICS', assessed: NO_DIAGNOSTICS };
-	return { type: json.type ?? 'UNKNOWN', assessed: diagnostics };
+	return { type: json.outcome ?? 'UNKNOWN', assessed: diagnostics };
 }
 
 // Assesses one product under the --on-error policy. Returns the outcome to record, or `{ abort }` carrying
@@ -448,7 +448,7 @@ async function assessProduct(cfg, url, session, requestBody, name) {
 
 async function main() {
 	const cfg = parseArgs(process.argv.slice(2));
-	const assessmentUrl = `${cfg.base}/assessment/single`;
+	const assessmentUrl = `${cfg.base}/llm-classification-previews`;
 
 	const rows = parseCsv(fs.readFileSync(cfg.input, 'utf8'));
 	if (rows.length < 2) fail(`no data rows in ${cfg.input}`);
@@ -471,14 +471,14 @@ async function main() {
 	console.error(`Assessment: ${assessmentUrl}`);
 	console.error(`Language:   ${cfg.language}`);
 	console.error(`On error:   ${cfg.onError}${cfg.onError === 'retry' ? ` (${cfg.maxRetries} retries, ${cfg.retryAfterSeconds}s apart)` : ''}`);
-	console.error('Acquiring impersonation token...');
-	const session = { token: acquireImpersonationToken(cfg), firstResponseLogged: false };
+	console.error(`Logging in as: ${cfg.user}`);
+	const session = { token: acquireOperatorToken(cfg), firstResponseLogged: false };
 
 	const out = fs.createWriteStream(cfg.output, { encoding: 'utf8' });
 	out.write(toCsvLine([...header, 'Assessed L1 cat', 'Assessed L2 cat', 'Assessed L3 cat', 'Assessed product', 'Outcome type', 'Score', 'Expected Nutri-Score', 'Assessed Nutri-Score', 'Miss severity']) + '\n');
 
 	const scoreHistogram = [0, 0, 0, 0, 0];
-	const bySeverity = new Map();    // miss severity -> count (only for confidently-wrong SUCCESS rows)
+	const bySeverity = new Map();    // miss severity -> count (only for confidently-wrong MATCHED rows)
 	const byReliability = new Map(); // reliability -> { count, scoreSum, successes }
 	const byType = new Map();        // outcome type -> count
 
@@ -488,11 +488,8 @@ async function main() {
 		const expected = { l1: r[col.l1], l2: r[col.l2], l3: r[col.l3], product: r[col.product] };
 
 		const requestBody = JSON.stringify({
-			productKey: `eval-${n + 1}`,
-			language: cfg.language,
 			name,
-			price: 0,
-			currency: 'EUR',
+			language: cfg.language,
 			characteristics: {},
 			tags: [],
 		});
@@ -513,9 +510,9 @@ async function main() {
 
 		const expectedGrade = nutriScoreGrades.get(norm(expected.product)) ?? null;
 		const assessedGrade = nutriScoreGrades.get(norm(assessed.product)) ?? null;
-		// Severity is a false-positive annotation: only a committed answer (SUCCESS) that is wrong can be
-		// confidently wrong; an honest decline carries none.
-		const severity = type === 'SUCCESS' ? missSeverity(score, expectedGrade, assessedGrade, norm(expected.product), norm(assessed.product)) : '';
+		// Severity is a false-positive annotation: only a committed answer that is wrong can be confidently
+		// wrong; an honest decline carries none.
+		const severity = isCommitted(type) ? missSeverity(score, expectedGrade, assessedGrade, norm(expected.product), norm(assessed.product)) : '';
 
 		scoreHistogram[score]++;
 		if (severity) bySeverity.set(severity, (bySeverity.get(severity) ?? 0) + 1);
@@ -598,4 +595,4 @@ if (require.main === module) {
 	});
 }
 
-module.exports = { scoreRow, norm, nutriScoreGrade, identityConflict, missSeverity, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics, errorAction, choiceToAction };
+module.exports = { scoreRow, norm, nutriScoreGrade, identityConflict, missSeverity, isCommitted, looksLikeNormalizationArtifact, parseCsv, csvEscape, toCsvLine, extractDiagnostics, errorAction, choiceToAction };
