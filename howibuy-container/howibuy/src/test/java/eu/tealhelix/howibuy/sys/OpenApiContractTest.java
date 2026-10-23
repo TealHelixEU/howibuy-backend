@@ -336,6 +336,36 @@ public class OpenApiContractTest {
 	}
 
 	/**
+	 * The Catalogue Sync and operators have the LLM classify a product. The answer tells how it ended, and carries the
+	 * attempt recorded and the Classification resolved, or neither when the reply of the LLM was malformed, with the
+	 * path the matching took. A product unknown, not named in the language or changed meanwhile is refused with a
+	 * message.
+	 */
+	@Test
+	void documentsTheClassificationWithTheLlm() {
+		var document = openApiDocument();
+		var classify = operation(document, "post", "/api/howibuy/v1/llm-classifications");
+
+		assertEquals("#/components/schemas/LlmClassificationRequest",
+				at(classify, "requestBody", "content", "application/json", "schema", "$ref"),
+				"the product and the language are sent as the request body");
+		assertEquals("#/components/schemas/LlmClassificationResponse",
+				at(classify, "responses", "200", "content", "application/json", "schema", "$ref"));
+		var response = at(schemas(document), "LlmClassificationResponse", "properties");
+		assertEquals("#/components/schemas/LlmClassificationOutcome", at(response, "outcome", "$ref"));
+		assertEquals(List.of("MATCHED", "NO_MATCH", "MALFORMED_REPLY"), at(schemas(document), "LlmClassificationOutcome", "enum"));
+		assertEquals("#/components/schemas/ClassificationAttemptDto", at(response, "attempt", "$ref"));
+		assertEquals("#/components/schemas/ClassificationDto", at(response, "classification", "$ref"));
+		assertEquals("#/components/schemas/MatchDiagnostics", at(response, "diagnostics", "$ref"));
+		for (var status : List.of("400", "404", "409")) {
+			assertEquals("#/components/schemas/SingleMessageResponse",
+					at(classify, "responses", status, "content", "application/json", "schema", "$ref"),
+					"a refused classification answers a message, status: " + status);
+		}
+		assertNotNull(at(classify, "responses", "403", "description"), "a caller other than the Catalogue Sync or an operator is documented");
+	}
+
+	/**
 	 * Every operation but two is reached with a bearer token, so the scheme is declared once and each operation states
 	 * that it needs it — which is also what puts the Authorize button in Swagger UI. Redeeming a handoff ticket carries
 	 * no token, the ticket in the body being the credential, and the version is public; both say so by naming no scheme.

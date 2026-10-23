@@ -27,7 +27,9 @@ import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity_;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity_;
+import eu.tealhelix.howibuy.services.model.ImmutableProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
+import eu.tealhelix.howibuy.services.model.ProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
@@ -116,6 +118,18 @@ public class ClassificationDaoImpl implements ClassificationDao {
 								.classificationLanguage(retailer.getClassificationLanguage())
 								.build()
 				));
+	}
+
+	@Override
+	public Uni<ProductClassificationInput> findClassificationInput(ReactivePersistenceContext em, HasRetailerProductId productId) {
+		return em.find(RetailerProductEntity.class, productId.getId().asUuid())
+				.flatMap(product -> product == null ? Uni.createFrom().nullItem() : findNames(em, List.of(product.getId()))
+						.map(names -> ImmutableProductClassificationInput.builder()
+								.inputHash(product.getInputHash())
+								.names(names.getOrDefault(product.getId(), Map.of()))
+								.characteristics(product.getCharacteristics())
+								.tags(product.getTags())
+								.build()));
 	}
 
 	@Override

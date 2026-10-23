@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
@@ -23,6 +26,12 @@ import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelper;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelperImpl;
+import eu.tealhelix.howibuy.services.model.FoodTerm;
+import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
+import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
+import eu.tealhelix.howibuy.services.v1.ai.impl.ProductAssessmentAiFacadeImpl;
+import eu.tealhelix.howibuy.services.v1.impl.ArchetypeMatching;
+import eu.tealhelix.howibuy.v1.model.ProductBaseData;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusMock;
@@ -31,13 +40,17 @@ import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logmanager.LogContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Finding the pending products, recording Classification Attempts and finding the Classifications to review against a
- * real database, with the products brought in through the Catalogue Changes as the Catalogue Sync brings them. The
- * stored Classification is asserted over JDBC. JWT decoding is faked (a stubbed {@link TokenHelper}).
+ * Finding the pending products, recording Classification Attempts, classifying with the LLM and finding the
+ * Classifications to review against a real database, with the products brought in through the Catalogue Changes as the
+ * Catalogue Sync brings them. The stored Classification is asserted over JDBC. JWT decoding is faked (a stubbed
+ * {@link TokenHelper}), and so is the language model (a stubbed {@link ProductAssessmentAiFacade}), whose answers cannot
+ * be told in advance.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresTestResource.class, initArgs = @ResourceArg(name = "contexts", value = "appdata"))
@@ -51,10 +64,23 @@ public class ClassificationsTest {
 	private static final User CATALOGUE_SYNC = new UserImpl(new UserIdImpl("1d0c6b0e-3b5f-4d2a-8f7e-2a9c4b6d8e33"), "catalogue-sync", null, false, false, Set.of(Role.CATALOGUE_SYNC));
 	private static final User RETAILER = new UserImpl(new UserIdImpl(RETAILER_ID), "test-retailer", null, false, false, Set.of(Role.RETAILER));
 	private static final User OPERATOR = new UserImpl(new UserIdImpl("4e2d8c1a-7b3f-4a6e-9c5d-3f1b7a9e2c44"), "operator", null, false, true, Set.of(Role.OPERATOR));
+	/**
+	 * The diagnostics of a matching stopped at the first level, as it is for a product whose name the glossary does not
+	 * know, so the LLM is asked from the first level on.
+	 */
+	private static final Map<String, Object> NO_LEVEL_REACHED = new HashMap<>();
+
+	static {
+		for (var level : List.of("l1Category", "l2Category", "l3Category", "archetypeProduct")) NO_LEVEL_REACHED.put(level, null);
+	}
+
 	private static final Map<String, User> USERS_BY_TOKEN = Map.of("sync", CATALOGUE_SYNC, "retailer", RETAILER, "operator", OPERATOR);
 
 	@Inject
 	DataSource dataSource;
+
+	@ConfigProperty(name = "quarkus.langchain4j.ollama.productAssessment.chat-model.model-id")
+	String llmModelId;
 
 	/**
 	 * Two archetypes of the seed data.
@@ -174,6 +200,83 @@ public class ClassificationsTest {
 	}
 
 	@Test
+	void theLlmMatchesAProductToAnArchetypeAndItsAttemptResolvesTheClassification() throws SQLException {
+		givenTheLlmReplies(new AiSelection.Match(0));
+		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι"));
+		var id = productId("yoghurt");
+
+		var response = postLlmClassification("sync", llmClassification(id, "el"), 200)
+				.contentType(JSON)
+				.body("outcome", equalTo("MATCHED"))
+				.body("attempt.language", equalTo("el"))
+				.body("attempt.classifier", equalTo("LLM"))
+				.body("attempt.classifierVersion", equalTo(llmModelId + "/prompt-1/glossary-1"))
+				.body("attempt.createdAt", matchesPattern(ISO_DATE_TIME))
+				.body("classification.inputHash", equalTo("h1"))
+				.body("classification.needsReview", equalTo(false))
+				.body("classification.resolvedAt", matchesPattern(ISO_DATE_TIME))
+				.extract();
+
+		String matched = response.path("attempt.archetypeProductId");
+		assertEquals(matched, response.<String>path("classification.archetypeProductId"));
+		assertEquals(response.<Map<String, String>>path("attempt.diagnostics"), response.<Map<String, String>>path("diagnostics"));
+		assertEquals(rows("SELECT name FROM TH_ARCHETYPE_PRODUCT WHERE id = '" + matched + "'"), List.of(response.<String>path("diagnostics.archetypeProduct")));
+		assertEquals(List.of(matched + "|h1|false"), classification("yoghurt"));
+		assertEquals(List.of("el|LLM|" + llmModelId + "/prompt-1/glossary-1|" + matched + "|h1"), attempts("yoghurt"));
+		pendingCount("sync", 0);
+	}
+
+	@Test
+	void theLlmFindingNoArchetypeForAProductResolvesItsClassificationToNone() throws SQLException {
+		givenTheLlmReplies(new AiSelection.None());
+		applyProduct("soap", 1, "h1", Map.of("el", "Σαπούνι"));
+
+		postLlmClassification("operator", llmClassification(productId("soap"), "el"), 200)
+				.body("outcome", equalTo("NO_MATCH"))
+				.body("attempt.archetypeProductId", equalTo(null))
+				.body("classification.archetypeProductId", equalTo(null))
+				.body("diagnostics", equalTo(NO_LEVEL_REACHED));
+
+		assertEquals(List.of("null|h1|false"), classification("soap"));
+	}
+
+	/**
+	 * The malformed reply is logged as a warning, captured here.
+	 */
+	@Test
+	void aMalformedReplyOfTheLlmIsAnsweredWithNothingRecordedAndTheProductStillPending() throws SQLException {
+		givenTheLlmReplies(new AiSelection.Malformed("42"));
+		applyProduct("soap", 1, "h1", Map.of("el", "Σαπούνι"));
+		var warnings = new ArrayList<String>();
+
+		capturingTheWarningsOf(ArchetypeMatching.class, warnings, () -> postLlmClassification("operator", llmClassification(productId("soap"), "el"), 200)
+				.body("outcome", equalTo("MALFORMED_REPLY"))
+				.body("attempt", equalTo(null))
+				.body("classification", equalTo(null))
+				.body("diagnostics", equalTo(NO_LEVEL_REACHED)));
+
+		assertEquals(List.of("AI selection was not a valid candidate number, kind: category, raw reply: '42'"), warnings);
+		assertNothingRecorded();
+		pendingCount("operator", 1);
+	}
+
+	@Test
+	void aProductIsNotClassifiedWithTheLlmFromALanguageItIsNotNamedInOrIfItIsUnknown() throws SQLException {
+		givenTheLlmReplies(new AiSelection.Match(0));
+		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι"));
+		var id = productId("yoghurt");
+
+		postLlmClassification("operator", llmClassification(id, "en"), 400)
+				.body("message", equalTo("The value of input 'language' is illegal."));
+		postLlmClassification("operator", llmClassification("00000000-0000-0000-0000-000000000000", "el"), 404);
+		postLlmClassification("operator", llmClassification("not-a-uuid", "el"), 400);
+		postLlmClassification("operator", llmClassification(id, null), 400);
+		postLlmClassification("retailer", llmClassification(id, "el"), 403);
+
+		assertNothingRecorded();
+	}
+
+	@Test
 	void aManualAttemptSettlesAReview() {
 		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt"));
 		var id = productId("yoghurt");
@@ -265,6 +368,53 @@ public class ClassificationsTest {
 		return as(token).contentType(JSON).body(attempt).post(BASE + "/classification-attempts").then().statusCode(expectedStatus);
 	}
 
+	private static ValidatableResponse postLlmClassification(String token, Map<String, Object> request, int expectedStatus) {
+		return as(token).contentType(JSON).body(request).post(BASE + "/llm-classifications").then().statusCode(expectedStatus);
+	}
+
+	private static Map<String, Object> llmClassification(String retailerProductId, String language) {
+		var request = new HashMap<String, Object>();
+		request.put("retailerProductId", retailerProductId);
+		request.put("language", language);
+		return request;
+	}
+
+	/**
+	 * The language model answers every question of the matching with the same reply.
+	 */
+	private static void givenTheLlmReplies(AiSelection reply) {
+		QuarkusMock.installMockForType(new StubProductAssessmentAiFacade(reply), ProductAssessmentAiFacade.class);
+	}
+
+	/**
+	 * Run the work with the warnings of the class captured instead of printed.
+	 */
+	private static void capturingTheWarningsOf(Class<?> loggingClass, List<String> warnings, Runnable work) {
+		var handler = new Handler() {
+			@Override
+			public void publish(LogRecord record) {
+				if (record.getLevel().intValue() == Level.WARNING.intValue()) warnings.add(record.getMessage());
+			}
+
+			@Override
+			public void flush() {
+			}
+
+			@Override
+			public void close() {
+			}
+		};
+		var logger = LogContext.getLogContext().getLogger(loggingClass.getName());
+		logger.addHandler(handler);
+		logger.setUseParentHandlers(false);
+		try {
+			work.run();
+		} finally {
+			logger.removeHandler(handler);
+			logger.setUseParentHandlers(true);
+		}
+	}
+
 	private static void pendingCount(String token, int count) {
 		as(token).get(BASE + "/classifications/pending?limit=10").then().statusCode(200).body("size()", equalTo(count));
 	}
@@ -343,6 +493,30 @@ public class ClassificationsTest {
 				rows.add(row.toString());
 			}
 			return rows;
+		}
+	}
+
+	private static final class StubProductAssessmentAiFacade extends ProductAssessmentAiFacadeImpl {
+		private final AiSelection reply;
+
+		StubProductAssessmentAiFacade(AiSelection reply) {
+			super(null, null);
+			this.reply = reply;
+		}
+
+		@Override
+		public Uni<AiSelection> extractL1Category(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
+			return Uni.createFrom().item(reply);
+		}
+
+		@Override
+		public Uni<AiSelection> extractSubcategory(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
+			return Uni.createFrom().item(reply);
+		}
+
+		@Override
+		public Uni<AiSelection> extractArchetypeProduct(ProductBaseData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance) {
+			return Uni.createFrom().item(reply);
 		}
 	}
 

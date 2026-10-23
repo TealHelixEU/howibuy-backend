@@ -99,11 +99,11 @@ public class ClassificationsResource {
 		);
 	}
 
-	private static ClassificationAttemptDto toDto(ClassificationAttempt attempt) {
+	static ClassificationAttemptDto toDto(ClassificationAttempt attempt) {
 		return new ClassificationAttemptDto(attempt.getLanguage(), attempt.getClassifier().name(), attempt.getClassifierVersion(), asString(attempt.getArchetypeProductId()), attempt.getCreatedAt(), attempt.getDiagnostics());
 	}
 
-	private static String asString(ArchetypeProductId id) {
+	static String asString(ArchetypeProductId id) {
 		return id != null ? id.asString() : null;
 	}
 }

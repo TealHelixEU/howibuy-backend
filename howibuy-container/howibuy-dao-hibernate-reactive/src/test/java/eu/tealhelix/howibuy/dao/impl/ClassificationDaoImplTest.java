@@ -42,6 +42,7 @@ import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
 import eu.tealhelix.howibuy.dao.jpa.values.AnimalWelfareImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.EnvironmentalImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.SocialImpact;
+import eu.tealhelix.howibuy.services.model.ImmutableProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
@@ -231,6 +232,36 @@ public class ClassificationDaoImplTest {
 		var product = inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().findLockedProductToClassify(tx, new RetailerProductIdImpl(UUID.randomUUID().toString())));
 
 		assertNull(product);
+	}
+
+	@Test
+	void findsTheClassificationInputOfAProduct(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, ImmutableProductChange.builder()
+				.from(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt")))
+				.characteristics(Map.of("Fat", "2%"))
+				.tags(List.of("dairy", "chilled"))
+				.build());
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+
+		var input = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> new ClassificationDaoImpl().findClassificationInput(em, id))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(ImmutableProductClassificationInput.builder()
+				.inputHash("h1")
+				.names(Map.of("el", "Γιαούρτι", "en", "Yoghurt"))
+				.characteristics(Map.of("Fat", "2%"))
+				.tags(List.of("dairy", "chilled"))
+				.build(), input);
+	}
+
+	@Test
+	void anUnknownProductHasNoClassificationInput(Mutiny.SessionFactory sessionFactory) {
+		var input = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> new ClassificationDaoImpl().findClassificationInput(em, new RetailerProductIdImpl(UUID.randomUUID().toString())))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertNull(input);
 	}
 
 	/**

@@ -4,6 +4,7 @@ import java.util.List;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.howibuy.services.model.ProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
@@ -42,6 +43,13 @@ public interface ClassificationDao {
 	 * @return The product, {@code null} if there is no product with this id
 	 */
 	Uni<ProductToClassify> findLockedProductToClassify(ReactivePersistenceTxContext tx, HasRetailerProductId productId);
+
+	/**
+	 * @param em        The persistence context
+	 * @param productId The product
+	 * @return What the Classification of the product is made from, {@code null} if there is no product with this id
+	 */
+	Uni<ProductClassificationInput> findClassificationInput(ReactivePersistenceContext em, HasRetailerProductId productId);
 
 	/**
 	 * @param tx        The persistence context
