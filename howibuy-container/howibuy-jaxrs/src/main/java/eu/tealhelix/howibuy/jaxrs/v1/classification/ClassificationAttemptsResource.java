@@ -16,13 +16,11 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
-import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
 import eu.tealhelix.howibuy.services.v1.ClassificationService;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttemptInput;
 import eu.tealhelix.howibuy.v1.model.ImmutableClassificationAttemptInput;
-import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import eu.tealhelix.howibuy.v1.types.impl.RetailerProductIdImpl;
 import io.smallrye.mutiny.Uni;
@@ -65,17 +63,9 @@ public class ClassificationAttemptsResource {
 		return ImmutableClassificationAttemptInput.builder()
 				.inputHash(requiredText("inputHash", request.inputHash()))
 				.language(requiredText("language", request.language()))
-				.classifier(classifier(requiredText("classifier", request.classifier())))
+				.classifier(ClassificationsResource.classifier(requiredText("classifier", request.classifier()), "It must be MANUAL or EXPERT"))
 				.classifierVersion(requiredText("classifierVersion", request.classifierVersion()))
 				.archetypeProductId(request.archetypeProductId() != null ? new ArchetypeProductIdImpl(uuid("archetypeProductId", request.archetypeProductId())) : null)
 				.build();
-	}
-
-	private static Classifier classifier(String name) {
-		try {
-			return Classifier.valueOf(name);
-		} catch (IllegalArgumentException e) {
-			throw BadInputValueException.fromInputNameAndHint("classifier", "It must be MANUAL or EXPERT");
-		}
 	}
 }

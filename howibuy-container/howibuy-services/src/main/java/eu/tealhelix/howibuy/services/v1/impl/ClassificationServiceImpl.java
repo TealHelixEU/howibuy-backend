@@ -123,6 +123,12 @@ public class ClassificationServiceImpl implements ClassificationService {
 		return archetypeMatching.match(product);
 	}
 
+	@Override
+	public Uni<Integer> reopen(User caller, Classifier classifier, String classifierVersion) {
+		authorization.requireOperator(caller);
+		return persistenceContextFactory.withTransaction(tx -> classificationDao.reopen(tx, classifier, classifierVersion));
+	}
+
 	private Uni<LlmClassification> recordLlmAttempt(HasRetailerProductId productId, String language, String inputHash, ArchetypeProductId archetypeProductId, MatchDiagnostics diagnostics) {
 		var attempt = ImmutableClassificationAttempt.builder()
 				.language(language)
@@ -150,6 +156,7 @@ public class ClassificationServiceImpl implements ClassificationService {
 				product -> classificationDao.findAttempts(tx, productId, product.getInputHash()).map(attempts -> resolve(product, attempts)),
 				resolved -> {
 					Classification classification = ImmutableClassification.builder()
+							.classifier(resolved.classifier())
 							.archetypeProductId(resolved.archetypeProductId())
 							.inputHash(attempt.getInputHash())
 							.isNeedsReview(resolved.needsReview())

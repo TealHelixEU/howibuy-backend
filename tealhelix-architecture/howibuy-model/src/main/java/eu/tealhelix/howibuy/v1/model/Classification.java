@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
+import eu.tealhelix.howibuy.v1.types.Classifier;
 import org.immutables.value.Value;
 
 /**
@@ -11,6 +12,11 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 public interface Classification {
+	/**
+	 * The classifier whose attempts decided it.
+	 */
+	Classifier getClassifier();
+
 	/**
 	 * The archetype the product is; {@code null} when no archetype matches it.
 	 */

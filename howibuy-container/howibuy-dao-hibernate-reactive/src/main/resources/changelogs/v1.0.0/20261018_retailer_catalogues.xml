@@ -118,11 +118,17 @@
 				<constraints primaryKey="true" primaryKeyName="PK_TH_CLASSIFICATION" />
 			</column>
 			<column name="archetype_product_id" type="UUID" remarks="The archetype the product matches; null when no archetype matches" />
+			<column name="classifier" type="VARCHAR(10)" remarks="The classifier whose attempts decided the Classification: MANUAL, EXPERT or LLM">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__CLASSIFIER" />
+			</column>
 			<column name="input_hash" type="VARCHAR(64)" remarks="The classification input hash of the product the Classification was resolved from; another than the product's current one makes the product pending">
 				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__INPUT_HASH" />
 			</column>
 			<column name="needs_review" type="BOOLEAN" remarks="Whether the attempts it was resolved from disagree">
 				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__NEEDS_REVIEW" />
+			</column>
+			<column name="reopened" type="BOOLEAN" remarks="Whether an operator reopened the Classification for its classifier to make again, which makes the product pending">
+				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__REOPENED" />
 			</column>
 			<column name="resolved_at" type="TIMESTAMP" remarks="When the Classification was last resolved">
 				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION__RESOLVED_AT" />
@@ -153,6 +159,7 @@
 				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__CLASSIFIER_VERSION" />
 			</column>
 			<column name="archetype_product_id" type="UUID" remarks="The archetype the classifier matched the product to; null when it matched none" />
+			<column name="diagnostics" type="JSONB" remarks="The path the classifier's matching took through the SAFAD taxonomy, a JSON object of the names of the levels it reached; null for a classifier that does not tell it" />
 			<column name="input_hash" type="VARCHAR(64)" remarks="The classification input hash of the product the attempt was made from">
 				<constraints nullable="false" notNullConstraintName="NL_TH_CLASSIFICATION_ATTEMPT__INPUT_HASH" />
 			</column>
@@ -170,12 +177,6 @@
 			<column name="retailer_product_id" />
 			<column name="input_hash" />
 		</createIndex>
-	</changeSet>
-
-	<changeSet id="llm_classifications" author="nikospara">
-		<addColumn tableName="TH_CLASSIFICATION_ATTEMPT">
-			<column name="diagnostics" type="JSONB" remarks="The path the classifier's matching took through the SAFAD taxonomy, a JSON object of the names of the levels it reached; null for a classifier that does not tell it" />
-		</addColumn>
 	</changeSet>
 
 	<changeSet id="dev_retailer_catalogues" author="nikospara" context="@dev">

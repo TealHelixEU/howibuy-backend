@@ -10,13 +10,14 @@ import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
 import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
+import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
 import io.smallrye.mutiny.Uni;
 
 public interface ClassificationDao {
 	/**
-	 * Find the products waiting to be classified: those without a Classification, and those whose Classification was
-	 * resolved from another input hash than their current one.
+	 * Find the products waiting to be classified: those without a Classification, those whose Classification was
+	 * resolved from another input hash than their current one, and those whose Classification was reopened.
 	 *
 	 * @param em    The persistence context
 	 * @param limit The most products to find
@@ -25,8 +26,8 @@ public interface ClassificationDao {
 	Uni<List<PendingProduct>> findPending(ReactivePersistenceContext em, int limit);
 
 	/**
-	 * Find the products whose Classification needs review, leaving out those changed since it was resolved, which are
-	 * pending again.
+	 * Find the products whose Classification needs review, leaving out those changed since it was resolved and those
+	 * whose Classification was reopened, which are pending again.
 	 *
 	 * @param em    The persistence context
 	 * @param limit The most products to find
@@ -68,7 +69,8 @@ public interface ClassificationDao {
 	Uni<List<ClassificationAttempt>> findAttempts(ReactivePersistenceContext em, HasRetailerProductId productId, String inputHash);
 
 	/**
-	 * Make the Classification of a product the given one, whether the product had one or not.
+	 * Make the Classification of a product the given one, whether the product had one or not. A reopened
+	 * Classification is no longer reopened.
 	 *
 	 * @param tx             The persistence context
 	 * @param productId      The product classified
@@ -76,4 +78,16 @@ public interface ClassificationDao {
 	 * @return A {@code Uni} completing when the Classification has been saved
 	 */
 	Uni<Void> saveClassification(ReactivePersistenceTxContext tx, HasRetailerProductId productId, Classification classification);
+
+	/**
+	 * Reopen the Classifications that came from a classifier version, which makes their products pending. A
+	 * Classification came from the versions of the latest attempts of the classifier that decided it, one per language,
+	 * made from its input hash.
+	 *
+	 * @param tx                The persistence context
+	 * @param classifier        The classifier
+	 * @param classifierVersion The version of the classifier
+	 * @return How many Classifications were reopened
+	 */
+	Uni<Integer> reopen(ReactivePersistenceTxContext tx, Classifier classifier, String classifierVersion);
 }

@@ -74,9 +74,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Which callers may classify or read the Classifications to review, which attempts are refused before anything is
- * stored, and the order of the steps of recording an attempt, with the database mocked. The LLM classifies with the
- * matching mocked, whose descent is covered by {@code ArchetypeMatchingTest}. How the Classification is
+ * Which callers may classify, read the Classifications to review or reopen them, which attempts are refused before
+ * anything is stored, and the order of the steps of recording an attempt, with the database mocked. The LLM classifies
+ * with the matching mocked, whose descent is covered by {@code ArchetypeMatchingTest}. How the Classification is
  * resolved is covered by {@code ClassificationResolutionImplTest}, and what the steps store by
  * {@code ClassificationDaoImplTest}.
  */
@@ -148,7 +148,7 @@ public class ClassificationServiceImplTest {
 		var toReview = List.<ClassificationToReview>of(ImmutableClassificationToReview.builder()
 				.id(PRODUCT)
 				.putNames("el", "Γιαούρτι")
-				.classification(ImmutableClassification.builder().archetypeProductId(YOGHURT).inputHash("h1").isNeedsReview(true).resolvedAt(LocalDateTime.of(2026, 10, 22, 12, 0)).build())
+				.classification(ImmutableClassification.builder().classifier(Classifier.EXPERT).archetypeProductId(YOGHURT).inputHash("h1").isNeedsReview(true).resolvedAt(LocalDateTime.of(2026, 10, 22, 12, 0)).build())
 				.addAttempts(attempt("el", Classifier.EXPERT, YOGHURT, "h1", LocalDateTime.of(2026, 10, 22, 12, 0)))
 				.build());
 		when(mockClassificationDao.findToReview(any(), eq(1000))).thenReturn(Uni.createFrom().item(toReview));
@@ -200,7 +200,7 @@ public class ClassificationServiceImplTest {
 		var createdAt = attemptCaptor.getValue().getCreatedAt();
 		assertEquals(ImmutableClassificationAttempt.builder().from(attempt).createdAt(createdAt).build(), attemptCaptor.getValue());
 		assertEquals(
-				ImmutableClassification.builder().archetypeProductId(YOGHURT).inputHash("h1").isNeedsReview(true).resolvedAt(createdAt).build(),
+				ImmutableClassification.builder().classifier(Classifier.EXPERT).archetypeProductId(YOGHURT).inputHash("h1").isNeedsReview(true).resolvedAt(createdAt).build(),
 				classificationCaptor.getValue(),
 				"the attempts disagree, so the one in the Retailer's language resolves the Classification for review");
 	}
@@ -315,7 +315,7 @@ public class ClassificationServiceImplTest {
 				.diagnostics(diagnostics)
 				.createdAt(createdAt)
 				.build(), recorded.attempt());
-		assertEquals(ImmutableClassification.builder().archetypeProductId(YOGHURT).inputHash("h1").isNeedsReview(false).resolvedAt(createdAt).build(), recorded.classification());
+		assertEquals(ImmutableClassification.builder().classifier(Classifier.LLM).archetypeProductId(YOGHURT).inputHash("h1").isNeedsReview(false).resolvedAt(createdAt).build(), recorded.classification());
 	}
 
 	@Test
@@ -457,6 +457,24 @@ public class ClassificationServiceImplTest {
 		assertThrows(NotAuthorizedException.class, () -> sut.previewWithLlm(CATALOGUE_SYNC_USER, "el", "Γιαούρτι", Map.of(), List.of()));
 		assertThrows(NotAuthorizedException.class, () -> sut.previewWithLlm(RETAILER_USER, "el", "Γιαούρτι", Map.of(), List.of()));
 		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@Test
+	void anOperatorReopensTheClassificationsOfAClassifierVersionInOneTransaction() {
+		when(mockClassificationDao.reopen(any(), eq(Classifier.LLM), eq(LLM_VERSION))).thenReturn(Uni.createFrom().item(3));
+
+		assertEquals(3, sut.reopen(OPERATOR_USER, Classifier.LLM, LLM_VERSION).await().atMost(WAIT));
+
+		assertEquals(1, mockReactivePersistenceContextFactory.getOpenedTransactions().size(), "one transaction");
+		verify(mockClassificationDao).reopen(mockReactivePersistenceContextFactory.getOpenedTransactions().getFirst(), Classifier.LLM, LLM_VERSION);
+	}
+
+	@Test
+	void onlyOperatorsReopenClassifications() {
+		assertThrows(NotAuthenticatedException.class, () -> sut.reopen(null, Classifier.LLM, LLM_VERSION));
+		assertThrows(NotAuthorizedException.class, () -> sut.reopen(CATALOGUE_SYNC_USER, Classifier.LLM, LLM_VERSION));
+		assertThrows(NotAuthorizedException.class, () -> sut.reopen(RETAILER_USER, Classifier.LLM, LLM_VERSION));
+		assertNothingTouched();
 	}
 
 	private void givenTheClassificationInput(Map<String, String> names, Map<String, String> characteristics, List<String> tags) {

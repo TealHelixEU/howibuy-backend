@@ -302,7 +302,8 @@ public class OpenApiContractTest {
 	 * The Catalogue Sync and operators read the pending products and record the attempts made outside this application.
 	 * Recording answers 204 with no body, and an attempt made from an input hash that is no longer the product's is
 	 * refused with 409 and a message, which the caller handles by reading the pending products again. They also read the
-	 * Classifications to review, each attempt with the path its matching took, as an assessment carries it.
+	 * Classifications to review, each attempt with the path its matching took, as an assessment carries it. Operators
+	 * reopen the Classifications that came from a classifier version, and are answered how many.
 	 */
 	@Test
 	void documentsTheClassification() {
@@ -310,6 +311,7 @@ public class OpenApiContractTest {
 		var findPending = operation(document, "get", "/api/howibuy/v1/classifications/pending");
 		var recordAttempt = operation(document, "post", "/api/howibuy/v1/classification-attempts");
 		var findToReview = operation(document, "get", "/api/howibuy/v1/classifications/review");
+		var reopen = operation(document, "post", "/api/howibuy/v1/classifications/reopening");
 
 		assertEquals("#/components/schemas/PendingProductDto",
 				at(findPending, "responses", "200", "content", "application/json", "schema", "items", "$ref"),
@@ -333,6 +335,15 @@ public class OpenApiContractTest {
 		for (var operation : List.of(findPending, recordAttempt, findToReview)) {
 			assertNotNull(at(operation, "responses", "403", "description"), "a caller other than the Catalogue Sync or an operator is documented");
 		}
+		assertEquals("#/components/schemas/ClassificationReopeningRequest",
+				at(reopen, "requestBody", "content", "application/json", "schema", "$ref"),
+				"the classifier version is sent as the request body");
+		assertEquals("#/components/schemas/ClassificationReopeningResponse",
+				at(reopen, "responses", "200", "content", "application/json", "schema", "$ref"));
+		assertEquals("#/components/schemas/SingleMessageResponse",
+				at(reopen, "responses", "400", "content", "application/json", "schema", "$ref"),
+				"a refused reopening answers a message");
+		assertNotNull(at(reopen, "responses", "403", "description"), "a caller other than an operator is documented");
 	}
 
 	/**

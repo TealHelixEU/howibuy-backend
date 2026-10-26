@@ -400,6 +400,44 @@ public class ClassificationsTest {
 		assertNothingRecorded();
 	}
 
+	/**
+	 * The products whose Classification came from the version are pending again, and keep their archetype until an
+	 * attempt resolves their Classification again.
+	 */
+	@Test
+	void anOperatorReopensTheClassificationsThatCameFromAClassifierVersion() throws SQLException {
+		applyProduct("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι"));
+		applyProduct("honey", 2, "h2", Map.of("el", "Μέλι"));
+		postAttempt("operator", attempt(productId("yoghurt"), "h1", "el", "EXPERT", archetype), 204);
+		postAttempt("operator", attempt(productId("honey"), "h2", "el", "MANUAL", archetype), 204);
+
+		postReopening("operator", reopening("EXPERT", "test"), 200)
+				.contentType(JSON)
+				.body("reopened", equalTo(1));
+
+		as("sync").get(BASE + "/classifications/pending?limit=10")
+				.then()
+				.statusCode(200)
+				.body("retailerProductId", equalTo(List.of(productId("yoghurt"))));
+		assertEquals(List.of(archetype + "|h1|false"), classification("yoghurt"));
+
+		postAttempt("operator", attempt(productId("yoghurt"), "h1", "el", "EXPERT", archetype), 204);
+
+		pendingCount("sync", 0);
+	}
+
+	@Test
+	void onlyOperatorsReopenClassificationsOfAClassifierVersion() {
+		postReopening("operator", reopening(null, "test"), 400)
+				.body("message", equalTo("Required input 'classifier' is missing."));
+		postReopening("operator", reopening("WP3", "test"), 400)
+				.body("message", equalTo("The value of input 'classifier' is illegal."));
+		postReopening("operator", reopening("LLM", ""), 400);
+		as("operator").contentType(JSON).post(BASE + "/classifications/reopening").then().statusCode(400);
+		postReopening("sync", reopening("LLM", "test"), 403);
+		postReopening("retailer", reopening("LLM", "test"), 403);
+	}
+
 	@Test
 	void thePendingProductsAndTheClassificationsToReviewAreFoundFromOneToAThousandAtATime() {
 		for (var path : List.of("/classifications/pending", "/classifications/review")) {
@@ -427,6 +465,17 @@ public class ClassificationsTest {
 
 	private static ValidatableResponse postAttempt(String token, Map<String, Object> attempt, int expectedStatus) {
 		return as(token).contentType(JSON).body(attempt).post(BASE + "/classification-attempts").then().statusCode(expectedStatus);
+	}
+
+	private static ValidatableResponse postReopening(String token, Map<String, Object> request, int expectedStatus) {
+		return as(token).contentType(JSON).body(request).post(BASE + "/classifications/reopening").then().statusCode(expectedStatus);
+	}
+
+	private static Map<String, Object> reopening(String classifier, String classifierVersion) {
+		var request = new HashMap<String, Object>();
+		request.put("classifier", classifier);
+		request.put("classifierVersion", classifierVersion);
+		return request;
 	}
 
 	private static ValidatableResponse postLlmClassification(String token, Map<String, Object> request, int expectedStatus) {

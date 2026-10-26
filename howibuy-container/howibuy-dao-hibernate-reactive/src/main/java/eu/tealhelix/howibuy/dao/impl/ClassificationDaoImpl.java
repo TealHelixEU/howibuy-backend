@@ -41,6 +41,7 @@ import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ImmutablePendingProduct;
 import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
+import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import eu.tealhelix.howibuy.v1.types.impl.RetailerProductIdImpl;
@@ -69,7 +70,8 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		q.select(cb.tuple(id, inputHash));
 		q.where(cb.or(
 				cb.isNull(classification.get(ClassificationEntity_.retailerProductId)),
-				cb.notEqual(classification.get(ClassificationEntity_.inputHash), inputHash)
+				cb.notEqual(classification.get(ClassificationEntity_.inputHash), inputHash),
+				cb.isTrue(classification.get(ClassificationEntity_.reopened))
 		));
 		q.orderBy(cb.asc(product.get(RetailerProductEntity_.changeSequence)));
 		return forcm(
@@ -93,7 +95,8 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		product.on(cb.equal(product.get(RetailerProductEntity_.id), classification.get(ClassificationEntity_.retailerProductId)));
 		q.where(
 				cb.isTrue(classification.get(ClassificationEntity_.needsReview)),
-				cb.equal(classification.get(ClassificationEntity_.inputHash), product.get(RetailerProductEntity_.inputHash))
+				cb.equal(classification.get(ClassificationEntity_.inputHash), product.get(RetailerProductEntity_.inputHash)),
+				cb.isFalse(classification.get(ClassificationEntity_.reopened))
 		);
 		q.orderBy(cb.asc(classification.get(ClassificationEntity_.resolvedAt)), cb.asc(classification.get(ClassificationEntity_.retailerProductId)));
 		return forcm(
@@ -174,6 +177,41 @@ public class ClassificationDaoImpl implements ClassificationDao {
 	}
 
 	/**
+	 * One statement reopens them all: the Classifications of the classifier with an attempt of the version that no later
+	 * attempt of the classifier in the same language, made from the same input hash, replaced.
+	 */
+	@Override
+	public Uni<Integer> reopen(ReactivePersistenceTxContext tx, Classifier classifier, String classifierVersion) {
+		var cb = tx.getCriteriaBuilder();
+		var u = cb.createCriteriaUpdate(ClassificationEntity.class);
+		var classification = u.from(ClassificationEntity.class);
+		var attemptOfVersion = u.subquery(UUID.class);
+		var attempt = attemptOfVersion.from(ClassificationAttemptEntity.class);
+		var laterAttempt = attemptOfVersion.subquery(UUID.class);
+		var later = laterAttempt.from(ClassificationAttemptEntity.class);
+		laterAttempt.select(later.get(ClassificationAttemptEntity_.id)).where(
+				cb.equal(later.get(ClassificationAttemptEntity_.retailerProductId), attempt.get(ClassificationAttemptEntity_.retailerProductId)),
+				cb.equal(later.get(ClassificationAttemptEntity_.inputHash), attempt.get(ClassificationAttemptEntity_.inputHash)),
+				cb.equal(later.get(ClassificationAttemptEntity_.classifier), attempt.get(ClassificationAttemptEntity_.classifier)),
+				cb.equal(later.get(ClassificationAttemptEntity_.lang), attempt.get(ClassificationAttemptEntity_.lang)),
+				cb.greaterThan(later.get(ClassificationAttemptEntity_.createdAt), attempt.get(ClassificationAttemptEntity_.createdAt))
+		);
+		attemptOfVersion.select(attempt.get(ClassificationAttemptEntity_.id)).where(
+				cb.equal(attempt.get(ClassificationAttemptEntity_.retailerProductId), classification.get(ClassificationEntity_.retailerProductId)),
+				cb.equal(attempt.get(ClassificationAttemptEntity_.inputHash), classification.get(ClassificationEntity_.inputHash)),
+				cb.equal(attempt.get(ClassificationAttemptEntity_.classifier), classifier),
+				cb.equal(attempt.get(ClassificationAttemptEntity_.classifierVersion), classifierVersion),
+				cb.not(cb.exists(laterAttempt))
+		);
+		u.set(classification.get(ClassificationEntity_.reopened), true);
+		u.where(
+				cb.equal(classification.get(ClassificationEntity_.classifier), classifier),
+				cb.exists(attemptOfVersion)
+		);
+		return tx.createUpdate(u).execute();
+	}
+
+	/**
 	 * @return The names of each product by their language, in the order of the language codes
 	 */
 	private static Uni<Map<UUID, Map<String, String>>> findNames(ReactivePersistenceContext em, List<UUID> productIds) {
@@ -221,14 +259,17 @@ public class ClassificationDaoImpl implements ClassificationDao {
 	}
 
 	private static void copy(Classification classification, ClassificationEntity entity) {
+		entity.setClassifier(classification.getClassifier());
 		entity.setArchetypeProductId(classification.getArchetypeProductId() != null ? classification.getArchetypeProductId().asUuid() : null);
 		entity.setInputHash(classification.getInputHash());
 		entity.setNeedsReview(classification.isNeedsReview());
 		entity.setResolvedAt(classification.getResolvedAt());
+		entity.setReopened(false);
 	}
 
 	private static Classification toClassification(ClassificationEntity entity) {
 		return ImmutableClassification.builder()
+				.classifier(entity.getClassifier())
 				.archetypeProductId(entity.getArchetypeProductId() != null ? new ArchetypeProductIdImpl(entity.getArchetypeProductId().toString()) : null)
 				.inputHash(entity.getInputHash())
 				.isNeedsReview(entity.isNeedsReview())

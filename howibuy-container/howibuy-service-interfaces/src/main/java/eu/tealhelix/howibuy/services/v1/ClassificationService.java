@@ -9,12 +9,14 @@ import eu.tealhelix.howibuy.services.v1.types.LlmClassification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttemptInput;
 import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
+import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
 import io.smallrye.mutiny.Uni;
 
 /**
  * The Classification of the Retailer Products: which of them wait to be classified, the recording of the
- * Classification Attempts that resolve their Classifications, and which Classifications need review.
+ * Classification Attempts that resolve their Classifications, which Classifications need review, and the reopening of
+ * those a classifier is to make again.
  */
 public interface ClassificationService {
 	int MAX_PER_PAGE = 1000;
@@ -82,4 +84,17 @@ public interface ClassificationService {
 	 * @throws eu.tealhelix.common.types.validation.BadInputValueException if the name is blank
 	 */
 	Uni<ArchetypeMatchOutcome> previewWithLlm(User caller, String language, String name, Map<String, String> characteristics, List<String> tags);
+
+	/**
+	 * Reopen the Classifications that came from a classifier version, after the classifier improved, which makes their
+	 * products pending. A reopened Classification still tells the archetype of its product until an attempt resolves it
+	 * again. A Classification came from the versions of the latest attempts, one per language, of the classifier that
+	 * decided it.
+	 *
+	 * @param caller            The caller, who must be an operator
+	 * @param classifier        The classifier
+	 * @param classifierVersion The version of the classifier
+	 * @return How many Classifications were reopened
+	 */
+	Uni<Integer> reopen(User caller, Classifier classifier, String classifierVersion);
 }

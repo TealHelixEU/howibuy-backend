@@ -54,12 +54,12 @@ public class ClassificationResolutionImpl implements ClassificationResolution {
 	 */
 	private static Resolution decide(@Nullable String classificationLanguage, List<ClassificationAttempt> attempts) {
 		var agree = attempts.stream().map(ClassificationAttempt::getArchetypeProductId).distinct().count() == 1;
-		if (agree) return new Resolution(attempts.getFirst().getArchetypeProductId(), false);
+		if (agree) return new Resolution(attempts.getFirst().getClassifier(), attempts.getFirst().getArchetypeProductId(), false);
 		var chosen = attempts.stream()
 				.filter(attempt -> Objects.equals(attempt.getLanguage(), classificationLanguage))
 				.findFirst()
 				.orElse(attempts.getFirst());
-		return new Resolution(chosen.getArchetypeProductId(), true);
+		return new Resolution(chosen.getClassifier(), chosen.getArchetypeProductId(), true);
 	}
 
 	private record ClassifierAndLanguage(Classifier classifier, String language) {

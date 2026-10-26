@@ -69,8 +69,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * A product is pending while it has no Classification, or its Classification was resolved from another input hash than
- * its current one. Recording an attempt locks the product, and stores the attempt and the Classification.
+ * A product is pending while it has no Classification, its Classification was resolved from another input hash than
+ * its current one, or its Classification was reopened. Recording an attempt locks the product, and stores the attempt
+ * and the Classification.
  */
 @Testcontainers
 public class ClassificationDaoImplTest {
@@ -329,11 +330,11 @@ public class ClassificationDaoImplTest {
 		var dao = new ClassificationDaoImpl();
 		inTransaction(sessionFactory, tx -> dao.saveClassification(tx, id, classification(YOGHURT, "h1", true, 0)));
 
-		inTransaction(sessionFactory, tx -> dao.saveClassification(tx, id, classification(null, "h2", false, 1)));
+		inTransaction(sessionFactory, tx -> dao.saveClassification(tx, id, classification(Classifier.MANUAL, null, "h2", false, 1)));
 
 		assertEquals(
-				List.of("null|h2|false|" + T0.plusMinutes(1)),
-				rows("SELECT archetype_product_id, input_hash, needs_review, resolved_at FROM TH_CLASSIFICATION WHERE retailer_product_id = '" + id.asString() + "'"));
+				List.of("MANUAL|null|h2|false|" + T0.plusMinutes(1)),
+				rows("SELECT classifier, archetype_product_id, input_hash, needs_review, resolved_at FROM TH_CLASSIFICATION WHERE retailer_product_id = '" + id.asString() + "'"));
 		assertEquals(List.of(), findPending(sessionFactory, 10));
 	}
 
@@ -345,8 +346,8 @@ public class ClassificationDaoImplTest {
 		inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().saveClassification(tx, id, classification(YOGHURT, "h1", true, 0)));
 
 		assertEquals(
-				List.of(YOGHURT.asString() + "|h1|true|" + T0),
-				rows("SELECT archetype_product_id, input_hash, needs_review, resolved_at FROM TH_CLASSIFICATION WHERE retailer_product_id = '" + id.asString() + "'"));
+				List.of("EXPERT|" + YOGHURT.asString() + "|h1|true|" + T0 + "|false"),
+				rows("SELECT classifier, archetype_product_id, input_hash, needs_review, resolved_at, reopened FROM TH_CLASSIFICATION WHERE retailer_product_id = '" + id.asString() + "'"));
 	}
 
 	@Test
@@ -433,6 +434,72 @@ public class ClassificationDaoImplTest {
 		assertEquals(Set.of(2), toReview.stream().map(product -> product.getAttempts().size()).collect(Collectors.toSet()));
 	}
 
+	/**
+	 * The latest attempt per language of the classifier that decided a Classification, made from its input hash, tells
+	 * the versions it came from.
+	 */
+	@Test
+	void reopensTheClassificationsThatCameFromAClassifierVersion(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		apply(sessionFactory,
+				product("feta", 1, "h1", Map.of("el", "Φέτα", "en", "Feta")),
+				product("yoghurt", 2, "h2", Map.of("el", "Γιαούρτι")),
+				product("honey", 3, "h3", Map.of("el", "Μέλι")),
+				product("milk", 4, "h4", Map.of("el", "Γάλα")));
+		var ids = findPending(sessionFactory, 10).stream().collect(Collectors.toMap(PendingProduct::getInputHash, PendingProduct::getId));
+		var fixtures = new ArrayList<>();
+		// v1 made the Greek attempt, v2 the English one
+		fixtures.addAll(review(ids.get("h1"), classification(Classifier.LLM, YOGHURT, "h1", false, 1),
+				attempt("el", Classifier.LLM, "v1", YOGHURT, "h1", 0), attempt("en", Classifier.LLM, "v2", YOGHURT, "h1", 1)));
+		// v2 made the later Greek attempt
+		fixtures.addAll(review(ids.get("h2"), classification(Classifier.LLM, YOGHURT, "h2", false, 1),
+				attempt("el", Classifier.LLM, "v1", YOGHURT, "h2", 0), attempt("el", Classifier.LLM, "v2", YOGHURT, "h2", 1)));
+		// an expert decided
+		fixtures.addAll(review(ids.get("h3"), classification(Classifier.EXPERT, YOGHURT, "h3", false, 1),
+				attempt("el", Classifier.LLM, "v1", YOGHURT, "h3", 0), attempt("el", Classifier.EXPERT, "v1", YOGHURT, "h3", 1)));
+		// v1 classified the product before it changed
+		fixtures.addAll(review(ids.get("h4"), classification(Classifier.LLM, YOGHURT, "h4", false, 1),
+				attempt("el", Classifier.LLM, "v1", YOGHURT, "h0", 0), attempt("el", Classifier.LLM, "v2", YOGHURT, "h4", 1)));
+		persist(sessionFactory, fixtures);
+
+		var reopened = inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().reopen(tx, Classifier.LLM, "v1"));
+
+		assertEquals(1, reopened);
+		assertEquals(List.of(ids.get("h1").asString()), rows("SELECT retailer_product_id FROM TH_CLASSIFICATION WHERE reopened"));
+	}
+
+	@Test
+	void aReopenedProductIsPendingUntilItsClassificationIsSavedAgain(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		persist(sessionFactory, review(id, classification(Classifier.LLM, YOGHURT, "h1", false, 0), attempt("el", Classifier.LLM, "v1", YOGHURT, "h1", 0)));
+		var dao = new ClassificationDaoImpl();
+
+		inTransaction(sessionFactory, tx -> dao.reopen(tx, Classifier.LLM, "v1"));
+
+		assertEquals(List.of(id), findPending(sessionFactory, 10).stream().map(PendingProduct::getId).toList());
+
+		inTransaction(sessionFactory, tx -> dao.saveClassification(tx, id, classification(Classifier.LLM, YOGHURT, "h1", false, 1)));
+
+		assertEquals(List.of(), findPending(sessionFactory, 10));
+		assertEquals(List.of("false"), rows("SELECT reopened FROM TH_CLASSIFICATION"));
+	}
+
+	/**
+	 * The product is pending again, and the Classification resolved from its next attempts decides whether it needs
+	 * review.
+	 */
+	@Test
+	void aReopenedClassificationToReviewIsNotFound(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt")));
+		var id = findPending(sessionFactory, 10).getFirst().getId();
+		persist(sessionFactory, review(id, classification(Classifier.LLM, YOGHURT, "h1", true, 0),
+				attempt("el", Classifier.LLM, "v1", YOGHURT, "h1", 0), attempt("en", Classifier.LLM, "v1", null, "h1", 0)));
+
+		inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().reopen(tx, Classifier.LLM, "v1"));
+
+		assertEquals(List.of(), findToReview(sessionFactory, 10));
+	}
+
 	private static List<PendingProduct> findPending(Mutiny.SessionFactory sessionFactory, int limit) {
 		var sut = new ClassificationDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
@@ -466,6 +533,7 @@ public class ClassificationDaoImplTest {
 		}
 		var entity = new ClassificationEntity();
 		entity.setRetailerProductId(id.asUuid());
+		entity.setClassifier(classification.getClassifier());
 		entity.setArchetypeProductId(classification.getArchetypeProductId() != null ? classification.getArchetypeProductId().asUuid() : null);
 		entity.setInputHash(classification.getInputHash());
 		entity.setNeedsReview(classification.isNeedsReview());
@@ -493,6 +561,7 @@ public class ClassificationDaoImplTest {
 		attempt.setCreatedAt(now);
 		var classification = new ClassificationEntity();
 		classification.setRetailerProductId(id.asUuid());
+		classification.setClassifier(Classifier.MANUAL);
 		classification.setInputHash(inputHash);
 		classification.setNeedsReview(false);
 		classification.setResolvedAt(now);
@@ -508,10 +577,18 @@ public class ClassificationDaoImplTest {
 	}
 
 	private static ClassificationAttempt attempt(String language, Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash, int minutesLater, MatchDiagnostics diagnostics) {
+		return attempt(language, classifier, "test", archetypeProductId, inputHash, minutesLater, diagnostics);
+	}
+
+	private static ClassificationAttempt attempt(String language, Classifier classifier, String classifierVersion, ArchetypeProductId archetypeProductId, String inputHash, int minutesLater) {
+		return attempt(language, classifier, classifierVersion, archetypeProductId, inputHash, minutesLater, null);
+	}
+
+	private static ClassificationAttempt attempt(String language, Classifier classifier, String classifierVersion, ArchetypeProductId archetypeProductId, String inputHash, int minutesLater, MatchDiagnostics diagnostics) {
 		return ImmutableClassificationAttempt.builder()
 				.language(language)
 				.classifier(classifier)
-				.classifierVersion("test")
+				.classifierVersion(classifierVersion)
 				.archetypeProductId(archetypeProductId)
 				.inputHash(inputHash)
 				.createdAt(T0.plusMinutes(minutesLater))
@@ -529,7 +606,12 @@ public class ClassificationDaoImplTest {
 	}
 
 	private static Classification classification(ArchetypeProductId archetypeProductId, String inputHash, boolean needsReview, int minutesLater) {
+		return classification(Classifier.EXPERT, archetypeProductId, inputHash, needsReview, minutesLater);
+	}
+
+	private static Classification classification(Classifier classifier, ArchetypeProductId archetypeProductId, String inputHash, boolean needsReview, int minutesLater) {
 		return ImmutableClassification.builder()
+				.classifier(classifier)
 				.archetypeProductId(archetypeProductId)
 				.inputHash(inputHash)
 				.isNeedsReview(needsReview)

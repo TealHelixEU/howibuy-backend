@@ -27,70 +27,70 @@ class ClassificationResolutionImplTest {
 
 	@Test
 	void manualBeatsExpert() {
-		assertResolution(YOGHURT, false, null,
+		assertResolution(Classifier.MANUAL, YOGHURT, false, null,
 				attempt(Classifier.EXPERT, "el", FETA, 0),
 				attempt(Classifier.MANUAL, "el", YOGHURT, 1));
 	}
 
 	@Test
 	void manualBeatsTheLlm() {
-		assertResolution(YOGHURT, false, null,
+		assertResolution(Classifier.MANUAL, YOGHURT, false, null,
 				attempt(Classifier.MANUAL, "el", YOGHURT, 0),
 				attempt(Classifier.LLM, "el", FETA, 1));
 	}
 
 	@Test
 	void expertBeatsTheLlm() {
-		assertResolution(YOGHURT, false, null,
+		assertResolution(Classifier.EXPERT, YOGHURT, false, null,
 				attempt(Classifier.LLM, "en", FETA, 0),
 				attempt(Classifier.EXPERT, "el", YOGHURT, 1));
 	}
 
 	@Test
 	void attemptsInDifferentLanguagesThatAgreeResolve() {
-		assertResolution(YOGHURT, false, "el",
+		assertResolution(Classifier.LLM, YOGHURT, false, "el",
 				attempt(Classifier.LLM, "el", YOGHURT, 0),
 				attempt(Classifier.LLM, "en", YOGHURT, 1));
 	}
 
 	@Test
 	void attemptsThatAgreeNoArchetypeMatchesResolveToNone() {
-		assertResolution(null, false, "el",
+		assertResolution(Classifier.LLM, null, false, "el",
 				attempt(Classifier.LLM, "el", null, 0),
 				attempt(Classifier.LLM, "en", null, 1));
 	}
 
 	@Test
 	void aDisagreementResolvesToTheRetailersLanguageForReview() {
-		assertResolution(FETA, true, "en",
+		assertResolution(Classifier.LLM, FETA, true, "en",
 				attempt(Classifier.LLM, "el", YOGHURT, 0),
 				attempt(Classifier.LLM, "en", FETA, 1));
 	}
 
 	@Test
 	void aDisagreementWithoutAnAttemptInTheRetailersLanguageResolvesByLanguageCode() {
-		assertResolution(FETA, true, "lt",
+		assertResolution(Classifier.LLM, FETA, true, "lt",
 				attempt(Classifier.LLM, "en", YOGHURT, 0),
 				attempt(Classifier.LLM, "el", FETA, 1));
 	}
 
 	@Test
 	void aDisagreementWithoutARetailerLanguageResolvesByLanguageCode() {
-		assertResolution(FETA, true, null,
+		assertResolution(Classifier.LLM, FETA, true, null,
 				attempt(Classifier.LLM, "en", YOGHURT, 0),
 				attempt(Classifier.LLM, "el", FETA, 1));
 	}
 
 	@Test
 	void anArchetypeAndNoArchetypeDisagree() {
-		assertResolution(null, true, "el",
+		assertResolution(Classifier.LLM, null, true, "el",
 				attempt(Classifier.LLM, "el", null, 0),
 				attempt(Classifier.LLM, "en", YOGHURT, 1));
 	}
 
 	@Test
 	void aDisagreementBelowTheDecidingClassifierNeedsNoReview() {
-		assertResolution(HONEY, false, "el",
+		assertResolution(Classifier.EXPERT, HONEY, false, "el",
 				attempt(Classifier.LLM, "el", YOGHURT, 0),
 				attempt(Classifier.LLM, "en", FETA, 1),
 				attempt(Classifier.EXPERT, "el", HONEY, 2));
@@ -98,14 +98,14 @@ class ClassificationResolutionImplTest {
 
 	@Test
 	void attemptsFromAnotherInputHashAreIgnored() {
-		assertResolution(FETA, false, "el",
+		assertResolution(Classifier.LLM, FETA, false, "el",
 				attempt(Classifier.MANUAL, "el", YOGHURT, STALE_HASH, 0),
 				attempt(Classifier.LLM, "el", FETA, 1));
 	}
 
 	@Test
 	void onlyTheLatestAttemptPerClassifierAndLanguageCounts() {
-		assertResolution(FETA, false, "el",
+		assertResolution(Classifier.MANUAL, FETA, false, "el",
 				attempt(Classifier.MANUAL, "el", FETA, 1),
 				attempt(Classifier.MANUAL, "el", YOGHURT, 0));
 	}
@@ -115,8 +115,8 @@ class ClassificationResolutionImplTest {
 		assertEquals(Optional.empty(), sut.resolve(HASH, "el", List.of(attempt(Classifier.MANUAL, "el", YOGHURT, STALE_HASH, 0))));
 	}
 
-	private void assertResolution(ArchetypeProductId archetypeProductId, boolean needsReview, String classificationLanguage, ClassificationAttempt... attempts) {
-		assertEquals(Optional.of(new Resolution(archetypeProductId, needsReview)), sut.resolve(HASH, classificationLanguage, List.of(attempts)));
+	private void assertResolution(Classifier decidingClassifier, ArchetypeProductId archetypeProductId, boolean needsReview, String classificationLanguage, ClassificationAttempt... attempts) {
+		assertEquals(Optional.of(new Resolution(decidingClassifier, archetypeProductId, needsReview)), sut.resolve(HASH, classificationLanguage, List.of(attempts)));
 	}
 
 	private static ClassificationAttempt attempt(Classifier classifier, String language, ArchetypeProductId archetypeProductId, int minutesLater) {
