@@ -197,8 +197,11 @@ neither changes a product that the other has read.
   product can be listed in Catalogues with different primary languages. If there is none (the product is
   not sold in that language), the remaining attempts are ordered by language code. A disagreement always sets
   `needs_review`.
-- Re-classification after a classifier improves: an operator command marks as pending the products whose Classification
-  came from a given classifier version.
+- Re-classification after a classifier improves: `POST /api/v1/classifications/reopening` `{classifier,
+  classifierVersion}` (operator) reopens the Classifications that came from that classifier version, which makes their
+  products pending, and answers how many. A Classification records the classifier that decided it; it came from the
+  versions of that classifier's latest attempts, one per language, made from its input hash. A reopened Classification
+  keeps its archetype until an attempt resolves it again.
 - The Catalogue Sync tool gets a `classify` command: take pending products, call `llm-classifications` for each language,
   sequentially, with a configurable limit and rate. It prints a summary of the run but stores none: the attempts, with
   their classifier, classifier version, input hash and time, are the record of what was classified. There is no
@@ -280,15 +283,15 @@ neither changes a product that the other has read.
 
 ### Schema: HowiBuy (in the `howibuy` changelog, one new per-epic file)
 
-| Table                        | Columns (main)                                                                                                | Notes                                                                 |
-|------------------------------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| `TH_CATALOGUE`               | `id` (code), `retailer_id`, `country`, `primary_language`, `active`                                           | seeded                                                                |
-| `TH_RETAILER_PRODUCT`        | `id`, `retailer_id`, `product_key`, `characteristics`, `tags`, `input_hash`, `change_sequence`                | `UQ (retailer_id, product_key)`                                       |
-| `TH_RETAILER_PRODUCT_NAME`   | `retailer_product_id`, `lang`, `name`                                                                         | PK `(retailer_product_id, lang)`, SFC text-table pattern              |
-| `TH_LISTING`                 | `retailer_product_id`, `catalogue_id`, `price`, `currency`, `active`                                          | PK `(retailer_product_id, catalogue_id)`, `IX (catalogue_id, active)` |
-| `TH_CLASSIFICATION`          | `retailer_product_id` (PK), `archetype_product_id` (null = none), `input_hash`, `needs_review`, `resolved_at` | absent or stale hash = pending                                        |
-| `TH_CLASSIFICATION_ATTEMPT`  | (see below)                                                                                                   |                                                                       |
-| `TH_CATALOGUE_CHANGE_CURSOR` | `source`, `last_sequence`                                                                                     | one row per Ingestion instance                                        |
+| Table                        | Columns (main)                                                                                                                          | Notes                                                                 |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| `TH_CATALOGUE`               | `id` (code), `retailer_id`, `country`, `primary_language`, `active`                                                                     | seeded                                                                |
+| `TH_RETAILER_PRODUCT`        | `id`, `retailer_id`, `product_key`, `characteristics`, `tags`, `input_hash`, `change_sequence`                                          | `UQ (retailer_id, product_key)`                                       |
+| `TH_RETAILER_PRODUCT_NAME`   | `retailer_product_id`, `lang`, `name`                                                                                                   | PK `(retailer_product_id, lang)`, SFC text-table pattern              |
+| `TH_LISTING`                 | `retailer_product_id`, `catalogue_id`, `price`, `currency`, `active`                                                                    | PK `(retailer_product_id, catalogue_id)`, `IX (catalogue_id, active)` |
+| `TH_CLASSIFICATION`          | `retailer_product_id` (PK), `classifier`, `archetype_product_id` (null = none), `input_hash`, `needs_review`, `resolved_at`, `reopened` | absent, stale hash or reopened = pending                              |
+| `TH_CLASSIFICATION_ATTEMPT`  | (see below)                                                                                                                             |                                                                       |
+| `TH_CATALOGUE_CHANGE_CURSOR` | `source`, `last_sequence`                                                                                                               | one row per Ingestion instance                                        |
 
 #### TH_CLASSIFICATION_ATTEMPT columns
 
@@ -354,7 +357,7 @@ table name, e.g. `PK_IN_LISTING`.
 
 Ingestion: feed store directory, batch size, sanity-check share, eviction threshold, tombstone purge period. HowiBuy:
 the LLM classifier version label. Catalogue Sync: both base URLs, the service-account credentials, page size,
-classification rate and limit.
+classification rate, limit and page size.
 
 ## Testing Decisions
 

@@ -107,7 +107,8 @@ mvn package -Pdocker # to build the docker images too
 > **NOTE/WARNING:** As of the date of this writing, the Docker images are for development purposes only!
 
 The end-to-end tests run on `verify`, not on `package`. They start the Ingestion, HowiBuy and the Catalogue Sync from
-the jars the build made, against Postgres and Keycloak from the Docker images, so build the images first:
+the jars the build made, against Postgres and Keycloak from the Docker images. The test of the `classify` command
+answers HowiBuy's calls to Ollama with a fake.
 
 ```shell
 mvn package -Pdocker -DskipTests
