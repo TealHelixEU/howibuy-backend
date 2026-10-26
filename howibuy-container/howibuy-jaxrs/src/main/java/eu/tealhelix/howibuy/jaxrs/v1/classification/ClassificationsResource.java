@@ -48,7 +48,7 @@ public class ClassificationsResource {
 
 	@Operation(
 			summary = "Read the products waiting to be classified",
-			description = "The products without a Classification, and those changed since theirs was resolved, the one changed longest ago first. An attempt at one is recorded with the input hash read here.")
+			description = "The products without a Classification, those changed since theirs was resolved, and those whose Classification was reopened, the one changed longest ago first. An attempt at one is recorded with the input hash read here.")
 	@APIResponse(responseCode = "200", description = "The pending products, as many as the limit at most.")
 	@APIResponse(responseCode = "400", description = "The limit is missing or out of its range.",
 			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))
@@ -69,7 +69,7 @@ public class ClassificationsResource {
 
 	@Operation(
 			summary = "Read the Classifications to review",
-			description = "The products whose current Classification was resolved from attempts that disagree, the one resolved longest ago first, with their names and the attempts. A manual attempt settles a review. A product changed since its Classification was resolved is pending instead.")
+			description = "The products whose current Classification was resolved from attempts that disagree, the one resolved longest ago first, with their names and the attempts. A manual attempt settles a review. A product changed since its Classification was resolved, or whose Classification was reopened, is pending instead.")
 	@APIResponse(responseCode = "200", description = "The Classifications to review, as many as the limit at most.")
 	@APIResponse(responseCode = "400", description = "The limit is missing or out of its range.",
 			content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = SingleMessageResponse.class)))

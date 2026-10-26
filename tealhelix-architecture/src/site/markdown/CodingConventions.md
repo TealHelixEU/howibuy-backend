@@ -39,7 +39,11 @@
      - GOOD: `log.info("User logged in: {}", username);`. Here I can search the code for `"User logged in:"` and find this code.
      - BAD: `log.info("User {} logged in", username);`. Here the constant strings are `"User "` and `" logged in"`. Both could be encountered in other places too, so searching for them does not uniquely identify the code that caused the log.
 3. The usage of `var`: It is preferred when the type is obvious from the context. The type is obvious when creating a
-   new object, e.g. `var foo = new Foo()` or for the return of a well known Java method. Never replace `int` with `var`.
+   new object, e.g. `var foo = new Foo()` or for the return of a well-known Java method. Never replace `int` with `var`.
+   Another case where the explicit type should be used instead of `var` is when the return type is parametric and the
+   type is not obvious from the context. E.g. `var strings = List.of("a", "b", "c");` is legitimate. On the other hand,
+   in `result = someService.findStuff().stream().toList()` the `result` is obviously a `java.util.List` because
+   `Stream.toList()` is a well-known method, but the type parameter is not obvious.
 
 ### Javadocs
 

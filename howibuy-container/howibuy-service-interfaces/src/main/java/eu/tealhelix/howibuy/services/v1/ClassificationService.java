@@ -32,7 +32,7 @@ public interface ClassificationService {
 
 	/**
 	 * Find the products whose Classification was resolved from attempts that disagree, so one of us should look at it.
-	 * A product changed since its Classification was resolved is pending instead.
+	 * A product changed since its Classification was resolved, or whose Classification was reopened, is pending instead.
 	 *
 	 * @param caller The caller, who must be the Catalogue Sync or an operator
 	 * @param limit  How many products to find at most, from 1 to {@link #MAX_PER_PAGE}

@@ -4,7 +4,7 @@ import java.util.Set;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "A Retailer Product waiting to be classified: it has no Classification, or its Classification was resolved from other names, characteristics or tags than its current ones.")
+@Schema(description = "A Retailer Product waiting to be classified: it has no Classification, its Classification was resolved from other names, characteristics or tags than its current ones, or its Classification was reopened.")
 public record PendingProductDto(
 		@Schema(description = "The product.")
 		String retailerProductId,
