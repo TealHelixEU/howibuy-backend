@@ -2,14 +2,15 @@
 
 # Use this script to run the various correlation id flows. First authenticate as service and obtain the access token:
 # > SVC_ACCESS_TOKEN=`./keycloak-auth-service.sh -u the_client -p secret`
-# > IMPERSONATION_TOKEN=`./correlation-id.sh -c ABCD -a $SVC_ACCESS_TOKEN`
-# You can then access the system on behalf of the user with the given correlation id, e.g.:
+# > IMPERSONATION_TOKEN=`./correlation-id.sh -c ABCD --catalogue lime-fresh-gr -a $SVC_ACCESS_TOKEN`
+# You can then access the system on behalf of the user with the given correlation id, in the given Catalogue, e.g.:
 # > curl -iS -X GET -H "Authorization: Bearer $IMPERSONATION_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 #
 # This script requires curl and jq
 
 HOWIBUY_URL="http://localhost:8180/api/howibuy/v1"
 CORRELATION_ID=
+CATALOGUE_ID=
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
@@ -28,6 +29,11 @@ while [[ $# -gt 0 ]]; do
 			shift
 			shift
 			;;
+		--catalogue)
+			CATALOGUE_ID="$2"
+			shift
+			shift
+			;;
 		--print-token-response)
 			PRINT_TOKEN_RESPONSE=y
 			shift
@@ -39,8 +45,13 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
+if [[ -z "$CATALOGUE_ID" ]]; then
+	echo "Missing argument: --catalogue"
+	exit 2
+fi
+
 TOKEN_RESPONSE=$(curl -s -X POST $HOWIBUY_URL/tokenexchange \
-	-d "{ \"correlationId\": \"$CORRELATION_ID\" }" \
+	-d "{ \"correlationId\": \"$CORRELATION_ID\", \"catalogueId\": \"$CATALOGUE_ID\" }" \
 	-H "Authorization: Bearer $ACCESS_TOKEN" \
 	-H "Content-Type: application/json")
 

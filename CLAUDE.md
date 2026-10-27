@@ -178,16 +178,19 @@ test 8381 / debug 5305.
 
 ```
 Request → JwtAuthenticationFilter (nonBlocking, event loop)
-            → TokenHelper.processToken
-                ├── service token  → UserImpl built from JWT claims (no DB)
-                ├── impersonated   → UserService.requireUserWithId (DB lookup by internal UserId)
-                └── normal user    → UserService.findOrCreateUserFromValidIdmId (DB lookup by IDM `sub`, profile created on first login)
-         → SecurityContext set
+            → TokenHelper.processToken → Authentication (User + CatalogueId)
+                ├── service token  → UserImpl built from JWT claims (no DB), no Catalogue
+                ├── impersonated   → UserService.requireUserWithId (DB lookup by internal UserId), Catalogue from the `catalogue` claim
+                └── normal user    → UserService.findOrCreateUserFromValidIdmId (DB lookup by IDM `sub`, profile created on first login), no Catalogue
+         → SecurityContext and RequestCatalogue set
          → resource method (Uni-based ⇒ event loop, plain return ⇒ worker thread)
 ```
 
-The `/tokenexchange` endpoint mints an impersonation JWT signed by us (see `JwtGenerationService`); the
-`JwtAuthenticationFilter` recognises it via `isImpersonated(...)` and takes the second branch above.
+The `/tokenexchange` endpoint mints an impersonation JWT signed by us (see `JwtGenerationService`), naming the user and
+the Catalogue the retailer serves them from; `TokenHelperImpl` recognises it by its key id and `isImpersonated(...)` and
+takes the second branch above. A resource reads the Catalogue with `RequestCatalogue.currentCatalogue(crc)`, which is
+empty for every token but those of the token exchange (a handoff token names none), and hands it to the services as a
+`CatalogueId` parameter.
 
 What a caller may do comes from its `User.getRoles()` (`RETAILER`, `CATALOGUE_SYNC`, `OPERATOR`), which `TokenHelperImpl`
 maps from the Keycloak realm roles (`realm_access.roles`) of the first and third branches, through `IdmRealmRoles`;

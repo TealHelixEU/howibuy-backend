@@ -299,6 +299,30 @@ public class OpenApiContractTest {
 	}
 
 	/**
+	 * A retailer exchanges its token for one that acts as one of its users in one of its Catalogues, naming both in the
+	 * request body. A request missing either is refused with a message, and a Catalogue that is not an active one of the
+	 * retailer is refused like a retailer that may not act.
+	 */
+	@Test
+	void documentsTheTokenExchange() {
+		var document = openApiDocument();
+		var exchange = operation(document, "post", "/api/howibuy/v1/tokenexchange");
+
+		assertEquals("#/components/schemas/TokenExchangeRequest",
+				at(exchange, "requestBody", "content", "application/json", "schema", "$ref"),
+				"the user and the Catalogue are sent as the request body");
+		var request = at(schemas(document), "TokenExchangeRequest", "properties");
+		assertEquals("string", at(request, "correlationId", "type"));
+		assertEquals("string", at(request, "catalogueId", "type"));
+		assertEquals("#/components/schemas/TokenExchangeResponse",
+				at(exchange, "responses", "200", "content", "application/json", "schema", "$ref"));
+		assertEquals("#/components/schemas/SingleMessageResponse",
+				at(exchange, "responses", "400", "content", "application/json", "schema", "$ref"),
+				"a request missing the user or the Catalogue answers a message");
+		assertNotNull(at(exchange, "responses", "403", "description"), "a Catalogue the retailer may not act in is documented");
+	}
+
+	/**
 	 * The Catalogue Sync and operators read the pending products and record the attempts made outside this application.
 	 * Recording answers 204 with no body, and an attempt made from an input hash that is no longer the product's is
 	 * refused with 409 and a message, which the caller handles by reading the pending products again. They also read the

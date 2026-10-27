@@ -4,7 +4,7 @@
 // > SVC_ACCESS_TOKEN=`./keycloak-auth-service.js -u the_client -p secret`
 // > curl -iS -X GET -H "Authorization: Bearer $SVC_ACCESS_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 // Or:
-// > curl -iS -X POST -H "Authorization: Bearer $SVC_ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"correlationId": "abc"}' http://localhost:8180/api/howibuy/v1/tokenexchange
+// > curl -iS -X POST -H "Authorization: Bearer $SVC_ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"correlationId": "abc", "catalogueId": "lime-fresh-gr"}' http://localhost:8180/api/howibuy/v1/tokenexchange
 //
 // This script requires only NodeJS (no external dependencies).
 

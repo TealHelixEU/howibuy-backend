@@ -40,7 +40,7 @@ User (via retailer token: Retailer + Catalogue) ──assess──▶ HowiBuy: l
 4. As a retailer, I want a product that disappears from my Snapshot to stop being recommended, and to come back without delay when it reappears.
 5. As a retailer, I want a truncated or broken Snapshot to not wipe out my Catalogue.
 6. As a retailer, I want the same product sold in several countries to be recognised as one product, with its own price in each Catalogue.
-7. As a retailer, I want to name the Catalogue when I exchange a token or hand a user over, so that assessments use the right assortment and prices.
+7. As a retailer, I want to name the Catalogue when I exchange a token, so that assessments use the right assortment and prices.
 8. As a retailer's customer, I want the assessment of a scanned product to come back fast.
 9. As a retailer's customer, I want the Alternatives to be products I can actually buy in this e-shop, with their name in my language and their price.
 10. As a retailer's customer scanning a product that is no longer listed, I still want it assessed.
@@ -245,18 +245,23 @@ neither changes a product that the other has read.
 
 ### Tokens
 
-- `TokenExchangeRequest` and `HandoffRequest` gain a required `catalogueId`. It must be an active Catalogue of the calling
-  Retailer (`403` otherwise).
-- The impersonation token carries `catalogue` (and the retailer, already implied). The handoff ticket persists the
-  Catalogue, and a renewal copies the claim.
+- `TokenExchangeRequest` gains a required `catalogueId`. It must be an active Catalogue of the calling Retailer (`403`
+  otherwise). The token exchange is the workflow that assesses products, so it needs the Catalogue.
+- The handoff names no Catalogue: the single-page application it hands the user over to needs only the user, never a
+  Retailer's products. Its ticket and session tokens stay as they are.
+- The impersonation token carries `catalogue` (and the retailer, already implied). It is never renewed, so no renewal
+  has to copy the claim.
 - How a request reads it: the Catalogue belongs to the session, not to the user, so it is not put on `User`.
-  `JwtAuthenticationFilter` stores the claims of the validated token as a request property, next to the security
-  context. `tealhelix-common-web` exposes them generically (a `JaxRsUtils` method that reads a claim by name) and knows
-  nothing of Catalogues. `howibuy-jaxrs` has its own `currentCatalogue(crc)`, which returns `Optional<CatalogueId>`.
-  Each resource that needs a Catalogue refuses the request when there is none. The service layer receives a non-null
-  `CatalogueId` from its caller, like the `User`, and never sees the token.
-- `TokenHelper.processToken` must hand the filter both the `User` and the claims, so its return type changes. The
-  `TokenHelper` stubs in the `@QuarkusTest`s (SFC tests, `HandoffWorkflowTest`) change with it.
+  `TokenHelper` reads it, because only it knows whether a token is one this application signed: the claims alone do
+  not say, and the IDM's tokens name no Catalogue whatever claims they carry. `JwtAuthenticationFilter` stores the
+  `CatalogueId` as a request property, next to the security context. Only HowiBuy's filter sets that property, so
+  reading it stays in `howibuy-jaxrs`, whose `RequestCatalogue.currentCatalogue(crc)` returns `Optional<CatalogueId>`;
+  `tealhelix-common-web` knows nothing of claims or Catalogues. Each resource that needs a Catalogue refuses the
+  request when there is none. The service layer receives a non-null `CatalogueId` from its caller, like the `User`,
+  and never sees the token.
+- `TokenHelper.processToken` must hand the filter both the `User` and the Catalogue, so it returns an
+  `Authentication` of the two. The `TokenHelper` stubs in the `@QuarkusTest`s (SFC tests, `ClassificationsTest`,
+  `CatalogueChangesTest`) change with it.
 
 ### Roles
 

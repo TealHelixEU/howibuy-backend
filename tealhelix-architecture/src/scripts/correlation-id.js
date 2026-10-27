@@ -2,8 +2,8 @@
 
 // Use this script to run the various correlation id flows. First authenticate as service and obtain the access token:
 // > SVC_ACCESS_TOKEN=`./keycloak-auth-service.js -u the_client -p secret`
-// > IMPERSONATION_TOKEN=`./correlation-id.js -c ABCD -a $SVC_ACCESS_TOKEN`
-// You can then access the system on behalf of the user with the given correlation id, e.g.:
+// > IMPERSONATION_TOKEN=`./correlation-id.js -c ABCD --catalogue lime-fresh-gr -a $SVC_ACCESS_TOKEN`
+// You can then access the system on behalf of the user with the given correlation id, in the given Catalogue, e.g.:
 // > curl -iS -X GET -H "Authorization: Bearer $IMPERSONATION_TOKEN" -H "Accepts: text/html" http://localhost:8180/api/howibuy/v1/greeting
 //
 // This script requires only NodeJS (no external dependencies).
@@ -16,6 +16,7 @@ const https = require('node:https');
 let howibuyUrl = 'http://localhost:8180/api/howibuy/v1';
 let accessToken;
 let correlationId = '';
+let catalogueId;
 let printTokenResponse = false;
 
 const argv = process.argv.slice(2);
@@ -34,6 +35,9 @@ for (let i = 0; i < argv.length; i++) {
 		case '--correlation-id':
 			correlationId = argv[++i];
 			break;
+		case '--catalogue':
+			catalogueId = argv[++i];
+			break;
 		case '--print-token-response':
 			printTokenResponse = true;
 			break;
@@ -41,6 +45,11 @@ for (let i = 0; i < argv.length; i++) {
 			console.error(`Unknown argument: ${arg}`);
 			process.exit(2);
 	}
+}
+
+if (!catalogueId) {
+	console.error('Missing argument: --catalogue');
+	process.exit(2);
 }
 
 function request(urlString, { method = 'GET', headers = {}, body } = {}) {
@@ -62,7 +71,7 @@ function request(urlString, { method = 'GET', headers = {}, body } = {}) {
 }
 
 async function main() {
-	const body = JSON.stringify({ correlationId });
+	const body = JSON.stringify({ correlationId, catalogueId });
 
 	const response = await request(`${howibuyUrl}/tokenexchange`, {
 		method: 'POST',
