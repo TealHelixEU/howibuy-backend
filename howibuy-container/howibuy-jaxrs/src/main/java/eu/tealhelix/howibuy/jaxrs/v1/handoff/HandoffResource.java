@@ -78,7 +78,7 @@ public class HandoffResource {
 	 */
 	@Operation(
 			summary = "Redeem a handoff ticket for the first token of the session it opens",
-			description = "The one operation of this application that asks for no token of its own: the single-page application holds none yet, and the ticket in the body is the credential. Answers the token the session runs on, and the seconds left of the session as a whole — which no later renewal moves.")
+			description = "The one operation of this application that asks for no token of its own: the single-page application holds none yet, and the ticket in the body is the credential. Answers the first token of the session and the seconds it is good for. The session ends at a moment this token fixes, which no later renewal moves.")
 	@APIResponse(responseCode = "200", description = "The first token of the session the ticket opened.")
 	@APIResponse(responseCode = "400", description = BAD_REQUEST)
 	@APIResponse(responseCode = "401", description = "There was no ticket to redeem. A ticket that never existed, one that has expired and one already redeemed are refused alike, so presenting a ticket says nothing beyond whether it worked.")
@@ -102,7 +102,7 @@ public class HandoffResource {
 	@Operation(
 			summary = "Exchange the token of a handed-over session for the next one",
 			description = "The session slides for as long as the user keeps working and ends at the moment the first token specified. The request carries nothing but the token to renew. A renewal carries no extra information.")
-	@APIResponse(responseCode = "200", description = "The next token of the session, and the seconds left of the session itself.")
+	@APIResponse(responseCode = "200", description = "The next token of the session, and the seconds it is good for.")
 	@APIResponse(responseCode = "401", description = "No token was presented, or the one presented can no longer be renewed. A session whose token has died is over, however far the end of it still was, so the single-page application renews ahead of the expiry.")
 	@SecurityRequirement(name = BEARER_AUTH)
 	@POST

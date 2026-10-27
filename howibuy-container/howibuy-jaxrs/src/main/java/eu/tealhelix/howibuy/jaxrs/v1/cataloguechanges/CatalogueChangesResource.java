@@ -3,11 +3,11 @@ package eu.tealhelix.howibuy.jaxrs.v1.cataloguechanges;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+import static eu.tealhelix.common.web.RequestValuesHelper.required;
+import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
+import static eu.tealhelix.common.web.RequestValuesHelper.uuid;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CATALOGUE_CHANGES;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CATALOGUE_CHANGES_DESC;
-import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.required;
-import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.requiredText;
-import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.uuid;
 
 import java.util.Currency;
 import java.util.List;

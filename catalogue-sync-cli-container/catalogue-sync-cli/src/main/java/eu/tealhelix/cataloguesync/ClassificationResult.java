@@ -1,7 +1,6 @@
 package eu.tealhelix.cataloguesync;
 
 import java.time.Duration;
-import java.util.List;
 
 /**
  * @param products The products attempted
@@ -11,8 +10,8 @@ import java.util.List;
  * @param failures The attempts that failed, which left their product pending
  * @param elapsed How long the classification took
  */
-public record ClassificationResult(int products, int matched, int noMatch, int malformedReplies, List<ClassificationFailure> failures, Duration elapsed) {
+public record ClassificationResult(int products, int matched, int noMatch, int malformedReplies, int failures, Duration elapsed) {
 	public int attempts() {
-		return matched + noMatch + malformedReplies + failures.size();
+		return matched + noMatch + malformedReplies + failures;
 	}
 }

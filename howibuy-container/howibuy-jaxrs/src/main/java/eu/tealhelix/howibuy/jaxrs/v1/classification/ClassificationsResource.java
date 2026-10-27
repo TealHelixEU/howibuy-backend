@@ -3,10 +3,10 @@ package eu.tealhelix.howibuy.jaxrs.v1.classification;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+import static eu.tealhelix.common.web.RequestValuesHelper.required;
+import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION_DESC;
-import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.required;
-import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.requiredText;
 
 import java.util.List;
 import jakarta.inject.Inject;

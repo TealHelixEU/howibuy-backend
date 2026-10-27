@@ -5,9 +5,10 @@ import static eu.tealhelix.catalogue.jaxrs.v1.CatalogueOpenApiTagNames.INGESTION
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
+import static eu.tealhelix.common.web.RequestValuesHelper.required;
+import static eu.tealhelix.common.web.RequestValuesHelper.uuid;
 
 import java.util.List;
-import java.util.UUID;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -27,8 +28,6 @@ import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
-import eu.tealhelix.common.types.validation.BadInputValueException;
-import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -184,16 +183,7 @@ public class IngestionRunsResource {
 	}
 
 	private static IngestionRunId runId(String id) {
-		try {
-			return new IngestionRunIdImpl(UUID.fromString(id).toString());
-		} catch (IllegalArgumentException e) {
-			throw BadInputValueException.fromInputNameAndHint("id", "It must be a UUID");
-		}
-	}
-
-	private static <T> T required(String inputName, T value) {
-		if (value == null) throw RequiredInputMissingException.fromRequiredInputName(inputName);
-		return value;
+		return new IngestionRunIdImpl(uuid("id", id));
 	}
 
 	private static IngestionRunDto toDto(IngestionRun run) {

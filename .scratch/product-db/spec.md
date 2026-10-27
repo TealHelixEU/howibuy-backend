@@ -203,9 +203,11 @@ neither changes a product that the other has read.
   versions of that classifier's latest attempts, one per language, made from its input hash. A reopened Classification
   keeps its archetype until an attempt resolves it again.
 - The Catalogue Sync tool gets a `classify` command: take pending products, call `llm-classifications` for each language,
-  sequentially, with a configurable limit and rate. It prints a summary of the run but stores none: the attempts, with
-  their classifier, classifier version, input hash and time, are the record of what was classified. There is no
-  classification batch table.
+  sequentially, with a configurable limit and rate. It prints each failed attempt as it fails, with HowiBuy's response,
+  and a summary of the run, but stores none: the attempts, with their classifier, classifier version, input hash and
+  time, are the record of what was classified. There is no classification batch table. It exits with 0 when no attempt
+  failed, 3 when some did, 4 when every one did, and 1 when the run stopped; a malformed reply is an outcome, not a
+  failure.
 - `POST /api/v1/llm-classification-previews` (operator) `{name, language, characteristics, tags}`: runs the same
   identification code as `llm-classifications` on posted product data, stores nothing, and answers the archetype (or
   the failure) with its diagnostics. The classification eval harness (`assessment-eval.js`) uses it once assessment no

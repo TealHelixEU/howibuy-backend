@@ -12,7 +12,7 @@ public record SessionTokenResponse(
 		@Schema(description = "The bearer token to present on the requests that follow.")
 		String accessToken,
 		@JsonProperty("expires_in")
-		@Schema(description = "Seconds left of the session as a whole, which renewing does not move. The client renews before the token itself expires; a session whose token has died is over.")
+		@Schema(description = "Seconds the token is good for: the handoff session time, or less when the session ends sooner. The client renews before the token expires; a session whose token has died is over.")
 		int expiresIn
 ) {
 }

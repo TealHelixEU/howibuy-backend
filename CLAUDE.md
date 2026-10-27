@@ -17,45 +17,45 @@ Treat `tealhelix-architecture/src/site/markdown/CodingConventions.md` as authori
 ```
 tealhelix/
 ├── tealhelix-architecture/        Pure domain model (entities, value types). No framework deps.
-│   └── catalogue-model/          Retailer Catalogue types shared by Ingestion, Catalogue Sync and HowiBuy
-│   └── catalogue-model-testutils/   Framework-free test utilities of the Catalogue types
-│   └── howibuy-model/            HowiBuy domain entities
-│   └── howibuy-model-testutils/  Framework-free test utilities of the HowiBuy types
-│   └── howibuy-model-json/       Map the HowiBuy model to JSON with Jackson
+│   ├── catalogue-model/           Retailer Catalogue types shared by Ingestion, Catalogue Sync and HowiBuy
+│   ├── catalogue-model-testutils/ Framework-free test utilities of the Catalogue types
+│   ├── howibuy-model/             HowiBuy domain entities
+│   ├── howibuy-model-testutils/   Framework-free test utilities of the HowiBuy types
+│   ├── howibuy-model-json/        Map the HowiBuy model to JSON with Jackson
 │   └── src
 │       └── site
 │           └── markdown
 │               └── adr           The directory to put Architecture Decision Records
-├── tealhelix-common/              Cross-microservice infrastructure. No Quarkus deps outside deployment modules.
-│   ├── tealhelix-common-types/    Shared value types (Email, UserId, ...)
-│   ├── tealhelix-common-types-json/   Map the shared value types to JSON with Jackson
-│   ├── tealhelix-common-dao-reactive/         Persistence abstraction interfaces (ReactivePersistenceContext, ...)
-│   ├── tealhelix-common-dao-reactive-hibernate/   Hibernate-Reactive implementation of the above
-│   ├── tealhelix-common-services/             Service interfaces shared across microservices (UserService, ...)
-│   ├── tealhelix-common-services-impl/        Implementations of the above
-│   ├── tealhelix-common-web/                  JAX-RS infrastructure (exception mappers, IdmRealmRoles, ...)
-│   └── tealhelix-common-testutils/            Test resources & utilities (Postgres/Keycloak Testcontainers, @InjectPostgres, ...)
+├── tealhelix-common/             Cross-microservice infrastructure. No Quarkus deps outside deployment modules.
+│   ├── tealhelix-common-types/                  Shared value types (Email, UserId, ...)
+│   ├── tealhelix-common-types-json/             Map the shared value types to JSON with Jackson
+│   ├── tealhelix-common-dao-reactive/           Persistence abstraction interfaces (ReactivePersistenceContext, ...)
+│   ├── tealhelix-common-dao-reactive-hibernate/ Hibernate-Reactive implementation of the above
+│   ├── tealhelix-common-services/               Service interfaces shared across microservices (UserService, ...)
+│   ├── tealhelix-common-services-impl/          Implementations of the above
+│   ├── tealhelix-common-web/                    JAX-RS infrastructure (exception mappers, IdmRealmRoles, ...)
+│   └── tealhelix-common-testutils/              Test resources & utilities (Postgres/Keycloak Testcontainers, @InjectPostgres, ...)
 ├── catalogue-container/          The Ingestion of Retailer Catalogues (own deployable and DB schema, see ADR 0006)
-│   ├── catalogue-dao/                      DAO interfaces
-│   ├── catalogue-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog of the Ingestion schema (IN_ tables)
-│   ├── catalogue-feeds/                    The adapter contract (FeedReader) and the adapters, one package per adapter
-│   ├── catalogue-service-interfaces/       Service interfaces
-│   ├── catalogue-services/                 Service implementations, the feed store, the processing of the Feeds
-│   ├── catalogue-jaxrs/                    JAX-RS resources
-│   ├── catalogue-testutils/                Module-specific test utilities (@WithCatalogueDb, @WithCatalogueDbAndKeycloak)
-│   └── catalogue/                          Quarkus deployable
+│   ├── catalogue-dao/                    DAO interfaces
+│   ├── catalogue-dao-hibernate-reactive/ Hibernate-Reactive DAO impls + Liquibase changelog of the Ingestion schema (IN_ tables)
+│   ├── catalogue-feeds/                  The adapter contract (FeedReader) and the adapters, one package per adapter
+│   ├── catalogue-service-interfaces/     Service interfaces
+│   ├── catalogue-services/               Service implementations, the feed store, the processing of the Feeds
+│   ├── catalogue-jaxrs/                  JAX-RS resources
+│   ├── catalogue-testutils/              Module-specific test utilities (@WithCatalogueDb, @WithCatalogueDbAndKeycloak)
+│   └── catalogue/                        Quarkus deployable
 ├── catalogue-sync-cli-container/ The Catalogue Sync, which carries the Product Changes from the Ingestion into HowiBuy
-│   ├── catalogue-sync-cli/                 Quarkus command-mode deployable, REST clients of both services, no database
-│   └── catalogue-sync-e2e/                 End-to-end tests (failsafe, `mvn verify`): the three deployables as processes
+│   ├── catalogue-sync-cli/ Quarkus command-mode deployable, REST clients of both services, no database
+│   └── catalogue-sync-e2e/ End-to-end tests (failsafe, `mvn verify`): the three deployables as processes
 ├── howibuy-container/            The HowiBuy microservice
-│   ├── howibuy-dao/              DAO interfaces
-│   ├── howibuy-dao-hibernate-reactive/   Hibernate-Reactive DAO impls + Liquibase changelog
-│   ├── howibuy-service-interfaces/       Service interfaces
-│   ├── howibuy-services/                 Service implementations
-│   ├── howibuy-jaxrs/                    JAX-RS resources, HowiBuy's own JWT authentication (JwtAuthenticationFilter, TokenHelper, ...)
-│   ├── howibuy-testutils/                Module-specific test utilities
-│   └── howibuy/                          Quarkus deployable (ties everything together)
-└── tealhelix-docker/              Dockerfiles + docker-compose
+│   ├── howibuy-dao/                    DAO interfaces
+│   ├── howibuy-dao-hibernate-reactive/ Hibernate-Reactive DAO impls + Liquibase changelog
+│   ├── howibuy-service-interfaces/     Service interfaces
+│   ├── howibuy-services/               Service implementations
+│   ├── howibuy-jaxrs/                  JAX-RS resources, HowiBuy's own JWT authentication (JwtAuthenticationFilter, TokenHelper, ...)
+│   ├── howibuy-testutils/              Module-specific test utilities
+│   └── howibuy/                        Quarkus deployable (ties everything together)
+└── tealhelix-docker/             Dockerfiles + docker-compose
     ├── tealhelix-docker-postgres/
     └── tealhelix-docker-keycloak/
 ```

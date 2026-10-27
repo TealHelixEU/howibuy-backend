@@ -77,8 +77,8 @@ The work is split into three parts with narrow contracts between them:
 
 ## Consequences
 
-- Assessment requires a Catalogue. The impersonation token HowiBuy mints carries the Retailer and
-  the Catalogue. The Catalogue belongs to the session, not to the user, so it is read from the
+- Assessment requires a Catalogue. The impersonation token HowiBuy mints carries the user and the
+  Catalogue. The Catalogue belongs to the session, not to the user, so it is read from the
   token's claims in the JAX-RS layer and handed to the services as a parameter. Users who log in
   directly (the SPA) get no assessments.
 - Callers are told apart by Keycloak realm roles (Retailer, Catalogue Sync, operator), not by

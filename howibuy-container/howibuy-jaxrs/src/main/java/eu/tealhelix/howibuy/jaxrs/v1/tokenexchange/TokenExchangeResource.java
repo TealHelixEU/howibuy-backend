@@ -2,9 +2,9 @@ package eu.tealhelix.howibuy.jaxrs.v1.tokenexchange;
 
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
+import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.TOKEN_EXCHANGE;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.TOKEN_EXCHANGE_DESC;
-import static eu.tealhelix.howibuy.jaxrs.v1.RequestValuesHelper.requiredText;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;

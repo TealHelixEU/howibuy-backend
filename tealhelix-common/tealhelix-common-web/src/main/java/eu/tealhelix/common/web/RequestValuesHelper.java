@@ -1,4 +1,4 @@
-package eu.tealhelix.howibuy.jaxrs.v1;
+package eu.tealhelix.common.web;
 
 import java.util.UUID;
 

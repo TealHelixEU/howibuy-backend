@@ -3,6 +3,7 @@ package eu.tealhelix.cataloguesync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,8 +11,8 @@ import static org.mockito.Mockito.when;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
-import java.util.List;
 import java.util.OptionalInt;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,12 +22,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import picocli.CommandLine;
 
 /**
- * The classify command classifies as many products, at the rate, its options tell, or else its configuration, and
- * prints the summary of the classification.
+ * The classify command classifies as many products, at the rate, its options tell, or else its configuration, prints
+ * each failed attempt as it fails and the summary of the classification, and exits with a code that tells whether
+ * attempts failed.
  */
 @ExtendWith(MockitoExtension.class)
 public class ClassifyCommandTest {
-	private static final ClassificationResult NOTHING = new ClassificationResult(0, 0, 0, 0, List.of(), Duration.ZERO);
+	private static final ClassificationResult NOTHING = new ClassificationResult(0, 0, 0, 0, 0, Duration.ZERO);
 
 	@Mock
 	ProductClassification productClassification;
@@ -48,14 +50,14 @@ public class ClassifyCommandTest {
 
 	@Test
 	void classifiesAsConfiguredWithoutOptions() {
-		when(productClassification.classify(50, OptionalInt.of(20))).thenReturn(NOTHING);
+		when(productClassification.classify(eq(50), eq(OptionalInt.of(20)), any())).thenReturn(NOTHING);
 
 		assertThat(sut.execute()).isZero();
 	}
 
 	@Test
 	void classifiesAsTheOptionsTell() {
-		when(productClassification.classify(7, OptionalInt.of(3))).thenReturn(NOTHING);
+		when(productClassification.classify(eq(7), eq(OptionalInt.of(3)), any())).thenReturn(NOTHING);
 
 		assertThat(sut.execute("--limit", "7", "--rate", "3")).isZero();
 	}
@@ -63,26 +65,55 @@ public class ClassifyCommandTest {
 	@Test
 	void classifiesUnthrottledWithoutARate() {
 		command.configuredRate = OptionalInt.empty();
-		when(productClassification.classify(50, OptionalInt.empty())).thenReturn(NOTHING);
+		when(productClassification.classify(eq(50), eq(OptionalInt.empty()), any())).thenReturn(NOTHING);
 
 		assertThat(sut.execute()).isZero();
 	}
 
 	@Test
-	void printsTheSummaryAndEachFailure() {
-		when(productClassification.classify(anyInt(), any())).thenReturn(new ClassificationResult(
-				4, 2, 1, 1,
-				List.of(new ClassificationFailure("p3", "el", "HTTP status 409"), new ClassificationFailure("p4", "en", "Connection refused")),
-				Duration.ofSeconds(3723)
-		));
+	void printsEachFailureAsItFailsAndTheSummary() {
+		when(productClassification.classify(anyInt(), any(), any())).thenAnswer(invocation -> {
+			Consumer<ClassificationFailure> failures = invocation.getArgument(2);
+			failures.accept(new ClassificationFailure("p3", "el", "HTTP status 409"));
+			failures.accept(new ClassificationFailure("p4", "en", "Connection refused"));
+			return new ClassificationResult(4, 2, 1, 1, 2, Duration.ofSeconds(3723));
+		});
 
 		sut.execute();
 
 		assertThat(out.toString()).isEqualTo("""
-				The classification ended, products: 4, attempts: 6, matched: 2, no match: 1, malformed replies: 1, failures: 2, elapsed: 1:02:03
 				Failed, retailerProductId: p3, language: el, error: HTTP status 409
 				Failed, retailerProductId: p4, language: en, error: Connection refused
+				The classification ended, products: 4, attempts: 6, matched: 2, no match: 1, malformed replies: 1, failures: 2, elapsed: 1:02:03
 				""");
+	}
+
+	@Test
+	void exitsWithZeroWhenNoAttemptFailedDespiteMalformedReplies() {
+		when(productClassification.classify(anyInt(), any(), any())).thenReturn(new ClassificationResult(3, 1, 1, 1, 0, Duration.ZERO));
+
+		assertThat(sut.execute()).isZero();
+	}
+
+	@Test
+	void exitsWithItsCodeWhenSomeAttemptsFailed() {
+		when(productClassification.classify(anyInt(), any(), any())).thenReturn(new ClassificationResult(2, 1, 0, 0, 1, Duration.ZERO));
+
+		assertThat(sut.execute()).isEqualTo(ClassifyCommand.SOME_ATTEMPTS_FAILED);
+	}
+
+	@Test
+	void exitsWithItsCodeWhenEveryAttemptFailed() {
+		when(productClassification.classify(anyInt(), any(), any())).thenReturn(new ClassificationResult(2, 0, 0, 0, 3, Duration.ZERO));
+
+		assertThat(sut.execute()).isEqualTo(ClassifyCommand.EVERY_ATTEMPT_FAILED);
+	}
+
+	@Test
+	void exitsWithOneWhenTheClassificationStops() {
+		when(productClassification.classify(anyInt(), any(), any())).thenThrow(new IllegalStateException("HowiBuy refused the Catalogue Sync"));
+
+		assertThat(sut.execute()).isEqualTo(CommandLine.ExitCode.SOFTWARE);
 	}
 
 	@Test
@@ -90,7 +121,7 @@ public class ClassifyCommandTest {
 		assertThat(sut.execute("--limit", "0")).isEqualTo(CommandLine.ExitCode.USAGE);
 
 		assertThat(err.toString()).startsWith("--limit must be at least 1, limit: 0");
-		verify(productClassification, never()).classify(anyInt(), any());
+		verify(productClassification, never()).classify(anyInt(), any(), any());
 	}
 
 	@Test
@@ -98,6 +129,6 @@ public class ClassifyCommandTest {
 		assertThat(sut.execute("--rate", "0")).isEqualTo(CommandLine.ExitCode.USAGE);
 
 		assertThat(err.toString()).startsWith("--rate must be at least 1, rate: 0");
-		verify(productClassification, never()).classify(anyInt(), any());
+		verify(productClassification, never()).classify(anyInt(), any(), any());
 	}
 }
