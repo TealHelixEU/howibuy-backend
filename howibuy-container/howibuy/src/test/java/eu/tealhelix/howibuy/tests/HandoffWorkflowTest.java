@@ -181,7 +181,7 @@ public class HandoffWorkflowTest {
 				.given()
 				.header("Authorization", "Bearer " + ServiceAccount.RETAILER.accessToken(keycloak))
 				.header("Content-Type", "application/json")
-				.body("{\"correlationId\": \"" + CORRELATION_ID + "\"}")
+				.body("{\"correlationId\": \"" + CORRELATION_ID + "\", \"catalogueId\": \"lime-fresh-gr\"}")
 				.when()
 				.post("/api/howibuy/v1/tokenexchange")
 				.then()

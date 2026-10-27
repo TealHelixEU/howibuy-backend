@@ -26,6 +26,9 @@ public class CorrelationIdWorkflowTest {
 	private static final long ASYNC_WAIT_SECONDS = 300;
 	private static final String CORRELATION_ID1 = "ABCDE";
 
+	/** The Catalogue of the realm's development retailer, Lime Fresh, which the {@code dev} context seeds. */
+	private static final String CATALOGUE_ID = "lime-fresh-gr";
+
 	@InjectPostgres
 	private PostgreSQLContainer postgres;
 
@@ -44,7 +47,7 @@ public class CorrelationIdWorkflowTest {
 				.given()
 				.header("Authorization", "Bearer " + serviceAccessToken)
 				.header("Content-Type", "application/json")
-				.body("{\"correlationId\": \"" + CORRELATION_ID1 + "\"}")
+				.body(tokenExchangeRequest(CORRELATION_ID1, CATALOGUE_ID))
 				.when()
 				.post("/api/howibuy/v1/tokenexchange")
 				.then()
@@ -69,10 +72,46 @@ public class CorrelationIdWorkflowTest {
 				.given()
 				.header("Authorization", "Bearer " + ServiceAccount.CATALOGUE_SYNC.accessToken(keycloak))
 				.header("Content-Type", "application/json")
-				.body("{\"correlationId\": \"" + CORRELATION_ID1 + "\"}")
+				.body(tokenExchangeRequest(CORRELATION_ID1, CATALOGUE_ID))
 				.when()
 				.post("/api/howibuy/v1/tokenexchange")
 				.then()
 				.statusCode(403);
+	}
+
+	/**
+	 * The token exchange is how a retailer has the products of one of its Catalogues assessed for a user, so it must name
+	 * that Catalogue.
+	 */
+	@Test
+	@Order(3)
+	void testTokenExchangeWithoutACatalogueIsMalformed() {
+		RestAssured
+				.given()
+				.header("Authorization", "Bearer " + ServiceAccount.RETAILER.accessToken(keycloak))
+				.header("Content-Type", "application/json")
+				.body("{\"correlationId\": \"" + CORRELATION_ID1 + "\"}")
+				.when()
+				.post("/api/howibuy/v1/tokenexchange")
+				.then()
+				.statusCode(400);
+	}
+
+	@Test
+	@Order(4)
+	void testTokenExchangeIsRefusedInACatalogueThatIsNotTheRetailers() {
+		RestAssured
+				.given()
+				.header("Authorization", "Bearer " + ServiceAccount.RETAILER.accessToken(keycloak))
+				.header("Content-Type", "application/json")
+				.body(tokenExchangeRequest(CORRELATION_ID1, "no-such-catalogue"))
+				.when()
+				.post("/api/howibuy/v1/tokenexchange")
+				.then()
+				.statusCode(403);
+	}
+
+	private static String tokenExchangeRequest(String correlationId, String catalogueId) {
+		return "{\"correlationId\": \"" + correlationId + "\", \"catalogueId\": \"" + catalogueId + "\"}";
 	}
 }

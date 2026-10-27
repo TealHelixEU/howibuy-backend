@@ -21,6 +21,8 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
@@ -56,8 +58,10 @@ public class JwtGenerationServiceImplTest {
 	private static final String USERNAME_FIELD = "preferred_username";
 	private static final String CLIENT_ID_FIELD = "client_id";
 	private static final String EMAIL_FIELD = "email";
+	private static final String CATALOGUE_FIELD = "catalogue";
 
 	private static final UserId USER_ID = new UserIdImpl("518cae6a-f2b2-4454-b74d-f2404feab2f5");
+	private static final CatalogueId CATALOGUE_ID = new CatalogueIdImpl("lime-fresh-gr");
 	private static final String USER_NAME = "bob@krusty-krab.com";
 
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 1, 1, 12, 0, 0);
@@ -107,16 +111,24 @@ public class JwtGenerationServiceImplTest {
 	@Test
 	@DisplayName("An impersonation token names the user by id and is marked as impersonated")
 	void testImpersonationTokenNamesTheUserById() throws ParseException {
-		var claims = claimsOf(sut.toTokenForImpersonation(USER_ID).accessToken());
+		var claims = claimsOf(sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID).accessToken());
 
 		assertEquals(USER_ID.asString(), claims.getStringClaim(USERID_FIELD));
 		assertTrue(sut.isImpersonated(claims));
 	}
 
 	@Test
+	@DisplayName("An impersonation token names the Catalogue the retailer acts for the user in")
+	void testImpersonationTokenNamesTheCatalogue() throws ParseException {
+		var claims = claimsOf(sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID).accessToken());
+
+		assertEquals(CATALOGUE_ID.asString(), claims.getStringClaim(CATALOGUE_FIELD));
+	}
+
+	@Test
 	@DisplayName("An impersonation token says nothing about the user beyond the id it is built from")
 	void testImpersonationTokenCarriesNoUserName() throws ParseException {
-		var claims = claimsOf(sut.toTokenForImpersonation(USER_ID).accessToken());
+		var claims = claimsOf(sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID).accessToken());
 
 		assertFalse(claims.getClaims().containsValue(USER_NAME));
 	}
@@ -124,7 +136,7 @@ public class JwtGenerationServiceImplTest {
 	@Test
 	@DisplayName("An impersonation token expires after the configured session time")
 	void testImpersonationTokenExpiresAfterTheSessionTime() throws ParseException {
-		var result = sut.toTokenForImpersonation(USER_ID);
+		var result = sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID);
 
 		assertEquals(SESSION_TIME_SECONDS, result.expiresInSeconds());
 		assertEquals(secondsFromNow(SESSION_TIME_SECONDS), claimsOf(result.accessToken()).getExpirationTime());
@@ -133,7 +145,7 @@ public class JwtGenerationServiceImplTest {
 	@Test
 	@DisplayName("An impersonation token stands for no handoff session and cannot be renewed")
 	void testImpersonationTokenCannotBeRenewed() throws ParseException {
-		var claims = claimsOf(sut.toTokenForImpersonation(USER_ID).accessToken());
+		var claims = claimsOf(sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID).accessToken());
 
 		assertFalse(sut.isHandoff(claims));
 		assertNull(sut.getHandoffExpiration(claims));
@@ -143,7 +155,7 @@ public class JwtGenerationServiceImplTest {
 	@Test
 	@DisplayName("A freshly minted impersonation token passes validation and resolves the user it names")
 	void testMintedTokenResolvesTheUserItNames() throws JOSEException {
-		var user = validate(sut.toTokenForImpersonation(USER_ID).accessToken());
+		var user = validate(sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID).accessToken());
 
 		assertEquals(USER_ID.asString(), user.getId().asString());
 	}
@@ -160,6 +172,14 @@ public class JwtGenerationServiceImplTest {
 		assertEquals(USER_ID.asString(), claims.getStringClaim(USERID_FIELD));
 		assertTrue(sut.isImpersonated(claims));
 		assertTrue(sut.isHandoff(claims));
+	}
+
+	@Test
+	@DisplayName("A handoff token names no Catalogue, the single-page application needs only the user")
+	void testHandoffTokenNamesNoCatalogue() throws ParseException {
+		var claims = claimsOf(sut.toTokenForHandoff(USER_ID).accessToken());
+
+		assertNull(claims.getStringClaim(CATALOGUE_FIELD));
 	}
 
 	@Test

@@ -15,6 +15,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.util.DateUtils;
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.types.UserId;
@@ -32,6 +33,11 @@ public class JwtGenerationServiceImpl implements JwtGenerationService, JwtClaims
 	private static final Logger LOG = LoggerFactory.getLogger(JwtGenerationServiceImpl.class);
 
 	private static final String CLAIM_IMPERSONATED = "impersonated";
+
+	/**
+	 * Names the Catalogue of the retailer that a token of the token exchange acts in, which a handoff token never does.
+	 */
+	private static final String CLAIM_CATALOGUE = "catalogue";
 
 	/**
 	 * Marks a token as belonging to a session that a retailer handed over to the single-page application, which is the
@@ -76,10 +82,13 @@ public class JwtGenerationServiceImpl implements JwtGenerationService, JwtClaims
 	}
 
 	@Override
-	public IssuedToken toTokenForImpersonation(UserId userId) {
+	public IssuedToken toTokenForImpersonation(UserId userId, CatalogueId catalogueId) {
 		var issuedAt = dateTimeService.currentTimeMillis();
 		var expiration = issuedAt + millis(tokenAuthenticationConfig.getJwtSessionTimeInSeconds());
-		return sign(claimsNaming(userId.asString(), expiration).build(), issuedAt, expiration);
+		var claims = claimsNaming(userId.asString(), expiration)
+				.claim(CLAIM_CATALOGUE, catalogueId.asString())
+				.build();
+		return sign(claims, issuedAt, expiration);
 	}
 
 	@Override

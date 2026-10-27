@@ -142,7 +142,7 @@ public class CompassWorkflowTest {
 		return given()
 				.header("Authorization", "Bearer " + serviceToken)
 				.header("Content-Type", "application/json")
-				.body("{\"correlationId\": \"SFC-WORKFLOW\"}")
+				.body("{\"correlationId\": \"SFC-WORKFLOW\", \"catalogueId\": \"lime-fresh-gr\"}")
 				.when().post(ROOT + "/tokenexchange")
 				.then().statusCode(200).contentType(JSON).extract().path("access_token");
 	}

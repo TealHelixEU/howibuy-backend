@@ -1,5 +1,6 @@
 package eu.tealhelix.howibuy.jaxrs.authentication.jwt;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.common.v1.types.UserId;
 
 /**
@@ -11,10 +12,11 @@ public interface JwtGenerationService {
 	 * Mint the token a retailer uses to act for one of its users, as the token exchange hands it out. Such a token lasts
 	 * a whole session time and cannot be renewed.
 	 *
-	 * @param userId The user the token stands for
+	 * @param userId      The user the token stands for
+	 * @param catalogueId The Catalogue of the retailer that the token acts in
 	 * @return The token
 	 */
-	IssuedToken toTokenForImpersonation(UserId userId);
+	IssuedToken toTokenForImpersonation(UserId userId, CatalogueId catalogueId);
 
 	/**
 	 * Mint the first token of a session a retailer hands over to the single-page application. Such a token is
