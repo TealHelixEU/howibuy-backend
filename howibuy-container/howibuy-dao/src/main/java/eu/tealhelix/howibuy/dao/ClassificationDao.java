@@ -1,10 +1,14 @@
 package eu.tealhelix.howibuy.dao;
 
 import java.util.List;
+import java.util.Set;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.howibuy.services.model.ProductClassificationInput;
+import eu.tealhelix.howibuy.services.model.ProductToAssess;
 import eu.tealhelix.howibuy.services.model.ProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
@@ -34,6 +38,18 @@ public interface ClassificationDao {
 	 * @return The products, the one whose Classification was resolved longest ago first
 	 */
 	Uni<List<ClassificationToReview>> findToReview(ReactivePersistenceContext em, int limit);
+
+	/**
+	 * Find the products of the Retailer of a Catalogue by their keys, with their Classifications. A product is found
+	 * whatever its Listings say, even when it is not listed in this Catalogue at all: the Classification belongs to the
+	 * product.
+	 *
+	 * @param em          The persistence context
+	 * @param catalogueId The Catalogue
+	 * @param productKeys The keys of the products
+	 * @return The products found, in no particular order; a key that names no product of the Retailer has none
+	 */
+	Uni<List<ProductToAssess>> findProductsToAssess(ReactivePersistenceContext em, CatalogueId catalogueId, Set<ProductKey> productKeys);
 
 	/**
 	 * Find a product to record a Classification Attempt of, and lock its row until the transaction ends, so that the

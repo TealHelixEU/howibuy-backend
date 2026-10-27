@@ -15,9 +15,14 @@ import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.Tuple;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.ProductKey;
+import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.howibuy.dao.ClassificationDao;
+import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity;
+import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity_;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity_;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationEntity;
@@ -28,8 +33,10 @@ import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity_;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity_;
 import eu.tealhelix.howibuy.services.model.ImmutableProductClassificationInput;
+import eu.tealhelix.howibuy.services.model.ImmutableProductToAssess;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
 import eu.tealhelix.howibuy.services.model.ProductClassificationInput;
+import eu.tealhelix.howibuy.services.model.ProductToAssess;
 import eu.tealhelix.howibuy.services.model.ProductToClassify;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
@@ -107,6 +114,33 @@ public class ClassificationDaoImpl implements ClassificationDao {
 						.map(entity -> toClassificationToReview(entity, names.getOrDefault(entity.getRetailerProductId(), Map.of()), attempts.getOrDefault(entity.getRetailerProductId(), List.of())))
 						.toList()
 		);
+	}
+
+	/**
+	 * One query finds them all, joining the products to the Catalogue through their Retailer; their Listings are not
+	 * read.
+	 */
+	@Override
+	public Uni<List<ProductToAssess>> findProductsToAssess(ReactivePersistenceContext em, CatalogueId catalogueId, Set<ProductKey> productKeys) {
+		if (productKeys.isEmpty()) return Uni.createFrom().item(List.of());
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createTupleQuery();
+		var catalogue = q.from(CatalogueEntity.class);
+		var product = catalogue.join(RetailerProductEntity.class);
+		product.on(cb.equal(product.get(RetailerProductEntity_.retailerId), catalogue.get(CatalogueEntity_.retailerId)));
+		var classification = product.join(ClassificationEntity.class, LEFT);
+		classification.on(cb.equal(classification.get(ClassificationEntity_.retailerProductId), product.get(RetailerProductEntity_.id)));
+		var id = product.get(RetailerProductEntity_.id);
+		var productKey = product.get(RetailerProductEntity_.productKey);
+		var inputHash = product.get(RetailerProductEntity_.inputHash);
+		q.select(cb.tuple(id, productKey, inputHash, classification));
+		q.where(
+				cb.equal(catalogue.get(CatalogueEntity_.id), catalogueId.asString()),
+				productKey.in(productKeys.stream().map(ProductKey::asString).toList())
+		);
+		return em.createQuery(q).getResultList().map(rows -> rows.stream()
+				.map(row -> toProductToAssess(row.get(id), row.get(productKey), row.get(inputHash), row.get(classification)))
+				.toList());
 	}
 
 	@Override
@@ -320,6 +354,18 @@ public class ClassificationDaoImpl implements ClassificationDao {
 				.names(names)
 				.classification(toClassification(entity))
 				.attempts(attempts)
+				.build();
+	}
+
+	/**
+	 * The product is pending by the same rule as {@link #findPending}.
+	 */
+	private static ProductToAssess toProductToAssess(UUID id, String productKey, String inputHash, ClassificationEntity classification) {
+		return ImmutableProductToAssess.builder()
+				.id(new RetailerProductIdImpl(id.toString()))
+				.productKey(new ProductKeyImpl(productKey))
+				.classification(classification != null ? toClassification(classification) : null)
+				.isPending(classification == null || !classification.getInputHash().equals(inputHash) || classification.isReopened())
 				.build();
 	}
 

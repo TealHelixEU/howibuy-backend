@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,9 @@ import java.util.stream.IntStream;
 
 import eu.tealhelix.catalogue.v1.model.ImmutableListing;
 import eu.tealhelix.catalogue.v1.model.ImmutableProductChange;
+import eu.tealhelix.catalogue.v1.model.Listing;
 import eu.tealhelix.catalogue.v1.model.ProductChange;
+import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -43,7 +46,9 @@ import eu.tealhelix.howibuy.dao.jpa.values.AnimalWelfareImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.EnvironmentalImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.SocialImpact;
 import eu.tealhelix.howibuy.services.model.ImmutableProductClassificationInput;
+import eu.tealhelix.howibuy.services.model.ImmutableProductToAssess;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
+import eu.tealhelix.howibuy.services.model.ProductToAssess;
 import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
 import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
@@ -71,7 +76,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 /**
  * A product is pending while it has no Classification, its Classification was resolved from another input hash than
  * its current one, or its Classification was reopened. Recording an attempt locks the product, and stores the attempt
- * and the Classification.
+ * and the Classification. The assessment finds the products of a Catalogue's Retailer by their keys, with their
+ * Classifications.
  */
 @Testcontainers
 public class ClassificationDaoImplTest {
@@ -79,6 +85,9 @@ public class ClassificationDaoImplTest {
 
 	private static final UUID RETAILER = UUID.fromString("6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11");
 	private static final String CATALOGUE = "test-gr";
+	private static final String CATALOGUE_CY = "test-cy";
+	private static final UUID OTHER_RETAILER = UUID.fromString("0c5d2e7a-3b41-4f6e-8a90-2d7b1c4e5f62");
+	private static final String OTHER_RETAILERS_CATALOGUE = "other-gr";
 	private static final ArchetypeProductId YOGHURT = new ArchetypeProductIdImpl("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a01");
 	private static final LocalDateTime T0 = LocalDateTime.of(2026, 10, 22, 12, 0);
 
@@ -102,12 +111,13 @@ public class ClassificationDaoImplTest {
 		retailer.setName("Test Retailer");
 		retailer.setActive(true);
 		retailer.setClassificationLanguage("el");
-		var catalogue = new CatalogueEntity();
-		catalogue.setId(CATALOGUE);
-		catalogue.setRetailerId(RETAILER);
-		catalogue.setCountry("GR");
-		catalogue.setPrimaryLanguage("el");
-		catalogue.setActive(true);
+		var catalogue = catalogue(CATALOGUE, RETAILER, "GR");
+		var catalogueCy = catalogue(CATALOGUE_CY, RETAILER, "CY");
+		var otherRetailer = new RetailerEntity();
+		otherRetailer.setId(OTHER_RETAILER);
+		otherRetailer.setName("Other Retailer");
+		otherRetailer.setActive(true);
+		var otherRetailersCatalogue = catalogue(OTHER_RETAILERS_CATALOGUE, OTHER_RETAILER, "GR");
 		var category = new ArchetypeCategoryEntity();
 		category.setId(UUID.fromString("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a00"));
 		category.setLevel((short) 3);
@@ -121,7 +131,7 @@ public class ClassificationDaoImplTest {
 		archetype.setSocialImpact(new SocialImpact());
 		archetype.setAnimalWelfareImpact(new AnimalWelfareImpact());
 		archetype.setNutriScore("Nutriscore_A");
-		sessionFactory.withTransaction(session -> session.persistAll(retailer, catalogue, category).chain(() -> session.persist(archetype)))
+		sessionFactory.withTransaction(session -> session.persistAll(retailer, catalogue, catalogueCy, otherRetailer, otherRetailersCatalogue, category).chain(() -> session.persist(archetype)))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
@@ -500,6 +510,126 @@ public class ClassificationDaoImplTest {
 		assertEquals(List.of(), findToReview(sessionFactory, 10));
 	}
 
+	@Test
+	void findsTheProductsOfTheCataloguesRetailerByKeyWithTheirClassifications(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")),
+				product("feta", 2, "h2", Map.of("el", "Φέτα")),
+				product("honey", 3, "h3", Map.of("el", "Μέλι")));
+		var ids = idsByInputHash(sessionFactory);
+		var yoghurt = classification(YOGHURT, "h1", true, 0);
+		var noArchetype = classification(null, "h3", false, 0);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), yoghurt, attempt("el", Classifier.EXPERT, YOGHURT, "h1", 0)));
+		fixtures.addAll(review(ids.get("h3"), noArchetype, attempt("el", Classifier.EXPERT, null, "h3", 0)));
+		persist(sessionFactory, fixtures);
+
+		var products = findProductsToAssess(sessionFactory, CATALOGUE, "yoghurt", "feta", "honey", "unknown");
+
+		assertEquals(Set.of(
+				productToAssess(ids.get("h1"), "yoghurt", yoghurt, false),
+				productToAssess(ids.get("h2"), "feta", null, true),
+				productToAssess(ids.get("h3"), "honey", noArchetype, false)
+		), Set.copyOf(products));
+	}
+
+	@Test
+	void findsAProductToAssessWhetherItsListingIsInactiveOrInAnotherCatalogue(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				listedIn(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")), listing(CATALOGUE, false)),
+				listedIn(product("feta", 2, "h2", Map.of("el", "Φέτα")), listing(CATALOGUE_CY, true)));
+
+		var products = findProductsToAssess(sessionFactory, CATALOGUE, "yoghurt", "feta");
+
+		assertEquals(Set.of("yoghurt", "feta"), products.stream().map(product -> product.getProductKey().asString()).collect(Collectors.toSet()));
+	}
+
+	@Test
+	void aProductOfAnotherRetailerIsNotFoundToAssess(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, ImmutableProductChange.builder()
+				.from(listedIn(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")), listing(OTHER_RETAILERS_CATALOGUE, true)))
+				.retailerId(new GenericRetailerId(OTHER_RETAILER.toString()))
+				.build());
+
+		assertEquals(List.of(), findProductsToAssess(sessionFactory, CATALOGUE, "yoghurt"));
+	}
+
+	@Test
+	void anUnknownCatalogueHasNoProductsToAssess(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+
+		assertEquals(List.of(), findProductsToAssess(sessionFactory, "no-such-catalogue", "yoghurt"));
+	}
+
+	@Test
+	void noKeysFindNoProductsToAssess(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+
+		assertEquals(List.of(), findProductsToAssess(sessionFactory, CATALOGUE));
+	}
+
+	/**
+	 * The product keeps the Classification it had, but waits to be classified again.
+	 */
+	@Test
+	void aProductToAssessThatChangedOrWhoseClassificationWasReopenedIsPending(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")),
+				product("feta", 2, "h2", Map.of("el", "Φέτα")));
+		var ids = idsByInputHash(sessionFactory);
+		var yoghurt = classification(Classifier.LLM, YOGHURT, "h1", false, 0);
+		var feta = classification(Classifier.LLM, YOGHURT, "h2", false, 0);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), yoghurt, attempt("el", Classifier.LLM, "v1", YOGHURT, "h1", 0)));
+		fixtures.addAll(review(ids.get("h2"), feta, attempt("el", Classifier.LLM, "v2", YOGHURT, "h2", 0)));
+		persist(sessionFactory, fixtures);
+
+		apply(sessionFactory, product("yoghurt", 3, "h3", Map.of("el", "Γιαούρτι στραγγιστό")));
+		inTransaction(sessionFactory, tx -> new ClassificationDaoImpl().reopen(tx, Classifier.LLM, "v2"));
+
+		var products = findProductsToAssess(sessionFactory, CATALOGUE, "yoghurt", "feta");
+
+		assertEquals(Set.of(
+				productToAssess(ids.get("h1"), "yoghurt", yoghurt, true),
+				productToAssess(ids.get("h2"), "feta", feta, true)
+		), Set.copyOf(products));
+	}
+
+	/**
+	 * As many products as a batch assessment may name.
+	 */
+	@Test
+	void findsManyProductsToAssessAtOnce(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, IntStream.rangeClosed(1, 1000)
+				.mapToObj(i -> product("product-" + i, i, "h" + i, Map.of("el", "Προϊόν " + i)))
+				.toArray(ProductChange[]::new));
+
+		var products = findProductsToAssess(sessionFactory, CATALOGUE, IntStream.rangeClosed(1, 1000).mapToObj(i -> "product-" + i).toArray(String[]::new));
+
+		assertEquals(1000, products.size());
+	}
+
+	private static List<ProductToAssess> findProductsToAssess(Mutiny.SessionFactory sessionFactory, String catalogueId, String... productKeys) {
+		var sut = new ClassificationDaoImpl();
+		Set<ProductKey> keys = Arrays.stream(productKeys).map(ProductKeyImpl::new).collect(Collectors.toSet());
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.findProductsToAssess(em, new CatalogueIdImpl(catalogueId), keys))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static ProductToAssess productToAssess(RetailerProductId id, String productKey, Classification classification, boolean pending) {
+		return ImmutableProductToAssess.builder()
+				.id(id)
+				.productKey(new ProductKeyImpl(productKey))
+				.classification(classification)
+				.isPending(pending)
+				.build();
+	}
+
+	private static Map<String, RetailerProductId> idsByInputHash(Mutiny.SessionFactory sessionFactory) {
+		return findPending(sessionFactory, 10).stream().collect(Collectors.toMap(PendingProduct::getInputHash, PendingProduct::getId));
+	}
+
 	private static List<PendingProduct> findPending(Mutiny.SessionFactory sessionFactory, int limit) {
 		var sut = new ClassificationDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
@@ -647,6 +777,29 @@ public class ClassificationDaoImplTest {
 						.isActive(true)
 						.build())
 				.build();
+	}
+
+	private static ProductChange listedIn(ProductChange change, Listing listing) {
+		return ImmutableProductChange.builder().from(change).listings(List.of(listing)).build();
+	}
+
+	private static Listing listing(String catalogueId, boolean active) {
+		return ImmutableListing.builder()
+				.catalogueId(new CatalogueIdImpl(catalogueId))
+				.price(new BigDecimal("1.99"))
+				.currency(Currency.getInstance("EUR"))
+				.isActive(active)
+				.build();
+	}
+
+	private static CatalogueEntity catalogue(String id, UUID retailerId, String country) {
+		var catalogue = new CatalogueEntity();
+		catalogue.setId(id);
+		catalogue.setRetailerId(retailerId);
+		catalogue.setCountry(country);
+		catalogue.setPrimaryLanguage("el");
+		catalogue.setActive(true);
+		return catalogue;
 	}
 
 	private static ProductChange removed(String productKey, long changeSequence) {
