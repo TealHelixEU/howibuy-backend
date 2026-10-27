@@ -3,6 +3,7 @@ package eu.tealhelix.howibuy.jaxrs.authentication.jwt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -32,6 +33,7 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.util.DateUtils;
+import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.EmailAddress;
@@ -50,7 +52,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests the validation {@link TokenHelperImpl} applies before it maps a token onto a {@code User}.
+ * Tests the validation {@link TokenHelperImpl} applies before it maps a token onto a {@code User} and the Catalogue it
+ * names.
  * <p>
  * Two token families reach {@code processToken}: tokens the IDM issued (RS256, key id served by the IDM's JWK set)
  * and tokens this application issued itself (HS256, the configured internal key id). The families carry different
@@ -75,9 +78,11 @@ public class TokenHelperImplTest {
 	private static final String CLIENT_ID_FIELD = "client_id";
 	private static final String EMAIL_FIELD = "email";
 	private static final String REALM_ACCESS_CLAIM = "realm_access";
+	private static final String CATALOGUE_CLAIM = "catalogue";
 
 	private static final String IDM_SUB = "2e788895-0503-4777-a7bd-24e5d61db5b1";
 	private static final String INTERNAL_USER_ID = "518cae6a-f2b2-4454-b74d-f2404feab2f5";
+	private static final String CATALOGUE_ID = "lime-fresh-gr";
 	private static final String USER_NAME = "bob@krusty-krab.com";
 	private static final EmailAddress USER_EMAIL = EmailAddress.of("bob@krusty-krab.com");
 	private static final EmailAddress ANOTHER_EMAIL = EmailAddress.of("plankton@chum-bucket.com");
@@ -194,6 +199,13 @@ public class TokenHelperImplTest {
 	}
 
 	@Test
+	@DisplayName("A token issued by the IDM but marked as impersonated is rejected, only this application impersonates")
+	void testIdmTokenMarkedAsImpersonatedIsRejected() throws JOSEException {
+		var token = signWithIdmKey(idmUserClaims().claim("impersonated", true).build());
+		assertRejected(token);
+	}
+
+	@Test
 	@DisplayName("A valid user access token resolves the user through the IDM id")
 	void testValidUserTokenIsAccepted() throws JOSEException {
 		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), USER_NAME, USER_EMAIL, false, true, Set.of());
@@ -278,6 +290,14 @@ public class TokenHelperImplTest {
 	}
 
 	@Test
+	@DisplayName("A token issued by the IDM names no Catalogue, whatever Catalogue claim it carries")
+	void testIdmTokenNamesNoCatalogue() throws JOSEException {
+		var authentication = authenticate(signWithIdmKey(idmServiceClaims().claim(CATALOGUE_CLAIM, CATALOGUE_ID).build()));
+
+		assertNull(authentication.catalogueId());
+	}
+
+	@Test
 	@DisplayName("A token that carries no realm roles grants no roles")
 	void testTokenWithoutRealmRolesGrantsNoRoles() throws JOSEException {
 		var user = await(signWithIdmKey(idmServiceClaims().build()));
@@ -338,6 +358,31 @@ public class TokenHelperImplTest {
 	}
 
 	@Test
+	@DisplayName("An impersonation token of the token exchange names the Catalogue that its requests act in")
+	void testImpersonationTokenNamesTheCatalogue() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, true, Set.of());
+		when(userService.requireUserWithId(any(), any()))
+				.thenReturn(Uni.createFrom().item(dbUser));
+
+		var authentication = authenticate(signWithInternalKey(impersonationClaims().claim(CATALOGUE_CLAIM, CATALOGUE_ID).build()));
+
+		assertEquals(new CatalogueIdImpl(CATALOGUE_ID), authentication.catalogueId());
+		assertEquals(INTERNAL_USER_ID, authentication.user().getId().asString());
+	}
+
+	@Test
+	@DisplayName("An impersonation token whose Catalogue claim is not text names no Catalogue")
+	void testImpersonationTokenWithACatalogueClaimOfAnotherShapeNamesNoCatalogue() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, true, Set.of());
+		when(userService.requireUserWithId(any(), any()))
+				.thenReturn(Uni.createFrom().item(dbUser));
+
+		var authentication = authenticate(signWithInternalKey(impersonationClaims().claim(CATALOGUE_CLAIM, List.of(CATALOGUE_ID)).build()));
+
+		assertNull(authentication.catalogueId());
+	}
+
+	@Test
 	@DisplayName("A token signed with the internal key but not marked as impersonated is rejected")
 	void testInternalTokenWithoutImpersonationMarkerIsRejected() throws JOSEException {
 		var claims = new JWTClaimsSet.Builder()
@@ -366,6 +411,18 @@ public class TokenHelperImplTest {
 		var user = await(signWithInternalKey(handoffClaims().build()));
 
 		assertEquals(INTERNAL_USER_ID, user.getId().asString());
+	}
+
+	@Test
+	@DisplayName("A handoff token names no Catalogue, the single-page application needs only the user")
+	void testHandoffTokenNamesNoCatalogue() throws JOSEException {
+		var dbUser = new UserImpl(new UserIdImpl(INTERNAL_USER_ID), null, null, false, true, Set.of());
+		when(userService.requireUserWithId(any(), any()))
+				.thenReturn(Uni.createFrom().item(dbUser));
+
+		var authentication = authenticate(signWithInternalKey(handoffClaims().build()));
+
+		assertNull(authentication.catalogueId());
 	}
 
 	@Test
@@ -506,6 +563,10 @@ public class TokenHelperImplTest {
 	}
 
 	private User await(String token) {
+		return authenticate(token).user();
+	}
+
+	private Authentication authenticate(String token) {
 		return sut.processToken(token).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 

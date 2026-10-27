@@ -98,13 +98,13 @@ public class TokenHelperImpl implements TokenHelper {
 	}
 
 	/**
-	 * Process the token to create a {@link User}.
+	 * Process the token to create a {@link User} and read the Catalogue that its requests act in.
 	 *
 	 * @param token The token, cannot be {@code null}
-	 * @return The user, asynchronously
+	 * @return The user and the Catalogue, asynchronously
 	 */
 	@Override
-	public Uni<User> processToken(String token) {
+	public Uni<Authentication> processToken(String token) {
 		return validatedClaims(token)
 				.flatMap(jwtClaimsSet -> {
 					var clientIdObj = jwtClaimsSet.getClaim(tokenAuthenticationConfig.getClientIdFieldInJwt());
@@ -117,16 +117,18 @@ public class TokenHelperImpl implements TokenHelper {
 
 					if (serviceFlag) {
 						var userImpl = new UserImpl(new UserIdImpl(userIdFromIdm), userName, email, false, false, realmRolesOf(jwtClaimsSet));
-						return Uni.createFrom().item(userImpl);
+						return Uni.createFrom().item(new Authentication(userImpl, null));
 					} else {
 						if (jwtClaimsService.isImpersonated(jwtClaimsSet)) {
+							var catalogueId = jwtClaimsService.getCatalogue(jwtClaimsSet);
 							return userService.requireUserWithId(new UserIdImpl(userIdFromIdm), userName)
 									.onFailure(NotFoundException.class)
-									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm));
+									.transform(nfe -> logAndMapToNotAuthorizedException(nfe, userIdFromIdm))
+									.map(user -> new Authentication(user, catalogueId));
 						} else {
 							var roles = realmRolesOf(jwtClaimsSet);
 							return userService.findOrCreateUserFromValidIdmId(userIdFromIdm, userName, email)
-									.map(user -> withRoles(user, roles));
+									.map(user -> new Authentication(withRoles(user, roles), null));
 						}
 					}
 				});
@@ -213,9 +215,11 @@ public class TokenHelperImpl implements TokenHelper {
 
 	/**
 	 * Applies the claim validation of the token's family. Both families must name a user and must not have expired;
-	 * beyond that, a token from the IDM must come from the expected realm and must be an access token, while a token
-	 * this application issued must carry the impersonation marker that both of its uses put there, and, where it belongs
-	 * to a session handed over to the single-page application, must name an end of that session that has not passed.
+	 * beyond that, a token from the IDM must come from the expected realm, must be an access token and must not carry the
+	 * impersonation marker, while a token this application issued must carry that marker, which both of its uses put
+	 * there, and, where it belongs to a session handed over to the single-page application, must name an end of that
+	 * session that has not passed. The marker is thus what tells the claims of the two families apart once their
+	 * signatures have been checked, and what entitles a token to name the user by internal id and to name a Catalogue.
 	 * <p>
 	 * A token the IDM issued for a user must also come from a client that users may reach this application through,
 	 * because such a token carries everything a user is allowed to do. A token the IDM issued to a client acting on its
@@ -234,6 +238,7 @@ public class TokenHelperImpl implements TokenHelper {
 			} else {
 				requireExpectedIssuer(jwtClaimsSet);
 				requireAccessTokenType(jwtClaimsSet);
+				requireNoImpersonationMarker(jwtClaimsSet);
 				if (!isServiceToken(jwtClaimsSet)) {
 					requireAllowedUserClient(jwtClaimsSet);
 				}
@@ -284,6 +289,12 @@ public class TokenHelperImpl implements TokenHelper {
 	private void requireImpersonationMarker(JWTClaimsSet jwtClaimsSet) {
 		if (!jwtClaimsService.isImpersonated(jwtClaimsSet)) {
 			throw new TokenHelperException("JWT signed with the internal key is not marked as impersonated");
+		}
+	}
+
+	private void requireNoImpersonationMarker(JWTClaimsSet jwtClaimsSet) {
+		if (jwtClaimsService.isImpersonated(jwtClaimsSet)) {
+			throw new TokenHelperException("JWT issued by the IDM is marked as impersonated");
 		}
 	}
 

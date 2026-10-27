@@ -3,6 +3,7 @@ package eu.tealhelix.howibuy.jaxrs.authentication.jwt;
 import java.util.Date;
 
 import com.nimbusds.jwt.JWTClaimsSet;
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 
 /**
  * What the validation of a token this application signed needs to read from its claims, together with the renewal that
@@ -37,6 +38,15 @@ interface JwtClaimsService {
 	 * @return The end of the session, or {@code null} if the token does not name one readably
 	 */
 	Date getHandoffExpiration(JWTClaimsSet jwtClaimsSet);
+
+	/**
+	 * The Catalogue of the retailer that the requests made with the token act in, which only a token of the token
+	 * exchange names.
+	 *
+	 * @param jwtClaimsSet The claims of the token
+	 * @return The Catalogue, or {@code null} if the token does not name one readably
+	 */
+	CatalogueId getCatalogue(JWTClaimsSet jwtClaimsSet);
 
 	/**
 	 * Mint the next token of the handoff session that the given claims belong to. The new token names the same user and

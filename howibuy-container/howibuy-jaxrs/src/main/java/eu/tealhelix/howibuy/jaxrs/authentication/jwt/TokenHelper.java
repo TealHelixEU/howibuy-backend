@@ -10,12 +10,12 @@ import io.smallrye.mutiny.Uni;
  */
 public interface TokenHelper {
 	/**
-	 * Process the token to create a {@link User}.
+	 * Process the token to create a {@link User} and read the Catalogue that its requests act in.
 	 *
 	 * @param token The token, cannot be {@code null}
-	 * @return The user, asynchronously
+	 * @return The user and the Catalogue, asynchronously
 	 */
-	Uni<User> processToken(String token);
+	Uni<Authentication> processToken(String token);
 
 	/**
 	 * Mint the next token of the handed-over session that the given token belongs to. The token presented has to be one

@@ -5,12 +5,13 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response;
 
 import eu.tealhelix.howibuy.jaxrs.authentication.JaxRsSecurityContextImpl;
+import eu.tealhelix.howibuy.jaxrs.authentication.RequestCatalogue;
 import io.smallrye.mutiny.Uni;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 /**
  * Extract the user info from the request and set the JAX-RS {@code SecurityContext}
- * of this application.
+ * of this application, together with the {@link RequestCatalogue} that the token names.
  * <p>
  * <strong>Warning:</strong> the filter is declared with {@code nonBlocking = true} because it performs
  * Hibernate Reactive I/O (via {@link TokenHelper#processToken(String)}), which requires execution on a
@@ -34,9 +35,10 @@ public class JwtAuthenticationFilter {
 		if (token != null) {
 			return tokenHelper.processToken(token)
 					.onItem()
-					.invoke(user -> {
-						var securityCtx = new JaxRsSecurityContextImpl(user, requestContext.getSecurityContext().isSecure(), "BEARER");
+					.invoke(authentication -> {
+						var securityCtx = new JaxRsSecurityContextImpl(authentication.user(), requestContext.getSecurityContext().isSecure(), "BEARER");
 						requestContext.setSecurityContext(securityCtx);
+						RequestCatalogue.set(requestContext, authentication.catalogueId());
 					})
 					.replaceWithVoid()
 					.onFailure(TokenHelperException.class)

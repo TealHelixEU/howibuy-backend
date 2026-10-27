@@ -26,7 +26,6 @@ import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.services.generic.UserService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
-import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
@@ -153,11 +152,12 @@ public class JwtGenerationServiceImplTest {
 	}
 
 	@Test
-	@DisplayName("A freshly minted impersonation token passes validation and resolves the user it names")
-	void testMintedTokenResolvesTheUserItNames() throws JOSEException {
-		var user = validate(sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID).accessToken());
+	@DisplayName("A freshly minted impersonation token passes validation and resolves the user and the Catalogue it names")
+	void testMintedTokenResolvesTheUserAndTheCatalogueItNames() throws JOSEException {
+		var authentication = validate(sut.toTokenForImpersonation(USER_ID, CATALOGUE_ID).accessToken());
 
-		assertEquals(USER_ID.asString(), user.getId().asString());
+		assertEquals(USER_ID.asString(), authentication.user().getId().asString());
+		assertEquals(CATALOGUE_ID, authentication.catalogueId());
 	}
 
 	// ----------------------------------------------------------------------------------------------
@@ -242,9 +242,9 @@ public class JwtGenerationServiceImplTest {
 	@Test
 	@DisplayName("A freshly minted handoff token passes validation and resolves the user it names")
 	void testMintedHandoffTokenResolvesTheUserItNames() throws JOSEException {
-		var user = validate(sut.toTokenForHandoff(USER_ID).accessToken());
+		var authentication = validate(sut.toTokenForHandoff(USER_ID).accessToken());
 
-		assertEquals(USER_ID.asString(), user.getId().asString());
+		assertEquals(USER_ID.asString(), authentication.user().getId().asString());
 	}
 
 	// ----------------------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ public class JwtGenerationServiceImplTest {
 	 * Put the token through the validation it will meet on an incoming request, which is the other half of the agreement
 	 * on where a minted token names things.
 	 */
-	private User validate(String token) throws JOSEException {
+	private Authentication validate(String token) throws JOSEException {
 		var dbUser = new UserImpl(USER_ID, null, null, false, true, Set.of());
 		lenient().when(userService.requireUserWithId(any(), any())).thenReturn(Uni.createFrom().item(dbUser));
 		lenient().when(jwsVerifierMapper.get(INTERNAL_KID)).thenReturn(new MACVerifier(secretBytes()));

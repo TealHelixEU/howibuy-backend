@@ -16,6 +16,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.util.DateUtils;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.types.UserId;
@@ -140,8 +141,8 @@ public class JwtGenerationServiceImpl implements JwtGenerationService, JwtClaims
 
 	/**
 	 * The token names the user by id and says nothing else about them: the id is all that the validation of an
-	 * impersonation token reads, and the token is held by a retailer, so anything more would be telling the retailer
-	 * something it did not ask for.
+	 * impersonation token reads of the user, and the token is held by a retailer, so anything more would be telling the
+	 * retailer something it did not ask for.
 	 */
 	private JWTClaimsSet.Builder claimsNaming(String userId, long expiration) {
 		return new JWTClaimsSet.Builder()
@@ -184,6 +185,17 @@ public class JwtGenerationServiceImpl implements JwtGenerationService, JwtClaims
 		} catch (ParseException e) {
 			LOG.warn("A token names the end of its handoff session in a form that cannot be read: {}",
 					jwtClaimsSet.getClaim(CLAIM_HANDOFF_EXPIRATION));
+			return null;
+		}
+	}
+
+	@Override
+	public CatalogueId getCatalogue(JWTClaimsSet jwtClaimsSet) {
+		try {
+			var catalogueId = jwtClaimsSet.getStringClaim(CLAIM_CATALOGUE);
+			return catalogueId == null ? null : new CatalogueIdImpl(catalogueId);
+		} catch (ParseException e) {
+			LOG.warn("A token names its Catalogue in a form that cannot be read: {}", jwtClaimsSet.getClaim(CLAIM_CATALOGUE));
 			return null;
 		}
 	}

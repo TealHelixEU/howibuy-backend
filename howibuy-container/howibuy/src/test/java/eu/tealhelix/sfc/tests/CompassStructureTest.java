@@ -18,6 +18,7 @@ import java.util.stream.IntStream;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.jaxrs.authentication.jwt.Authentication;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelper;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelperImpl;
 import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
@@ -233,8 +234,8 @@ public class CompassStructureTest {
 		}
 
 		@Override
-		public Uni<User> processToken(String token) {
-			return Uni.createFrom().item("service".equals(token) ? SERVICE_USER : END_USER);
+		public Uni<Authentication> processToken(String token) {
+			return Uni.createFrom().item(new Authentication("service".equals(token) ? SERVICE_USER : END_USER, null));
 		}
 
 		@Override

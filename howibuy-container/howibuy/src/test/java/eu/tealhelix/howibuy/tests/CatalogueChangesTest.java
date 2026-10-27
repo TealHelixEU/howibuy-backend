@@ -20,6 +20,7 @@ import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.jaxrs.authentication.jwt.Authentication;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelper;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelperImpl;
 import io.quarkus.test.common.ResourceArg;
@@ -331,8 +332,8 @@ public class CatalogueChangesTest {
 		}
 
 		@Override
-		public Uni<User> processToken(String token) {
-			return Uni.createFrom().item(USERS_BY_TOKEN.get(token));
+		public Uni<Authentication> processToken(String token) {
+			return Uni.createFrom().item(new Authentication(USERS_BY_TOKEN.get(token), null));
 		}
 
 		@Override
