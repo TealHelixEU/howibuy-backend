@@ -173,26 +173,41 @@ public class OpenApiContractTest {
 	}
 
 	/**
-	 * An assessment answers with three alternatives, each naming the archetype product it recommends, the SAFAD
-	 * taxonomy path that archetype sits in and the two overall scores that put it there. All of it is what the
-	 * front-end shows the user, so it belongs to the published contract rather than only to the Java type.
+	 * An assessment answers with three alternatives, each naming the archetype product it recommends with the SAFAD
+	 * taxonomy path that archetype sits in, the two overall scores that put it there, and the product of the
+	 * Catalogue that stands for it. All of it is what the front-end shows the user, so it belongs to the published
+	 * contract rather than only to the Java type.
 	 */
 	@Test
-	void describesTheRecommendedAlternativeWithItsArchetypeCategoriesAndScores() {
+	void describesTheRecommendedAlternativeWithItsArchetypeScoresAndProduct() {
 		given()
 				.accept("application/json")
 				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
-				.body("components.schemas.AlternativeForProduct.properties.archetypeProductId.'$ref'",
+				.body("components.schemas.AlternativeForProduct.properties.keySet()",
+						equalTo(Set.of("type", "archetype", "referenceOverallScore", "alternativeOverallScore", "product")))
+				.body("components.schemas.AlternativeForProduct.properties.archetype.'$ref'",
+						equalTo("#/components/schemas/RecommendedArchetype"))
+				.body("components.schemas.RecommendedArchetype.properties.id.'$ref'",
 						equalTo("#/components/schemas/ArchetypeProductId"))
 				.body("components.schemas.ArchetypeProductId.type", equalTo("string"))
 				.body("components.schemas.ArchetypeProductId.properties", nullValue())
-				.body("components.schemas.AlternativeForProduct.properties.l1Category.type", equalTo("string"))
-				.body("components.schemas.AlternativeForProduct.properties.l2Category.type", equalTo("string"))
-				.body("components.schemas.AlternativeForProduct.properties.l3Category.type", equalTo("string"))
+				.body("components.schemas.RecommendedArchetype.properties.name.type", equalTo("string"))
+				.body("components.schemas.RecommendedArchetype.properties.l1Category.type", equalTo("string"))
+				.body("components.schemas.RecommendedArchetype.properties.l2Category.type", equalTo("string"))
+				.body("components.schemas.RecommendedArchetype.properties.l3Category.type", equalTo("string"))
 				.body("components.schemas.AlternativeForProduct.properties.referenceOverallScore.type", equalTo("number"))
 				.body("components.schemas.AlternativeForProduct.properties.alternativeOverallScore.type", equalTo("number"))
+				.body("components.schemas.AlternativeForProduct.properties.product.'$ref'",
+						equalTo("#/components/schemas/ListedProduct"))
+				.body("components.schemas.ListedProduct.properties.productKey.'$ref'",
+						equalTo("#/components/schemas/ProductKey"))
+				.body("components.schemas.ListedProduct.properties.name.type", equalTo("string"))
+				.body("components.schemas.ListedProduct.properties.language.type", equalTo("string"))
+				.body("components.schemas.ListedProduct.properties.price.type", equalTo("number"))
+				.body("components.schemas.ListedProduct.properties.currency.'$ref'",
+						equalTo("#/components/schemas/Currency"))
 				.body("components.schemas.AlternativeForProduct.properties.type.'$ref'",
 						equalTo("#/components/schemas/AlternativeForProductType"))
 				.body("components.schemas.AlternativeForProductType.enum",

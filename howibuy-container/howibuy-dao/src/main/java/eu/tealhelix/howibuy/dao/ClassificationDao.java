@@ -7,6 +7,7 @@ import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.howibuy.services.model.ArchetypeListing;
 import eu.tealhelix.howibuy.services.model.ProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ProductToAssess;
 import eu.tealhelix.howibuy.services.model.ProductToClassify;
@@ -61,6 +62,18 @@ public interface ClassificationDao {
 	 * @return The archetypes, none for an unknown Catalogue
 	 */
 	Uni<Set<ArchetypeProductId>> findStockedArchetypes(ReactivePersistenceContext em, CatalogueId catalogueId);
+
+	/**
+	 * Find the active Listings in a Catalogue of the products classified to some archetypes, whatever the state of their
+	 * Classifications, with their names in a language and in the Catalogue's primary language.
+	 *
+	 * @param em           The persistence context
+	 * @param catalogueId  The Catalogue
+	 * @param archetypeIds The archetypes
+	 * @param language     The language of the names asked for
+	 * @return The Listings, in no particular order
+	 */
+	Uni<List<ArchetypeListing>> findListingsOfArchetypes(ReactivePersistenceContext em, CatalogueId catalogueId, Set<ArchetypeProductId> archetypeIds, String language);
 
 	/**
 	 * Find a product to record a Classification Attempt of, and lock its row until the transaction ends, so that the

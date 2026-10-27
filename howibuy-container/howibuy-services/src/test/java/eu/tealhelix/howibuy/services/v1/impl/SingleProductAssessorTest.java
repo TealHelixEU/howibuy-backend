@@ -119,11 +119,11 @@ public class SingleProductAssessorTest {
 		assertEquals(ProductAssessmentOutcomeType.SUCCESS, outcome.getType());
 		var alternative = outcome.getBestScientificAlternative();
 		assertEquals(AlternativeForProductType.SUGGESTION, alternative.getType());
-		assertEquals(BETTER_ARCHETYPE, alternative.getArchetypeProductId());
-		assertEquals("Store brand", alternative.getName(), "graded A where the identified archetype is only graded C");
-		assertEquals("Beverages", alternative.getL1Category(), "the recommended archetype's own taxonomy path");
-		assertEquals("Juices", alternative.getL2Category());
-		assertEquals("Orange juice", alternative.getL3Category());
+		assertEquals(BETTER_ARCHETYPE, alternative.getArchetype().getId());
+		assertEquals("Store brand", alternative.getArchetype().getName(), "graded A where the identified archetype is only graded C");
+		assertEquals("Beverages", alternative.getArchetype().getL1Category(), "the recommended archetype's own taxonomy path");
+		assertEquals("Juices", alternative.getArchetype().getL2Category());
+		assertEquals("Orange juice", alternative.getArchetype().getL3Category());
 		assertEquals(0.875, alternative.getReferenceOverallScore(), 1e-9);
 		assertEquals(1.0, alternative.getAlternativeOverallScore(), 1e-9);
 	}
@@ -136,7 +136,7 @@ public class SingleProductAssessorTest {
 				.await().atMost(WAIT);
 
 		assertEquals(AlternativeForProductType.GOOD_ENOUGH, outcome.getBestScientificAlternative().getType());
-		assertEquals(PICKED_ARCHETYPE, outcome.getBestScientificAlternative().getArchetypeProductId());
+		assertEquals(PICKED_ARCHETYPE, outcome.getBestScientificAlternative().getArchetype().getId());
 	}
 
 	@Test

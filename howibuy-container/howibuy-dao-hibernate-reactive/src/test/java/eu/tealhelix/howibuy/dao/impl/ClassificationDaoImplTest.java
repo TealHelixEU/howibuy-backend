@@ -45,6 +45,8 @@ import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
 import eu.tealhelix.howibuy.dao.jpa.values.AnimalWelfareImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.EnvironmentalImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.SocialImpact;
+import eu.tealhelix.howibuy.services.model.ArchetypeListing;
+import eu.tealhelix.howibuy.services.model.ImmutableArchetypeListing;
 import eu.tealhelix.howibuy.services.model.ImmutableProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToAssess;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
@@ -666,6 +668,109 @@ public class ClassificationDaoImplTest {
 		assertEquals(Set.of(YOGHURT, KEFIR), findStockedArchetypes(sessionFactory, CATALOGUE));
 	}
 
+	@Test
+	void findsTheActiveListingsOfTheProductsClassifiedToTheArchetypesWithTheirNamesInTheLanguageAskedForAndThePrimaryOne(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				listedIn(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι", "en", "Yoghurt", "de", "Joghurt")), listing(CATALOGUE, true, "2.49")),
+				product("yoghurt-light", 2, "h2", Map.of("el", "Γιαούρτι light")),
+				product("kefir", 3, "h3", Map.of("el", "Κεφίρ")),
+				product("honey", 4, "h4", Map.of("el", "Μέλι")),
+				product("feta", 5, "h5", Map.of("el", "Φέτα")));
+		var ids = idsByInputHash(sessionFactory);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), classification(YOGHURT, "h1", false, 0)));
+		fixtures.addAll(review(ids.get("h2"), classification(YOGHURT, "h2", false, 0)));
+		fixtures.addAll(review(ids.get("h3"), classification(KEFIR, "h3", false, 0)));
+		fixtures.addAll(review(ids.get("h4"), classification(null, "h4", false, 0)));
+		persist(sessionFactory, fixtures);
+
+		var listings = findListingsOfArchetypes(sessionFactory, CATALOGUE, Set.of(YOGHURT), "en");
+
+		assertEquals(Set.of(
+				archetypeListing(ids.get("h1"), "yoghurt", YOGHURT, "2.4900", Map.of("en", "Yoghurt", "el", "Γιαούρτι")),
+				archetypeListing(ids.get("h2"), "yoghurt-light", YOGHURT, "1.9900", Map.of("el", "Γιαούρτι light"))
+		), Set.copyOf(listings));
+	}
+
+	@Test
+	void aListingInactiveOrInAnotherCatalogueIsNotFound(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				listedIn(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")), listing(CATALOGUE, false)),
+				listedIn(product("kefir", 2, "h2", Map.of("el", "Κεφίρ")), listing(CATALOGUE_CY, true)));
+		var ids = idsByInputHash(sessionFactory);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), classification(YOGHURT, "h1", false, 0)));
+		fixtures.addAll(review(ids.get("h2"), classification(KEFIR, "h2", false, 0)));
+		persist(sessionFactory, fixtures);
+
+		assertEquals(List.of(), findListingsOfArchetypes(sessionFactory, CATALOGUE, Set.of(YOGHURT, KEFIR), "el"));
+		assertEquals(List.of(archetypeListing(ids.get("h2"), "kefir", KEFIR, "1.9900", Map.of("el", "Κεφίρ"))),
+				findListingsOfArchetypes(sessionFactory, CATALOGUE_CY, Set.of(YOGHURT, KEFIR), "el"));
+	}
+
+	/**
+	 * Whatever state its Classification is in, a product stands for the archetype it was last classified to, as it does
+	 * when the archetypes a Catalogue stocks are found.
+	 */
+	@Test
+	void theListingOfAProductWhoseClassificationChangedSinceOrNeedsReviewIsFound(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")),
+				product("kefir", 2, "h2", Map.of("el", "Κεφίρ")));
+		var ids = idsByInputHash(sessionFactory);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), classification(YOGHURT, "h1", false, 0)));
+		fixtures.addAll(review(ids.get("h2"), classification(KEFIR, "h2", true, 0)));
+		persist(sessionFactory, fixtures);
+		apply(sessionFactory, product("yoghurt", 3, "h3", Map.of("el", "Γιαούρτι στραγγιστό")));
+
+		assertEquals(Set.of(ids.get("h1"), ids.get("h2")), findListingsOfArchetypes(sessionFactory, CATALOGUE, Set.of(YOGHURT, KEFIR), "el").stream()
+				.map(ArchetypeListing::getId)
+				.collect(Collectors.toSet()));
+	}
+
+	@Test
+	void noArchetypesHaveNoListings(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+		persist(sessionFactory, review(idsByInputHash(sessionFactory).get("h1"), classification(YOGHURT, "h1", false, 0)));
+
+		assertEquals(List.of(), findListingsOfArchetypes(sessionFactory, CATALOGUE, Set.of(), "el"));
+	}
+
+	/**
+	 * As many archetypes as the alternatives of a batch assessment may recommend.
+	 */
+	@Test
+	void findsTheListingsOfManyArchetypesAtOnce(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")));
+		persist(sessionFactory, review(idsByInputHash(sessionFactory).get("h1"), classification(YOGHURT, "h1", false, 0)));
+		var archetypeIds = IntStream.range(0, 1200)
+				.<ArchetypeProductId>mapToObj(i -> new ArchetypeProductIdImpl(UUID.randomUUID().toString()))
+				.collect(Collectors.toSet());
+		archetypeIds.add(YOGHURT);
+
+		assertEquals(1, findListingsOfArchetypes(sessionFactory, CATALOGUE, archetypeIds, "el").size());
+	}
+
+	private static List<ArchetypeListing> findListingsOfArchetypes(Mutiny.SessionFactory sessionFactory, String catalogueId, Set<ArchetypeProductId> archetypeIds, String language) {
+		var sut = new ClassificationDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.findListingsOfArchetypes(em, new CatalogueIdImpl(catalogueId), archetypeIds, language))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static ArchetypeListing archetypeListing(RetailerProductId id, String productKey, ArchetypeProductId archetypeId, String price, Map<String, String> names) {
+		return ImmutableArchetypeListing.builder()
+				.id(id)
+				.productKey(new ProductKeyImpl(productKey))
+				.archetypeProductId(archetypeId)
+				.price(new BigDecimal(price))
+				.currency(Currency.getInstance("EUR"))
+				.names(names)
+				.primaryLanguage("el")
+				.build();
+	}
+
 	private static Set<ArchetypeProductId> findStockedArchetypes(Mutiny.SessionFactory sessionFactory, String catalogueId) {
 		var sut = new ClassificationDaoImpl();
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
@@ -848,9 +953,13 @@ public class ClassificationDaoImplTest {
 	}
 
 	private static Listing listing(String catalogueId, boolean active) {
+		return listing(catalogueId, active, "1.99");
+	}
+
+	private static Listing listing(String catalogueId, boolean active, String price) {
 		return ImmutableListing.builder()
 				.catalogueId(new CatalogueIdImpl(catalogueId))
-				.price(new BigDecimal("1.99"))
+				.price(new BigDecimal(price))
 				.currency(Currency.getInstance("EUR"))
 				.isActive(active)
 				.build();

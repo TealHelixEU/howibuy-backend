@@ -25,6 +25,8 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.Substitutability;
 import eu.tealhelix.howibuy.v1.model.AlternativeForProduct;
 import eu.tealhelix.howibuy.v1.model.ImmutableAlternativeForProduct;
+import eu.tealhelix.howibuy.v1.model.ImmutableRecommendedArchetype;
+import eu.tealhelix.howibuy.v1.model.RecommendedArchetype;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 
@@ -40,18 +42,10 @@ public final class ScoredArchetypes {
 	private final ScoredCorpus scoredCorpus;
 	private final SubstitutionSearch search;
 	private final SubstitutionSettings settings;
-	private final Map<ArchetypeProductId, ArchetypeDescription> descriptionsByProductId;
-
 	/**
-	 * What an alternative says about the archetype it names, whichever ranking chose it: the product name and the SAFAD
-	 * taxonomy path it sits in.
+	 * What an alternative says about the archetype it names, whichever ranking chose it.
 	 */
-	private record ArchetypeDescription(String name, String l1Category, String l2Category, String l3Category) {
-		static ArchetypeDescription of(ArchetypeProductImpacts product) {
-			return new ArchetypeDescription(
-					product.getName(), product.getL1CategoryName(), product.getL2CategoryName(), product.getL3CategoryName());
-		}
-	}
+	private final Map<ArchetypeProductId, RecommendedArchetype> archetypesByProductId;
 
 	/**
 	 * The best alternative under each of the three criteria, all three {@code NO_SUGGESTION} when the assessed product
@@ -76,9 +70,9 @@ public final class ScoredArchetypes {
 				scoredCorpus, SubstitutabilityMatrix.of(matrix.stream().map(ScoredArchetypes::toSubstitutablePair).toList()),
 				scientificProfile, settings);
 
-		var descriptionsByProductId = new HashMap<ArchetypeProductId, ArchetypeDescription>(corpus.size());
-		corpus.forEach(product -> descriptionsByProductId.put(product.getId(), ArchetypeDescription.of(product)));
-		return new ScoredArchetypes(scoredCorpus, search, settings, Map.copyOf(descriptionsByProductId));
+		var archetypesByProductId = new HashMap<ArchetypeProductId, RecommendedArchetype>(corpus.size());
+		corpus.forEach(product -> archetypesByProductId.put(product.getId(), toRecommendedArchetype(product)));
+		return new ScoredArchetypes(scoredCorpus, search, settings, Map.copyOf(archetypesByProductId));
 	}
 
 	/**
@@ -108,7 +102,7 @@ public final class ScoredArchetypes {
 	 * @return The name of the archetype product, empty if it is not in the corpus
 	 */
 	public Optional<String> nameOf(ArchetypeProductId productId) {
-		return Optional.ofNullable(descriptionsByProductId.get(productId)).map(ArchetypeDescription::name);
+		return Optional.ofNullable(archetypesByProductId.get(productId)).map(RecommendedArchetype::getName);
 	}
 
 	/**
@@ -121,14 +115,9 @@ public final class ScoredArchetypes {
 
 		var product = winner.get();
 		var reference = alternatives.reference();
-		var description = descriptionsByProductId.get(product.productId());
 		return ImmutableAlternativeForProduct.builder()
 				.type(product.productId().equals(reference.productId()) ? GOOD_ENOUGH : SUGGESTION)
-				.name(description.name())
-				.l1Category(description.l1Category())
-				.l2Category(description.l2Category())
-				.l3Category(description.l3Category())
-				.archetypeProductId(product.productId())
+				.archetype(archetypesByProductId.get(product.productId()))
 				.referenceOverallScore(score.applyAsDouble(reference))
 				.alternativeOverallScore(score.applyAsDouble(product))
 				.build();
@@ -136,6 +125,16 @@ public final class ScoredArchetypes {
 
 	private static AlternativeForProduct noSuggestion() {
 		return ImmutableAlternativeForProduct.builder().type(NO_SUGGESTION).build();
+	}
+
+	private static RecommendedArchetype toRecommendedArchetype(ArchetypeProductImpacts product) {
+		return ImmutableRecommendedArchetype.builder()
+				.id(product.getId())
+				.name(product.getName())
+				.l1Category(product.getL1CategoryName())
+				.l2Category(product.getL2CategoryName())
+				.l3Category(product.getL3CategoryName())
+				.build();
 	}
 
 	private static ProductIndicators toProductIndicators(ArchetypeProductImpacts product) {
@@ -150,10 +149,10 @@ public final class ScoredArchetypes {
 
 	private ScoredArchetypes(
 			ScoredCorpus scoredCorpus, SubstitutionSearch search, SubstitutionSettings settings,
-			Map<ArchetypeProductId, ArchetypeDescription> descriptionsByProductId) {
+			Map<ArchetypeProductId, RecommendedArchetype> archetypesByProductId) {
 		this.scoredCorpus = scoredCorpus;
 		this.search = search;
 		this.settings = settings;
-		this.descriptionsByProductId = descriptionsByProductId;
+		this.archetypesByProductId = archetypesByProductId;
 	}
 }

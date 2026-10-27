@@ -1,0 +1,3 @@
+{"productKey": "e2e-yoghurt-with-cream", "names": {"el": "Γιαούρτι με κρέμα", "en": "Yoghurt with cream"}, "characteristics": {"fat": "10%"}, "tags": ["dairy"], "price": "2.30", "currency": "EUR"}
+{"productKey": "e2e-yoghurt", "names": {"el": "Γιαούρτι", "en": "Plain yoghurt"}, "characteristics": {"fat": "2%"}, "tags": ["dairy"], "price": "1.80", "currency": "EUR"}
+{"productKey": "e2e-yoghurt-organic", "names": {"el": "Γιαούρτι βιολογικό", "en": "Organic plain yoghurt"}, "characteristics": {"fat": "2%"}, "tags": ["dairy", "organic"], "price": "2.95", "currency": "EUR"}

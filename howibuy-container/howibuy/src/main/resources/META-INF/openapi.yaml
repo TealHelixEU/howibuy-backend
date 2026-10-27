@@ -43,22 +43,12 @@ components:
       properties:
         type:
           description: >-
-            Whether an alternative is being put forward at all. The rest of this object is carried only when one is.
-        name:
-          description: The name of the archetype product being recommended.
-        archetypeProductId:
+            What the alternative amounts to. `NO_SUGGESTION` carries nothing else, and only `SUGGESTION` carries a
+            product.
+        archetype:
           description: >-
             The archetype product being recommended — the same one the assessed product was matched to, when the type
             is `GOOD_ENOUGH`.
-        l1Category:
-          description: >-
-            The top of the SAFAD taxonomy path the recommended archetype sits in. A suggestion may well come from a
-            different branch than the assessed product's own, since substitutability reaches across categories, so the
-            path says what kind of food is being recommended.
-        l2Category:
-          description: The middle of that path.
-        l3Category:
-          description: The leaf of that path, the one the recommended archetype hangs from.
         referenceOverallScore:
           description: >-
             The overall score of the archetype the assessed product was matched to, measured under the criterion that
@@ -68,6 +58,43 @@ components:
           description: >-
             The overall score of the archetype recommended in its place, measured under that same criterion. The pair
             is what explains the recommendation, and it never falls below the reference.
+        product:
+          description: >-
+            The product of the user's Catalogue that stands for the recommended archetype: the cheapest one actively
+            listed in it.
+
+    RecommendedArchetype:
+      description: The archetype product an alternative recommends, and the SAFAD taxonomy path it sits in.
+      properties:
+        id:
+          description: The archetype product.
+        name:
+          description: The name of the archetype product.
+        l1Category:
+          description: >-
+            The top of the SAFAD taxonomy path the archetype sits in. A suggestion may well come from a different
+            branch than the assessed product's own, since substitutability reaches across categories, so the path says
+            what kind of food is being recommended.
+        l2Category:
+          description: The middle of that path.
+        l3Category:
+          description: The leaf of that path, the one the archetype hangs from.
+
+    ListedProduct:
+      description: A product of the retailer as the user finds it in their Catalogue, with that Catalogue's price.
+      properties:
+        productKey:
+          description: The retailer's key of the product.
+        name:
+          description: The name of the product, in the language the request asked for when it has one in it.
+        language:
+          description: >-
+            The language the name is in: the one the request asked for, or else the primary language of the Catalogue.
+        price:
+          description: The price of the product in the Catalogue, without trailing zeros.
+          examples: [2.49]
+        currency:
+          description: The currency of the price.
 
     MatchDiagnostics:
       description: >-

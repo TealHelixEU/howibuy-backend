@@ -151,7 +151,7 @@ class ScoredArchetypesTest {
 
 		assertTrue(
 				List.of(best.personal(), best.scientific(), best.combined()).stream()
-						.noneMatch(alternative -> SPIRITS.equals(alternative.getArchetypeProductId())),
+						.noneMatch(alternative -> alternative.getArchetype() != null && SPIRITS.equals(alternative.getArchetype().getId())),
 				"Spirits shares the reference's category and would be eligible, but has no overall score at all");
 	}
 
@@ -160,7 +160,7 @@ class ScoredArchetypesTest {
 		var atSmall = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
 		var atLarge = archetypes(SubstitutabilityLevel.LARGE).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
 
-		assertEquals(SOUNDEST, atSmall.scientific().getArchetypeProductId(),
+		assertEquals(SOUNDEST, atSmall.scientific().getArchetype().getId(),
 				"water substitutes for juices at degree 1, below the small level's cut-off");
 		assertAlternative(atLarge.scientific(), SUGGESTION, SPRING_WATER, "Spring water", WATER, 0.5625, 1.0);
 	}
@@ -173,22 +173,20 @@ class ScoredArchetypesTest {
 			AlternativeForProduct alternative, AlternativeForProductType type,
 			ArchetypeProductId productId, String name, Branch branch, double referenceScore, double alternativeScore) {
 		assertEquals(type, alternative.getType());
-		assertEquals(productId, alternative.getArchetypeProductId(), "the recommended archetype, by id");
-		assertEquals(name, alternative.getName());
-		assertEquals(branch.l1(), alternative.getL1Category(), "the SAFAD path the recommended archetype sits in");
-		assertEquals(branch.l2(), alternative.getL2Category());
-		assertEquals(branch.l3(), alternative.getL3Category());
+		var archetype = alternative.getArchetype();
+		assertEquals(productId, archetype.getId(), "the recommended archetype, by id");
+		assertEquals(name, archetype.getName());
+		assertEquals(branch.l1(), archetype.getL1Category(), "the SAFAD path the recommended archetype sits in");
+		assertEquals(branch.l2(), archetype.getL2Category());
+		assertEquals(branch.l3(), archetype.getL3Category());
+		assertNull(alternative.getProduct(), "the product of the Catalogue is chosen after the ranking");
 		assertEquals(referenceScore, alternative.getReferenceOverallScore(), TOLERANCE, "the reference product's own score under this criterion");
 		assertEquals(alternativeScore, alternative.getAlternativeOverallScore(), TOLERANCE, "the recommended product's score under this criterion");
 	}
 
 	private static void assertNoSuggestion(AlternativeForProduct alternative) {
 		assertEquals(NO_SUGGESTION, alternative.getType());
-		assertNull(alternative.getArchetypeProductId(), "no product is named when none is recommended");
-		assertNull(alternative.getName());
-		assertNull(alternative.getL1Category());
-		assertNull(alternative.getL2Category());
-		assertNull(alternative.getL3Category());
+		assertNull(alternative.getArchetype(), "no archetype is named when none is recommended");
 		assertNull(alternative.getReferenceOverallScore());
 		assertNull(alternative.getAlternativeOverallScore());
 	}

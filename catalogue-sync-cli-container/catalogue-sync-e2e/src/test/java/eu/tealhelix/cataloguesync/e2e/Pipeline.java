@@ -102,7 +102,7 @@ final class Pipeline implements AutoCloseable {
 	 * @return The status its run ended with
 	 */
 	String pushSnapshot(String feed) throws IOException, InterruptedException {
-		var accessToken = ServiceAccount.RETAILER.accessToken(keycloak);
+		var accessToken = accessToken(ServiceAccount.RETAILER);
 		String location;
 		try (InputStream body = Pipeline.class.getResourceAsStream("/feeds/" + feed)) {
 			location = given()
@@ -148,6 +148,20 @@ final class Pipeline implements AutoCloseable {
 			assertThat(exitCode).as("The exit code of the Catalogue Sync, which printed:%n%s", output).isZero();
 			return output;
 		}
+	}
+
+	/**
+	 * @return An access token of the service account, from the IDM of the pipeline
+	 */
+	String accessToken(ServiceAccount account) {
+		return account.accessToken(keycloak);
+	}
+
+	/**
+	 * @return The URL HowiBuy listens to
+	 */
+	String howiBuyUrl() {
+		return howiBuyUrl;
 	}
 
 	Connection howiBuyConnection() throws SQLException {

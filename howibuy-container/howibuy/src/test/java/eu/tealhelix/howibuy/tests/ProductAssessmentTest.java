@@ -4,6 +4,7 @@ import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -200,7 +201,52 @@ public class ProductAssessmentTest {
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("type", equalTo("SUCCESS"))
 				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
-				.body("bestScientificAlternative.archetypeProductId", equalTo(archetypes.reference().asString()));
+				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.reference().asString()))
+				.body("bestScientificAlternative.product", equalTo(null));
+	}
+
+	/**
+	 * The price is written as a plain number without its trailing zeros: 2, rather than 2.0000 or 2E+0.
+	 */
+	@Test
+	void aSuggestionNamesTheCheapestProductOfItsArchetypeActivelyListedInTheCatalogue() throws SQLException {
+		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
+		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		applyProduct("kefir", 2, "h2", listing(CATALOGUE_GR, true, "2.0000"));
+		applyProduct("kefir-organic", 3, "h3", listing(CATALOGUE_GR, true, "3.4900"));
+		applyProduct("kefir-on-offer", 4, "h4", listing(CATALOGUE_GR, false, "0.9900"));
+		applyProduct("kefir-in-cyprus", 5, "h5", listing(CATALOGUE_CY, true, "0.8900"));
+		classify("yoghurt", "h1", archetypes.reference().asString());
+		for (var product : Map.of("kefir", "h2", "kefir-organic", "h3", "kefir-on-offer", "h4", "kefir-in-cyprus", "h5").entrySet()) {
+			classify(product.getKey(), product.getValue(), archetypes.better().asString());
+		}
+
+		var body = assessSingle("shopper", single("yoghurt", "el"), 200)
+				.body("bestScientificAlternative.type", equalTo("SUGGESTION"))
+				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.better().asString()))
+				.body("bestScientificAlternative.product.productKey", equalTo("kefir"))
+				.body("bestScientificAlternative.product.name", equalTo("kefir"))
+				.body("bestScientificAlternative.product.language", equalTo("el"))
+				.body("bestScientificAlternative.product.currency", equalTo("EUR"))
+				.extract().asString();
+
+		assertTrue(Pattern.compile("\"price\":2[,}]").matcher(body).find(), "the price as a plain number: " + body);
+	}
+
+	@Test
+	void aSuggestedProductIsNamedInTheLanguageAskedForElseInTheCataloguesPrimaryLanguage() throws SQLException {
+		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
+		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		applyProduct("kefir", 2, "h2", Map.of("el", "Κεφίρ", "en", "Kefir"), listing(CATALOGUE_GR, true));
+		classify("yoghurt", "h1", archetypes.reference().asString());
+		classify("kefir", "h2", archetypes.better().asString());
+
+		assessSingle("shopper", single("yoghurt", "en"), 200)
+				.body("bestScientificAlternative.product.name", equalTo("Kefir"))
+				.body("bestScientificAlternative.product.language", equalTo("en"));
+		assessSingle("shopper", single("yoghurt", "de"), 200)
+				.body("bestScientificAlternative.product.name", equalTo("Κεφίρ"))
+				.body("bestScientificAlternative.product.language", equalTo("el"));
 	}
 
 	@Test
@@ -213,13 +259,13 @@ public class ProductAssessmentTest {
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("bestScientificAlternative.type", equalTo("SUGGESTION"))
-				.body("bestScientificAlternative.archetypeProductId", equalTo(archetypes.better().asString()));
+				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.better().asString()));
 
 		applyProduct("kefir", 3, "h2", listing(CATALOGUE_GR, false));
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
-				.body("bestScientificAlternative.archetypeProductId", equalTo(archetypes.reference().asString()));
+				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.reference().asString()));
 	}
 
 	@Test
@@ -232,7 +278,7 @@ public class ProductAssessmentTest {
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
-				.body("bestScientificAlternative.archetypeProductId", equalTo(archetypes.reference().asString()));
+				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.reference().asString()));
 	}
 
 	@Test
@@ -319,7 +365,7 @@ public class ProductAssessmentTest {
 				.flatMap(reference -> {
 					var scientific = archetypes.recommendationsFor(reference, ScientificWeights.profile(), all).scientific();
 					return scientific.getType() == AlternativeForProductType.SUGGESTION
-							? Stream.of(new ArchetypePair(reference, scientific.getArchetypeProductId()))
+							? Stream.of(new ArchetypePair(reference, scientific.getArchetype().getId()))
 							: Stream.empty();
 				})
 				.findFirst()
@@ -415,19 +461,30 @@ public class ProductAssessmentTest {
 	}
 
 	private static Map<String, Object> listing(String catalogueId, boolean active) {
-		return Map.of("catalogueId", catalogueId, "price", new BigDecimal("1.99"), "currency", "EUR", "active", active);
+		return listing(catalogueId, active, "1.99");
+	}
+
+	private static Map<String, Object> listing(String catalogueId, boolean active, String price) {
+		return Map.of("catalogueId", catalogueId, "price", new BigDecimal(price), "currency", "EUR", "active", active);
 	}
 
 	/**
-	 * Apply the product, named in Greek, as the next change of the Catalogue Sync.
+	 * Apply the product, named in Greek by its key, as the next change of the Catalogue Sync.
 	 */
 	private void applyProduct(String productKey, long changeSequence, String inputHash, Map<String, Object> listing) {
+		applyProduct(productKey, changeSequence, inputHash, Map.of("el", productKey), listing);
+	}
+
+	/**
+	 * Apply the product as the next change of the Catalogue Sync.
+	 */
+	private void applyProduct(String productKey, long changeSequence, String inputHash, Map<String, String> names, Map<String, Object> listing) {
 		var product = new HashMap<String, Object>();
 		product.put("retailerId", RETAILER_ID);
 		product.put("productKey", productKey);
 		product.put("changeSequence", changeSequence);
 		product.put("inputHash", inputHash);
-		product.put("names", Map.of("el", productKey));
+		product.put("names", names);
 		product.put("characteristics", Map.of());
 		product.put("tags", List.of());
 		product.put("listings", List.of(listing));

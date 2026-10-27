@@ -240,7 +240,7 @@ neither changes a product that the other has read.
   having at least one active Listing whose product is classified to it), and filters candidates by it *before*
   ranking. The reference archetype always stays a candidate (see `GOOD_ENOUGH`). Query the set per request first, and
   cache per Catalogue only if measurements say so.
-- **Choosing the product** (`AlternativeProductSelection`, swappable): given the winning archetype, the Catalogue and
+- **Choosing the product** (`AlternativeProductSelector`, swappable): given the winning archetype, the Catalogue and
   its active Listings of that archetype, pick one. Initial policy: the lowest price, ties broken by retailer product id
   for determinism.
 - `AlternativeForProduct` redesigned:
@@ -249,6 +249,11 @@ neither changes a product that the other has read.
     currency, plus the archetype (id, name, taxonomy path) and the two overall scores.
   - `GOOD_ENOUGH`: archetype and scores only, no product.
   - `NO_SUGGESTION`: nothing.
+  - Nested: `type`, `archetype` (`RecommendedArchetype`), the two scores, `product` (`ListedProduct`). The price is a
+    JSON number in plain notation without trailing zeros (`2.4900` → `2.49`).
+- Every Classification with an archetype makes it stocked, whatever its state (pending again, reopened, needs review).
+  The stocked set costs about 10 ms per request at 30,000 products (measured in issue 15), so it is not cached.
+- The Listings of the winning archetypes of a whole request, a batch included, are read with one query.
 
 ### Tokens
 

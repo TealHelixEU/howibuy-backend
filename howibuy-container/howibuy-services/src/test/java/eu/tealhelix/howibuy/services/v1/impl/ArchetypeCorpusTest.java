@@ -82,7 +82,7 @@ public class ArchetypeCorpusTest {
 
 		assertEquals(AlternativeForProductType.GOOD_ENOUGH, recommendations.scientific().getType(),
 				"the only product of its category, so it is its own best alternative");
-		assertEquals("Orange juice", recommendations.scientific().getName());
+		assertEquals("Orange juice", recommendations.scientific().getArchetype().getName());
 	}
 
 	@Test

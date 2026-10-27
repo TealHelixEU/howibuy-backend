@@ -2,7 +2,6 @@ package eu.tealhelix.howibuy.v1.model;
 
 import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
-import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import org.immutables.value.Value;
 
 /**
@@ -11,34 +10,17 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface AlternativeForProduct {
 	/**
-	 * The type of the alternative. Every other field is populated unless the value is
-	 * {@link AlternativeForProductType#NO_SUGGESTION}, which carries no product and no scores.
+	 * The type of the alternative. {@link AlternativeForProductType#NO_SUGGESTION} carries nothing else, and only
+	 * {@link AlternativeForProductType#SUGGESTION} carries a product.
 	 */
 	AlternativeForProductType getType();
-
-	@Nullable
-	String getName();
 
 	/**
 	 * The archetype product being recommended — the same one the reference product was matched to, when the type is
 	 * {@link AlternativeForProductType#GOOD_ENOUGH}.
 	 */
 	@Nullable
-	ArchetypeProductId getArchetypeProductId();
-
-	/**
-	 * The SAFAD taxonomy path the recommended archetype sits in, from the top-level category down to the leaf it hangs
-	 * from. A suggestion may well come from a different branch than the assessed product's own, since substitutability
-	 * reaches across categories, so the path says what kind of food is being recommended.
-	 */
-	@Nullable
-	String getL1Category();
-
-	@Nullable
-	String getL2Category();
-
-	@Nullable
-	String getL3Category();
+	RecommendedArchetype getArchetype();
 
 	/**
 	 * The overall score of the archetype the assessed product was matched to, and of the one recommended in its place.
@@ -51,4 +33,10 @@ public interface AlternativeForProduct {
 
 	@Nullable
 	Double getAlternativeOverallScore();
+
+	/**
+	 * The product of the user's Catalogue that stands for the recommended archetype.
+	 */
+	@Nullable
+	ListedProduct getProduct();
 }

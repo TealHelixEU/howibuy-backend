@@ -66,7 +66,7 @@ public class ProductAssessmentResource {
 		var user = currentUser(crc);
 		var catalogueId = requireCatalogue(crc);
 		return Uni.createFrom().item(() -> productKey(request))
-				.flatMap(productKey -> productAssessmentService.assessSingleProduct(user, catalogueId, productKey));
+				.flatMap(productKey -> productAssessmentService.assessSingleProduct(user, catalogueId, productKey, request.language()));
 	}
 
 	@Operation(
@@ -84,7 +84,7 @@ public class ProductAssessmentResource {
 		var user = currentUser(crc);
 		var catalogueId = requireCatalogue(crc);
 		return Uni.createFrom().item(() -> productKeys(request))
-				.flatMap(productKeys -> productAssessmentService.assessMultipleProductsSync(user, catalogueId, productKeys))
+				.flatMap(productKeys -> productAssessmentService.assessMultipleProductsSync(user, catalogueId, productKeys, request.language()))
 				.map(MultiProductAssessmentResponse::new);
 	}
 
@@ -101,7 +101,7 @@ public class ProductAssessmentResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Multi<ProductAssessmentOutcome> assessMultipleProductsAsync(@Context ContainerRequestContext crc, MultiProductAssessmentRequest request) {
-		return RestMulti.fromMultiData(productAssessmentService.assessMultipleProductsAsync(currentUser(crc), requireCatalogue(crc), productKeys(request)))
+		return RestMulti.fromMultiData(productAssessmentService.assessMultipleProductsAsync(currentUser(crc), requireCatalogue(crc), productKeys(request), request.language()))
 				.encodeAsJsonArray(false).build();
 	}
 

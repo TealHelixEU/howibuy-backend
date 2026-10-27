@@ -6,7 +6,9 @@ import static jakarta.persistence.criteria.JoinType.LEFT;
 
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,6 +23,7 @@ import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
+import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.howibuy.dao.ClassificationDao;
 import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity;
 import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity_;
@@ -35,6 +38,8 @@ import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity_;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity_;
+import eu.tealhelix.howibuy.services.model.ArchetypeListing;
+import eu.tealhelix.howibuy.services.model.ImmutableArchetypeListing;
 import eu.tealhelix.howibuy.services.model.ImmutableProductClassificationInput;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToAssess;
 import eu.tealhelix.howibuy.services.model.ImmutableProductToClassify;
@@ -164,6 +169,50 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		return em.createQuery(q).getResultList().map(ids -> ids.stream()
 				.map(id -> new ArchetypeProductIdImpl(id.toString()))
 				.collect(toUnmodifiableSet()));
+	}
+
+	/**
+	 * One query finds them all, joining each Listing to the product's name in the language asked for and to its name in
+	 * the Catalogue's primary language, either of which may be missing.
+	 */
+	@Override
+	public Uni<List<ArchetypeListing>> findListingsOfArchetypes(ReactivePersistenceContext em, CatalogueId catalogueId, Set<ArchetypeProductId> archetypeIds, String language) {
+		if (archetypeIds.isEmpty()) return Uni.createFrom().item(List.of());
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createTupleQuery();
+		var listing = q.from(ListingEntity.class);
+		var productId = listing.get(ListingEntity_.retailerProduct).get(RetailerProductEntity_.id);
+		var product = listing.join(ListingEntity_.retailerProduct);
+		var catalogue = listing.join(CatalogueEntity.class);
+		catalogue.on(cb.equal(catalogue.get(CatalogueEntity_.id), listing.get(ListingEntity_.catalogueId)));
+		var classification = listing.join(ClassificationEntity.class);
+		classification.on(cb.equal(classification.get(ClassificationEntity_.retailerProductId), productId));
+		var nameAskedFor = listing.join(RetailerProductNameEntity.class, LEFT);
+		nameAskedFor.on(
+				cb.equal(nameAskedFor.get(RetailerProductNameEntity_.retailerProduct).get(RetailerProductEntity_.id), productId),
+				cb.equal(nameAskedFor.get(RetailerProductNameEntity_.lang), language));
+		var primaryLanguage = catalogue.get(CatalogueEntity_.primaryLanguage);
+		var primaryName = listing.join(RetailerProductNameEntity.class, LEFT);
+		primaryName.on(
+				cb.equal(primaryName.get(RetailerProductNameEntity_.retailerProduct).get(RetailerProductEntity_.id), productId),
+				cb.equal(primaryName.get(RetailerProductNameEntity_.lang), primaryLanguage));
+		var archetypeProductId = classification.get(ClassificationEntity_.archetypeProductId);
+		var productKey = product.get(RetailerProductEntity_.productKey);
+		var price = listing.get(ListingEntity_.price);
+		var currency = listing.get(ListingEntity_.currency);
+		var nameInLanguageAskedFor = nameAskedFor.get(RetailerProductNameEntity_.name);
+		var nameInPrimaryLanguage = primaryName.get(RetailerProductNameEntity_.name);
+		q.select(cb.tuple(archetypeProductId, productId, productKey, price, currency, nameInLanguageAskedFor, nameInPrimaryLanguage, primaryLanguage));
+		q.where(
+				cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.asString()),
+				cb.isTrue(listing.get(ListingEntity_.active)),
+				archetypeProductId.in(archetypeIds.stream().map(ArchetypeProductId::asUuid).toList())
+		);
+		return em.createQuery(q).getResultList().map(rows -> rows.stream()
+				.map(row -> toArchetypeListing(
+						row.get(archetypeProductId), row.get(productId), row.get(productKey), row.get(price), row.get(currency),
+						language, row.get(nameInLanguageAskedFor), row.get(primaryLanguage), row.get(nameInPrimaryLanguage)))
+				.toList());
 	}
 
 	@Override
@@ -377,6 +426,23 @@ public class ClassificationDaoImpl implements ClassificationDao {
 				.names(names)
 				.classification(toClassification(entity))
 				.attempts(attempts)
+				.build();
+	}
+
+	private static ArchetypeListing toArchetypeListing(
+			UUID archetypeProductId, UUID productId, String productKey, BigDecimal price, String currency,
+			String language, @Nullable String nameInLanguage, String primaryLanguage, @Nullable String nameInPrimaryLanguage) {
+		var names = new HashMap<String, String>();
+		if (nameInPrimaryLanguage != null) names.put(primaryLanguage, nameInPrimaryLanguage);
+		if (nameInLanguage != null) names.put(language, nameInLanguage);
+		return ImmutableArchetypeListing.builder()
+				.id(new RetailerProductIdImpl(productId.toString()))
+				.productKey(new ProductKeyImpl(productKey))
+				.archetypeProductId(new ArchetypeProductIdImpl(archetypeProductId.toString()))
+				.price(price)
+				.currency(Currency.getInstance(currency))
+				.names(names)
+				.primaryLanguage(primaryLanguage)
 				.build();
 	}
 
