@@ -28,6 +28,7 @@ tealhelix/
 │               └── adr           The directory to put Architecture Decision Records
 ├── tealhelix-common/              Cross-microservice infrastructure. No Quarkus deps outside deployment modules.
 │   ├── tealhelix-common-types/    Shared value types (Email, UserId, ...)
+│   ├── tealhelix-common-types-json/   Map the shared value types to JSON with Jackson
 │   ├── tealhelix-common-dao-reactive/         Persistence abstraction interfaces (ReactivePersistenceContext, ...)
 │   ├── tealhelix-common-dao-reactive-hibernate/   Hibernate-Reactive implementation of the above
 │   ├── tealhelix-common-services/             Service interfaces shared across microservices (UserService, ...)
@@ -219,7 +220,7 @@ DAO interfaces in `howibuy-dao` may return these types directly. Do not place su
 module itself.
 
 Distinguish three homes for data types:
-- **Core domain model** — types central to the domain (e.g. `ProductData`) live in `tealhelix-architecture`,
+- **Core domain model** — types central to the domain (e.g. `Classification`) live in `tealhelix-architecture`,
   `howibuy-model`, package `eu.tealhelix.howibuy.v1.model`). These are the model the whole system is built around.
 - **Service-interface return/parameter types** — types returned or accepted by a service interface (in
   `eu.tealhelix.howibuy.services.v1`) that are NOT part of the core model belong in `eu.tealhelix.howibuy.services.v1.types`.

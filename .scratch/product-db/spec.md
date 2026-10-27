@@ -215,7 +215,7 @@ neither changes a product that the other has read.
 ### HowiBuy: assessment
 
 - `SingleProductAssessor` splits:
-  - `ReferenceProductIdentification`: `(CatalogueId, ProductKey)` → archetype, or a failure reason.
+  - `ReferenceProductIdentifier`: `(CatalogueId, ProductKey)` → archetype, or a failure reason.
   - The recommendation part (`ScoredArchetypes` and what follows).
   The LLM descent moves behind `llm-classifications` and is no longer on the request path.
 - The request: the Catalogue comes from the token, and the body carries product keys and the language for the answer.
@@ -229,6 +229,13 @@ neither changes a product that the other has read.
   "unknown" from "not classified yet".)
 - An Inactive Listing of the scanned product does not prevent its assessment. A product with no Listing in the user's
   Catalogue but known to the Retailer is assessed too: the Classification belongs to the product.
+- A Classification answers with its archetype even when its product is pending again (changed since, or reopened) or
+  it needs review. The Catalogue is not checked again at assessment time.
+- **Identification diagnostics** come with every outcome but `UNKNOWN_PRODUCT`: the retailer product id, and, once
+  classified, the classifier, whether the Classification needs review, whether the product is pending, and the
+  archetype (id and name) when there is one.
+- A multi request carries at most 400 product keys (`400` otherwise). A key sent twice is answered twice, in the order
+  sent. A batch is looked up with one query.
 - **Catalogue-aware recommendation.** `SubstitutionSearch.find` takes the set of archetypes stocked in the Catalogue (=
   having at least one active Listing whose product is classified to it), and filters candidates by it *before*
   ranking. The reference archetype always stays a candidate (see `GOOD_ENOUGH`). Query the set per request first, and

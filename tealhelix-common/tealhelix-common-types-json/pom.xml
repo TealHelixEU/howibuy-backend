@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>eu.tealhelix</groupId>
+		<artifactId>tealhelix-common</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>tealhelix-common-types-json</artifactId>
+
+	<name>TealHelix: Common types JSON</name>
+	<description>Map the common types to JSON with Jackson</description>
+
+	<packaging>jar</packaging>
+
+	<dependencies>
+		<!-- PROJECT -->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>tealhelix-common-types</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- OTHER -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
+</project>

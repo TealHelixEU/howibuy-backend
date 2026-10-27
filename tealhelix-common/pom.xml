@@ -23,6 +23,7 @@
 		<module>tealhelix-common-services-impl</module>
 		<module>tealhelix-common-testutils</module>
 		<module>tealhelix-common-types</module>
+		<module>tealhelix-common-types-json</module>
 		<module>tealhelix-common-utils</module>
 		<module>tealhelix-common-web</module>
 	</modules>

@@ -9,19 +9,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Currency;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
-import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.howibuy.dao.ArchetypeCategoryDao;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
@@ -36,7 +33,6 @@ import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.services.v1.enrichment.FoodTermGlossary;
 import eu.tealhelix.howibuy.services.v1.types.ArchetypeMatchOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
-import eu.tealhelix.howibuy.v1.model.ImmutableProductData;
 import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ProductBaseData;
 import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
@@ -65,13 +61,7 @@ public class ArchetypeMatchingTest {
 	// At every level the intended pick is the first candidate (index 0) in the lists below.
 	private static final AiSelection FIRST = new AiSelection.Match(0);
 
-	private static final ProductBaseData PRODUCT = ImmutableProductData.builder()
-			.productKey(new ProductKeyImpl("product-key"))
-			.language(Locale.ENGLISH)
-			.name("Freshly squeezed orange juice")
-			.price(new BigDecimal("2.50"))
-			.currency(Currency.getInstance("EUR"))
-			.build();
+	private static final ProductBaseData PRODUCT = TrimmedProductBaseData.of("en", "Freshly squeezed orange juice", Map.of(), List.of());
 
 	/** The category the AI picks at each level of every successful descent below. */
 	private static final ArchetypeCategory BEVERAGES = category("00000000-0000-0000-0000-000000000001", "Beverages");
