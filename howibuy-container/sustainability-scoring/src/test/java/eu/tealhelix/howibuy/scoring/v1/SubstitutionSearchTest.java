@@ -9,14 +9,18 @@ import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL
 import static eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel.LARGE;
 import static eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel.MEDIUM;
 import static eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel.SMALL;
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
@@ -118,6 +122,25 @@ class SubstitutionSearchTest {
 	}
 
 	@Test
+	void neverAdmitsAnArchetypeTheCatalogueDoesNotStock() {
+		var alternatives = searchStocking(Set.of(PERSONAL_FAVOURITE.productId(), COMPROMISE.productId()),
+				MEDIUM, REFERENCE, PERSONAL_FAVOURITE, SCIENTIFIC_FAVOURITE, COMPROMISE);
+
+		assertThat(alternatives.bestScientific()).as("the scientific favourite would win, but nothing in the Catalogue is it")
+				.contains(COMPROMISE);
+	}
+
+	@Test
+	void keepsTheReferenceProductACandidateWhenTheCatalogueDoesNotStockIt() {
+		var alternatives = searchStocking(Set.of(), MEDIUM, REFERENCE, PERSONAL_FAVOURITE, SCIENTIFIC_FAVOURITE, COMPROMISE);
+
+		assertThat(alternatives.bestPersonal()).as("the user holds the reference product, wherever it came from")
+				.contains(REFERENCE);
+		assertThat(alternatives.bestScientific()).contains(REFERENCE);
+		assertThat(alternatives.bestCombined()).contains(REFERENCE);
+	}
+
+	@Test
 	void findsNoAlternativeWhenNoCategorySubstitutesForTheReferenceCategory() {
 		var search = new SubstitutionSearch(
 				ScoredCorpus.of(List.of(REFERENCE, COMPROMISE)),
@@ -125,7 +148,7 @@ class SubstitutionSearchTest {
 				SCIENTIFIC,
 				SubstitutionSettings.defaults());
 
-		var alternatives = search.find(REFERENCE.productId(), PERSONAL);
+		var alternatives = search.find(REFERENCE.productId(), PERSONAL, Set.of(COMPROMISE.productId()));
 
 		assertThat(alternatives.reference()).as("an empty result still says what was searched for").isEqualTo(REFERENCE);
 		assertThat(alternatives.bestPersonal()).isEmpty();
@@ -157,7 +180,15 @@ class SubstitutionSearchTest {
 		assertThat(settings.scientificWeight()).isEqualTo(0.4);
 	}
 
+	/**
+	 * Searches a Catalogue that stocks every product but the reference, which is always a candidate anyway.
+	 */
 	private static Alternatives search(SubstitutabilityLevel level, ScoredProduct reference, ScoredProduct... others) {
+		return searchStocking(Stream.of(others).map(ScoredProduct::productId).collect(toSet()), level, reference, others);
+	}
+
+	private static Alternatives searchStocking(
+			Set<ArchetypeProductId> stocked, SubstitutabilityLevel level, ScoredProduct reference, ScoredProduct... others) {
 		var products = new ArrayList<ScoredProduct>();
 		products.add(reference);
 		products.addAll(List.of(others));
@@ -166,7 +197,7 @@ class SubstitutionSearchTest {
 				SubstitutabilityMatrix.of(MATRIX),
 				SCIENTIFIC,
 				SubstitutionSettings.defaults().at(level));
-		return search.find(reference.productId(), PERSONAL);
+		return search.find(reference.productId(), PERSONAL, stocked);
 	}
 
 	private static ScoredProduct scored(String agbCode, ArchetypeCategoryId categoryId, double environment, double animalWelfare, double social, double health) {

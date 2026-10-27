@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.ToDoubleFunction;
 
 import eu.tealhelix.howibuy.scoring.v1.Alternatives;
@@ -81,16 +82,18 @@ public final class ScoredArchetypes {
 	}
 
 	/**
-	 * What to recommend in place of the given archetype product, under the given personal weighting profile.
+	 * What to recommend in place of the given archetype product, under the given personal weighting profile, among the
+	 * archetypes the user's Catalogue stocks.
 	 * <p>
 	 * Nothing is recommended for a product outside the Nutri-Score scheme, which has no overall score to compare
 	 * against; nor for one whose category nothing substitutes for at the configured level. Both are answers, not
 	 * failures, and both read as {@code NO_SUGGESTION}.
 	 */
-	public BestAlternatives recommendationsFor(ArchetypeProductId referenceProductId, WeightProfile personalProfile) {
+	public BestAlternatives recommendationsFor(
+			ArchetypeProductId referenceProductId, WeightProfile personalProfile, Set<ArchetypeProductId> stocked) {
 		if (scoredCorpus.find(referenceProductId).isEmpty()) return BestAlternatives.none();
 
-		var alternatives = search.find(referenceProductId, personalProfile);
+		var alternatives = search.find(referenceProductId, personalProfile, stocked);
 		var scientificProfile = ScientificWeights.profile();
 		ToDoubleFunction<ScoredProduct> personalScore = product -> product.overallScore(personalProfile);
 		ToDoubleFunction<ScoredProduct> scientificScore = product -> product.overallScore(scientificProfile);

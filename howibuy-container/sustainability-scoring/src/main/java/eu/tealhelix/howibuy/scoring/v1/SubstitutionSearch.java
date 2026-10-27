@@ -3,6 +3,7 @@ package eu.tealhelix.howibuy.scoring.v1;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.ToDoubleFunction;
 
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
@@ -13,7 +14,8 @@ import eu.tealhelix.howibuy.v1.types.WeightProfile;
  * <p>
  * The search is four steps:
  * <ol>
- *     <li>Which categories may substitute for the reference product's category at the configured level</li>
+ *     <li>Which categories may substitute for the reference product's category at the configured level, and which of
+ *     their products the user's Catalogue stocks</li>
  *     <li>Which of their products are at least as good as the reference on the <em>scientific</em> score</li>
  *     <li>How those survivors rank under the personal, scientific, and combined criteria</li>
  *     <li>And the best of each</li>
@@ -44,12 +46,16 @@ public final class SubstitutionSearch {
 	}
 
 	/**
+	 * @param referenceProductId The archetype product of the scanned product
+	 * @param personalProfile    The user's weighting profile
+	 * @param stocked            The archetype products the user's Catalogue stocks; the reference product is a candidate
+	 *                           whether it is among them or not
 	 * @throws IllegalArgumentException if the reference product has no scores, which for an archetype product means it
 	 *                                  has no Nutri-Score and so cannot be assessed at all
 	 */
-	public Alternatives find(ArchetypeProductId referenceProductId, WeightProfile personalProfile) {
+	public Alternatives find(ArchetypeProductId referenceProductId, WeightProfile personalProfile, Set<ArchetypeProductId> stocked) {
 		var reference = corpus.require(referenceProductId);
-		var candidates = candidatesFor(reference);
+		var candidates = candidatesFor(reference, stocked);
 		if (candidates.isEmpty()) return Alternatives.none(reference);
 
 		return new Alternatives(
@@ -61,12 +67,14 @@ public final class SubstitutionSearch {
 
 	/**
 	 * The reference product is among its own candidates: its category substitutes for itself, and the no-regression
-	 * comparison is inclusive. That is what lets the search conclude the user already has the best available choice.
+	 * comparison is inclusive. That is what lets the search conclude the user already has the best available choice, so
+	 * it stays a candidate even when the Catalogue does not stock it: the user holds it already.
 	 */
-	private List<ScoredProduct> candidatesFor(ScoredProduct reference) {
+	private List<ScoredProduct> candidatesFor(ScoredProduct reference, Set<ArchetypeProductId> stocked) {
 		var eligibleCategories = matrix.categoriesSubstitutableFor(reference.categoryId(), settings.minimumDegree());
 		var referenceScore = reference.overallScore(scientificProfile);
 		return corpus.getProducts().stream()
+				.filter(product -> product.productId().equals(reference.productId()) || stocked.contains(product.productId()))
 				.filter(product -> eligibleCategories.contains(product.categoryId()))
 				.filter(product -> product.overallScore(scientificProfile) >= referenceScore)
 				.toList();

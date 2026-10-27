@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.scoring.v1.SubstitutionSettings;
@@ -97,10 +99,11 @@ class ScoredArchetypesTest {
 			impacts(SPRING_WATER, "Spring water", "700", WATER, 0.0, 0.0, 0.0, "Nutriscore_A"));
 
 	private static final WeightProfile PERSONAL = personalProfileOnEnvironment();
+	private static final Set<ArchetypeProductId> ALL_STOCKED = CORPUS.stream().map(ArchetypeProductImpacts::getId).collect(Collectors.toSet());
 
 	@Test
 	void reportsTheBestAlternativeUnderEachCriterionScoredByThatCriterion() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL);
+		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
 
 		assertAlternative(best.personal(), SUGGESTION, GREENEST, "Greenest juice", JUICES, 0.5, 1.0);
 		assertAlternative(best.scientific(), SUGGESTION, SOUNDEST, "Soundest juice", JUICES, 0.5625, 0.875);
@@ -109,7 +112,7 @@ class ScoredArchetypesTest {
 
 	@Test
 	void reportsTheReferenceProductItselfAsGoodEnoughWhenNothingEligibleBeatsIt() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(SOUNDEST, PERSONAL);
+		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(SOUNDEST, PERSONAL, ALL_STOCKED);
 
 		assertAlternative(best.personal(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.5, 0.5);
 		assertAlternative(best.scientific(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.875, 0.875);
@@ -117,8 +120,16 @@ class ScoredArchetypesTest {
 	}
 
 	@Test
+	void neverSuggestsAnArchetypeTheCatalogueDoesNotStock() {
+		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL, Set.of(SOUNDEST));
+
+		assertAlternative(best.personal(), GOOD_ENOUGH, REFERENCE, "Reference juice", JUICES, 0.5, 0.5);
+		assertAlternative(best.scientific(), SUGGESTION, SOUNDEST, "Soundest juice", JUICES, 0.5625, 0.875);
+	}
+
+	@Test
 	void reportsNoSuggestionForAProductOutsideTheNutriScoreScheme() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(SPIRITS, PERSONAL);
+		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(SPIRITS, PERSONAL, ALL_STOCKED);
 
 		assertNoSuggestion(best.personal());
 		assertNoSuggestion(best.scientific());
@@ -127,7 +138,7 @@ class ScoredArchetypesTest {
 
 	@Test
 	void reportsNoSuggestionWhenNothingSubstitutesForTheReferenceCategory() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(CANDY_BAR, PERSONAL);
+		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(CANDY_BAR, PERSONAL, ALL_STOCKED);
 
 		assertNoSuggestion(best.personal());
 		assertNoSuggestion(best.scientific());
@@ -136,7 +147,7 @@ class ScoredArchetypesTest {
 
 	@Test
 	void neverRecommendsAProductThatCannotBeScoredItself() {
-		var best = archetypes(SubstitutabilityLevel.LARGE).recommendationsFor(REFERENCE, PERSONAL);
+		var best = archetypes(SubstitutabilityLevel.LARGE).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
 
 		assertTrue(
 				List.of(best.personal(), best.scientific(), best.combined()).stream()
@@ -146,8 +157,8 @@ class ScoredArchetypesTest {
 
 	@Test
 	void reachesAMoreDistantCategoryOnlyAtALargerSubstitutabilityLevel() {
-		var atSmall = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL);
-		var atLarge = archetypes(SubstitutabilityLevel.LARGE).recommendationsFor(REFERENCE, PERSONAL);
+		var atSmall = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
+		var atLarge = archetypes(SubstitutabilityLevel.LARGE).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
 
 		assertEquals(SOUNDEST, atSmall.scientific().getArchetypeProductId(),
 				"water substitutes for juices at degree 1, below the small level's cut-off");

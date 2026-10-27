@@ -28,6 +28,7 @@ import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.v1.model.ImmutableProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.IdentificationFailureReason;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
@@ -59,6 +60,8 @@ public class ProductAssessmentServiceImplTest {
 	/** Which identifications they are does not matter here, only that each product is assessed with its own. */
 	private static final ProductIdentification IDENTIFIED = new ProductIdentification.Identified(new ArchetypeProductIdImpl("00000000-0000-0000-0000-0000000000fc"), null);
 	private static final ProductIdentification UNKNOWN = new ProductIdentification.NotIdentified(IdentificationFailureReason.UNKNOWN_PRODUCT, null);
+	/** Which archetypes they are does not matter here, only that every product is assessed against the Catalogue's. */
+	private static final Set<ArchetypeProductId> STOCKED = Set.of(new ArchetypeProductIdImpl("00000000-0000-0000-0000-0000000000fd"));
 
 	@Produces
 	@ExcludeBean
@@ -75,14 +78,20 @@ public class ProductAssessmentServiceImplTest {
 	@Mock
 	PersonalWeightsProvider personalWeightsProvider;
 
+	@Produces
+	@ExcludeBean
+	@Mock
+	CatalogueAssortmentService catalogueAssortmentService;
+
 	@Inject
 	ProductAssessmentServiceImpl sut;
 
 	@Test
 	void assessSingleProductReturnsTheAssessorsOutcomeOfTheIdentifiedProductForAValidUser() {
 		mockPersonalWeights();
+		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT), Map.of(PRODUCT, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
 
 		var outcome = sut.assessSingleProduct(USER, CATALOGUE, PRODUCT).await().atMost(WAIT);
 
@@ -108,9 +117,10 @@ public class ProductAssessmentServiceImplTest {
 	@Test
 	void syncBatchReportsOneOutcomePerProductInOrder() {
 		mockPersonalWeights();
+		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, UNKNOWN));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, UNKNOWN, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
+		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, UNKNOWN, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
 
@@ -127,9 +137,10 @@ public class ProductAssessmentServiceImplTest {
 	@Test
 	void syncBatchReportsAnOutcomeForEachTimeAProductIsSent() {
 		mockPersonalWeights();
+		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, UNKNOWN));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, UNKNOWN, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
+		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, UNKNOWN, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2, PRODUCT)).await().atMost(WAIT);
 
@@ -139,9 +150,10 @@ public class ProductAssessmentServiceImplTest {
 	@Test
 	void syncBatchIsolatesAnUnexpectedFailureAsFailureOther() {
 		mockPersonalWeights();
+		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
+		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
 
@@ -154,9 +166,10 @@ public class ProductAssessmentServiceImplTest {
 	@Test
 	void asyncBatchStreamsOneOutcomePerProductIsolatingFailures() {
 		mockPersonalWeights();
+		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
+		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
 
 		var outcomes = sut.assessMultipleProductsAsync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2))
 				.subscribe().withSubscriber(AssertSubscriber.create(Long.MAX_VALUE))
@@ -169,20 +182,26 @@ public class ProductAssessmentServiceImplTest {
 	}
 
 	@Test
-	void resolvesTheUsersWeightingProfileAndIdentifiesTheProductsOncePerBatchRatherThanOncePerProduct() {
+	void resolvesTheUsersWeightingProfileIdentifiesTheProductsAndReadsTheStockedArchetypesOncePerBatchRatherThanOncePerProduct() {
 		mockPersonalWeights();
+		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, SUCCESS)));
 
 		sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2)).await().atMost(WAIT);
 
 		verify(personalWeightsProvider, times(1)).forUser(USER);
 		verify(referenceProductIdentifier, times(1)).identify(CATALOGUE, Set.of(PRODUCT, PRODUCT2));
+		verify(catalogueAssortmentService, times(1)).stockedArchetypes(CATALOGUE);
 	}
 
 	private void mockPersonalWeights() {
 		when(personalWeightsProvider.forUser(USER)).thenReturn(Uni.createFrom().item(PERSONAL));
+	}
+
+	private void mockStockedArchetypes() {
+		when(catalogueAssortmentService.stockedArchetypes(CATALOGUE)).thenReturn(Uni.createFrom().item(STOCKED));
 	}
 
 	private void mockIdentification(List<ProductKey> productKeys, Map<ProductKey, ProductIdentification> identifications) {

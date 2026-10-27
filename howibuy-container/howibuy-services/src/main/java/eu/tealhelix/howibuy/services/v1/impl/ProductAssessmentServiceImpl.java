@@ -17,6 +17,7 @@ import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -31,18 +32,21 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	private final ReferenceProductIdentifier referenceProductIdentifier;
 	private final SingleProductAssessor singleProductAssessor;
 	private final PersonalWeightsProvider personalWeightsProvider;
+	private final CatalogueAssortmentService catalogueAssortmentService;
 
 	@Inject
 	public ProductAssessmentServiceImpl(
 			TealHelixAuthorization authorization,
 			ReferenceProductIdentifier referenceProductIdentifier,
 			SingleProductAssessor singleProductAssessor,
-			PersonalWeightsProvider personalWeightsProvider
+			PersonalWeightsProvider personalWeightsProvider,
+			CatalogueAssortmentService catalogueAssortmentService
 	) {
 		this.authorization = authorization;
 		this.referenceProductIdentifier = referenceProductIdentifier;
 		this.singleProductAssessor = singleProductAssessor;
 		this.personalWeightsProvider = personalWeightsProvider;
+		this.catalogueAssortmentService = catalogueAssortmentService;
 	}
 
 	@Override
@@ -52,7 +56,8 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		return forc(
 				personalWeightsProvider.forUser(user),
 				_ -> referenceProductIdentifier.identify(catalogueId, Set.of(productKey)),
-				(personalProfile, identifications) -> singleProductAssessor.assessOne(productKey, identifications.get(productKey), personalProfile));
+				(_, _) -> catalogueAssortmentService.stockedArchetypes(catalogueId),
+				(personalProfile, identifications, stocked) -> singleProductAssessor.assessOne(productKey, identifications.get(productKey), personalProfile, stocked));
 	}
 
 	@Override
@@ -71,8 +76,8 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	 * Assesses each product in order, emitting one outcome per key sent. Every per-product failure is isolated into that
 	 * product's outcome by {@link #assessOneIsolated}, so a failure in one product never terminates the batch.
 	 * <p>
-	 * The user's weighting profile and the identifications of the products are each read once for the whole batch, so
-	 * the batch issues the same queries whatever its size.
+	 * The user's weighting profile, the identifications of the products and the archetypes the Catalogue stocks are each
+	 * read once for the whole batch, so the batch issues the same queries whatever its size.
 	 */
 	private Multi<ProductAssessmentOutcome> assessBatch(User user, CatalogueId catalogueId, List<ProductKey> productKeys) {
 		LOG.info("Assess (batch) products, user: {}, catalogue: {}, keys: {}", user.getId().asString(), catalogueId.asString(),
@@ -80,18 +85,24 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		return forcm(
 				personalWeightsProvider.forUser(user),
 				_ -> referenceProductIdentifier.identify(catalogueId, Set.copyOf(productKeys)),
-				(personalProfile, identifications) -> assessProducts(productKeys, identifications, personalProfile))
+				(_, _) -> catalogueAssortmentService.stockedArchetypes(catalogueId),
+				(personalProfile, identifications, stocked) -> assessProducts(productKeys, identifications, personalProfile, stocked))
 				.onItem().transformToMulti(Function.identity());
 	}
 
 	private Multi<ProductAssessmentOutcome> assessProducts(
-			List<ProductKey> productKeys, Map<ProductKey, ProductIdentification> identifications, WeightProfile personalProfile) {
+			List<ProductKey> productKeys,
+			Map<ProductKey, ProductIdentification> identifications,
+			WeightProfile personalProfile,
+			Set<ArchetypeProductId> stocked
+	) {
 		return Multi.createFrom().iterable(productKeys)
-				.onItem().transformToUniAndConcatenate(productKey -> assessOneIsolated(productKey, identifications.get(productKey), personalProfile));
+				.onItem().transformToUniAndConcatenate(productKey -> assessOneIsolated(productKey, identifications.get(productKey), personalProfile, stocked));
 	}
 
-	private Uni<ProductAssessmentOutcome> assessOneIsolated(ProductKey productKey, ProductIdentification identification, WeightProfile personalProfile) {
-		return singleProductAssessor.assessOne(productKey, identification, personalProfile)
+	private Uni<ProductAssessmentOutcome> assessOneIsolated(
+			ProductKey productKey, ProductIdentification identification, WeightProfile personalProfile, Set<ArchetypeProductId> stocked) {
+		return singleProductAssessor.assessOne(productKey, identification, personalProfile, stocked)
 				.onFailure().recoverWithItem(failure -> {
 					LOG.error("Unexpected failure assessing product in batch, key: {}", productKey.asString(), failure);
 					return SingleProductAssessor.outcome(productKey, FAILURE_OTHER);

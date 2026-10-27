@@ -14,6 +14,7 @@ import eu.tealhelix.howibuy.v1.model.Classification;
 import eu.tealhelix.howibuy.v1.model.ClassificationAttempt;
 import eu.tealhelix.howibuy.v1.model.ClassificationToReview;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
 import io.smallrye.mutiny.Uni;
@@ -50,6 +51,16 @@ public interface ClassificationDao {
 	 * @return The products found, in no particular order; a key that names no product of the Retailer has none
 	 */
 	Uni<List<ProductToAssess>> findProductsToAssess(ReactivePersistenceContext em, CatalogueId catalogueId, Set<ProductKey> productKeys);
+
+	/**
+	 * Find the archetypes a Catalogue stocks: those that a product with an active Listing in it is classified to,
+	 * whatever the state of its Classification.
+	 *
+	 * @param em          The persistence context
+	 * @param catalogueId The Catalogue
+	 * @return The archetypes, none for an unknown Catalogue
+	 */
+	Uni<Set<ArchetypeProductId>> findStockedArchetypes(ReactivePersistenceContext em, CatalogueId catalogueId);
 
 	/**
 	 * Find a product to record a Classification Attempt of, and lock its row until the transaction ends, so that the

@@ -89,6 +89,7 @@ public class ClassificationDaoImplTest {
 	private static final UUID OTHER_RETAILER = UUID.fromString("0c5d2e7a-3b41-4f6e-8a90-2d7b1c4e5f62");
 	private static final String OTHER_RETAILERS_CATALOGUE = "other-gr";
 	private static final ArchetypeProductId YOGHURT = new ArchetypeProductIdImpl("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a01");
+	private static final ArchetypeProductId KEFIR = new ArchetypeProductIdImpl("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a02");
 	private static final LocalDateTime T0 = LocalDateTime.of(2026, 10, 22, 12, 0);
 
 	@Container
@@ -122,17 +123,23 @@ public class ClassificationDaoImplTest {
 		category.setId(UUID.fromString("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a00"));
 		category.setLevel((short) 3);
 		category.setName("Yoghurts");
+		var yoghurt = archetype(YOGHURT, category, "Yoghurt", "agb-y");
+		var kefir = archetype(KEFIR, category, "Kefir", "agb-k");
+		sessionFactory.withTransaction(session -> session.persistAll(retailer, catalogue, catalogueCy, otherRetailer, otherRetailersCatalogue, category).chain(() -> session.persistAll(yoghurt, kefir)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	private static ArchetypeProductEntity archetype(ArchetypeProductId id, ArchetypeCategoryEntity category, String name, String agbCode) {
 		var archetype = new ArchetypeProductEntity();
-		archetype.setId(YOGHURT.asUuid());
+		archetype.setId(id.asUuid());
 		archetype.setCategory(category);
-		archetype.setName("Yoghurt");
-		archetype.setAgbCode("agb-y");
+		archetype.setName(name);
+		archetype.setAgbCode(agbCode);
 		archetype.setEnvironmentalImpact(new EnvironmentalImpact());
 		archetype.setSocialImpact(new SocialImpact());
 		archetype.setAnimalWelfareImpact(new AnimalWelfareImpact());
 		archetype.setNutriScore("Nutriscore_A");
-		sessionFactory.withTransaction(session -> session.persistAll(retailer, catalogue, catalogueCy, otherRetailer, otherRetailersCatalogue, category).chain(() -> session.persist(archetype)))
-				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		return archetype;
 	}
 
 	@BeforeEach
@@ -607,6 +614,63 @@ public class ClassificationDaoImplTest {
 		var products = findProductsToAssess(sessionFactory, CATALOGUE, IntStream.rangeClosed(1, 1000).mapToObj(i -> "product-" + i).toArray(String[]::new));
 
 		assertEquals(1000, products.size());
+	}
+
+	@Test
+	void theCatalogueStocksTheArchetypesOfItsClassifiedProductsActivelyListed(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")),
+				product("kefir", 2, "h2", Map.of("el", "Κεφίρ")),
+				product("honey", 3, "h3", Map.of("el", "Μέλι")),
+				product("feta", 4, "h4", Map.of("el", "Φέτα")));
+		var ids = idsByInputHash(sessionFactory);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), classification(YOGHURT, "h1", false, 0)));
+		fixtures.addAll(review(ids.get("h2"), classification(KEFIR, "h2", false, 0)));
+		fixtures.addAll(review(ids.get("h3"), classification(null, "h3", false, 0)));
+		persist(sessionFactory, fixtures);
+
+		assertEquals(Set.of(YOGHURT, KEFIR), findStockedArchetypes(sessionFactory, CATALOGUE));
+	}
+
+	@Test
+	void anArchetypeListedOnlyInactiveOrInAnotherCatalogueIsNotStocked(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				listedIn(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")), listing(CATALOGUE, false)),
+				listedIn(product("kefir", 2, "h2", Map.of("el", "Κεφίρ")), listing(CATALOGUE_CY, true)));
+		var ids = idsByInputHash(sessionFactory);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), classification(YOGHURT, "h1", false, 0)));
+		fixtures.addAll(review(ids.get("h2"), classification(KEFIR, "h2", false, 0)));
+		persist(sessionFactory, fixtures);
+
+		assertEquals(Set.of(), findStockedArchetypes(sessionFactory, CATALOGUE));
+		assertEquals(Set.of(KEFIR), findStockedArchetypes(sessionFactory, CATALOGUE_CY));
+	}
+
+	/**
+	 * Whatever state its Classification is in, a product names the archetype it was last classified to.
+	 */
+	@Test
+	void theClassificationOfAProductChangedSinceOrToReviewStocksItsArchetype(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory,
+				product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")),
+				product("kefir", 2, "h2", Map.of("el", "Κεφίρ")));
+		var ids = idsByInputHash(sessionFactory);
+		var fixtures = new ArrayList<>();
+		fixtures.addAll(review(ids.get("h1"), classification(YOGHURT, "h1", false, 0)));
+		fixtures.addAll(review(ids.get("h2"), classification(KEFIR, "h2", true, 0)));
+		persist(sessionFactory, fixtures);
+		apply(sessionFactory, product("yoghurt", 3, "h3", Map.of("el", "Γιαούρτι στραγγιστό")));
+
+		assertEquals(Set.of(YOGHURT, KEFIR), findStockedArchetypes(sessionFactory, CATALOGUE));
+	}
+
+	private static Set<ArchetypeProductId> findStockedArchetypes(Mutiny.SessionFactory sessionFactory, String catalogueId) {
+		var sut = new ClassificationDaoImpl();
+		return new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.findStockedArchetypes(em, new CatalogueIdImpl(catalogueId)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
 	private static List<ProductToAssess> findProductsToAssess(Mutiny.SessionFactory sessionFactory, String catalogueId, String... productKeys) {

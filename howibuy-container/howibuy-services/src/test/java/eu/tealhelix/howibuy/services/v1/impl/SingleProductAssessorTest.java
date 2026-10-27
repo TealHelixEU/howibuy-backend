@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -128,6 +129,17 @@ public class SingleProductAssessorTest {
 	}
 
 	@Test
+	void reportsTheIdentifiedArchetypeGoodEnoughWhenTheCatalogueDoesNotStockTheBetterOne() {
+		mockArchetypeCorpus("Nutriscore_C");
+
+		var outcome = sut.assessOne(PRODUCT_KEY, new ProductIdentification.Identified(PICKED_ARCHETYPE, CLASSIFIED), ScientificWeights.profile(), Set.of())
+				.await().atMost(WAIT);
+
+		assertEquals(AlternativeForProductType.GOOD_ENOUGH, outcome.getBestScientificAlternative().getType());
+		assertEquals(PICKED_ARCHETYPE, outcome.getBestScientificAlternative().getArchetypeProductId());
+	}
+
+	@Test
 	void reportsNoSuggestionWhenTheIdentifiedArchetypeIsOutsideTheNutriScoreScheme() {
 		mockArchetypeCorpus("0");
 
@@ -141,8 +153,11 @@ public class SingleProductAssessorTest {
 		assertEquals(CLASSIFIED, outcome.getDiagnostics(), "and how the product was identified is still reported");
 	}
 
+	/**
+	 * Assess in a Catalogue that stocks both archetypes.
+	 */
 	private ProductAssessmentOutcome assess(ProductIdentification identification) {
-		return sut.assessOne(PRODUCT_KEY, identification, ScientificWeights.profile()).await().atMost(WAIT);
+		return sut.assessOne(PRODUCT_KEY, identification, ScientificWeights.profile(), Set.of(PICKED_ARCHETYPE, BETTER_ARCHETYPE)).await().atMost(WAIT);
 	}
 
 	/**

@@ -1,5 +1,6 @@
 package eu.tealhelix.howibuy.dao.impl;
 
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static jakarta.persistence.LockModeType.PESSIMISTIC_WRITE;
 import static jakarta.persistence.criteria.JoinType.LEFT;
 
@@ -27,6 +28,8 @@ import eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity_;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationEntity_;
+import eu.tealhelix.howibuy.dao.jpa.ListingEntity;
+import eu.tealhelix.howibuy.dao.jpa.ListingEntity_;
 import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity_;
@@ -48,6 +51,7 @@ import eu.tealhelix.howibuy.v1.model.ImmutableMatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.ImmutablePendingProduct;
 import eu.tealhelix.howibuy.v1.model.MatchDiagnostics;
 import eu.tealhelix.howibuy.v1.model.PendingProduct;
+import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.Classifier;
 import eu.tealhelix.howibuy.v1.types.HasRetailerProductId;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
@@ -141,6 +145,25 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		return em.createQuery(q).getResultList().map(rows -> rows.stream()
 				.map(row -> toProductToAssess(row.get(id), row.get(productKey), row.get(inputHash), row.get(classification)))
 				.toList());
+	}
+
+	@Override
+	public Uni<Set<ArchetypeProductId>> findStockedArchetypes(ReactivePersistenceContext em, CatalogueId catalogueId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(UUID.class);
+		var listing = q.from(ListingEntity.class);
+		var classification = listing.join(ClassificationEntity.class);
+		classification.on(cb.equal(classification.get(ClassificationEntity_.retailerProductId), listing.get(ListingEntity_.retailerProduct).get(RetailerProductEntity_.id)));
+		var archetypeProductId = classification.get(ClassificationEntity_.archetypeProductId);
+		q.select(archetypeProductId).distinct(true);
+		q.where(
+				cb.equal(listing.get(ListingEntity_.catalogueId), catalogueId.asString()),
+				cb.isTrue(listing.get(ListingEntity_.active)),
+				cb.isNotNull(archetypeProductId)
+		);
+		return em.createQuery(q).getResultList().map(ids -> ids.stream()
+				.map(id -> new ArchetypeProductIdImpl(id.toString()))
+				.collect(toUnmodifiableSet()));
 	}
 
 	@Override

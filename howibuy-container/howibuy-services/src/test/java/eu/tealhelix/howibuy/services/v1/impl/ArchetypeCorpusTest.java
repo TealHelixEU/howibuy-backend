@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -77,7 +78,7 @@ public class ArchetypeCorpusTest {
 		mockCorpus();
 
 		var recommendations = sut.scoredArchetypes().await().atMost(WAIT)
-				.recommendationsFor(ORANGE_JUICE, ScientificWeights.profile());
+				.recommendationsFor(ORANGE_JUICE, ScientificWeights.profile(), Set.of());
 
 		assertEquals(AlternativeForProductType.GOOD_ENOUGH, recommendations.scientific().getType(),
 				"the only product of its category, so it is its own best alternative");

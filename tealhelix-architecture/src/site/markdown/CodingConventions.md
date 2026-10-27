@@ -98,6 +98,7 @@
 6. **TBD or phased out** Classes used as inputs/outputs of services and are not part of the main model have the `-Param`/`-Result`
    suffix respectively.
 7. When a word component of a Java identifier is all capitals, de-capitalize it, e.g. "DTO" &rarr; "SomethingDto", "DAO" &rarr; "SomethingDao".
+8. Clearly distinguish classes that hold data from ones that act on data. The former should be named after the thing they model. The latter should be given names that resemble proper nouns, marking them as programmatic "personas" that act on data. Use the `-Service`/`-ServiceImpl` suffix appended to the name of a "thing" (the former case) to mark something that acts on that thing.
 
 ## Tests
 
