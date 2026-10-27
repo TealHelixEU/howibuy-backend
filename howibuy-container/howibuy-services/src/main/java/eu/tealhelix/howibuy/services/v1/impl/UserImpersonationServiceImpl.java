@@ -2,9 +2,11 @@ package eu.tealhelix.howibuy.services.v1.impl;
 
 import static java.lang.Boolean.TRUE;
 
+import java.util.function.BiFunction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
@@ -17,6 +19,7 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
+import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.ConsentDao;
 import eu.tealhelix.howibuy.dao.CorrelationIdDao;
 import eu.tealhelix.howibuy.dao.RetailerDao;
@@ -35,6 +38,7 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 	private final ConsentDao consentDao;
 	private final UserProfileDao userProfileDao;
 	private final RetailerDao retailerDao;
+	private final CatalogueDao catalogueDao;
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
 
 	@Inject
@@ -44,6 +48,7 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 			ConsentDao consentDao,
 			UserProfileDao userProfileDao,
 			RetailerDao retailerDao,
+			CatalogueDao catalogueDao,
 			ReactivePersistenceContextFactory persistenceContextFactory
 	) {
 		this.authorization = authorization;
@@ -51,11 +56,26 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 		this.consentDao = consentDao;
 		this.userProfileDao = userProfileDao;
 		this.retailerDao = retailerDao;
+		this.catalogueDao = catalogueDao;
 		this.persistenceContextFactory = persistenceContextFactory;
 	}
 
 	@Override
 	public Uni<User> impersonateUserAsRetailer(User currentUser, String correlationId) {
+		return impersonateUserAsRetailer(currentUser, correlationId, this::requireActiveRetailer);
+	}
+
+	@Override
+	public Uni<User> impersonateUserAsRetailer(User currentUser, String correlationId, CatalogueId catalogueId) {
+		return impersonateUserAsRetailer(currentUser, correlationId, (em, retailerId) ->
+				requireActiveRetailer(em, retailerId).chain(() -> requireActiveCatalogue(em, retailerId, catalogueId)));
+	}
+
+	/**
+	 * @param requirements What the retailer must satisfy to impersonate a user, checked in the transaction of the
+	 *                     impersonation, before the user is looked up
+	 */
+	private Uni<User> impersonateUserAsRetailer(User currentUser, String correlationId, BiFunction<ReactivePersistenceContext, RetailerId, Uni<Void>> requirements) {
 		return authorization.authorizeImpersonation(currentUser)
 				.invoke(() -> RequiredInputMissingException.throwIfRequiredInputMissing("correlationId", correlationId))
 				.invoke(() -> BadInputValueException.throwForStringMaxLength("correlationId", correlationId, 100))
@@ -63,7 +83,7 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 						persistenceContextFactory.withTransaction(tx -> {
 							LOG.info("Impersonating user as retailer {} -> correlationId: {}", currentUser.getId().asString(), correlationId);
 							var retailerId = new GenericRetailerId(currentUser.getId().asString());
-							return requireActiveRetailer(tx, retailerId)
+							return requirements.apply(tx, retailerId)
 									.chain(() -> correlationIdDao.requireByRetailerAndCorrelationId(tx, retailerId, correlationId)
 											.flatMap(user -> checkConsent(tx, user.getId(), retailerId))
 											.map(userId -> createUserObjectForExistingCorrelationId(userId, retailerId, correlationId))
@@ -86,6 +106,21 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 					} else if (!active) {
 						LOG.warn("Impersonation refused to a deactivated retailer: {}", retailerId.asString());
 						throw new NotAuthorizedException("Retailer is not active");
+					}
+				})
+				.replaceWithVoid();
+	}
+
+	/**
+	 * A retailer may serve a user only from a Catalogue of its own that is active. An unknown Catalogue and another
+	 * retailer's are refused alike, so the answer tells a retailer nothing about the Catalogues of others.
+	 */
+	private Uni<Void> requireActiveCatalogue(ReactivePersistenceContext em, RetailerId retailerId, CatalogueId catalogueId) {
+		return catalogueDao.findActiveFlag(em, retailerId, catalogueId)
+				.invoke(active -> {
+					if (!TRUE.equals(active)) {
+						LOG.warn("Impersonation refused in a Catalogue that is not an active Catalogue of the retailer {}, catalogueId: {}", retailerId.asString(), catalogueId.asString());
+						throw new NotAuthorizedException("Not an active Catalogue of the retailer");
 					}
 				})
 				.replaceWithVoid();

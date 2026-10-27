@@ -30,4 +30,10 @@ public class CatalogueDaoImpl implements CatalogueDao {
 				c -> new GenericRetailerId(c.getRetailerId().toString())
 		)));
 	}
+
+	@Override
+	public Uni<Boolean> findActiveFlag(ReactivePersistenceContext em, RetailerId retailerId, CatalogueId catalogueId) {
+		return em.find(CatalogueEntity.class, catalogueId.asString())
+				.map(catalogue -> catalogue == null || !catalogue.getRetailerId().equals(retailerId.asUuid()) ? null : catalogue.isActive());
+	}
 }

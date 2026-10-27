@@ -15,6 +15,8 @@ import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
+import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.dao.EntityNotFoundException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -27,6 +29,7 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.ConsentDao;
 import eu.tealhelix.howibuy.dao.CorrelationIdDao;
 import eu.tealhelix.howibuy.dao.RetailerDao;
@@ -55,6 +58,7 @@ public class UserImpersonationServiceImplTest {
 	private static final User REGULAR_USER = new UserImpl(USER_ID_REGULAR, null, null, false, true, Set.of());
 	private static final User USER_BOB = new UserImpl(USER_ID_REGULAR, "Bob Squarepants", EmailAddress.of("bob@krusty-krab.com"), false, true, Set.of());
 	private static final String CORRELATION_ID = "abc";
+	private static final CatalogueId CATALOGUE_ID = new CatalogueIdImpl("test-gr");
 
 	@Produces
 	@Mock
@@ -71,6 +75,10 @@ public class UserImpersonationServiceImplTest {
 	@Produces
 	@Mock
 	RetailerDao mockRetailerDao;
+
+	@Produces
+	@Mock
+	CatalogueDao mockCatalogueDao;
 
 	@Produces
 	@RegisterExtension
@@ -149,6 +157,44 @@ public class UserImpersonationServiceImplTest {
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 		assertNotNull(u);
 		assertEquals(USER_ID_REGULAR, u.getId());
+	}
+
+	@Test
+	@DisplayName("When invoking impersonateUserAsRetailer in an active Catalogue of the retailer, we get a User object")
+	void testImpersonateUserAsRetailerInActiveCatalogue() {
+		mockRetailerActive(RETAILER_USER);
+		mockCatalogueActiveFlag(RETAILER_USER, true);
+		mockExistingCorrelationId(RETAILER_USER, USER_BOB);
+		mockConsent(USER_BOB, RETAILER_USER);
+		mockToUser();
+		var u = sut.impersonateUserAsRetailer(RETAILER_USER, CORRELATION_ID, CATALOGUE_ID)
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		assertEquals(USER_ID_REGULAR, u.getId());
+	}
+
+	@Test
+	@DisplayName("When invoking impersonateUserAsRetailer in an inactive Catalogue of the retailer, we get a NotAuthorizedException")
+	void testImpersonateUserAsRetailerInInactiveCatalogue() {
+		mockRetailerActive(RETAILER_USER);
+		mockCatalogueActiveFlag(RETAILER_USER, false);
+		var t = sut.impersonateUserAsRetailer(RETAILER_USER, CORRELATION_ID, CATALOGUE_ID).subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getFailure();
+		assertInstanceOf(NotAuthorizedException.class, t);
+	}
+
+	@Test
+	@DisplayName("When invoking impersonateUserAsRetailer in a Catalogue the retailer does not have, we get a NotAuthorizedException")
+	void testImpersonateUserAsRetailerInCatalogueOfNoRetailer() {
+		mockRetailerActive(RETAILER_USER);
+		mockCatalogueActiveFlag(RETAILER_USER, null);
+		var t = sut.impersonateUserAsRetailer(RETAILER_USER, CORRELATION_ID, CATALOGUE_ID).subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getFailure();
+		assertInstanceOf(NotAuthorizedException.class, t);
+	}
+
+	private void mockCatalogueActiveFlag(User retailerUser, Boolean active) {
+		when(mockCatalogueDao.findActiveFlag(any(ReactivePersistenceContext.class), matchesRetailerId(retailerUser), eq(CATALOGUE_ID)))
+				.thenReturn(Uni.createFrom().item(active));
 	}
 
 	private void mockRetailerActive(User retailerUser) {
