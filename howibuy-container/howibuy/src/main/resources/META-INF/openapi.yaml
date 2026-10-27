@@ -14,39 +14,17 @@ components:
 
     # ---- Product assessment -------------------------------------------------------------------------------------
 
-    ProductData:
-      description: >-
-        A product put forward for assessment. Everything written in it must be in the one language named below, since
-        it is the text that drives the classification.
-      properties:
-        productKey:
-          description: >-
-            The caller's own identifier for this product. It is echoed on the outcome, which is how a caller ties each
-            answer back to the product it asked about.
-        language:
-          description: The language everything textual in this product is written in.
-        name:
-          description: The name of the product, as it reads to a shopper in that language.
-        price:
-          description: What the product sells for, in the currency below.
-        currency:
-          description: The currency the price is given in.
-        characteristics:
-          description: >-
-            Named characteristics of the product, which feed the classification. Both the names and the values are in
-            the language named above.
-        tags:
-          description: Free-form tags, which feed the classification the same way. Also in the language named above.
-
     ProductAssessmentOutcome:
       description: >-
-        What the assessment made of one product: whether it could be placed in the taxonomy at all and, if it could,
-        the better-scoring products that could be bought in its place.
+        What the assessment made of one product: whether the archetype product it is could be identified at all and,
+        if it could, the better-scoring products that could be bought in its place.
       properties:
         productKey:
-          description: The key the caller sent with the product, echoed so each outcome can be tied back to its product.
+          description: The key the caller sent for the product, echoed so each outcome can be tied back to its product.
         type:
-          description: Whether the assessment succeeded. The fields below carry something only when it did.
+          description: Whether the assessment succeeded. The alternatives below carry something only when it did.
+        failureReason:
+          description: Why the product could not be identified, carried only when the type is `FAILURE_TO_IDENTIFY`.
         bestPersonalAlternative:
           description: >-
             The best alternative under this user's own weighting of the sustainability dimensions, as their compass
@@ -56,7 +34,9 @@ components:
         bestCombinedAlternative:
           description: The best alternative under a blend of the two weightings above.
         diagnostics:
-          description: How the product was classified, for tracing an assessment rather than for showing to a shopper.
+          description: >-
+            How the product was identified, for tracing an assessment rather than for showing to a shopper. Missing
+            when the product is unknown.
 
     AlternativeForProduct:
       description: A product put forward to be bought in place of the one assessed, together with what it would gain.
@@ -91,7 +71,7 @@ components:
 
     MatchDiagnostics:
       description: >-
-        The path the matching of a product actually took, in an assessment or a classification by the LLM: the SAFAD
+        The path the matching of a product by the LLM actually took, in a classification or a preview of one: the SAFAD
         taxonomy it descended and the archetype it ended at. A level is null when the matching did not reach it, which
         is how a product matched to no archetype, or a malformed reply of the LLM, says how far it got.
       properties:
@@ -107,7 +87,40 @@ components:
     ProductAssessmentOutcomeType:
       description: >-
         How an assessment ended. `SUCCESS` — it ran, and the outcome carries what it found. `FAILURE_TO_IDENTIFY` —
-        the product could not be matched to any known archetype. `FAILURE_OTHER` — it failed for some other reason.
+        the archetype product the product is could not be identified; the failure reason says why. `FAILURE_OTHER` —
+        it failed for some other reason.
+
+    IdentificationFailureReason:
+      description: >-
+        Why the archetype product a product is could not be identified. `UNKNOWN_PRODUCT` — the retailer of the
+        Catalogue has no product with this key here. `NOT_CLASSIFIED` — the product is known but was never classified.
+        `NO_MATCHING_ARCHETYPE` — the product was classified, and no archetype product matches it.
+
+    IdentificationDiagnostics:
+      description: >-
+        How the archetype product a product is was identified: the retailer product found by the key, and its
+        Classification. A field is missing when the identification did not get that far.
+      properties:
+        retailerProductId:
+          description: The retailer product the key names.
+        classifier:
+          description: The classifier whose attempts decided the Classification of the product.
+        needsReview:
+          description: >-
+            Whether the attempts the Classification was decided from disagree, so that one of us will look at it.
+        pending:
+          description: >-
+            Whether the product waits to be classified again, because it changed since it was classified or its
+            Classification was reopened. Until it is, the product is assessed as it was classified.
+        archetypeProductId:
+          description: The archetype product the product is.
+        archetypeProductName:
+          description: The name of the archetype product the product is.
+
+    Classifier:
+      description: >-
+        Who decided a Classification. `MANUAL` — one of us. `EXPERT` — a domain source we trust but do not run.
+        `LLM` — the language model of this application.
 
     AlternativeForProductType:
       description: >-
@@ -117,11 +130,14 @@ components:
 
     ArchetypeProductId:
       description: >-
-        Names one archetype product: a leaf of the SAFAD taxonomy, the thing an assessed product is matched to and the
-        key a recommended alternative is reported by.
+        Names one archetype product: a leaf of the SAFAD taxonomy, the thing an assessed product is identified as and
+        the key a recommended alternative is reported by.
 
     ProductKey:
-      description: The caller's own identifier for a product, carried through an assessment unchanged.
+      description: The retailer's own identifier for a product, carried through an assessment unchanged.
+
+    RetailerProductId:
+      description: Names one product of a retailer, as this application knows it.
 
     # ---- Sustainable Food Compass -------------------------------------------------------------------------------
 

@@ -2,6 +2,7 @@ package eu.tealhelix.howibuy.v1.model;
 
 import eu.tealhelix.catalogue.v1.types.HasProductKey;
 import eu.tealhelix.common.types.Nullable;
+import eu.tealhelix.howibuy.v1.types.IdentificationFailureReason;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import org.immutables.value.Value;
 
@@ -16,6 +17,13 @@ public interface ProductAssessmentOutcome extends HasProductKey {
 	 */
 	ProductAssessmentOutcomeType getType();
 
+	/**
+	 * Why the product could not be identified, set when the type is
+	 * {@link ProductAssessmentOutcomeType#FAILURE_TO_IDENTIFY}.
+	 */
+	@Nullable
+	IdentificationFailureReason getFailureReason();
+
 	@Nullable
 	AlternativeForProduct getBestPersonalAlternative();
 
@@ -26,8 +34,8 @@ public interface ProductAssessmentOutcome extends HasProductKey {
 	AlternativeForProduct getBestCombinedAlternative();
 
 	/**
-	 * Diagnostic data for the assessment, has to be activated explicitly.
+	 * How the product was identified, {@code null} when the product is unknown.
 	 */
 	@Nullable
-	MatchDiagnostics getDiagnostics();
+	IdentificationDiagnostics getDiagnostics();
 }

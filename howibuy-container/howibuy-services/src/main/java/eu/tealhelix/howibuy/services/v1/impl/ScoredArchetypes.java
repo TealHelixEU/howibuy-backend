@@ -102,6 +102,13 @@ public final class ScoredArchetypes {
 	}
 
 	/**
+	 * @return The name of the archetype product, empty if it is not in the corpus
+	 */
+	public Optional<String> nameOf(ArchetypeProductId productId) {
+		return Optional.ofNullable(descriptionsByProductId.get(productId)).map(ArchetypeDescription::name);
+	}
+
+	/**
 	 * One ranking's winner, scored under that same ranking's criterion so that the two numbers explain the choice.
 	 * The winner may be the reference product itself, which is the search saying nothing eligible beats it.
 	 */

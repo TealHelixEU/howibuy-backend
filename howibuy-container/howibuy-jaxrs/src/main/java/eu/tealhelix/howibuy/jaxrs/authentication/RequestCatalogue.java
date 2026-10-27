@@ -4,6 +4,7 @@ import java.util.Optional;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
+import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 
 /**
  * The Catalogue of the retailer that a request acts in, kept as a property of the request next to its security context.
@@ -30,5 +31,14 @@ public final class RequestCatalogue {
 	 */
 	public static Optional<CatalogueId> currentCatalogue(ContainerRequestContext requestContext) {
 		return Optional.ofNullable((CatalogueId) requestContext.getProperty(PROPERTY));
+	}
+
+	/**
+	 * @param requestContext The request
+	 * @return The Catalogue the request acts in
+	 * @throws NotAuthorizedException If its token names none or it carries no token
+	 */
+	public static CatalogueId requireCatalogue(ContainerRequestContext requestContext) {
+		return currentCatalogue(requestContext).orElseThrow(() -> new NotAuthorizedException("The request acts in no Catalogue"));
 	}
 }

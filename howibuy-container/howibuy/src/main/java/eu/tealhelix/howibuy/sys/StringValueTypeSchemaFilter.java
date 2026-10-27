@@ -11,9 +11,9 @@ import org.eclipse.microprofile.openapi.models.media.Schema.SchemaType;
  * Several value types serialize as a bare string on the wire but smallrye-openapi, which introspects the Java type
  * rather than the Jackson serializer, would emit them as objects:
  * <ul>
- *     <li>{@code CategoryId}, {@code QuestionId}, {@code ProductKey}, {@code ArchetypeProductId} —
- *     {@code RepresentableAsString} ids rendered by a Jackson serializer, otherwise introspected as a recursive
- *     object;</li>
+ *     <li>{@code CategoryId}, {@code QuestionId}, {@code ProductKey}, {@code ArchetypeProductId},
+ *     {@code RetailerProductId} — {@code RepresentableAsString} ids rendered by a Jackson serializer, otherwise
+ *     introspected as a recursive object;</li>
  *     <li>{@code Locale}, {@code Currency} — JDK value types Jackson renders as a language tag / currency code,
  *     otherwise expanded into their full bean shape.</li>
  * </ul>
@@ -22,7 +22,7 @@ import org.eclipse.microprofile.openapi.models.media.Schema.SchemaType;
  * their place.
  */
 public class StringValueTypeSchemaFilter implements OASFilter {
-	private static final Set<String> STRING_VALUE_TYPES = Set.of("ArchetypeProductId", "CategoryId", "QuestionId", "ProductKey", "Locale", "Currency");
+	private static final Set<String> STRING_VALUE_TYPES = Set.of("ArchetypeProductId", "CategoryId", "QuestionId", "ProductKey", "RetailerProductId", "Locale", "Currency");
 
 	@Override
 	public void filterOpenAPI(OpenAPI openAPI) {

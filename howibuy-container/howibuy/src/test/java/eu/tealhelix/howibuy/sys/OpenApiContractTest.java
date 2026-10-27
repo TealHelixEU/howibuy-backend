@@ -124,22 +124,52 @@ public class OpenApiContractTest {
 	}
 
 	/**
-	 * The diagnostics of an assessment say how far the matching of the product got: the SAFAD taxonomy path it
-	 * descended and the archetype product it ended at. The evaluation of the classification reads them from the wire.
+	 * An assessment that cannot identify the product says why, and its diagnostics say how far the identification got:
+	 * the Retailer Product found by the key, its Classification and the archetype it names.
 	 */
 	@Test
-	void describesTheMatchDiagnosticsOfTheOutcome() {
+	void describesTheFailureReasonAndTheIdentificationDiagnosticsOfTheOutcome() {
 		given()
 				.accept("application/json")
 				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
+				.body("components.schemas.ProductAssessmentOutcome.properties.failureReason.'$ref'",
+						equalTo("#/components/schemas/IdentificationFailureReason"))
+				.body("components.schemas.IdentificationFailureReason.enum",
+						equalTo(List.of("UNKNOWN_PRODUCT", "NOT_CLASSIFIED", "NO_MATCHING_ARCHETYPE")))
 				.body("components.schemas.ProductAssessmentOutcome.properties.diagnostics.'$ref'",
-						equalTo("#/components/schemas/MatchDiagnostics"))
-				.body("components.schemas.MatchDiagnostics.properties.l1Category.type", equalTo("string"))
-				.body("components.schemas.MatchDiagnostics.properties.l2Category.type", equalTo("string"))
-				.body("components.schemas.MatchDiagnostics.properties.l3Category.type", equalTo("string"))
-				.body("components.schemas.MatchDiagnostics.properties.archetypeProduct.type", equalTo("string"));
+						equalTo("#/components/schemas/IdentificationDiagnostics"))
+				.body("components.schemas.IdentificationDiagnostics.properties.retailerProductId.'$ref'",
+						equalTo("#/components/schemas/RetailerProductId"))
+				.body("components.schemas.RetailerProductId.type", equalTo("string"))
+				.body("components.schemas.IdentificationDiagnostics.properties.classifier.'$ref'",
+						equalTo("#/components/schemas/Classifier"))
+				.body("components.schemas.IdentificationDiagnostics.properties.needsReview.type", equalTo("boolean"))
+				.body("components.schemas.IdentificationDiagnostics.properties.pending.type", equalTo("boolean"))
+				.body("components.schemas.IdentificationDiagnostics.properties.archetypeProductId.'$ref'",
+						equalTo("#/components/schemas/ArchetypeProductId"))
+				.body("components.schemas.IdentificationDiagnostics.properties.archetypeProductName.type", equalTo("string"));
+	}
+
+	/**
+	 * An assessment request names the products by their keys and the language to answer in; the Catalogue they are
+	 * looked up in comes from the token.
+	 */
+	@Test
+	void describesTheAssessmentRequestsByProductKeysAndLanguage() {
+		given()
+				.accept("application/json")
+				.when().get("/api/howibuy/v1/openapi")
+				.then()
+				.statusCode(200)
+				.body("paths.'/api/howibuy/v1/assessment/single'.post.requestBody.content.'application/json'.schema.'$ref'",
+						equalTo("#/components/schemas/SingleProductAssessmentRequest"))
+				.body("components.schemas.SingleProductAssessmentRequest.properties.keySet()", equalTo(Set.of("productKey", "language")))
+				.body("components.schemas.SingleProductAssessmentRequest.properties.productKey.type", equalTo("string"))
+				.body("components.schemas.MultiProductAssessmentRequest.properties.keySet()", equalTo(Set.of("language", "productKeys")))
+				.body("components.schemas.MultiProductAssessmentRequest.properties.productKeys.items.type", equalTo("string"))
+				.body("components.schemas.ProductData", nullValue());
 	}
 
 	/**

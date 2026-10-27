@@ -2,12 +2,13 @@ package eu.tealhelix.howibuy.jaxrs.v1.assessment;
 
 import java.util.List;
 
-import eu.tealhelix.howibuy.v1.model.ProductData;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "The products to assess in one request.")
+@Schema(description = "The products to assess in one request, scanned in the Catalogue that the token names.")
 public record MultiProductAssessmentRequest(
-		@Schema(description = "The products to assess. Each one is answered by an outcome of its own, in the order sent.")
-		List<ProductData> products
+		@Schema(description = "ISO 639-1 code of the language to answer in.")
+		String language,
+		@Schema(description = "The retailer's keys of the products, at most " + ProductAssessmentResource.MAX_PRODUCTS + ". Each one is answered by an outcome of its own, in the order sent.")
+		List<String> productKeys
 ) {
 }
