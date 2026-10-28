@@ -83,12 +83,21 @@ public class ClassificationDaoImpl implements ClassificationDao {
 		classification.on(cb.equal(classification.get(ClassificationEntity_.retailerProductId), product.get(RetailerProductEntity_.id)));
 		var id = product.get(RetailerProductEntity_.id);
 		var inputHash = product.get(RetailerProductEntity_.inputHash);
+		var activeListing = q.subquery(String.class);
+		var listing = activeListing.from(ListingEntity.class);
+		activeListing.select(listing.get(ListingEntity_.catalogueId)).where(
+				cb.equal(listing.get(ListingEntity_.retailerProduct), product),
+				cb.isTrue(listing.get(ListingEntity_.active))
+		);
 		q.select(cb.tuple(id, inputHash));
-		q.where(cb.or(
-				cb.isNull(classification.get(ClassificationEntity_.retailerProductId)),
-				cb.notEqual(classification.get(ClassificationEntity_.inputHash), inputHash),
-				cb.isTrue(classification.get(ClassificationEntity_.reopened))
-		));
+		q.where(
+				cb.exists(activeListing),
+				cb.or(
+						cb.isNull(classification.get(ClassificationEntity_.retailerProductId)),
+						cb.notEqual(classification.get(ClassificationEntity_.inputHash), inputHash),
+						cb.isTrue(classification.get(ClassificationEntity_.reopened))
+				)
+		);
 		q.orderBy(cb.asc(product.get(RetailerProductEntity_.changeSequence)));
 		return forcm(
 				em.createQuery(q).setMaxResults(limit).getResultList(),
@@ -447,7 +456,7 @@ public class ClassificationDaoImpl implements ClassificationDao {
 	}
 
 	/**
-	 * The product is pending by the same rule as {@link #findPending}.
+	 * The product is pending by the rule of {@link #findPending}, whether a Catalogue offers it or not.
 	 */
 	private static ProductToAssess toProductToAssess(UUID id, String productKey, String inputHash, ClassificationEntity classification) {
 		return ImmutableProductToAssess.builder()

@@ -42,6 +42,7 @@ import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
+import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.values.AnimalWelfareImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.EnvironmentalImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.SocialImpact;
@@ -76,8 +77,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * A product is pending while it has no Classification, its Classification was resolved from another input hash than
- * its current one, or its Classification was reopened. Recording an attempt locks the product, and stores the attempt
+ * A product is pending while some Catalogue offers it and it has no Classification, its Classification was resolved
+ * from another input hash than its current one, or its Classification was reopened. Recording an attempt locks the product, and stores the attempt
  * and the Classification. The assessment finds the products of a Catalogue's Retailer by their keys, with their
  * Classifications.
  */
@@ -196,6 +197,32 @@ public class ClassificationDaoImplTest {
 		apply(sessionFactory, product("yoghurt", 2, "h1", Map.of("el", "Γιαούρτι"), "1.79"));
 
 		assertEquals(List.of(), findPending(sessionFactory, 10));
+	}
+
+	@Test
+	void aProductNoCatalogueOffersIsNotPending(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, listedIn(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")), listing(CATALOGUE, false)));
+
+		assertEquals(List.of(), findPending(sessionFactory, 10));
+	}
+
+	@Test
+	void aProductOneCatalogueOffersIsPending(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, ImmutableProductChange.builder()
+				.from(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")))
+				.listings(List.of(listing(CATALOGUE, false), listing(CATALOGUE_CY, true)))
+				.build());
+
+		assertEquals(List.of("h1"), findPending(sessionFactory, 10).stream().map(PendingProduct::getInputHash).toList());
+	}
+
+	@Test
+	void aProductOfferedAgainIsPendingAgain(Mutiny.SessionFactory sessionFactory) {
+		apply(sessionFactory, listedIn(product("yoghurt", 1, "h1", Map.of("el", "Γιαούρτι")), listing(CATALOGUE, false)));
+
+		apply(sessionFactory, product("yoghurt", 2, "h1", Map.of("el", "Γιαούρτι")));
+
+		assertEquals(List.of("h1"), findPending(sessionFactory, 10).stream().map(PendingProduct::getInputHash).toList());
 	}
 
 	@Test
@@ -796,7 +823,9 @@ public class ClassificationDaoImplTest {
 	}
 
 	private static Map<String, RetailerProductId> idsByInputHash(Mutiny.SessionFactory sessionFactory) {
-		return findPending(sessionFactory, 10).stream().collect(Collectors.toMap(PendingProduct::getInputHash, PendingProduct::getId));
+		return sessionFactory.withSession(session -> session.createSelectionQuery("from RetailerProductEntity", RetailerProductEntity.class).getResultList())
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).stream()
+				.collect(Collectors.toMap(RetailerProductEntity::getInputHash, product -> new RetailerProductIdImpl(product.getId().toString())));
 	}
 
 	private static List<PendingProduct> findPending(Mutiny.SessionFactory sessionFactory, int limit) {

@@ -22,8 +22,9 @@ import io.smallrye.mutiny.Uni;
 
 public interface ClassificationDao {
 	/**
-	 * Find the products waiting to be classified: those without a Classification, those whose Classification was
-	 * resolved from another input hash than their current one, and those whose Classification was reopened.
+	 * Find the products waiting to be classified: of those that some Catalogue offers, with an active Listing, those
+	 * without a Classification, those whose Classification was resolved from another input hash than their current one,
+	 * and those whose Classification was reopened.
 	 *
 	 * @param em    The persistence context
 	 * @param limit The most products to find
