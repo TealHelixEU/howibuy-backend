@@ -14,6 +14,13 @@
 	<description>The contract of the adapters that read the Feeds of the Retailers, and the adapters, one package per adapter</description>
 
 	<dependencies>
+		<!-- PROJECT -->
+		<dependency>
+			<groupId>eu.tealhelix</groupId>
+			<artifactId>catalogue-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<!-- SPECS -->
 		<dependency>
 			<groupId>jakarta.enterprise</groupId>

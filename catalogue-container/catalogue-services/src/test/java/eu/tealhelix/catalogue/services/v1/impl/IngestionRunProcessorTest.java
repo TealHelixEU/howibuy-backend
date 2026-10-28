@@ -528,7 +528,8 @@ public class IngestionRunProcessorTest {
 		}
 
 		@Override
-		public Stream<FeedItem> read(InputStream in) {
+		public Stream<FeedItem> read(Catalogue catalogue, InputStream in) {
+			assertEquals(catalogue("test-adapter"), catalogue);
 			assertEquals(storedFeed, in);
 			return feed.stream().map(item -> {
 				if (item == null) throw new UncheckedIOException("The Feed breaks off, position: 2", new IOException("Unexpected end of input"));
@@ -537,7 +538,8 @@ public class IngestionRunProcessorTest {
 		}
 
 		@Override
-		public Stream<DeletionItem> readDeletions(InputStream in) {
+		public Stream<DeletionItem> readDeletions(Catalogue catalogue, InputStream in) {
+			assertEquals(catalogue("test-adapter"), catalogue);
 			assertEquals(storedFeed, in);
 			return deletions.stream();
 		}

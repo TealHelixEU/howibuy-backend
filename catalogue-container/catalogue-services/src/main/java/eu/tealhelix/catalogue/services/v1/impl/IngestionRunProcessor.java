@@ -144,11 +144,11 @@ public class IngestionRunProcessor {
 		var counts = new Counts();
 		try (var feed = feedStore.open(run.getFeed().getFilePath())) {
 			if (run.getFeed().getFeedType() == FeedType.DELETION) {
-				try (var items = reader.readDeletions(feed)) {
+				try (var items = reader.readDeletions(catalogue, feed)) {
 					inBatches(items, batch -> applyDeletions(run, catalogue, batch, counts));
 				}
 			} else {
-				try (var items = reader.read(feed)) {
+				try (var items = reader.read(catalogue, feed)) {
 					inBatches(items, batch -> applyBatch(run, catalogue, batch, counts));
 				}
 			}

@@ -8,13 +8,28 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import eu.tealhelix.catalogue.feeds.DeletionRecord;
 import eu.tealhelix.catalogue.feeds.FeedRecord;
 import eu.tealhelix.catalogue.feeds.RejectedRecord;
+import eu.tealhelix.catalogue.v1.model.Catalogue;
+import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
+import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
+import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import org.junit.jupiter.api.Test;
 
 class JsonLinesFeedReaderTest {
+	private static final Catalogue CATALOGUE = ImmutableCatalogue.builder()
+			.id(new CatalogueIdImpl("kritis-gr"))
+			.retailerId(new GenericRetailerId("6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11"))
+			.country("GR")
+			.primaryLanguage("el")
+			.acceptedLanguages(Set.of("el", "en"))
+			.adapter(JsonLinesFeedReader.NAME)
+			.isActive(true)
+			.build();
+
 	private final JsonLinesFeedReader reader = new JsonLinesFeedReader();
 
 	@Test
@@ -25,7 +40,7 @@ class JsonLinesFeedReaderTest {
 
 	@Test
 	void readsEachLineAsAProduct() {
-		var items = reader.read(feed(
+		var items = reader.read(CATALOGUE, feed(
 				"{\"productKey\": \"p-1\", \"names\": {\"el\": \"Γάλα\", \"en\": \"Milk\"}, \"characteristics\": {\"fat\": \"2%\"}, \"tags\": [\"dairy\", \"fresh\"], \"price\": \"1.29\", \"currency\": \"EUR\"}",
 				"{\"productKey\": \"p-2\", \"names\": {\"el\": \"Ψωμί\"}, \"characteristics\": {}, \"tags\": [], \"price\": 0.95, \"currency\": \"EUR\"}"
 		)).toList();
@@ -38,14 +53,14 @@ class JsonLinesFeedReaderTest {
 
 	@Test
 	void readsAMissingFieldAsNull() {
-		var items = reader.read(feed("{\"productKey\": \"p-1\"}")).toList();
+		var items = reader.read(CATALOGUE, feed("{\"productKey\": \"p-1\"}")).toList();
 
 		assertThat(items).containsExactly(new FeedRecord(1, "p-1", null, null, null, null, null));
 	}
 
 	@Test
 	void rejectsALineThatIsNotAJsonObjectAndGoesOn() {
-		var items = reader.read(feed(
+		var items = reader.read(CATALOGUE, feed(
 				"not json",
 				"[\"p-1\"]",
 				"{\"productKey\": \"p-3\"}"
@@ -60,14 +75,14 @@ class JsonLinesFeedReaderTest {
 
 	@Test
 	void rejectsAPriceThatIsNotANumber() {
-		var items = reader.read(feed("{\"productKey\": \"p-1\", \"price\": \"cheap\"}")).toList();
+		var items = reader.read(CATALOGUE, feed("{\"productKey\": \"p-1\", \"price\": \"cheap\"}")).toList();
 
 		assertThat(items).containsExactly(new RejectedRecord(1, "p-1", "The price is not a number"));
 	}
 
 	@Test
 	void readsTheProductKeyOfEachLineOfADeletionFeed() {
-		var items = reader.readDeletions(feed(
+		var items = reader.readDeletions(CATALOGUE, feed(
 				"{\"productKey\": \"p-1\"}",
 				"not json",
 				"{\"productKey\": \"p-3\"}"
@@ -82,7 +97,7 @@ class JsonLinesFeedReaderTest {
 
 	@Test
 	void readsAFeedLazily() {
-		var items = reader.read(endlessFeed()).limit(3).toList();
+		var items = reader.read(CATALOGUE, endlessFeed()).limit(3).toList();
 
 		assertThat(items).extracting(item -> ((FeedRecord) item).productKey()).containsExactly("p-1", "p-2", "p-3");
 	}

@@ -23,6 +23,7 @@ import eu.tealhelix.catalogue.feeds.FeedItem;
 import eu.tealhelix.catalogue.feeds.FeedReader;
 import eu.tealhelix.catalogue.feeds.FeedRecord;
 import eu.tealhelix.catalogue.feeds.RejectedRecord;
+import eu.tealhelix.catalogue.v1.model.Catalogue;
 
 /**
  * The adapter of a format of our own, named {@value #NAME}, for a Retailer that has none to offer: a Feed of JSON Lines,
@@ -31,7 +32,8 @@ import eu.tealhelix.catalogue.feeds.RejectedRecord;
  * {"productKey": "p-1", "names": {"el": "Γάλα", "en": "Milk"}, "characteristics": {"fat": "2%"}, "tags": ["dairy"], "price": "1.29", "currency": "EUR"}
  * </pre>
  * A missing field is read as {@code null}, for the validation to reject. A line that is not a JSON object is rejected.
- * A Deletion Feed has the product key alone on each line, e.g. {@code {"productKey": "p-1"}}.
+ * A Deletion Feed has the product key alone on each line, e.g. {@code {"productKey": "p-1"}}. A Feed is of one Catalogue,
+ * so every record is read whatever the Catalogue.
  */
 @ApplicationScoped
 public class JsonLinesFeedReader implements FeedReader {
@@ -51,13 +53,13 @@ public class JsonLinesFeedReader implements FeedReader {
 	}
 
 	@Override
-	public Stream<FeedItem> read(InputStream feed) {
+	public Stream<FeedItem> read(Catalogue catalogue, InputStream feed) {
 		var position = new AtomicLong();
 		return new BufferedReader(new InputStreamReader(feed, UTF_8)).lines().map(line -> read(position.incrementAndGet(), line));
 	}
 
 	@Override
-	public Stream<DeletionItem> readDeletions(InputStream feed) {
+	public Stream<DeletionItem> readDeletions(Catalogue catalogue, InputStream feed) {
 		var position = new AtomicLong();
 		return new BufferedReader(new InputStreamReader(feed, UTF_8)).lines().map(line -> readDeletion(position.incrementAndGet(), line));
 	}

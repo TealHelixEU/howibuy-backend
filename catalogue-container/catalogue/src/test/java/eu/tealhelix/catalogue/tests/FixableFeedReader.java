@@ -10,6 +10,7 @@ import eu.tealhelix.catalogue.feeds.DeletionItem;
 import eu.tealhelix.catalogue.feeds.FeedItem;
 import eu.tealhelix.catalogue.feeds.FeedReader;
 import eu.tealhelix.catalogue.feeds.jsonl.JsonLinesFeedReader;
+import eu.tealhelix.catalogue.v1.model.Catalogue;
 
 /**
  * An adapter of the tests, named {@value #NAME}, that a test breaks and fixes: version {@value #BROKEN} cannot read any
@@ -40,14 +41,14 @@ public class FixableFeedReader implements FeedReader {
 	}
 
 	@Override
-	public Stream<FeedItem> read(InputStream feed) {
+	public Stream<FeedItem> read(Catalogue catalogue, InputStream feed) {
 		if (broken) throw new UncheckedIOException(FAULT, new IOException(FAULT));
-		return fixed.read(feed);
+		return fixed.read(catalogue, feed);
 	}
 
 	@Override
-	public Stream<DeletionItem> readDeletions(InputStream feed) {
+	public Stream<DeletionItem> readDeletions(Catalogue catalogue, InputStream feed) {
 		if (broken) throw new UncheckedIOException(FAULT, new IOException(FAULT));
-		return fixed.readDeletions(feed);
+		return fixed.readDeletions(catalogue, feed);
 	}
 }
