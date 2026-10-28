@@ -47,6 +47,11 @@ class CatalogueDbTest {
 			}
 		}
 
-		assertThat(catalogues).containsExactly(List.of("lime-fresh-gr", "Lime Fresh", "GR", "el", "el,en", "jsonl", "true"));
+		assertThat(catalogues).containsExactly(
+				List.of("lime-fresh-gr", "Lime Fresh", "GR", "el", "el,en", "jsonl", "true"),
+				List.of("rimi-ee", "Rimi", "EE", "et", "et,en", "rimi", "true"),
+				List.of("rimi-lt", "Rimi", "LT", "lt", "lt,en", "rimi", "true"),
+				List.of("rimi-lv", "Rimi", "LV", "lv", "lv,en", "rimi", "true")
+		);
 	}
 }

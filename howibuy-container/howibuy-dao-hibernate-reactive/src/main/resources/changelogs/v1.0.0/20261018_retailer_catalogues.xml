@@ -200,4 +200,35 @@
 			<where>id = 'dc73176c-7069-4a4f-a74f-d60c4a5ec1ee'</where>
 		</update>
 	</changeSet>
+
+	<changeSet id="dev_rimi" author="nikospara" context="@dev">
+		<comment>
+			Rimi, whose id is the id of its service account in the tealhelix realm, with the same Catalogues as in the
+			Ingestion's IN_CATALOGUE. When the Classification Attempts of a product disagree, the English one wins, English
+			being the language its Catalogues share.
+		</comment>
+		<insert tableName="TH_RETAILER">
+			<column name="id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="name">Rimi</column>
+			<column name="classification_language">en</column>
+		</insert>
+		<insert tableName="TH_CATALOGUE">
+			<column name="id">rimi-lt</column>
+			<column name="retailer_id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="country">LT</column>
+			<column name="primary_language">lt</column>
+		</insert>
+		<insert tableName="TH_CATALOGUE">
+			<column name="id">rimi-ee</column>
+			<column name="retailer_id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="country">EE</column>
+			<column name="primary_language">et</column>
+		</insert>
+		<insert tableName="TH_CATALOGUE">
+			<column name="id">rimi-lv</column>
+			<column name="retailer_id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="country">LV</column>
+			<column name="primary_language">lv</column>
+		</insert>
+	</changeSet>
 </databaseChangeLog>

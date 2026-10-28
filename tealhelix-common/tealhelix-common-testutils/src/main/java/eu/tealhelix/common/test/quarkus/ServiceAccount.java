@@ -15,6 +15,9 @@ public enum ServiceAccount {
 	/** The {@code lime_fresh} client, a retailer. */
 	RETAILER("lime_fresh", "GrZ4Vd8xWAthuLFOXe1tlYvAtXo8INv1"),
 
+	/** The {@code rimi} client, the retailer Rimi, with one Catalogue in each of its countries. */
+	RIMI("rimi", "MYdmkmLCjjpORKTkgq2bPOoUu1pxJii9"),
+
 	/** The {@code catalogue-sync} client, which keeps the catalogues current and is no retailer. */
 	CATALOGUE_SYNC("catalogue-sync", "7poZpd5n2Abtu7LKcB0MoAWLHBUnhQzU");
 

@@ -231,4 +231,39 @@
 			<column name="adapter">jsonl</column>
 		</insert>
 	</changeSet>
+
+	<changeSet id="dev_rimi" author="nikospara" context="@dev">
+		<comment>
+			Rimi, whose id is the id of its service account in the tealhelix realm, the same as in HowiBuy's TH_RETAILER.
+			It sends one Feed for its Catalogues in Lithuania, Estonia and Latvia.
+		</comment>
+		<insert tableName="IN_RETAILER">
+			<column name="id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="name">Rimi</column>
+		</insert>
+		<insert tableName="IN_CATALOGUE">
+			<column name="id">rimi-lt</column>
+			<column name="retailer_id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="country">LT</column>
+			<column name="primary_language">lt</column>
+			<column name="accepted_languages">{lt,en}</column>
+			<column name="adapter">rimi</column>
+		</insert>
+		<insert tableName="IN_CATALOGUE">
+			<column name="id">rimi-ee</column>
+			<column name="retailer_id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="country">EE</column>
+			<column name="primary_language">et</column>
+			<column name="accepted_languages">{et,en}</column>
+			<column name="adapter">rimi</column>
+		</insert>
+		<insert tableName="IN_CATALOGUE">
+			<column name="id">rimi-lv</column>
+			<column name="retailer_id">67d09ebd-14f9-444b-aaca-3bb3824d3fb0</column>
+			<column name="country">LV</column>
+			<column name="primary_language">lv</column>
+			<column name="accepted_languages">{lv,en}</column>
+			<column name="adapter">rimi</column>
+		</insert>
+	</changeSet>
 </databaseChangeLog>

@@ -167,6 +167,17 @@ the client:
 INSERT INTO th_retailer (id, name) VALUES ('...uuid...', 'lime_fresh');
 ```
 
+### Create the Rimi client
+
+Create a new client in the Realm, for the retailer Rimi, the same way as the test client above, with:
+
+- Client ID: `rimi`
+- Name: Rimi
+- Client Secret: it is `MYdmkmLCjjpORKTkgq2bPOoUu1pxJii9` for the dev Realm
+
+Its service account's id is `67d09ebd-14f9-444b-aaca-3bb3824d3fb0`, which the `dev` Liquibase context seeds as Rimi
+in both databases, with its Catalogues `rimi-lt`, `rimi-ee` and `rimi-lv`.
+
 ### Create the Catalogue Sync client
 
 Create a new client in the Realm, for the Catalogue Sync, the same way as the test client above, with:
