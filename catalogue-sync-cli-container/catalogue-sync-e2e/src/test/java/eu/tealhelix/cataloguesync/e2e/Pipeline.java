@@ -135,6 +135,20 @@ final class Pipeline implements AutoCloseable {
 	 * @return What it printed
 	 */
 	String runCatalogueSync(String process, Map<String, String> config, String... command) throws IOException, InterruptedException {
+		var run = runCatalogueSyncToExit(process, config, command);
+		assertThat(run.exitCode()).as("The exit code of the Catalogue Sync, which printed:%n%s", run.output()).isZero();
+		return run.output();
+	}
+
+	/**
+	 * Run a command of the Catalogue Sync to its end, whatever it exits with.
+	 *
+	 * @param process The name of the process, which names its log file
+	 * @param config  System properties of the Catalogue Sync, besides those that connect it to the services and the IDM
+	 * @param command The command and its options
+	 * @return Its exit code and what it printed
+	 */
+	CatalogueSyncRun runCatalogueSyncToExit(String process, Map<String, String> config, String... command) throws IOException, InterruptedException {
 		var allConfig = new HashMap<>(config);
 		allConfig.putAll(Map.of(
 				"quarkus.rest-client.ingestion.url", ingestionUrl,
@@ -144,9 +158,7 @@ final class Pipeline implements AutoCloseable {
 		));
 		try (var catalogueSync = DeployableProcess.start("catalogue-sync", name + "-" + process, allConfig, command)) {
 			var exitCode = catalogueSync.awaitExit();
-			var output = catalogueSync.output();
-			assertThat(exitCode).as("The exit code of the Catalogue Sync, which printed:%n%s", output).isZero();
-			return output;
+			return new CatalogueSyncRun(exitCode, catalogueSync.output());
 		}
 	}
 
@@ -164,6 +176,13 @@ final class Pipeline implements AutoCloseable {
 		return howiBuyUrl;
 	}
 
+	/**
+	 * @return All HowiBuy has logged so far
+	 */
+	String howiBuyLog() throws IOException {
+		return howiBuy.output();
+	}
+
 	Connection howiBuyConnection() throws SQLException {
 		return DriverManager.getConnection(postgres.getJdbcUrl(), "th_howibuy", "th_howibuy");
 	}
@@ -175,5 +194,14 @@ final class Pipeline implements AutoCloseable {
 		if (keycloak != null) keycloak.stop();
 		if (postgres != null) postgres.stop();
 		if (network != null) network.close();
+	}
+
+	/**
+	 * A command of the Catalogue Sync that ran to its end.
+	 *
+	 * @param exitCode What it exited with
+	 * @param output   What it printed
+	 */
+	record CatalogueSyncRun(int exitCode, String output) {
 	}
 }

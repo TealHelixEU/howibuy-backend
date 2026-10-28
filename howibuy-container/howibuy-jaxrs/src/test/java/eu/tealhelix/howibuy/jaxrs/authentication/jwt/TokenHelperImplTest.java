@@ -24,6 +24,8 @@ import java.util.Set;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.crypto.RSASSASigner;
@@ -203,6 +205,29 @@ public class TokenHelperImplTest {
 	void testIdmTokenMarkedAsImpersonatedIsRejected() throws JOSEException {
 		var token = signWithIdmKey(idmUserClaims().claim("impersonated", true).build());
 		assertRejected(token);
+	}
+
+	@Test
+	@DisplayName("A token that is not a JWT is rejected without the token in the reason")
+	void testUnparseableTokenIsRejectedWithoutTheToken() {
+		assertRejectedWithoutTheToken("not-a-jwt");
+	}
+
+	@Test
+	@DisplayName("A token whose signature does not verify is rejected without the token in the reason")
+	void testUnverifiedTokenIsRejectedWithoutTheToken() throws JOSEException {
+		var anotherKey = new RSAKeyGenerator(2048).keyID(IDM_KID).generate();
+		var jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(IDM_KID).build(), idmUserClaims().build());
+		jwt.sign(new RSASSASigner(anotherKey));
+		assertRejectedWithoutTheToken(jwt.serialize());
+	}
+
+	@Test
+	@DisplayName("A signed token whose payload is not a set of claims is rejected without the token in the reason")
+	void testTokenWithoutClaimsIsRejectedWithoutTheToken() throws JOSEException {
+		var jws = new JWSObject(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(IDM_KID).build(), new Payload("not-claims"));
+		jws.sign(new RSASSASigner(idmKey));
+		assertRejectedWithoutTheToken(jws.serialize());
 	}
 
 	@Test
@@ -594,5 +619,17 @@ public class TokenHelperImplTest {
 
 	private void assertRejected(String token) {
 		assertInstanceOf(TokenHelperException.class, failureOf(token));
+	}
+
+	/**
+	 * The reason a token is rejected for is logged, so neither it nor any of its causes may carry the token, which is a
+	 * credential as long as it has not expired.
+	 */
+	private void assertRejectedWithoutTheToken(String token) {
+		var failure = failureOf(token);
+		assertInstanceOf(TokenHelperException.class, failure);
+		for (Throwable t = failure; t != null; t = t.getCause()) {
+			assertFalse(String.valueOf(t.getMessage()).contains(token), "the reason carries the token: " + t.getMessage());
+		}
 	}
 }

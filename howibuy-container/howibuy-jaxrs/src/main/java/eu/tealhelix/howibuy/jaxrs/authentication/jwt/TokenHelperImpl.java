@@ -148,8 +148,8 @@ public class TokenHelperImpl implements TokenHelper {
 		return forc(
 				parse(token),
 				this::requireExpectedAlgorithm,
-				jwt -> verify(jwt, token),
-				jwt -> extractJWTClaimsSet(token, jwt),
+				this::verify,
+				this::extractJWTClaimsSet,
 				this::validateClaims
 		);
 	}
@@ -325,11 +325,11 @@ public class TokenHelperImpl implements TokenHelper {
 		try {
 			return Uni.createFrom().item(SignedJWT.parse(token));
 		} catch (ParseException e) {
-			return Uni.createFrom().failure(new TokenHelperException("error parsing token " + token, e));
+			return Uni.createFrom().failure(new TokenHelperException("failed to parse JWT", e));
 		}
 	}
 
-	private Uni<SignedJWT> verify(SignedJWT jwt, String token) {
+	private Uni<SignedJWT> verify(SignedJWT jwt) {
 		try {
 			String kid = jwt.getHeader().getKeyID();
 			JWSVerifier verifier = jwsVerifierMapper.get(kid);
@@ -338,20 +338,20 @@ public class TokenHelperImpl implements TokenHelper {
 			}
 
 			if (!jwt.verify(verifier)) {
-				return Uni.createFrom().failure(new TokenHelperException("failed to verify JWT: " + token));
+				return Uni.createFrom().failure(new TokenHelperException("failed to verify JWT"));
 			}
 
 			return Uni.createFrom().item(jwt);
 		} catch (JOSEException e) {
-			return Uni.createFrom().failure(new TokenHelperException("failed to process token: " + token, e));
+			return Uni.createFrom().failure(new TokenHelperException("failed to process JWT", e));
 		}
 	}
 
-	private Uni<JWTClaimsSet> extractJWTClaimsSet(String token, SignedJWT jwt) {
+	private Uni<JWTClaimsSet> extractJWTClaimsSet(SignedJWT jwt) {
 		try {
 			return Uni.createFrom().item(jwt.getJWTClaimsSet());
 		} catch (ParseException e) {
-			return Uni.createFrom().failure(new TokenHelperException("failed to extract claims:" + token, e));
+			return Uni.createFrom().failure(new TokenHelperException("failed to extract claims", e));
 		}
 	}
 

@@ -8,6 +8,8 @@ import eu.tealhelix.howibuy.jaxrs.authentication.JaxRsSecurityContextImpl;
 import eu.tealhelix.howibuy.jaxrs.authentication.RequestCatalogue;
 import io.smallrye.mutiny.Uni;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Extract the user info from the request and set the JAX-RS {@code SecurityContext}
@@ -23,6 +25,8 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
  */
 @SuppressWarnings("unused")
 public class JwtAuthenticationFilter {
+	private static final Logger LOG = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
 	private final TokenHelper tokenHelper;
 
 	public JwtAuthenticationFilter(TokenHelper tokenHelper) {
@@ -42,7 +46,10 @@ public class JwtAuthenticationFilter {
 					})
 					.replaceWithVoid()
 					.onFailure(TokenHelperException.class)
-					.transform(e -> new NotAuthorizedException("failed to process token", unauthorized(), e));
+					.transform(e -> {
+						LOG.info("Bearer token rejected, reason: {}", e.getMessage());
+						return new NotAuthorizedException("failed to process token", unauthorized(), e);
+					});
 		} else {
 			var user = tokenHelper.makeUnauthenticated();
 			var securityCtx = new JaxRsSecurityContextImpl(user, requestContext.getSecurityContext().isSecure(), null);
