@@ -84,11 +84,18 @@ User (via retailer token: Retailer + Catalogue) ──assess──▶ HowiBuy: l
 
 ### Ingestion: receiving a Feed
 
-- `POST /api/v1/catalogues/{catalogueId}/feeds?type=SNAPSHOT|DELTA|DELETION`, body = the raw file, streamed (never
-  buffered in memory). Authenticated with the Retailer's service token. The Catalogue must belong to the calling Retailer.
+- `POST /api/v1/feeds/catalogues/{catalogueId}?type=SNAPSHOT|DELTA|DELETION` sends a Feed for one Catalogue, which must
+  belong to the calling Retailer. `POST /api/v1/feeds?type=SNAPSHOT|DELTA|DELETION` sends one Feed for every active
+  Catalogue of the calling Retailer, for a Retailer whose file covers all its Catalogues (Rimi); it is refused (`403`)
+  when the Retailer has no active Catalogue. Which Catalogues take part is the database's to say: a Catalogue with
+  `active = false` takes no Feeds, whatever the file carries. The body is the raw file, streamed (never buffered in
+  memory). Authenticated with the Retailer's service token.
 - The body is streamed gzip-compressed to the feed store (a configured directory) while its SHA-256 and size are
-  computed. An `IN_INGESTION_RUN` row is created in status `RECEIVED`, and the call answers `202` with the run id and the
-  status URL. Processing then starts asynchronously, on a worker thread (StAX parsing is blocking).
+  computed, once, however many Catalogues the Feed is for. An `IN_FEED` row records the file, and one
+  `IN_INGESTION_RUN` row per Catalogue is created in status `RECEIVED`. The call answers `202` with the Feed and its
+  runs, and `Location` names the Feed: `GET /api/v1/feeds/{id}` answers the Feed and the status of each of its runs.
+  Each run is processed on its own, asynchronously, on a worker thread (parsing is blocking); everything after the
+  receipt (the order of the runs, the sanity check, confirmation, discard, replay, rejects) is per Catalogue.
 - Feeds of one Catalogue are processed strictly one at a time, in order of receipt. A run waits while an earlier run of
   the same Catalogue is processing or held.
 - Pull-based Retailers (none yet) would get a scheduled fetcher producing the same stored file and run. The adapter
@@ -96,10 +103,12 @@ User (via retailer token: Retailer + Catalogue) ──assess──▶ HowiBuy: l
 
 ### Ingestion: the adapter contract
 
-- `FeedReader` (one per Retailer, selected by the Catalogue's configuration): given the stored stream, it emits a stream
-  of `FeedRecord`s (retailer product id, names by language, characteristics, tags, price, currency) and of
-  `RejectedRecord`s (position, retailer product id if known, reason). It parses and maps, and that is all: no database,
-  no diffing.
+- `FeedReader` (one per Retailer, selected by the Catalogue's configuration): given the stored stream and the Catalogue
+  it is read for, it emits a stream of `FeedRecord`s (retailer product id, names by language, characteristics, tags,
+  price, currency) and of `RejectedRecord`s (position, retailer product id if known, reason). It parses and maps, and
+  that is all: no database, no diffing. A reader of a Feed for several Catalogues reads the part of the Catalogue it is
+  given, by its country, and fails the run if the file has no such part, rather than letting a Snapshot that read
+  nothing take the whole Catalogue off sale.
 - `FeedRecord` validation (required fields, a known language, a name in the Catalogue's primary language, a positive
   price, a known ISO currency) is common code after the adapter, so every Retailer is held to the same rules. The
   primary-language name guarantees that every active Listing has a name to fall back to.
@@ -131,9 +140,9 @@ A **Delta** never deactivates anything. A **Deletion** Feed carries only retaile
 inactive.
 
 **Replay** (user story 17): `POST /api/v1/ingestion-runs/{id}/replay` (operator) records a new run on the stored Feed of
-a `DONE`, `FAILED` or `DISCARDED` run, with `replay_of_run_id` pointing to it, and answers `202` with the new run. The
-new run shares the Feed's file and `received_at`, so it queues in the Feeds' order of receipt and its Listings keep the
-true `last_seen_at`. It is processed with the adapter the Catalogue has now. The run replayed is never modified. A
+a `DONE`, `FAILED` or `DISCARDED` run, for the same Feed and Catalogue, with `replay_of_run_id` pointing to it, and
+answers `202` with the new run. The new run reads the Feed's file and `received_at`, so it queues in the Feeds' order of
+receipt and its Listings keep the true `last_seen_at`. It is processed with the adapter the Catalogue has now. The run replayed is never modified. A
 Snapshot is refused (`409`) once a later Snapshot of its Catalogue that has not failed exists, because it would take off
 sale what the later one carries. Any other replay out of order is the operator's to repair, by replaying the later Feeds
 as well, in order. A run that has not finished is refused (`409`), and a Feed no longer stored is `404`.
@@ -332,25 +341,34 @@ table name, e.g. `PK_IN_LISTING`.
 | Table                                             | Columns (main)                                          | Notes  |
 |---------------------------------------------------|---------------------------------------------------------|--------|
 | `IN_RETAILER`, `IN_CATALOGUE`                     | as above, plus the adapter name and accepted languages  | seeded |
+| `IN_FEED`                                         | (see below)                                             |        |
 | `IN_INGESTION_RUN`                                | (see below)                                             |        |
 | `IN_INGESTION_REJECT`                             | `ingestion_run_id`, `position`, `product_key`, `reason` |        |
 | `IN_RETAILER_PRODUCT`, `IN_RETAILER_PRODUCT_NAME` | as HowiBuy, plus `removed`                              |        |
 | `IN_LISTING`                                      | as HowiBuy, plus `last_seen_at`, `last_seen_run_id`     |        |
 
-#### IN_INGESTION_RUN columns
+#### IN_FEED columns
+
+A Feed as received, stored once whatever the number of Catalogues it is for.
 
 - `id`
-- `catalogue_id`
+- `retailer_id`
 - `feed_type`
-- `adapter`
-- `adapter_version`
 - `received_at`
-- `started_at`
-- `finished_at`
-- `status`
 - `file_path`
 - `file_size`
 - `file_sha256`
+
+#### IN_INGESTION_RUN columns
+
+- `id`
+- `feed_id` - the Feed the run processes; the Feed's type, receipt time and file are read from it
+- `catalogue_id`
+- `adapter`
+- `adapter_version`
+- `started_at`
+- `finished_at`
+- `status`
 - counts - The following columns store counts:
   - `total`
   - `valid`

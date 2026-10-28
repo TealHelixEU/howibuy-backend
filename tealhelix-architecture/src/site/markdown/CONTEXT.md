@@ -184,15 +184,16 @@ good.
 _Avoid_: last updated, last modified
 
 **Feed**:
-The product data a Retailer sends for one Catalogue. A **Snapshot** Feed is the complete current
-assortment, so a Listing missing from it becomes Inactive. A **Delta** Feed carries only what
-changed, so a missing Listing means nothing. A **Deletion** Feed explicitly names Listings to make
-Inactive.
+The product data a Retailer sends for one Catalogue, or for all its active Catalogues in one file.
+A **Snapshot** Feed is the complete current assortment, so a Listing missing from it becomes
+Inactive. A **Delta** Feed carries only what changed, so a missing Listing means nothing. A
+**Deletion** Feed explicitly names Listings to make Inactive.
 _Avoid_: import, upload, export, file, dump
 
 **Ingestion Run**:
-The processing of one Feed, from its receipt to the Retailer Products and Listings it changes,
-with its outcome and counts.
+The processing of one Feed for one Catalogue, from its receipt to the Retailer Products and
+Listings it changes, with its outcome and counts. A Feed for several Catalogues has one Ingestion
+Run per Catalogue.
 _Avoid_: import job, batch, sync, load
 
 **Product Change**:

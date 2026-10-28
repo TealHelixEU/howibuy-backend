@@ -12,7 +12,7 @@ The work is split into three parts with narrow contracts between them:
 1. **Ingestion**, a separate deployable with its own database (a schema and login that HowiBuy cannot
    read). It receives a Retailer's Feeds
    through a per-Retailer adapter: push or pull, in whatever format the Retailer uses. It stores
-   the raw file and answers `202` with an Ingestion Run id and a status endpoint. Afterwards it
+   the raw file and answers `202` with a status endpoint of the Feed and its Ingestion Runs. Afterwards it
    stream-parses and validates the file, and works out which Listings are new, changed, inactive or
    removed. Every Retailer Product that changes takes the next number of one change sequence, so
    the changes can be read in order from a cursor.
@@ -116,9 +116,14 @@ The work is split into three parts with narrow contracts between them:
   a Catalogue is held for confirmation instead of applied.
 - The hash that decides whether a product is classified again covers its names,
   characteristics and tags, and never its price. It may need more inputs later.
-- Every Ingestion Run is recorded: Retailer, Catalogue, adapter version, feed type, receipt time,
-  raw file location, size and checksum, status, timings, counts (total, valid, rejected, new,
-  changed, unchanged, inactivated, removed) and the rejected records with their reasons.
+- A Feed is for one Catalogue, or for every active Catalogue of its Retailer when the Retailer
+  sends one file for all of them. The database decides which Catalogues take part, not the file.
+  Such a Feed is stored once and gets one Ingestion Run per Catalogue, and everything after the
+  receipt is per Catalogue, as for any other Feed.
+- Every Feed is recorded: Retailer, feed type, receipt time, raw file location, size and checksum.
+  Every Ingestion Run is recorded: Feed, Catalogue, adapter version, status, timings, counts
+  (total, valid, rejected, new, changed, unchanged, inactivated, removed) and the rejected records
+  with their reasons.
   Classification has no run record of its own: every Classification Attempt records its
   classifier, classifier version, the input hash it was made from and its time.
 - Raw files are deleted after a retention period. The policy depends on the feed type and is
