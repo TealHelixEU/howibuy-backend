@@ -196,7 +196,7 @@ class ProductChangesTest {
 	 * Push a Feed as Lime Fresh and wait until its run is done.
 	 */
 	private void process(String feedType, String feed) throws SQLException, InterruptedException {
-		var run = feedService.receive(LIME_FRESH, new CatalogueIdImpl(catalogue.id()), FeedType.valueOf(feedType), new ByteArrayInputStream(feed.getBytes(UTF_8)));
-		assertThat(awaitTheEndOf(dataSource, run.getId().asString())).isEqualTo("DONE");
+		var received = feedService.receive(LIME_FRESH, new CatalogueIdImpl(catalogue.id()), FeedType.valueOf(feedType), new ByteArrayInputStream(feed.getBytes(UTF_8)));
+		assertThat(awaitTheEndOf(dataSource, received.runs().getFirst().getId().asString())).isEqualTo("DONE");
 	}
 }

@@ -1,6 +1,7 @@
 package eu.tealhelix.catalogue.dao.impl;
 
 import static eu.tealhelix.catalogue.dao.impl.TestEntities.catalogue;
+import static eu.tealhelix.catalogue.dao.impl.TestEntities.withTheirFeeds;
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -109,11 +110,11 @@ public class RetailerProductDaoImplTest {
 								catalogue(CATALOGUE, RETAILER, "LT", "lt", "en"),
 								catalogue(OTHER_CATALOGUE, RETAILER, "LV", "lv", "en"),
 								catalogue(OTHER_RETAILERS_CATALOGUE, OTHER_RETAILER, "LT", "lt"))
-						.chain(() -> tx.persistAll(
-								ingestionRun(RUN, CATALOGUE),
-								ingestionRun(LATER_RUN, CATALOGUE),
-								ingestionRun(OTHER_CATALOGUE_RUN, OTHER_CATALOGUE),
-								ingestionRun(OTHER_RETAILERS_RUN, OTHER_RETAILERS_CATALOGUE))))
+						.chain(() -> tx.persistAll(withTheirFeeds(
+								ingestionRun(RUN, CATALOGUE, RETAILER),
+								ingestionRun(LATER_RUN, CATALOGUE, RETAILER),
+								ingestionRun(OTHER_CATALOGUE_RUN, OTHER_CATALOGUE, RETAILER),
+								ingestionRun(OTHER_RETAILERS_RUN, OTHER_RETAILERS_CATALOGUE, OTHER_RETAILER)))))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
@@ -471,7 +472,7 @@ public class RetailerProductDaoImplTest {
 		);
 		new ReactivePersistenceContextFactoryImpl(sessionFactory)
 				.withTransaction(tx -> tx.persist(catalogue(catalogue.id(), RETAILER, "LT", "lt"))
-						.chain(() -> tx.persistAll(ingestionRun(catalogue.run(), catalogue.id()), ingestionRun(catalogue.laterRun(), catalogue.id()))))
+						.chain(() -> tx.persistAll(withTheirFeeds(ingestionRun(catalogue.run(), catalogue.id(), RETAILER), ingestionRun(catalogue.laterRun(), catalogue.id(), RETAILER)))))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 		return catalogue;
 	}
@@ -495,8 +496,8 @@ public class RetailerProductDaoImplTest {
 				.toList();
 	}
 
-	private static IngestionRunEntity ingestionRun(IngestionRunId runId, CatalogueId catalogueId) {
-		return TestEntities.ingestionRun(runId, catalogueId, IngestionRunStatus.PROCESSING, LocalDateTime.of(2026, 10, 21, 9, 0, 0));
+	private static IngestionRunEntity ingestionRun(IngestionRunId runId, CatalogueId catalogueId, RetailerId retailerId) {
+		return TestEntities.ingestionRun(runId, catalogueId, retailerId, IngestionRunStatus.PROCESSING, LocalDateTime.of(2026, 10, 21, 9, 0, 0));
 	}
 
 	private static ProductKey newKey() {

@@ -232,7 +232,7 @@ class FeedDeactivationTest {
 	}
 
 	private String send(String feedType, String feed) {
-		var run = feedService.receive(LIME_FRESH, new CatalogueIdImpl(catalogue.id()), FeedType.valueOf(feedType), new ByteArrayInputStream(feed.getBytes(UTF_8)));
-		return run.getId().asString();
+		var received = feedService.receive(LIME_FRESH, new CatalogueIdImpl(catalogue.id()), FeedType.valueOf(feedType), new ByteArrayInputStream(feed.getBytes(UTF_8)));
+		return received.runs().getFirst().getId().asString();
 	}
 }

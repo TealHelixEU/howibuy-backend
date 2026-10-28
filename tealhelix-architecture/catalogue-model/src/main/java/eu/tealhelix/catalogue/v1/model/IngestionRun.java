@@ -3,7 +3,6 @@ package eu.tealhelix.catalogue.v1.model;
 import java.time.LocalDateTime;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
-import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
@@ -11,16 +10,19 @@ import eu.tealhelix.common.types.Nullable;
 import org.immutables.value.Value;
 
 /**
- * The receipt and processing of one Feed of a Catalogue, recorded so problems can be traced to a file and an adapter.
+ * The processing of one Feed for one Catalogue, recorded so problems can be traced to a file and an adapter.
  */
 @Value.Immutable
 public interface IngestionRun extends HasIngestionRunId {
 	@Override
 	IngestionRunId getId();
 
-	CatalogueId getCatalogueId();
+	/**
+	 * The Feed the run processes, which tells its type, its receipt and its file.
+	 */
+	Feed getFeed();
 
-	FeedType getFeedType();
+	CatalogueId getCatalogueId();
 
 	IngestionRunStatus getStatus();
 
@@ -36,28 +38,11 @@ public interface IngestionRun extends HasIngestionRunId {
 	@Nullable
 	String getAdapterVersion();
 
-	LocalDateTime getReceivedAt();
-
 	@Nullable
 	LocalDateTime getStartedAt();
 
 	@Nullable
 	LocalDateTime getFinishedAt();
-
-	/**
-	 * Where the Feed is stored, gzip-compressed, relative to the directory of the feed store.
-	 */
-	String getFilePath();
-
-	/**
-	 * The size of the Feed as received, before compression, in bytes.
-	 */
-	long getFileSize();
-
-	/**
-	 * The SHA-256 of the Feed as received, before compression, in lowercase hex.
-	 */
-	String getFileSha256();
 
 	/**
 	 * What the processing found and did; {@code null} until the whole Feed is applied.
@@ -73,7 +58,7 @@ public interface IngestionRun extends HasIngestionRunId {
 
 	/**
 	 * The run whose stored Feed this run processes again; {@code null} if this run received its Feed itself. A replay
-	 * shares the Feed of the run it replays, and so its file and {@linkplain #getReceivedAt() receipt}.
+	 * has the {@linkplain #getFeed() Feed} of the run it replays.
 	 */
 	@Nullable
 	IngestionRunId getReplayOfRunId();

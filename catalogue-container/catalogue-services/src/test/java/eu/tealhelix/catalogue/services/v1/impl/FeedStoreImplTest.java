@@ -19,10 +19,10 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
-import eu.tealhelix.catalogue.v1.types.CatalogueId;
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
-import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
-import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
+import eu.tealhelix.catalogue.v1.types.FeedId;
+import eu.tealhelix.catalogue.v1.types.impl.FeedIdImpl;
+import eu.tealhelix.common.v1.types.RetailerId;
+import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -30,27 +30,28 @@ import org.junit.jupiter.api.io.TempDir;
  * The Feeds land in the store whole, compressed and checksummed, and are written while they are read.
  */
 public class FeedStoreImplTest {
-	private static final CatalogueId CATALOGUE = new CatalogueIdImpl("test-gr");
+	private static final String RETAILER_ID = "6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11";
+	private static final RetailerId RETAILER = new GenericRetailerId(RETAILER_ID);
 	private static final int MEGABYTE = 1024 * 1024;
 
 	@TempDir
 	Path directory;
 
 	@Test
-	void storesAFeedCompressedUnderItsCatalogueAndRun() throws IOException {
-		var runId = newRunId();
+	void storesAFeedCompressedUnderItsRetailerAndId() throws IOException {
+		var feedId = newFeedId();
 		var sut = new FeedStoreImpl(directory.toString());
 
-		var storedFeed = sut.store(CATALOGUE, runId, new ByteArrayInputStream("<feed>test</feed>".getBytes(UTF_8)));
+		var storedFeed = sut.store(RETAILER, feedId, new ByteArrayInputStream("<feed>test</feed>".getBytes(UTF_8)));
 
-		assertEquals(new StoredFeed("test-gr/" + runId.asString() + ".gz", 17, "372c3f4cc881b55653a9c026ce87f1455636e0a1fbea9f1af2b3435442a85bd1"), storedFeed);
+		assertEquals(new StoredFeed(RETAILER_ID + "/" + feedId.asString() + ".gz", 17, "372c3f4cc881b55653a9c026ce87f1455636e0a1fbea9f1af2b3435442a85bd1"), storedFeed);
 		assertArrayEquals("<feed>test</feed>".getBytes(UTF_8), gunzip(directory.resolve(storedFeed.path())));
 	}
 
 	@Test
 	void opensAStoredFeedAsReceived() throws IOException {
 		var sut = new FeedStoreImpl(directory.toString());
-		var storedFeed = sut.store(CATALOGUE, newRunId(), new ByteArrayInputStream("<feed>test</feed>".getBytes(UTF_8)));
+		var storedFeed = sut.store(RETAILER, newFeedId(), new ByteArrayInputStream("<feed>test</feed>".getBytes(UTF_8)));
 
 		try (var feed = sut.open(storedFeed.path())) {
 			assertArrayEquals("<feed>test</feed>".getBytes(UTF_8), feed.readAllBytes());
@@ -68,7 +69,7 @@ public class FeedStoreImplTest {
 	void createsTheDirectoryOfTheStoreIfMissing() throws IOException {
 		var sut = new FeedStoreImpl(directory.resolve("not-yet").toString());
 
-		var storedFeed = sut.store(CATALOGUE, newRunId(), new ByteArrayInputStream(new byte[]{1, 2, 3}));
+		var storedFeed = sut.store(RETAILER, newFeedId(), new ByteArrayInputStream(new byte[]{1, 2, 3}));
 
 		assertArrayEquals(new byte[]{1, 2, 3}, gunzip(directory.resolve("not-yet").resolve(storedFeed.path())));
 	}
@@ -78,7 +79,7 @@ public class FeedStoreImplTest {
 		var sut = new FeedStoreImpl(directory.toString());
 		var body = new RandomBytes(16 * MEGABYTE, 8 * MEGABYTE, () -> assertTrue(bytesOnDisk() > MEGABYTE, "more than a megabyte written after reading half of the Feed"));
 
-		var storedFeed = sut.store(CATALOGUE, newRunId(), body);
+		var storedFeed = sut.store(RETAILER, newFeedId(), body);
 
 		assertTrue(body.checked, "the check ran");
 		assertEquals(16 * MEGABYTE, storedFeed.size());
@@ -91,7 +92,7 @@ public class FeedStoreImplTest {
 			throw new IOException("Connection reset");
 		});
 
-		assertThrows(UncheckedIOException.class, () -> sut.store(CATALOGUE, newRunId(), body));
+		assertThrows(UncheckedIOException.class, () -> sut.store(RETAILER, newFeedId(), body));
 
 		assertEquals(List.of(), regularFiles());
 	}
@@ -99,7 +100,7 @@ public class FeedStoreImplTest {
 	@Test
 	void deletesAStoredFeed() throws IOException {
 		var sut = new FeedStoreImpl(directory.toString());
-		var storedFeed = sut.store(CATALOGUE, newRunId(), new ByteArrayInputStream(new byte[]{1}));
+		var storedFeed = sut.store(RETAILER, newFeedId(), new ByteArrayInputStream(new byte[]{1}));
 
 		sut.delete(storedFeed.path());
 
@@ -110,21 +111,21 @@ public class FeedStoreImplTest {
 	void deletingAFeedThatIsNotStoredDoesNothing() {
 		var sut = new FeedStoreImpl(directory.toString());
 
-		sut.delete("test-gr/" + newRunId().asString() + ".gz");
+		sut.delete(RETAILER_ID + "/" + newFeedId().asString() + ".gz");
 	}
 
 	@Test
 	void tellsWhetherAFeedIsStored() {
 		var sut = new FeedStoreImpl(directory.toString());
-		var storedFeed = sut.store(CATALOGUE, newRunId(), new ByteArrayInputStream(new byte[]{1}));
+		var storedFeed = sut.store(RETAILER, newFeedId(), new ByteArrayInputStream(new byte[]{1}));
 
 		assertTrue(sut.exists(storedFeed.path()));
 		sut.delete(storedFeed.path());
 		assertFalse(sut.exists(storedFeed.path()));
 	}
 
-	private static IngestionRunId newRunId() {
-		return new IngestionRunIdImpl(UUID.randomUUID().toString());
+	private static FeedId newFeedId() {
+		return new FeedIdImpl(UUID.randomUUID().toString());
 	}
 
 	private static byte[] gunzip(Path file) throws IOException {

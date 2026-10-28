@@ -47,7 +47,7 @@ class FeedTransferTest {
 	 * megabytes of random bytes sent here.
 	 */
 	private static final String CATALOGUE = "lime-fresh-transfer";
-	private static final String FEEDS_PATH = "/api/catalogue/v1/catalogues/" + CATALOGUE + "/feeds?type=SNAPSHOT";
+	private static final String FEEDS_PATH = "/api/catalogue/v1/feeds/catalogues/" + CATALOGUE + "?type=SNAPSHOT";
 	private static final int MEGABYTE = 1024 * 1024;
 	private static final Duration WAIT = Duration.ofSeconds(30);
 

@@ -7,6 +7,7 @@
 		<provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 
 		<class>eu.tealhelix.catalogue.dao.jpa.CatalogueEntity</class>
+		<class>eu.tealhelix.catalogue.dao.jpa.FeedEntity</class>
 		<class>eu.tealhelix.catalogue.dao.jpa.IngestionRejectEntity</class>
 		<class>eu.tealhelix.catalogue.dao.jpa.IngestionRunEntity</class>
 		<class>eu.tealhelix.catalogue.dao.jpa.ListingEntity</class>

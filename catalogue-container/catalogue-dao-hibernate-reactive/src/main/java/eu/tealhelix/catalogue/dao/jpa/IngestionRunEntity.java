@@ -1,6 +1,7 @@
 package eu.tealhelix.catalogue.dao.jpa;
 
 import static jakarta.persistence.EnumType.STRING;
+import static jakarta.persistence.FetchType.LAZY;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -8,9 +9,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 
 @Entity
@@ -20,12 +22,12 @@ public class IngestionRunEntity {
 	@Column(name = "id")
 	private UUID id;
 
+	@ManyToOne(fetch = LAZY, optional = false)
+	@JoinColumn(name = "feed_id")
+	private FeedEntity feed;
+
 	@Column(name = "catalogue_id")
 	private String catalogueId;
-
-	@Enumerated(STRING)
-	@Column(name = "feed_type")
-	private FeedType feedType;
 
 	@Enumerated(STRING)
 	@Column(name = "status")
@@ -37,23 +39,11 @@ public class IngestionRunEntity {
 	@Column(name = "adapter_version")
 	private String adapterVersion;
 
-	@Column(name = "received_at")
-	private LocalDateTime receivedAt;
-
 	@Column(name = "started_at")
 	private LocalDateTime startedAt;
 
 	@Column(name = "finished_at")
 	private LocalDateTime finishedAt;
-
-	@Column(name = "file_path")
-	private String filePath;
-
-	@Column(name = "file_size")
-	private long fileSize;
-
-	@Column(name = "file_sha256")
-	private String fileSha256;
 
 	@Column(name = "count_total")
 	private Integer countTotal;
@@ -101,12 +91,12 @@ public class IngestionRunEntity {
 		this.catalogueId = catalogueId;
 	}
 
-	public FeedType getFeedType() {
-		return feedType;
+	public FeedEntity getFeed() {
+		return feed;
 	}
 
-	public void setFeedType(FeedType feedType) {
-		this.feedType = feedType;
+	public void setFeed(FeedEntity feed) {
+		this.feed = feed;
 	}
 
 	public IngestionRunStatus getStatus() {
@@ -133,14 +123,6 @@ public class IngestionRunEntity {
 		this.adapterVersion = adapterVersion;
 	}
 
-	public LocalDateTime getReceivedAt() {
-		return receivedAt;
-	}
-
-	public void setReceivedAt(LocalDateTime receivedAt) {
-		this.receivedAt = receivedAt;
-	}
-
 	public LocalDateTime getStartedAt() {
 		return startedAt;
 	}
@@ -155,30 +137,6 @@ public class IngestionRunEntity {
 
 	public void setFinishedAt(LocalDateTime finishedAt) {
 		this.finishedAt = finishedAt;
-	}
-
-	public String getFilePath() {
-		return filePath;
-	}
-
-	public void setFilePath(String filePath) {
-		this.filePath = filePath;
-	}
-
-	public long getFileSize() {
-		return fileSize;
-	}
-
-	public void setFileSize(long fileSize) {
-		this.fileSize = fileSize;
-	}
-
-	public String getFileSha256() {
-		return fileSha256;
-	}
-
-	public void setFileSha256(String fileSha256) {
-		this.fileSha256 = fileSha256;
 	}
 
 	public Integer getCountTotal() {

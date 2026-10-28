@@ -15,12 +15,12 @@ import java.util.zip.GZIPOutputStream;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import eu.tealhelix.catalogue.v1.types.CatalogueId;
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
+import eu.tealhelix.catalogue.v1.types.FeedId;
+import eu.tealhelix.common.v1.types.RetailerId;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Keeps the Feeds in a directory, one subdirectory per Catalogue. A Feed is written to a temporary file in the directory
+ * Keeps the Feeds in a directory, one subdirectory per Retailer. A Feed is written to a temporary file in the directory
  * while it is read, and moved to its place once read whole, so a Feed in its place is always complete.
  */
 @ApplicationScoped
@@ -40,8 +40,8 @@ public class FeedStoreImpl implements FeedStore {
 	}
 
 	@Override
-	public StoredFeed store(CatalogueId catalogueId, IngestionRunId runId, InputStream body) {
-		var path = catalogueId.asString() + "/" + runId.asString() + ".gz";
+	public StoredFeed store(RetailerId retailerId, FeedId feedId, InputStream body) {
+		var path = retailerId.asString() + "/" + feedId.asString() + ".gz";
 		var target = resolve(path);
 		Path temporary = null;
 		var stored = false;

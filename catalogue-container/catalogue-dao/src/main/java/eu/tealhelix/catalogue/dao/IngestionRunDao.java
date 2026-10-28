@@ -6,6 +6,7 @@ import java.util.List;
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasFeedId;
 import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
@@ -15,13 +16,13 @@ import io.smallrye.mutiny.Uni;
 
 public interface IngestionRunDao {
 	/**
-	 * Record a new Ingestion Run.
+	 * Record new Ingestion Runs.
 	 *
-	 * @param tx  The persistence context
-	 * @param run The run
-	 * @return Completes when the run is recorded
+	 * @param tx   The persistence context
+	 * @param runs The runs, whose Feeds are recorded
+	 * @return Completes when the runs are recorded
 	 */
-	Uni<Void> create(ReactivePersistenceTxContext tx, IngestionRun run);
+	Uni<Void> create(ReactivePersistenceTxContext tx, List<IngestionRun> runs);
 
 	/**
 	 * Store the new state of an Ingestion Run.
@@ -108,6 +109,16 @@ public interface IngestionRunDao {
 	 * @return The run, {@code null} if it does not exist
 	 */
 	Uni<IngestionRun> find(ReactivePersistenceContext em, HasIngestionRunId runId);
+
+	/**
+	 * Read the Ingestion Runs of a Feed, replays included.
+	 *
+	 * @param em     The persistence context
+	 * @param feedId The Feed
+	 * @return The runs, ordered by Catalogue and then by when they started, the runs not yet started last; empty if the
+	 *         Feed does not exist
+	 */
+	Uni<List<IngestionRun>> findOfFeed(ReactivePersistenceContext em, HasFeedId feedId);
 
 	/**
 	 * Read a page of the records an Ingestion Run rejected, in the order they appear in its Feed.

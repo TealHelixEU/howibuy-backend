@@ -4,8 +4,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Nulls;
+import jakarta.persistence.criteria.Root;
 
 import eu.tealhelix.catalogue.dao.IngestionRunDao;
+import eu.tealhelix.catalogue.dao.jpa.FeedEntity;
+import eu.tealhelix.catalogue.dao.jpa.FeedEntity_;
 import eu.tealhelix.catalogue.dao.jpa.IngestionRejectEntity;
 import eu.tealhelix.catalogue.dao.jpa.IngestionRejectEntity_;
 import eu.tealhelix.catalogue.dao.jpa.IngestionRunEntity;
@@ -17,6 +22,7 @@ import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.model.IngestionRunCounts;
 import eu.tealhelix.catalogue.v1.types.HasCatalogueId;
+import eu.tealhelix.catalogue.v1.types.HasFeedId;
 import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.FeedType;
@@ -31,18 +37,18 @@ import io.smallrye.mutiny.Uni;
 @ApplicationScoped
 public class IngestionRunDaoImpl implements IngestionRunDao {
 	@Override
-	public Uni<Void> create(ReactivePersistenceTxContext tx, IngestionRun run) {
-		return tx.persist(toEntity(run)).replaceWithVoid();
+	public Uni<Void> create(ReactivePersistenceTxContext tx, List<IngestionRun> runs) {
+		return tx.persistAll(runs.stream().map(run -> toEntity(tx, run)).toArray());
 	}
 
 	@Override
 	public Uni<Void> update(ReactivePersistenceTxContext tx, IngestionRun run) {
-		return tx.merge(toEntity(run)).replaceWithVoid();
+		return tx.merge(toEntity(tx, run)).replaceWithVoid();
 	}
 
 	@Override
 	public Uni<Boolean> updateHeld(ReactivePersistenceTxContext tx, IngestionRun run) {
-		var entity = toEntity(run);
+		var entity = toEntity(tx, run);
 		var cb = tx.getCriteriaBuilder();
 		var u = cb.createCriteriaUpdate(IngestionRunEntity.class);
 		var stored = u.from(IngestionRunEntity.class);
@@ -68,6 +74,7 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(IngestionRunEntity.class);
 		var run = q.from(IngestionRunEntity.class);
+		var feed = fetchFeed(run);
 		var waitedFor = q.subquery(IngestionRunEntity.class);
 		var busy = waitedFor.from(IngestionRunEntity.class);
 		waitedFor.select(busy).where(
@@ -79,7 +86,7 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 				cb.equal(run.get(IngestionRunEntity_.status), IngestionRunStatus.RECEIVED),
 				cb.not(cb.exists(waitedFor))
 		);
-		q.orderBy(cb.asc(run.get(IngestionRunEntity_.receivedAt)));
+		q.orderBy(cb.asc(feed.get(FeedEntity_.receivedAt)));
 		return em.createQuery(q).setMaxResults(1).getResultList()
 				.map(runs -> runs.isEmpty() ? null : toIngestionRun(runs.getFirst()));
 	}
@@ -110,10 +117,11 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(UUID.class);
 		var run = q.from(IngestionRunEntity.class);
+		var feed = run.join(IngestionRunEntity_.feed);
 		q.select(run.get(IngestionRunEntity_.id)).where(
 				cb.equal(run.get(IngestionRunEntity_.catalogueId), catalogueId.getId().asString()),
-				cb.equal(run.get(IngestionRunEntity_.feedType), FeedType.SNAPSHOT),
-				cb.greaterThan(run.get(IngestionRunEntity_.receivedAt), receivedAt),
+				cb.equal(feed.get(FeedEntity_.feedType), FeedType.SNAPSHOT),
+				cb.greaterThan(feed.get(FeedEntity_.receivedAt), receivedAt),
 				cb.notEqual(run.get(IngestionRunEntity_.status), IngestionRunStatus.FAILED)
 		);
 		return em.createQuery(q).setMaxResults(1).getResultList().map(runs -> !runs.isEmpty());
@@ -136,7 +144,23 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 
 	@Override
 	public Uni<IngestionRun> find(ReactivePersistenceContext em, HasIngestionRunId runId) {
-		return em.find(IngestionRunEntity.class, runId.getId().asUuid()).map(entity -> entity != null ? toIngestionRun(entity) : null);
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(IngestionRunEntity.class);
+		var run = q.from(IngestionRunEntity.class);
+		fetchFeed(run);
+		q.where(cb.equal(run.get(IngestionRunEntity_.id), runId.getId().asUuid()));
+		return em.createQuery(q).getResultList().map(runs -> runs.isEmpty() ? null : toIngestionRun(runs.getFirst()));
+	}
+
+	@Override
+	public Uni<List<IngestionRun>> findOfFeed(ReactivePersistenceContext em, HasFeedId feedId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(IngestionRunEntity.class);
+		var run = q.from(IngestionRunEntity.class);
+		var feed = fetchFeed(run);
+		q.where(cb.equal(feed.get(FeedEntity_.id), feedId.getId().asUuid()));
+		q.orderBy(cb.asc(run.get(IngestionRunEntity_.catalogueId)), cb.asc(run.get(IngestionRunEntity_.startedAt), Nulls.LAST));
+		return em.createQuery(q).getResultList().map(runs -> runs.stream().map(IngestionRunDaoImpl::toIngestionRun).toList());
 	}
 
 	@Override
@@ -150,20 +174,27 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 				.map(rejects -> rejects.stream().map(IngestionRunDaoImpl::toIngestionReject).toList());
 	}
 
-	private static IngestionRunEntity toEntity(IngestionRun run) {
+	/**
+	 * Every run read is read with its Feed. A fetch of Hibernate is also a join, which the query can filter and order by.
+	 */
+	@SuppressWarnings("unchecked")
+	private static Join<IngestionRunEntity, FeedEntity> fetchFeed(Root<IngestionRunEntity> run) {
+		return (Join<IngestionRunEntity, FeedEntity>) run.fetch(IngestionRunEntity_.feed);
+	}
+
+	/**
+	 * The Feed is referred to, never written: it is recorded before its runs, and does not change.
+	 */
+	private static IngestionRunEntity toEntity(ReactivePersistenceContext em, IngestionRun run) {
 		var entity = new IngestionRunEntity();
 		entity.setId(run.getId().asUuid());
+		entity.setFeed(em.getReference(FeedEntity.class, run.getFeed().getId().asUuid()));
 		entity.setCatalogueId(run.getCatalogueId().asString());
-		entity.setFeedType(run.getFeedType());
 		entity.setStatus(run.getStatus());
 		entity.setAdapter(run.getAdapter());
 		entity.setAdapterVersion(run.getAdapterVersion());
-		entity.setReceivedAt(run.getReceivedAt());
 		entity.setStartedAt(run.getStartedAt());
 		entity.setFinishedAt(run.getFinishedAt());
-		entity.setFilePath(run.getFilePath());
-		entity.setFileSize(run.getFileSize());
-		entity.setFileSha256(run.getFileSha256());
 		var counts = run.getCounts();
 		if (counts != null) {
 			entity.setCountTotal(counts.getTotal());
@@ -192,17 +223,13 @@ public class IngestionRunDaoImpl implements IngestionRunDao {
 	private static IngestionRun toIngestionRun(IngestionRunEntity entity) {
 		return ImmutableIngestionRun.builder()
 				.id(new IngestionRunIdImpl(entity.getId().toString()))
+				.feed(FeedDaoImpl.toFeed(entity.getFeed()))
 				.catalogueId(new CatalogueIdImpl(entity.getCatalogueId()))
-				.feedType(entity.getFeedType())
 				.status(entity.getStatus())
 				.adapter(entity.getAdapter())
 				.adapterVersion(entity.getAdapterVersion())
-				.receivedAt(entity.getReceivedAt())
 				.startedAt(entity.getStartedAt())
 				.finishedAt(entity.getFinishedAt())
-				.filePath(entity.getFilePath())
-				.fileSize(entity.getFileSize())
-				.fileSha256(entity.getFileSha256())
 				.counts(toCounts(entity))
 				.error(entity.getError())
 				.replayOfRunId(entity.getReplayOfRunId() != null ? new IngestionRunIdImpl(entity.getReplayOfRunId().toString()) : null)

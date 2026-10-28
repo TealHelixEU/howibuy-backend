@@ -46,6 +46,7 @@ import eu.tealhelix.catalogue.feeds.FeedRecord;
 import eu.tealhelix.catalogue.feeds.RejectedRecord;
 import eu.tealhelix.catalogue.v1.model.Catalogue;
 import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
+import eu.tealhelix.catalogue.v1.model.ImmutableFeed;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionReject;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRunCounts;
@@ -61,6 +62,7 @@ import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
+import eu.tealhelix.catalogue.v1.types.impl.FeedIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
@@ -476,13 +478,17 @@ public class IngestionRunProcessorTest {
 	private static IngestionRun run(FeedType feedType) {
 		return ImmutableIngestionRun.builder()
 				.id(RUN_ID)
+				.feed(ImmutableFeed.builder()
+						.id(new FeedIdImpl("3a0c5e7d-9b1f-4d2e-8c6a-5f4b3e2d1c0a"))
+						.retailerId(RETAILER)
+						.feedType(feedType)
+						.receivedAt(RECEIVED_AT)
+						.filePath("rimi-lt/run.gz")
+						.fileSize(10L)
+						.fileSha256("aa")
+						.build())
 				.catalogueId(CATALOGUE)
-				.feedType(feedType)
 				.status(IngestionRunStatus.RECEIVED)
-				.receivedAt(RECEIVED_AT)
-				.filePath("rimi-lt/run.gz")
-				.fileSize(10L)
-				.fileSha256("aa")
 				.build();
 	}
 

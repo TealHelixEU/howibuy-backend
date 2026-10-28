@@ -20,7 +20,7 @@ import org.testcontainers.containers.GenericContainer;
 
 /**
  * End to end with a real Keycloak: a Retailer's client pushes a small Snapshot with the access token its backend gets
- * and reads back its Ingestion Run, processed.
+ * and reads back its Feed, with the Ingestion Run processed.
  */
 @QuarkusTest
 @WithCatalogueDbAndKeycloak
@@ -42,21 +42,21 @@ class FeedWorkflowTest {
 						product("workflow-1", Map.of("el", "Γάλα", "en", "Milk"), "1.29"),
 						product("workflow-2", Map.of("el", "Ψωμί"), "0.99")
 				).getBytes(UTF_8))
-				.when().post("/api/catalogue/v1/catalogues/lime-fresh-gr/feeds?type=SNAPSHOT")
+				.when().post("/api/catalogue/v1/feeds/catalogues/lime-fresh-gr?type=SNAPSHOT")
 				.then()
 				.statusCode(202)
 				.extract();
-		awaitTheEndOf(dataSource, receipt.jsonPath().getString("id"));
+		awaitTheEndOf(dataSource, receipt.jsonPath().getString("runs[0].id"));
 
-		var run = given()
+		var feed = given()
 				.header("Authorization", "Bearer " + accessToken)
 				.when().get(receipt.header("Location"))
 				.then()
 				.statusCode(200)
 				.extract().jsonPath();
 
-		assertThat(run.getString("status")).isEqualTo("DONE");
-		assertThat(run.getMap("counts", String.class, Integer.class))
+		assertThat(feed.getString("runs[0].status")).isEqualTo("DONE");
+		assertThat(feed.getMap("runs[0].counts", String.class, Integer.class))
 				.isEqualTo(Map.of("total", 2, "valid", 2, "rejected", 0, "added", 2, "changed", 0, "unchanged", 0, "missing", 0, "deactivated", 0));
 	}
 }

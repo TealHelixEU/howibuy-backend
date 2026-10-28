@@ -125,16 +125,12 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 						replayed -> {
 							IngestionRun replay = ImmutableIngestionRun.builder()
 									.id(new IngestionRunIdImpl(UUID.randomUUID().toString()))
+									.feed(replayed.getFeed())
 									.catalogueId(replayed.getCatalogueId())
-									.feedType(replayed.getFeedType())
 									.status(IngestionRunStatus.RECEIVED)
-									.receivedAt(replayed.getReceivedAt())
-									.filePath(replayed.getFilePath())
-									.fileSize(replayed.getFileSize())
-									.fileSha256(replayed.getFileSha256())
 									.replayOfRunId(runId.getId())
 									.build();
-							return ingestionRunDao.create(tx, replay).replaceWith(replay);
+							return ingestionRunDao.create(tx, List.of(replay)).replaceWith(replay);
 						}
 				))
 				.invoke(replay -> dispatcher.wake(replay.getCatalogueId()));
@@ -178,13 +174,13 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 		} else if (!REPLAYABLE.contains(run.getStatus())) {
 			return Uni.createFrom().failure(IngestionRunNotReplayableException.unfinished(runId, run.getStatus()));
 		}
-		var superseded = run.getFeedType() == FeedType.SNAPSHOT
-				? ingestionRunDao.hasSnapshotReceivedAfter(em, run.getCatalogueId(), run.getReceivedAt())
+		var superseded = run.getFeed().getFeedType() == FeedType.SNAPSHOT
+				? ingestionRunDao.hasSnapshotReceivedAfter(em, run.getCatalogueId(), run.getFeed().getReceivedAt())
 				: Uni.createFrom().item(false);
 		return superseded.flatMap(later -> {
 			if (later) {
 				return Uni.createFrom().failure(IngestionRunNotReplayableException.superseded(runId));
-			} else if (!feedStore.exists(run.getFilePath())) {
+			} else if (!feedStore.exists(run.getFeed().getFilePath())) {
 				return Uni.createFrom().failure(new NotFoundException(runId.getId(), "The Feed of the Ingestion Run is no longer stored, runId: " + runId.getId().asString()));
 			}
 			return Uni.createFrom().item(run);

@@ -21,11 +21,11 @@ TOKEN=$(curl -s http://localhost:8280/realms/tealhelix/protocol/openid-connect/t
 	| jq -r .access_token)
 curl -i -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/x-ndjson" \
 	--data-binary @catalogue-sync-cli-container/catalogue-sync-e2e/src/test/resources/feeds/lime-fresh-gr-snapshot-1.jsonl \
-	"http://localhost:8380/api/catalogue/v1/catalogues/lime-fresh-gr/feeds?type=SNAPSHOT"
+	"http://localhost:8380/api/catalogue/v1/feeds/catalogues/lime-fresh-gr?type=SNAPSHOT"
 ```
 
-The Ingestion answers `202` and processes the Feed in the background; the `Location` header is its Ingestion Run,
-whose `status` becomes `DONE`:
+The Ingestion answers `202` and processes the Feed in the background; the `Location` header is the Feed, whose
+Ingestion Run's `status` becomes `DONE`:
 
 ```shell
 curl -H "Authorization: Bearer $TOKEN" <the Location>

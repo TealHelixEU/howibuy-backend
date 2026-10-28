@@ -97,8 +97,8 @@ class FeedReplayTest {
 		var done = run(replayId);
 		assertThat(done.getString("adapter")).isEqualTo(FixableFeedReader.NAME);
 		assertThat(done.getString("adapterVersion")).isEqualTo(FixableFeedReader.FIXED);
+		assertThat(done.getString("feedId")).as("the Feed").isEqualTo(replay.getString("feedId")).isEqualTo(run(failed).getString("feedId"));
 		assertThat(done.getString("receivedAt")).as("the Feed's receipt").isEqualTo(replay.getString("receivedAt")).isEqualTo(run(failed).getString("receivedAt"));
-		assertThat(done.getString("fileSha256")).isEqualTo(run(failed).getString("fileSha256"));
 		assertThat(counts(replayId)).isEqualTo(Map.of("total", 3, "valid", 3, "rejected", 0, "added", 3, "changed", 0, "unchanged", 0, "missing", 0, "deactivated", 0));
 		assertThat(catalogue.listing(key(2))).isEqualTo(new TestCatalogue.Listing(new BigDecimal("1.2900"), "EUR", true, replayId));
 		assertThat(catalogue.names(key(2))).isEqualTo(Map.of("el", "Γάλα 2"));
@@ -210,7 +210,7 @@ class FeedReplayTest {
 	}
 
 	private String filePath(String runId) throws SQLException {
-		try (var connection = dataSource.getConnection(); var statement = connection.prepareStatement("SELECT file_path FROM IN_INGESTION_RUN WHERE id = ?::uuid")) {
+		try (var connection = dataSource.getConnection(); var statement = connection.prepareStatement("SELECT f.file_path FROM IN_INGESTION_RUN r JOIN IN_FEED f ON f.id = r.feed_id WHERE r.id = ?::uuid")) {
 			statement.setString(1, runId);
 			try (var resultSet = statement.executeQuery()) {
 				resultSet.next();
@@ -241,7 +241,7 @@ class FeedReplayTest {
 	}
 
 	private String send(String feedType, String feed) {
-		var run = feedService.receive(LIME_FRESH, new CatalogueIdImpl(catalogue.id()), FeedType.valueOf(feedType), new ByteArrayInputStream(feed.getBytes(UTF_8)));
-		return run.getId().asString();
+		var received = feedService.receive(LIME_FRESH, new CatalogueIdImpl(catalogue.id()), FeedType.valueOf(feedType), new ByteArrayInputStream(feed.getBytes(UTF_8)));
+		return received.runs().getFirst().getId().asString();
 	}
 }

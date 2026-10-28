@@ -109,7 +109,7 @@ final class Pipeline implements AutoCloseable {
 					.header("Authorization", "Bearer " + accessToken)
 					.contentType("application/x-ndjson")
 					.body(body.readAllBytes())
-					.when().post(ingestionUrl + "/api/catalogue/v1/catalogues/" + CATALOGUE_ID + "/feeds?type=SNAPSHOT")
+					.when().post(ingestionUrl + "/api/catalogue/v1/feeds/catalogues/" + CATALOGUE_ID + "?type=SNAPSHOT")
 					.then().statusCode(202)
 					.extract().header("Location");
 		}
@@ -119,7 +119,7 @@ final class Pipeline implements AutoCloseable {
 					.header("Authorization", "Bearer " + accessToken)
 					.when().get(location)
 					.then().statusCode(200)
-					.extract().path("status");
+					.extract().path("runs[0].status");
 			if (!status.equals("RECEIVED") && !status.equals("PROCESSING")) return status;
 			if (Instant.now().isAfter(deadline)) throw new AssertionError("The run was not processed in time, status: " + status);
 			Thread.sleep(100);

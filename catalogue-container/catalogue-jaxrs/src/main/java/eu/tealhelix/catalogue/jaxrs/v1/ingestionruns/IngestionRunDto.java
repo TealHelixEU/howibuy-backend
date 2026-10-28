@@ -4,13 +4,15 @@ import java.time.LocalDateTime;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "The receipt and processing of one Feed of a Catalogue.")
+@Schema(description = "The processing of one Feed for one Catalogue.")
 public record IngestionRunDto(
 		@Schema(description = "The id of the run.")
 		String id,
-		@Schema(description = "The Catalogue the Feed is for.")
+		@Schema(description = "The Feed the run processes.")
+		String feedId,
+		@Schema(description = "The Catalogue the Feed is processed for.")
 		String catalogueId,
-		@Schema(description = "SNAPSHOT, DELTA or DELETION.")
+		@Schema(description = "The type of the Feed: SNAPSHOT, DELTA or DELETION.")
 		String feedType,
 		@Schema(description = "RECEIVED, PROCESSING, HELD, DONE, FAILED or DISCARDED.")
 		String status,
@@ -24,10 +26,6 @@ public record IngestionRunDto(
 		LocalDateTime startedAt,
 		@Schema(description = "When processing finished; null until then.")
 		LocalDateTime finishedAt,
-		@Schema(description = "The size of the Feed as received, in bytes.")
-		long fileSize,
-		@Schema(description = "The SHA-256 of the Feed as received, in lowercase hex.")
-		String fileSha256,
 		@Schema(description = "What the processing found and did; null until it finishes.")
 		IngestionRunCountsDto counts,
 		@Schema(description = "Why the run failed; null otherwise.")

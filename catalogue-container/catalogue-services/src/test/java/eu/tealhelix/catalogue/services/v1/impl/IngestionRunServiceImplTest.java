@@ -24,7 +24,9 @@ import eu.tealhelix.catalogue.dao.IngestionRunDao;
 import eu.tealhelix.catalogue.dao.RetailerProductDao;
 import eu.tealhelix.catalogue.services.v1.types.IngestionRunNotHeldException;
 import eu.tealhelix.catalogue.services.v1.types.IngestionRunNotReplayableException;
+import eu.tealhelix.catalogue.v1.model.Feed;
 import eu.tealhelix.catalogue.v1.model.ImmutableCatalogue;
+import eu.tealhelix.catalogue.v1.model.ImmutableFeed;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionReject;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRunCounts;
@@ -35,6 +37,7 @@ import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
+import eu.tealhelix.catalogue.v1.types.impl.FeedIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
 import eu.tealhelix.common.services.generic.DateTimeService;
@@ -77,15 +80,20 @@ public class IngestionRunServiceImplTest {
 
 	private static final CatalogueId CATALOGUE = new CatalogueIdImpl("test-gr");
 	private static final IngestionRunId RUN_ID = new IngestionRunIdImpl("5d1c9a3e-0f4b-4a52-9e6d-2b7c8a1f3e01");
-	private static final IngestionRun RUN = ImmutableIngestionRun.builder()
-			.id(RUN_ID)
-			.catalogueId(CATALOGUE)
+	private static final Feed FEED = ImmutableFeed.builder()
+			.id(new FeedIdImpl("3a0c5e7d-9b1f-4d2e-8c6a-5f4b3e2d1c0a"))
+			.retailerId(new GenericRetailerId(RETAILER))
 			.feedType(FeedType.SNAPSHOT)
-			.status(IngestionRunStatus.RECEIVED)
 			.receivedAt(LocalDateTime.of(2026, 10, 20, 12, 30, 15))
-			.filePath("test-gr/5d1c9a3e-0f4b-4a52-9e6d-2b7c8a1f3e01.gz")
+			.filePath(RETAILER + "/3a0c5e7d-9b1f-4d2e-8c6a-5f4b3e2d1c0a.gz")
 			.fileSize(17)
 			.fileSha256("372c3f4cc881b55653a9c026ce87f1455636e0a1fbea9f1af2b3435442a85bd1")
+			.build();
+	private static final IngestionRun RUN = ImmutableIngestionRun.builder()
+			.id(RUN_ID)
+			.feed(FEED)
+			.catalogueId(CATALOGUE)
+			.status(IngestionRunStatus.RECEIVED)
 			.build();
 	private static final IngestionRun HELD_RUN = ImmutableIngestionRun.builder()
 			.from(RUN)
@@ -290,7 +298,7 @@ public class IngestionRunServiceImplTest {
 		for (var status : List.of(IngestionRunStatus.DONE, IngestionRunStatus.FAILED, IngestionRunStatus.DISCARDED)) {
 			var finished = finished(FeedType.DELTA, status);
 			when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished));
-			when(mockFeedStore.exists(RUN.getFilePath())).thenReturn(true);
+			when(mockFeedStore.exists(FEED.getFilePath())).thenReturn(true);
 			when(mockIngestionRunDao.create(any(), any())).thenReturn(Uni.createFrom().voidItem());
 
 			var replay = sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT);
@@ -298,16 +306,12 @@ public class IngestionRunServiceImplTest {
 			assertNotEquals(RUN_ID, replay.getId(), status.name());
 			assertEquals(ImmutableIngestionRun.builder()
 					.id(replay.getId())
+					.feed(finished.getFeed())
 					.catalogueId(CATALOGUE)
-					.feedType(FeedType.DELTA)
 					.status(IngestionRunStatus.RECEIVED)
-					.receivedAt(RUN.getReceivedAt())
-					.filePath(RUN.getFilePath())
-					.fileSize(RUN.getFileSize())
-					.fileSha256(RUN.getFileSha256())
 					.replayOfRunId(RUN_ID)
 					.build(), replay, status.name());
-			verify(mockIngestionRunDao).create(mockReactivePersistenceContextFactory.getOpenedTransactions().getLast(), replay);
+			verify(mockIngestionRunDao).create(mockReactivePersistenceContextFactory.getOpenedTransactions().getLast(), List.of(replay));
 			verify(mockIngestionRunDao, never()).update(any(), any());
 			verify(mockDispatcher).wake(CATALOGUE);
 			reset(mockIngestionRunDao, mockDispatcher);
@@ -317,8 +321,8 @@ public class IngestionRunServiceImplTest {
 	@Test
 	void aSnapshotIsReplayedWhileNoLaterSnapshotSupersedesIt() {
 		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished(FeedType.SNAPSHOT, IngestionRunStatus.DONE)));
-		when(mockIngestionRunDao.hasSnapshotReceivedAfter(any(), eq(CATALOGUE), eq(RUN.getReceivedAt()))).thenReturn(Uni.createFrom().item(false));
-		when(mockFeedStore.exists(RUN.getFilePath())).thenReturn(true);
+		when(mockIngestionRunDao.hasSnapshotReceivedAfter(any(), eq(CATALOGUE), eq(FEED.getReceivedAt()))).thenReturn(Uni.createFrom().item(false));
+		when(mockFeedStore.exists(FEED.getFilePath())).thenReturn(true);
 		when(mockIngestionRunDao.create(any(), any())).thenReturn(Uni.createFrom().voidItem());
 
 		assertEquals(RUN_ID, sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT).getReplayOfRunId());
@@ -327,7 +331,7 @@ public class IngestionRunServiceImplTest {
 	@Test
 	void aSnapshotThatALaterSnapshotSupersedesIsNotReplayed() {
 		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished(FeedType.SNAPSHOT, IngestionRunStatus.DONE)));
-		when(mockIngestionRunDao.hasSnapshotReceivedAfter(any(), eq(CATALOGUE), eq(RUN.getReceivedAt()))).thenReturn(Uni.createFrom().item(true));
+		when(mockIngestionRunDao.hasSnapshotReceivedAfter(any(), eq(CATALOGUE), eq(FEED.getReceivedAt()))).thenReturn(Uni.createFrom().item(true));
 
 		var e = assertThrows(IngestionRunNotReplayableException.class, () -> sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
 
@@ -352,7 +356,7 @@ public class IngestionRunServiceImplTest {
 	@Test
 	void aRunWhoseFeedIsNoLongerStoredIsNotReplayed() {
 		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(finished(FeedType.DELTA, IngestionRunStatus.DONE)));
-		when(mockFeedStore.exists(RUN.getFilePath())).thenReturn(false);
+		when(mockFeedStore.exists(FEED.getFilePath())).thenReturn(false);
 
 		var e = assertThrows(NotFoundException.class, () -> sut.replay(OPERATOR_USER, RUN_ID).await().atMost(WAIT));
 
@@ -384,7 +388,7 @@ public class IngestionRunServiceImplTest {
 	private static IngestionRun finished(FeedType feedType, IngestionRunStatus status) {
 		return ImmutableIngestionRun.builder()
 				.from(RUN)
-				.feedType(feedType)
+				.feed(ImmutableFeed.copyOf(FEED).withFeedType(feedType))
 				.status(status)
 				.adapter("test-adapter")
 				.adapterVersion("1")

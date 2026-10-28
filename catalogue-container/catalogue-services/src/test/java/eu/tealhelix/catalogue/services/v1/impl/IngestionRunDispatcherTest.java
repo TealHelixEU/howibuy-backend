@@ -23,14 +23,17 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import eu.tealhelix.catalogue.dao.IngestionRunDao;
+import eu.tealhelix.catalogue.v1.model.ImmutableFeed;
 import eu.tealhelix.catalogue.v1.model.ImmutableIngestionRun;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.IngestionRunStatus;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
+import eu.tealhelix.catalogue.v1.types.impl.FeedIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
+import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logmanager.LogContext;
@@ -235,13 +238,17 @@ public class IngestionRunDispatcherTest {
 	private static IngestionRun run(CatalogueId catalogueId, String id) {
 		return ImmutableIngestionRun.builder()
 				.id(new IngestionRunIdImpl(id))
+				.feed(ImmutableFeed.builder()
+						.id(new FeedIdImpl("3a0c5e7d-9b1f-4d2e-8c6a-5f4b3e2d1c0a"))
+						.retailerId(new GenericRetailerId("6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11"))
+						.feedType(FeedType.SNAPSHOT)
+						.receivedAt(LocalDateTime.of(2026, 10, 21, 9, 0, 0))
+						.filePath("6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11/3a0c5e7d-9b1f-4d2e-8c6a-5f4b3e2d1c0a.gz")
+						.fileSize(10L)
+						.fileSha256("aa")
+						.build())
 				.catalogueId(catalogueId)
-				.feedType(FeedType.SNAPSHOT)
 				.status(IngestionRunStatus.RECEIVED)
-				.receivedAt(LocalDateTime.of(2026, 10, 21, 9, 0, 0))
-				.filePath(catalogueId.asString() + "/" + id + ".gz")
-				.fileSize(10L)
-				.fileSha256("aa")
 				.build();
 	}
 }

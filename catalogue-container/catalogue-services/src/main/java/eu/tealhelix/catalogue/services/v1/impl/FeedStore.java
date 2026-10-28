@@ -2,24 +2,24 @@ package eu.tealhelix.catalogue.services.v1.impl;
 
 import java.io.InputStream;
 
-import eu.tealhelix.catalogue.v1.types.CatalogueId;
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
+import eu.tealhelix.catalogue.v1.types.FeedId;
+import eu.tealhelix.common.v1.types.RetailerId;
 
 /**
  * Keeps the Feeds as they were received, gzip-compressed, so they can be processed and re-run later.
  */
 public interface FeedStore {
 	/**
-	 * Store the Feed of an Ingestion Run, reading its body to the end as it arrives. The Feed appears in the store only
-	 * once it was read whole; if reading fails, nothing of it is left in the store.
+	 * Store a Feed, reading its body to the end as it arrives. The Feed appears in the store only once it was read whole;
+	 * if reading fails, nothing of it is left in the store.
 	 *
-	 * @param catalogueId The Catalogue the Feed is for
-	 * @param runId       The run that received it
-	 * @param body        The Feed
+	 * @param retailerId The Retailer that sent the Feed
+	 * @param feedId     The Feed
+	 * @param body       The Feed as the Retailer sent it
 	 * @return Where the Feed is stored, and its size and checksum as received
 	 * @throws java.io.UncheckedIOException If the body cannot be read or the Feed cannot be written
 	 */
-	StoredFeed store(CatalogueId catalogueId, IngestionRunId runId, InputStream body);
+	StoredFeed store(RetailerId retailerId, FeedId feedId, InputStream body);
 
 	/**
 	 * Open a stored Feed to read it as it was received.

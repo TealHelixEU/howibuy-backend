@@ -186,20 +186,22 @@ public class IngestionRunsResource {
 		return new IngestionRunIdImpl(uuid("id", id));
 	}
 
-	private static IngestionRunDto toDto(IngestionRun run) {
+	/**
+	 * Also maps the runs of a Feed.
+	 */
+	public static IngestionRunDto toDto(IngestionRun run) {
 		var counts = run.getCounts();
 		return new IngestionRunDto(
 				run.getId().asString(),
+				run.getFeed().getId().asString(),
 				run.getCatalogueId().asString(),
-				run.getFeedType().name(),
+				run.getFeed().getFeedType().name(),
 				run.getStatus().name(),
 				run.getAdapter(),
 				run.getAdapterVersion(),
-				run.getReceivedAt(),
+				run.getFeed().getReceivedAt(),
 				run.getStartedAt(),
 				run.getFinishedAt(),
-				run.getFileSize(),
-				run.getFileSha256(),
 				counts != null
 						? new IngestionRunCountsDto(counts.getTotal(), counts.getValid(), counts.getRejected(), counts.getAdded(), counts.getChanged(), counts.getUnchanged(), counts.getMissing(), counts.getDeactivated())
 						: null,

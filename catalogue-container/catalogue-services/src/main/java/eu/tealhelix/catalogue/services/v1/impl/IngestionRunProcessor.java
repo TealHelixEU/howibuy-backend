@@ -142,8 +142,8 @@ public class IngestionRunProcessor {
 			throw new FeedProcessingException("No adapter has the name the Catalogue gives, adapter: " + catalogue.getAdapter());
 		}
 		var counts = new Counts();
-		try (var feed = feedStore.open(run.getFilePath())) {
-			if (run.getFeedType() == FeedType.DELETION) {
+		try (var feed = feedStore.open(run.getFeed().getFilePath())) {
+			if (run.getFeed().getFeedType() == FeedType.DELETION) {
 				try (var items = reader.readDeletions(feed)) {
 					inBatches(items, batch -> applyDeletions(run, catalogue, batch, counts));
 				}
@@ -153,7 +153,7 @@ public class IngestionRunProcessor {
 				}
 			}
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to close a Feed, path: " + run.getFilePath(), e);
+			throw new UncheckedIOException("Failed to close a Feed, path: " + run.getFeed().getFilePath(), e);
 		}
 		return counts;
 	}
@@ -182,7 +182,7 @@ public class IngestionRunProcessor {
 	 * transaction, so that they are taken off sale if and only if the run ends.
 	 */
 	private Uni<Void> conclude(ReactivePersistenceTxContext tx, IngestionRun run, Counts counts) {
-		if (run.getFeedType() != FeedType.SNAPSHOT) {
+		if (run.getFeed().getFeedType() != FeedType.SNAPSHOT) {
 			return ingestionRunDao.update(tx, done(run, counts));
 		}
 		return forc(
@@ -232,7 +232,7 @@ public class IngestionRunProcessor {
 				stored -> Uni.createFrom().item(BatchMerge.of(stored, records, catalogue)),
 				merge -> retailerProductDao.takeChangeSequences(tx, merge.changed().size()),
 				(merge, changeSequences) -> forc(
-						retailerProductDao.save(tx, catalogue, run, run.getReceivedAt(), merge.stamped(changeSequences)),
+						retailerProductDao.save(tx, catalogue, run, run.getFeed().getReceivedAt(), merge.stamped(changeSequences)),
 						() -> ingestionRunDao.createRejects(tx, run, rejects)
 				).replaceWith(merge.outcomes())
 		)));

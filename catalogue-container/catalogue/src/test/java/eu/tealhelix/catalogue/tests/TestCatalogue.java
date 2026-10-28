@@ -45,12 +45,13 @@ final class TestCatalogue {
 	}
 
 	/**
-	 * Remove the Catalogue with its runs, and the products of the test. Its runs must have been processed.
+	 * Remove the Catalogue with its runs and their Feeds, and the products of the test. Its runs must have been processed,
+	 * and its Feeds must have been for it alone.
 	 */
 	void remove() throws SQLException {
 		execute("DELETE FROM IN_LISTING WHERE catalogue_id = '" + id + "'");
 		execute("DELETE FROM IN_INGESTION_REJECT WHERE ingestion_run_id IN (SELECT id FROM IN_INGESTION_RUN WHERE catalogue_id = '" + id + "')");
-		execute("DELETE FROM IN_INGESTION_RUN WHERE catalogue_id = '" + id + "'");
+		execute("WITH run AS (DELETE FROM IN_INGESTION_RUN WHERE catalogue_id = '" + id + "' RETURNING feed_id) DELETE FROM IN_FEED WHERE id IN (SELECT feed_id FROM run)");
 		execute("DELETE FROM IN_CATALOGUE WHERE id = '" + id + "'");
 		execute("DELETE FROM IN_RETAILER_PRODUCT_NAME WHERE retailer_product_id IN (SELECT id FROM IN_RETAILER_PRODUCT WHERE product_key LIKE '" + prefix + "%')");
 		execute("DELETE FROM IN_RETAILER_PRODUCT WHERE product_key LIKE '" + prefix + "%'");

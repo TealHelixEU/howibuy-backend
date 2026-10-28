@@ -22,8 +22,8 @@ import jakarta.inject.Inject;
 import eu.tealhelix.catalogue.services.v1.impl.FeedStore;
 import eu.tealhelix.catalogue.services.v1.impl.IngestionRunDispatcher;
 import eu.tealhelix.catalogue.test.quarkus.WithCatalogueDb;
-import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
-import eu.tealhelix.catalogue.v1.types.impl.IngestionRunIdImpl;
+import eu.tealhelix.catalogue.v1.types.impl.FeedIdImpl;
+import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
@@ -149,13 +149,16 @@ class FeedProcessingTest {
 
 	@Test
 	void aRunInterruptedByAStopIsProcessedAgainWhenTheIngestionStarts() throws Exception {
+		var feedId = UUID.randomUUID().toString();
 		var runId = UUID.randomUUID().toString();
-		var storedFeed = feedStore.store(new CatalogueIdImpl(catalogue.id()), new IngestionRunIdImpl(runId), new ByteArrayInputStream(feed(
+		var storedFeed = feedStore.store(new GenericRetailerId(TestCatalogue.LIME_FRESH), new FeedIdImpl(feedId), new ByteArrayInputStream(feed(
 				product(key("milk"), Map.of("el", "Γάλα"), "1.29"),
 				"not json"
 		).getBytes(UTF_8)));
-		execute("INSERT INTO IN_INGESTION_RUN (id, catalogue_id, feed_type, status, adapter, adapter_version, received_at, started_at, file_path, file_size, file_sha256) VALUES "
-				+ "('" + runId + "', '" + catalogue.id() + "', 'DELTA', 'PROCESSING', 'jsonl', '1', now(), now(), '" + storedFeed.path() + "', " + storedFeed.size() + ", '" + storedFeed.sha256() + "')");
+		execute("INSERT INTO IN_FEED (id, retailer_id, feed_type, received_at, file_path, file_size, file_sha256) VALUES "
+				+ "('" + feedId + "', '" + TestCatalogue.LIME_FRESH + "', 'DELTA', now(), '" + storedFeed.path() + "', " + storedFeed.size() + ", '" + storedFeed.sha256() + "')");
+		execute("INSERT INTO IN_INGESTION_RUN (id, feed_id, catalogue_id, status, adapter, adapter_version, started_at) VALUES "
+				+ "('" + runId + "', '" + feedId + "', '" + catalogue.id() + "', 'PROCESSING', 'jsonl', '1', now())");
 		execute("INSERT INTO IN_INGESTION_REJECT (ingestion_run_id, position, product_key, reason) VALUES ('" + runId + "', 2, NULL, 'The record is not a JSON object')");
 
 		dispatcher.recover();
@@ -185,10 +188,10 @@ class FeedProcessingTest {
 		return given()
 				.contentType("application/x-ndjson")
 				.body(feed.getBytes(UTF_8))
-				.when().post("/api/catalogue/v1/catalogues/" + catalogue.id() + "/feeds?type=" + feedType)
+				.when().post("/api/catalogue/v1/feeds/catalogues/" + catalogue.id() + "?type=" + feedType)
 				.then()
 				.statusCode(202)
-				.extract().jsonPath().getString("id");
+				.extract().jsonPath().getString("runs[0].id");
 	}
 
 	private void execute(String sql) throws SQLException {
