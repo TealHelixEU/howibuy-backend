@@ -53,7 +53,6 @@ tealhelix/
 │   ├── howibuy-service-interfaces/     Service interfaces
 │   ├── howibuy-services/               Service implementations
 │   ├── howibuy-jaxrs/                  JAX-RS resources, HowiBuy's own JWT authentication (JwtAuthenticationFilter, TokenHelper, ...)
-│   ├── howibuy-testutils/              Module-specific test utilities
 │   └── howibuy/                        Quarkus deployable (ties everything together)
 └── tealhelix-docker/             Dockerfiles + docker-compose
     ├── tealhelix-docker-postgres/

@@ -16,6 +16,9 @@ COPY catalogue-container/catalogue-service-interfaces/pom.xml catalogue-containe
 COPY catalogue-container/catalogue-services/pom.xml catalogue-container/catalogue-services/pom.xml
 COPY catalogue-container/catalogue-testutils/pom.xml catalogue-container/catalogue-testutils/pom.xml
 COPY catalogue-container/pom.xml catalogue-container/pom.xml
+COPY catalogue-sync-cli-container/catalogue-sync-cli/pom.xml catalogue-sync-cli-container/catalogue-sync-cli/pom.xml
+COPY catalogue-sync-cli-container/catalogue-sync-e2e/pom.xml catalogue-sync-cli-container/catalogue-sync-e2e/pom.xml
+COPY catalogue-sync-cli-container/pom.xml catalogue-sync-cli-container/pom.xml
 COPY howibuy-container/howibuy-dao-hibernate-reactive/pom.xml howibuy-container/howibuy-dao-hibernate-reactive/pom.xml
 COPY howibuy-container/howibuy-dao/pom.xml howibuy-container/howibuy-dao/pom.xml
 COPY howibuy-container/howibuy-jaxrs/pom.xml howibuy-container/howibuy-jaxrs/pom.xml
@@ -23,7 +26,6 @@ COPY howibuy-container/howibuy/pom.xml howibuy-container/howibuy/pom.xml
 COPY howibuy-container/howibuy-service-interfaces/pom.xml howibuy-container/howibuy-service-interfaces/pom.xml
 COPY howibuy-container/howibuy-services-model/pom.xml howibuy-container/howibuy-services-model/pom.xml
 COPY howibuy-container/howibuy-services/pom.xml howibuy-container/howibuy-services/pom.xml
-COPY howibuy-container/howibuy-testutils/pom.xml howibuy-container/howibuy-testutils/pom.xml
 COPY howibuy-container/pom.xml howibuy-container/pom.xml
 COPY howibuy-container/sfc-dao-hibernate-reactive/pom.xml howibuy-container/sfc-dao-hibernate-reactive/pom.xml
 COPY howibuy-container/sfc-dao/pom.xml howibuy-container/sfc-dao/pom.xml
@@ -36,6 +38,7 @@ COPY tealhelix-architecture/catalogue-model/pom.xml tealhelix-architecture/catal
 COPY tealhelix-architecture/catalogue-model-testutils/pom.xml tealhelix-architecture/catalogue-model-testutils/pom.xml
 COPY tealhelix-architecture/howibuy-model-json/pom.xml tealhelix-architecture/howibuy-model-json/pom.xml
 COPY tealhelix-architecture/howibuy-model/pom.xml tealhelix-architecture/howibuy-model/pom.xml
+COPY tealhelix-architecture/howibuy-model-testutils/pom.xml tealhelix-architecture/howibuy-model-testutils/pom.xml
 COPY tealhelix-architecture/pom.xml tealhelix-architecture/pom.xml
 COPY tealhelix-architecture/sfc-model/pom.xml tealhelix-architecture/sfc-model/pom.xml
 COPY tealhelix-common/pom.xml tealhelix-common/pom.xml
@@ -45,6 +48,7 @@ COPY tealhelix-common/tealhelix-common-jee/pom.xml tealhelix-common/tealhelix-co
 COPY tealhelix-common/tealhelix-common-services-impl/pom.xml tealhelix-common/tealhelix-common-services-impl/pom.xml
 COPY tealhelix-common/tealhelix-common-services/pom.xml tealhelix-common/tealhelix-common-services/pom.xml
 COPY tealhelix-common/tealhelix-common-testutils/pom.xml tealhelix-common/tealhelix-common-testutils/pom.xml
+COPY tealhelix-common/tealhelix-common-types-json/pom.xml tealhelix-common/tealhelix-common-types-json/pom.xml
 COPY tealhelix-common/tealhelix-common-types/pom.xml tealhelix-common/tealhelix-common-types/pom.xml
 COPY tealhelix-common/tealhelix-common-utils/pom.xml tealhelix-common/tealhelix-common-utils/pom.xml
 COPY tealhelix-common/tealhelix-common-web/pom.xml tealhelix-common/tealhelix-common-web/pom.xml
