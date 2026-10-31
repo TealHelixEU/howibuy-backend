@@ -28,7 +28,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @OpenAPIDefinition(
 		info = @Info(
 				title = "HowiBuy API",
-				version = "0.1.0", // API versioning, distinct from the application versioning
+				version = "0.2.0", // API versioning, distinct from the application versioning
 				description = "HowiBuy backend: product sustainability assessment and the Sustainable Food Compass."
 		),
 		tags = {
