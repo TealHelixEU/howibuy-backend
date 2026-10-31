@@ -143,6 +143,42 @@ When the best archetype is the Reference Product itself, no Retailer Product is 
 says "what you have is already a good choice" instead.
 _Avoid_: substitute, suggestion, recommendation, swap, replacement
 
+## Basket Assessment
+
+The part of HowiBuy that judges a user's basket as a whole rather than product by product, and rewards the user for
+the baskets they actually buy. It builds on the Product Sustainability Assessment for identifying and scoring each
+product.
+
+**Basket**:
+The set of distinct products a user is about to buy or has bought in one go, named by the Retailer's product keys.
+How many of each product is not part of it.
+_Avoid_: cart, order, shopping list
+
+**Purchased Basket**:
+A Basket the Retailer has registered as actually bought. Only a Purchased Basket is kept and earns XP.
+_Avoid_: order, transaction, receipt
+
+**Product Grade**:
+A, B or C, given to a product of a Basket from its Overall Score under the Weighting Profile in force for the user:
+the personal one if they have completed the compass, otherwise the scientific one. A product without an Overall Score
+has no grade and does not count towards the Basket.
+_Avoid_: rating, label, score (for the letter)
+
+**Basket Grade**:
+A, B or C, given to a Basket as a whole by rules over the Product Grades of its products. Not the same thing as a
+Product Grade, even though the letters coincide: one says how good a product is, the other how good a mix is. A Basket
+none of whose products has an Overall Score receives no Basket Grade.
+_Avoid_: basket score, basket rating
+
+**Problematic Product**:
+A product of a Basket graded below A. Problematic Products are reported worst Overall Score first.
+_Avoid_: bad product, issue
+
+**XP (Experience Points)**:
+The points a user earns for the Purchased Baskets they buy, by rules over the Product Grades of each Basket. A user
+has a running total of XP.
+_Avoid_: points (bare), score, credits
+
 ## Retailer Catalogue
 
 The bounded context that receives partner Retailers' product data, keeps it current, and has every
