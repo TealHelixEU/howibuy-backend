@@ -33,7 +33,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestMulti;
 
-@Path("assessment")
+@Path("assessment/product")
 @Tag(name = PRODUCT_ASSESSMENT, description = PRODUCT_ASSESSMENT_DESC)
 @SecurityRequirement(name = BEARER_AUTH)
 public class ProductAssessmentResource {

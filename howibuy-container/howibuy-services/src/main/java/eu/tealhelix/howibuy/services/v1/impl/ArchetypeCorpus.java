@@ -11,6 +11,8 @@ import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.dao.SubstitutabilityDao;
 import eu.tealhelix.howibuy.scoring.v1.SubstitutionSettings;
 import io.smallrye.mutiny.Uni;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The scored archetype corpus as the assessment flow sees it: read from the database once and kept for the lifetime of
@@ -21,6 +23,8 @@ import io.smallrye.mutiny.Uni;
  */
 @ApplicationScoped
 public class ArchetypeCorpus {
+	private static final Logger LOG = LoggerFactory.getLogger(ArchetypeCorpus.class);
+
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
 	private final ArchetypeProductDao archetypeProductDao;
 	private final SubstitutabilityDao substitutabilityDao;
@@ -49,7 +53,10 @@ public class ArchetypeCorpus {
 
 	private Uni<ScoredArchetypes> loadOnce() {
 		return load()
-				.onFailure().invoke(_ -> archetypes.set(null))
+				.onFailure().invoke(t -> {
+					LOG.warn("Failed to load archetype corpus, retrying on next request", t);
+					archetypes.set(null);
+				})
 				.memoize().indefinitely();
 	}
 

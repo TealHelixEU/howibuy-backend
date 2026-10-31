@@ -286,7 +286,7 @@ public class ProductAssessmentTest {
 		givenProductsOfEveryKind();
 		var request = multi("el", "yoghurt", "unknown", "honey", "soap", "feta", "yoghurt");
 
-		as("shopper").contentType(JSON).body(request).post(BASE + "/assessment/multi")
+		as("shopper").contentType(JSON).body(request).post(BASE + "/assessment/product/multi")
 				.then()
 				.statusCode(200)
 				.contentType(JSON)
@@ -303,7 +303,7 @@ public class ProductAssessmentTest {
 		givenProductsOfEveryKind();
 		var request = multi("el", "yoghurt", "unknown", "honey", "soap", "feta");
 
-		var body = as("shopper").contentType(JSON).body(request).post(BASE + "/assessment/multi-async")
+		var body = as("shopper").contentType(JSON).body(request).post(BASE + "/assessment/product/multi-async")
 				.then()
 				.statusCode(200)
 				.extract().asString();
@@ -316,10 +316,10 @@ public class ProductAssessmentTest {
 	void aBatchOfTheMostProductsIsAssessedAndOneMoreIsRefused() {
 		var keys = new ArrayList<>(Collections.nCopies(400, "unknown"));
 
-		as("shopper").contentType(JSON).body(multi("el", keys.toArray(String[]::new))).post(BASE + "/assessment/multi")
+		as("shopper").contentType(JSON).body(multi("el", keys.toArray(String[]::new))).post(BASE + "/assessment/product/multi")
 				.then().statusCode(200).body("assessments.size()", equalTo(400));
 		keys.add("unknown");
-		for (var path : List.of("/assessment/multi", "/assessment/multi-async")) {
+		for (var path : List.of("/assessment/product/multi", "/assessment/product/multi-async")) {
 			as("shopper").contentType(JSON).body(multi("el", keys.toArray(String[]::new))).post(BASE + path)
 					.then().statusCode(400).body("message", equalTo("The value of input 'productKeys' is illegal."));
 		}
@@ -331,7 +331,7 @@ public class ProductAssessmentTest {
 				.body("message", equalTo("Required input 'language' is missing."));
 		assessSingle("shopper", single(null, "el"), 400)
 				.body("message", equalTo("Required input 'productKey' is missing."));
-		for (var path : List.of("/assessment/multi", "/assessment/multi-async")) {
+		for (var path : List.of("/assessment/product/multi", "/assessment/product/multi-async")) {
 			as("shopper").contentType(JSON).body(multi(null, "yoghurt")).post(BASE + path)
 					.then().statusCode(400).body("message", equalTo("Required input 'language' is missing."));
 			as("shopper").contentType(JSON).body(multi("el", "yoghurt", null)).post(BASE + path)
@@ -344,7 +344,7 @@ public class ProductAssessmentTest {
 	@Test
 	void anAssessmentWhoseTokenNamesNoCatalogueIsForbidden() {
 		assessSingle("shopper-without-catalogue", single("yoghurt", "el"), 403);
-		for (var path : List.of("/assessment/multi", "/assessment/multi-async")) {
+		for (var path : List.of("/assessment/product/multi", "/assessment/product/multi-async")) {
 			as("shopper-without-catalogue").contentType(JSON).body(multi("el", "yoghurt")).post(BASE + path).then().statusCode(403);
 		}
 	}
@@ -429,7 +429,7 @@ public class ProductAssessmentTest {
 	}
 
 	private static ValidatableResponse assessSingle(String token, Map<String, Object> request, int expectedStatus) {
-		return as(token).contentType(JSON).body(request).post(BASE + "/assessment/single").then().statusCode(expectedStatus);
+		return as(token).contentType(JSON).body(request).post(BASE + "/assessment/product/single").then().statusCode(expectedStatus);
 	}
 
 	private static Map<String, Object> single(String productKey, String language) {

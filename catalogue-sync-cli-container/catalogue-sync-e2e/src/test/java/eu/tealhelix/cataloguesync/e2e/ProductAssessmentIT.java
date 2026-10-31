@@ -57,7 +57,7 @@ class ProductAssessmentIT {
 				.header("Authorization", "Bearer " + userAccessToken("e2e-shopper"))
 				.contentType(JSON)
 				.body(Map.of("productKey", "e2e-yoghurt-with-cream", "language", "en"))
-				.when().post(pipeline.howiBuyUrl() + "/api/howibuy/v1/assessment/single")
+				.when().post(pipeline.howiBuyUrl() + "/api/howibuy/v1/assessment/product/single")
 				.then()
 				.statusCode(200)
 				.body("type", equalTo("SUCCESS"))

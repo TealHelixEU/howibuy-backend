@@ -119,7 +119,7 @@ public class OpenApiContractTest {
 				.body("components.schemas.SessionTokenResponse", notNullValue())
 				.body("components.schemas.TokenExchangeResponse", notNullValue())
 				.body("components.schemas.MultiProductAssessmentResponse", notNullValue())
-				.body("paths.'/api/howibuy/v1/assessment/single'.post.responses.'200'.content.'application/json'.schema.'$ref'",
+				.body("paths.'/api/howibuy/v1/assessment/product/single'.post.responses.'200'.content.'application/json'.schema.'$ref'",
 						equalTo("#/components/schemas/ProductAssessmentOutcome"));
 	}
 
@@ -163,7 +163,7 @@ public class OpenApiContractTest {
 				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
-				.body("paths.'/api/howibuy/v1/assessment/single'.post.requestBody.content.'application/json'.schema.'$ref'",
+				.body("paths.'/api/howibuy/v1/assessment/product/single'.post.requestBody.content.'application/json'.schema.'$ref'",
 						equalTo("#/components/schemas/SingleProductAssessmentRequest"))
 				.body("components.schemas.SingleProductAssessmentRequest.properties.keySet()", equalTo(Set.of("productKey", "language")))
 				.body("components.schemas.SingleProductAssessmentRequest.properties.productKey.type", equalTo("string"))
