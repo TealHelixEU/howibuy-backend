@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="basket_assessment" author="nikospara">
+		<addColumn tableName="TH_USER_PROFILE">
+			<column name="xp_total" type="INT" defaultValueNumeric="0" remarks="The XP the user has earned in total with the Purchased Baskets">
+				<constraints nullable="false" notNullConstraintName="NL_TH_USER_PROFILE__XP_TOTAL" />
+			</column>
+		</addColumn>
+
+		<createTable tableName="TH_PURCHASED_BASKET" remarks="A Basket the Retailer registered as bought, with its verdict">
+			<column name="id" type="UUID" remarks="The primary key">
+				<constraints primaryKey="true" primaryKeyName="PK_TH_PURCHASED_BASKET" />
+			</column>
+			<column name="user_profile_id" type="UUID" remarks="The user who bought the basket">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__USER_PROFILE_ID" />
+			</column>
+			<column name="retailer_id" type="UUID" remarks="The Retailer the basket was bought from">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__RETAILER_ID" />
+			</column>
+			<column name="catalogue_id" type="VARCHAR(40)" remarks="The Catalogue the basket was bought in">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__CATALOGUE_ID" />
+			</column>
+			<column name="purchased_at" type="TIMESTAMP" remarks="When the user bought the basket, as the Retailer states it">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__PURCHASED_AT" />
+			</column>
+			<column name="recorded_at" type="TIMESTAMP" remarks="When HowiBuy registered the purchase">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__RECORDED_AT" />
+			</column>
+			<column name="outcome_type" type="VARCHAR(20)" remarks="Whether the basket could be judged: ASSESSED or NOTHING_TO_ASSESS">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__OUTCOME_TYPE" />
+			</column>
+			<column name="basket_grade" type="VARCHAR(1)" remarks="The Basket Grade, A, B or C; null when there was nothing to assess" />
+			<column name="xp_value" type="INT" remarks="The XP the basket earned, added to the user's total">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__XP_VALUE" />
+			</column>
+			<!-- No FK: the compass Attempts belong to the Sustainable Food Compass, another bounded context -->
+			<column name="compass_attempt_id" type="UUID" remarks="The compass Attempt the personal Weighting Profile was derived from; null when the scientific profile was in force" />
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_PURCHASED_BASKET" baseColumnNames="user_profile_id" constraintName="FK_PURCHASED_BASKET__USER_PROFILE_ID" referencedTableName="TH_USER_PROFILE" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="TH_PURCHASED_BASKET" baseColumnNames="retailer_id" constraintName="FK_PURCHASED_BASKET__RETAILER_ID" referencedTableName="TH_RETAILER" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="TH_PURCHASED_BASKET" baseColumnNames="catalogue_id" constraintName="FK_PURCHASED_BASKET__CATALOGUE_ID" referencedTableName="TH_CATALOGUE" referencedColumnNames="id" />
+		<createIndex tableName="TH_PURCHASED_BASKET" indexName="IX_TH_PURCHASED_BASKET__USER_PROFILE_ID">
+			<column name="user_profile_id" />
+		</createIndex>
+
+		<!--
+			No FK to TH_RETAILER_PRODUCT: the Catalogue Sync deletes its rows, and the basket keeps the product key it was
+			bought with. No FK to TH_ARCHETYPE_PRODUCT either: the scores are kept as they were at the purchase.
+		-->
+		<createTable tableName="TH_PURCHASED_BASKET_PRODUCT" remarks="A product of a Purchased Basket that has an Overall Score, with the scores of its archetype">
+			<column name="purchased_basket_id" type="UUID" remarks="The basket; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__PURCHASED_BASKET_ID" primaryKey="true" primaryKeyName="PK_TH_PURCHASED_BASKET_PRODUCT" />
+			</column>
+			<column name="product_key" type="VARCHAR(255)" remarks="The Retailer's own id of the product; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__PRODUCT_KEY" primaryKey="true" primaryKeyName="PK_TH_PURCHASED_BASKET_PRODUCT" />
+			</column>
+			<column name="archetype_product_id" type="UUID" remarks="The archetype the product is classified to, whose scores it took">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__ARCHETYPE_PRODUCT_ID" />
+			</column>
+			<column name="overall_score" type="DOUBLE PRECISION" remarks="The Overall Score under the Weighting Profile in force">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__OVERALL_SCORE" />
+			</column>
+			<column name="product_grade" type="VARCHAR(1)" remarks="The Product Grade, A, B or C">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__PRODUCT_GRADE" />
+			</column>
+			<column name="score_environment" type="DOUBLE PRECISION" remarks="The Normalised Score of the Environment dimension">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__SCORE_ENVIRONMENT" />
+			</column>
+			<column name="score_animal_welfare" type="DOUBLE PRECISION" remarks="The Normalised Score of the Animal Welfare dimension">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__SCORE_ANIMAL_WELFARE" />
+			</column>
+			<column name="score_social" type="DOUBLE PRECISION" remarks="The Normalised Score of the Social dimension">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__SCORE_SOCIAL" />
+			</column>
+			<column name="score_health" type="DOUBLE PRECISION" remarks="The Normalised Score of the Health dimension">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__SCORE_HEALTH" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_PURCHASED_BASKET_PRODUCT" baseColumnNames="purchased_basket_id" constraintName="FK_PURCHASED_BASKET_PRODUCT__PURCHASED_BASKET_ID" referencedTableName="TH_PURCHASED_BASKET" referencedColumnNames="id" />
+	</changeSet>
+</databaseChangeLog>

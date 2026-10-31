@@ -39,6 +39,7 @@ public class UserProfileDaoImplTest {
 	private static final String EMAIL = "bob@krusty-krab.com";
 	private static final String IDM_ID_OF_NEW_USER = "IDM ID OF NEW USER";
 	private static final String EMAIL_OF_NEW_USER = "sandy@treedome.com";
+	private static final UUID UNKNOWN_USER_ID = UUID.fromString("9d4b8f2e-6a13-4c57-b0e9-3f8a2d61c7a4");
 
 	@Container
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
@@ -157,5 +158,38 @@ public class UserProfileDaoImplTest {
 				sut.createFromIdm(tx, IDM_ID_OF_NEW_USER, USER_NAME, null)
 		).subscribe().withSubscriber(subscriber);
 		subscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(EntityAlreadyExistsException.class);
+	}
+
+	@Test
+	@Order(6)
+	void testXpTotalStartsAtZeroAndAddsUp(Mutiny.SessionFactory sessionFactory) {
+		var sut = new UserProfileDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var user = factory.withTransaction(sut::createAutoUser).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		Integer initialTotal = factory.withoutTransaction(em -> sut.requireXpTotal(em, user.getId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		assertEquals(0, initialTotal);
+
+		factory.withTransaction(tx -> sut.addXp(tx, user.getId(), 3)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		factory.withTransaction(tx -> sut.addXp(tx, user.getId(), 4)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		Integer finalTotal = factory.withoutTransaction(em -> sut.requireXpTotal(em, user.getId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		assertEquals(7, finalTotal);
+	}
+
+	@Test
+	@Order(7)
+	void testXpTotalOfAnUnknownUserIsNotFound(Mutiny.SessionFactory sessionFactory) {
+		var sut = new UserProfileDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var userId = new UserIdImpl(UNKNOWN_USER_ID.toString());
+
+		var requireSubscriber = UniAssertSubscriber.create();
+		factory.withoutTransaction(em -> sut.requireXpTotal(em, userId)).subscribe().withSubscriber(requireSubscriber);
+		requireSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
+
+		var addSubscriber = UniAssertSubscriber.create();
+		factory.withTransaction(tx -> sut.addXp(tx, userId, 3)).subscribe().withSubscriber(addSubscriber);
+		addSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
 	}
 }

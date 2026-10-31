@@ -18,6 +18,8 @@
 		<class>eu.tealhelix.howibuy.dao.jpa.CorrelationIdEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.HandoffTicketEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.ListingEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.PurchasedBasketEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.PurchasedBasketProductEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity</class>

@@ -67,6 +67,32 @@ public class UserProfileDaoImpl implements UserProfileDao {
 				.map(profile -> toUser(profile, name));
 	}
 
+	/**
+	 * Reads the column itself rather than the entity, which the session may hold from before an addition.
+	 */
+	@Override
+	public Uni<Integer> requireXpTotal(ReactivePersistenceContext em, UserId userId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(Integer.class);
+		var profile = q.from(UserProfileEntity.class);
+		q.select(profile.get(UserProfileEntity_.xpTotal));
+		q.where(cb.equal(profile.get(UserProfileEntity_.id), userId.asUuid()));
+		return em.createQuery(q).getSingleOptionalResult()
+				.map(xpTotal -> xpTotal.orElseThrow(() -> new NotFoundException(userId)));
+	}
+
+	@Override
+	public Uni<Void> addXp(ReactivePersistenceTxContext tx, UserId userId, int xp) {
+		var cb = tx.getCriteriaBuilder();
+		var u = cb.createCriteriaUpdate(UserProfileEntity.class);
+		var profile = u.from(UserProfileEntity.class);
+		u.set(profile.get(UserProfileEntity_.xpTotal), cb.sum(profile.get(UserProfileEntity_.xpTotal), xp));
+		u.where(cb.equal(profile.get(UserProfileEntity_.id), userId.asUuid()));
+		return tx.createUpdate(u).execute().invoke(updated -> {
+			if (updated == 0) throw new NotFoundException(userId);
+		}).replaceWithVoid();
+	}
+
 	@Override
 	public User toUser(UserId userId) {
 		return new UserImpl(userId, null, null, false, true, Set.of());

@@ -34,6 +34,25 @@ public interface UserProfileDao {
 	Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name);
 
 	/**
+	 * @param em     The persistence context
+	 * @param userId The user
+	 * @return The XP the user has earned in total; a failure with {@code NotFoundException} if there is no such user
+	 */
+	Uni<Integer> requireXpTotal(ReactivePersistenceContext em, UserId userId);
+
+	/**
+	 * Add to the XP the user has earned in total, in one update of the database, so that additions made at the same time
+	 * are all counted.
+	 *
+	 * @param tx     The transaction
+	 * @param userId The user
+	 * @param xp     The XP to add
+	 * @return A {@code Uni} completing when the XP has been added; a failure with {@code NotFoundException} if there is
+	 *         no such user
+	 */
+	Uni<Void> addXp(ReactivePersistenceTxContext tx, UserId userId, int xp);
+
+	/**
 	 * Create a simple, regular (non-system, non-service) user model holding information only about the user id, to be
 	 * used in the impersonation from retailer scenario.
 	 *

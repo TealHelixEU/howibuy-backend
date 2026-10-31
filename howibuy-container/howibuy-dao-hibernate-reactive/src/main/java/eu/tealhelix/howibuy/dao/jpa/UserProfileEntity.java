@@ -22,6 +22,13 @@ public class UserProfileEntity {
 	@Column(name = "email_consent")
 	private Boolean emailConsent;
 
+	/**
+	 * Changed only by an update that adds to it in the database, so that additions made at the same time are all counted;
+	 * an insert leaves it to the default of the column.
+	 */
+	@Column(name = "xp_total", insertable = false, updatable = false)
+	private int xpTotal;
+
 	public UUID getId() {
 		return id;
 	}
@@ -52,5 +59,9 @@ public class UserProfileEntity {
 
 	public void setEmailConsent(Boolean emailConsent) {
 		this.emailConsent = emailConsent;
+	}
+
+	public int getXpTotal() {
+		return xpTotal;
 	}
 }
