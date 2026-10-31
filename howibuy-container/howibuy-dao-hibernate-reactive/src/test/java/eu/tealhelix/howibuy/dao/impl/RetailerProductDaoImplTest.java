@@ -1,6 +1,8 @@
 package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
+import static eu.tealhelix.howibuy.dao.impl.TestEntities.catalogue;
+import static eu.tealhelix.howibuy.dao.impl.TestEntities.retailer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,6 +14,7 @@ import java.util.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import eu.tealhelix.catalogue.v1.model.ImmutableListing;
@@ -25,6 +28,7 @@ import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -60,18 +64,26 @@ public class RetailerProductDaoImplTest {
 	private static final HibernateReactiveExtension hibernateReactiveExtension =
 			new HibernateReactiveExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword());
 
+	@BeforeAll
+	static void setUpRetailers(Mutiny.SessionFactory sessionFactory) {
+		var retailerId = UUID.fromString(RETAILER);
+		var otherRetailerId = UUID.fromString(OTHER_RETAILER);
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> tx.persistAll(retailer(retailerId, "Test Retailer"), retailer(otherRetailerId, "Other Retailer"))
+						.chain(() -> tx.persistAll(
+								catalogue(CATALOGUE_GR, retailerId, "GR", "el"),
+								catalogue(CATALOGUE_CY, retailerId, "CY", "el"),
+								catalogue(CATALOGUE_MT, retailerId, "MT", "en"),
+								catalogue(OTHER_RETAILERS_CATALOGUE, otherRetailerId, "LT", "lt"))))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
 	@BeforeEach
 	void setUp() throws SQLException {
 		execute(
 				"DELETE FROM TH_LISTING",
 				"DELETE FROM TH_RETAILER_PRODUCT_NAME",
-				"DELETE FROM TH_RETAILER_PRODUCT",
-				"INSERT INTO TH_RETAILER (id, name) VALUES ('" + RETAILER + "', 'Test Retailer'), ('" + OTHER_RETAILER + "', 'Other Retailer') ON CONFLICT (id) DO NOTHING",
-				"INSERT INTO TH_CATALOGUE (id, retailer_id, country, primary_language) VALUES "
-						+ "('" + CATALOGUE_GR + "', '" + RETAILER + "', 'GR', 'el'), "
-						+ "('" + CATALOGUE_CY + "', '" + RETAILER + "', 'CY', 'el'), "
-						+ "('" + CATALOGUE_MT + "', '" + RETAILER + "', 'MT', 'en'), "
-						+ "('" + OTHER_RETAILERS_CATALOGUE + "', '" + OTHER_RETAILER + "', 'LT', 'lt') ON CONFLICT (id) DO NOTHING"
+				"DELETE FROM TH_RETAILER_PRODUCT"
 		);
 	}
 

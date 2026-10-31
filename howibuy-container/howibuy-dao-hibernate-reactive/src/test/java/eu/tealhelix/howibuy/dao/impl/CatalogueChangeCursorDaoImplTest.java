@@ -14,8 +14,10 @@ import java.util.concurrent.TimeUnit;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
+import eu.tealhelix.howibuy.dao.jpa.CatalogueChangeCursorEntity;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,14 +42,33 @@ public class CatalogueChangeCursorDaoImplTest {
 	private static final HibernateReactiveExtension hibernateReactiveExtension =
 			new HibernateReactiveExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword());
 
+	/**
+	 * The last sequence of the cursor as the schema creates it, read before any test resets the cursor; null if the
+	 * schema creates none.
+	 */
+	private static Long schemasLastSequence;
+
+	@BeforeAll
+	static void readTheSchemasCursor(Mutiny.SessionFactory sessionFactory) {
+		schemasLastSequence = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> em.find(CatalogueChangeCursorEntity.class, "ingestion"))
+				.map(cursor -> cursor == null ? null : cursor.getLastSequence())
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
 	@BeforeEach
-	void setUp() throws SQLException {
-		execute("INSERT INTO TH_CATALOGUE_CHANGE_CURSOR (source, last_sequence) VALUES ('ingestion', 0) ON CONFLICT (source) DO UPDATE SET last_sequence = 0");
+	void setUp(Mutiny.SessionFactory sessionFactory) {
+		var cursor = new CatalogueChangeCursorEntity();
+		cursor.setSource("ingestion");
+		cursor.setLastSequence(0);
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> tx.merge(cursor))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
 	@Test
-	void theSchemaStartsTheCursorAtZero(Mutiny.SessionFactory sessionFactory) {
-		assertEquals(0L, lastSequence(sessionFactory));
+	void theSchemaStartsTheCursorAtZero() {
+		assertEquals(0L, schemasLastSequence);
 	}
 
 	@Test
@@ -93,8 +114,10 @@ public class CatalogueChangeCursorDaoImplTest {
 	}
 
 	@Test
-	void aMissingCursorIsAnError(Mutiny.SessionFactory sessionFactory) throws SQLException {
-		execute("DELETE FROM TH_CATALOGUE_CHANGE_CURSOR");
+	void aMissingCursorIsAnError(Mutiny.SessionFactory sessionFactory) {
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> tx.find(CatalogueChangeCursorEntity.class, "ingestion").chain(tx::remove))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 		var sut = new CatalogueChangeCursorDaoImpl();
 
 		var subscriber = new ReactivePersistenceContextFactoryImpl(sessionFactory)
@@ -130,14 +153,6 @@ public class CatalogueChangeCursorDaoImplTest {
 				}
 				if (System.nanoTime() > deadline) throw new IllegalStateException("No transaction started waiting for the cursor row");
 				Thread.sleep(50);
-			}
-		}
-	}
-
-	private static void execute(String... statements) throws SQLException {
-		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()); var s = c.createStatement()) {
-			for (var statement : statements) {
-				s.execute(statement);
 			}
 		}
 	}

@@ -24,6 +24,13 @@
 		<version.java>25</version.java>
 
 		<database-test.active>false</database-test.active>
+		<!-- The JVM options of the tests; the JaCoCo agent adds itself here when its profile is active -->
+		<argLine></argLine>
+		<!--
+			A module whose tests create Mockito mocks loads Mockito as an agent, because the JVM warns about an agent that
+			attaches itself at run time; it sets this to -javaagent:@{org.mockito:mockito-core:jar}
+		-->
+		<mockito.javaagent></mockito.javaagent>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -196,6 +203,17 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<!-- Sets a property with the path of each dependency's jar, e.g. org.mockito:mockito-core:jar -->
+						<id>dependency-paths</id>
+						<goals><goal>properties</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 
 		<pluginManagement>
@@ -248,13 +266,11 @@
 						</annotationProcessorPaths>
 					</configuration>
 				</plugin>
-				<!--
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-dependency-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.7.0</version>
 				</plugin>
-				-->
 				<plugin>
 					<artifactId>maven-deploy-plugin</artifactId>
 					<version>3.2.0</version>
@@ -293,6 +309,7 @@
 					<version>3.6.0</version>
 					<!-- TODO The configuration is from Quarkus. Double check if it is needed at this level, or just in the Quarkus modules. -->
 					<configuration>
+						<argLine>@{argLine} ${mockito.javaagent}</argLine>
 						<systemPropertyVariables>
 							<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
 							<maven.home>${maven.home}</maven.home>

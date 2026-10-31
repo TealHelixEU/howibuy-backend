@@ -183,6 +183,10 @@ public class AttemptDaoImplTest {
 		return new ReactivePersistenceContextFactoryImpl(sessionFactory);
 	}
 
+	/**
+	 * Inserts with plain JDBC, not JPA: {@code TH_USER_PROFILE} has no entity in this module, whose tests create it with
+	 * a stub changelog.
+	 */
 	private static void insertUserProfiles(UUID... ids) throws SQLException {
 		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
 				var s = c.prepareStatement("INSERT INTO TH_USER_PROFILE (id) VALUES (?)")) {

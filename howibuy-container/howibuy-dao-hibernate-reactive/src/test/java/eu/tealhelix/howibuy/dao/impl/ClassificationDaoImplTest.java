@@ -1,6 +1,8 @@
 package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
+import static eu.tealhelix.howibuy.dao.impl.TestEntities.catalogue;
+import static eu.tealhelix.howibuy.dao.impl.TestEntities.retailer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,10 +40,8 @@ import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeCategoryEntity;
 import eu.tealhelix.howibuy.dao.jpa.ArchetypeProductEntity;
-import eu.tealhelix.howibuy.dao.jpa.CatalogueEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationAttemptEntity;
 import eu.tealhelix.howibuy.dao.jpa.ClassificationEntity;
-import eu.tealhelix.howibuy.dao.jpa.RetailerEntity;
 import eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity;
 import eu.tealhelix.howibuy.dao.jpa.values.AnimalWelfareImpact;
 import eu.tealhelix.howibuy.dao.jpa.values.EnvironmentalImpact;
@@ -110,18 +110,12 @@ public class ClassificationDaoImplTest {
 
 	@BeforeAll
 	static void setUpRetailer(Mutiny.SessionFactory sessionFactory) {
-		var retailer = new RetailerEntity();
-		retailer.setId(RETAILER);
-		retailer.setName("Test Retailer");
-		retailer.setActive(true);
+		var retailer = retailer(RETAILER, "Test Retailer");
 		retailer.setClassificationLanguage("el");
-		var catalogue = catalogue(CATALOGUE, RETAILER, "GR");
-		var catalogueCy = catalogue(CATALOGUE_CY, RETAILER, "CY");
-		var otherRetailer = new RetailerEntity();
-		otherRetailer.setId(OTHER_RETAILER);
-		otherRetailer.setName("Other Retailer");
-		otherRetailer.setActive(true);
-		var otherRetailersCatalogue = catalogue(OTHER_RETAILERS_CATALOGUE, OTHER_RETAILER, "GR");
+		var catalogue = catalogue(CATALOGUE, RETAILER, "GR", "el");
+		var catalogueCy = catalogue(CATALOGUE_CY, RETAILER, "CY", "el");
+		var otherRetailer = retailer(OTHER_RETAILER, "Other Retailer");
+		var otherRetailersCatalogue = catalogue(OTHER_RETAILERS_CATALOGUE, OTHER_RETAILER, "GR", "el");
 		var category = new ArchetypeCategoryEntity();
 		category.setId(UUID.fromString("1b0a5a3e-4f7e-4d3f-9a51-0c2b6f1e7a00"));
 		category.setLevel((short) 3);
@@ -992,16 +986,6 @@ public class ClassificationDaoImplTest {
 				.currency(Currency.getInstance("EUR"))
 				.isActive(active)
 				.build();
-	}
-
-	private static CatalogueEntity catalogue(String id, UUID retailerId, String country) {
-		var catalogue = new CatalogueEntity();
-		catalogue.setId(id);
-		catalogue.setRetailerId(retailerId);
-		catalogue.setCountry(country);
-		catalogue.setPrimaryLanguage("el");
-		catalogue.setActive(true);
-		return catalogue;
 	}
 
 	private static ProductChange removed(String productKey, long changeSequence) {

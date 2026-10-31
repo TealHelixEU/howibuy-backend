@@ -14,6 +14,10 @@
 	<name>HowiBuy: Service implementations</name>
 	<description>Service interface implementations for HowiBuy</description>
 
+	<properties>
+		<mockito.javaagent>-javaagent:@{org.mockito:mockito-core:jar}</mockito.javaagent>
+	</properties>
+
 	<dependencies>
 		<!-- PROJECT -->
 		<dependency>

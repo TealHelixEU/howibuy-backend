@@ -14,6 +14,10 @@
 	<name>SFC: Service implementations</name>
 	<description>Service interface implementations for the Sustainable Food Compass</description>
 
+	<properties>
+		<mockito.javaagent>-javaagent:@{org.mockito:mockito-core:jar}</mockito.javaagent>
+	</properties>
+
 	<dependencies>
 		<!-- PROJECT -->
 		<dependency>

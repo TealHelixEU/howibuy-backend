@@ -13,6 +13,10 @@
 	<name>HowiBuy: JAX-RS project</name>
 	<description>JAX-RS implementations for HowiBuy</description>
 
+	<properties>
+		<mockito.javaagent>-javaagent:@{org.mockito:mockito-core:jar}</mockito.javaagent>
+	</properties>
+
 	<dependencies>
 		<!-- PROJECT -->
 		<dependency>

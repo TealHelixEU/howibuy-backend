@@ -13,6 +13,10 @@
 	<name>Catalogue Sync: Deployable of the CLI</name>
 	<description>Project that makes the deployable artifact of the Catalogue Sync, a command-line tool that brings HowiBuy up to date with the Ingestion</description>
 
+	<properties>
+		<mockito.javaagent>-javaagent:@{org.mockito:mockito-core:jar}</mockito.javaagent>
+	</properties>
+
 	<dependencies>
 		<!-- FRAMEWORK -->
 		<dependency>

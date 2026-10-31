@@ -170,6 +170,10 @@ public class AnswerDaoImplTest {
 		return question;
 	}
 
+	/**
+	 * Inserts with plain JDBC, not JPA: {@code TH_USER_PROFILE} has no entity in this module, whose tests create it with
+	 * a stub changelog.
+	 */
 	private static void insertUserProfile(UUID id) throws SQLException {
 		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
 				var s = c.prepareStatement("INSERT INTO TH_USER_PROFILE (id) VALUES (?)")) {

@@ -1,6 +1,7 @@
 package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
+import static eu.tealhelix.howibuy.dao.impl.TestEntities.retailer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -11,6 +12,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
@@ -51,10 +53,18 @@ public class CatalogueDaoImplTest {
 	private static final HibernateReactiveExtension hibernateReactiveExtension =
 			new HibernateReactiveExtension(postgres::getJdbcUrl, postgres.getUsername(), postgres.getPassword());
 
+	/**
+	 * The Catalogues are inserted with plain JDBC, not JPA: the test is about the mapping of {@code TH_CATALOGUE}, which
+	 * rows written through that same mapping could not check.
+	 */
 	@BeforeAll
-	static void setUp() throws SQLException {
+	static void setUp(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withTransaction(tx -> tx.persistAll(
+						retailer(UUID.fromString(RETAILER), "Test Retailer"),
+						retailer(UUID.fromString(OTHER_RETAILER), "Other Retailer")))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 		try (var c = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()); var s = c.createStatement()) {
-			s.execute("INSERT INTO TH_RETAILER (id, name) VALUES ('" + RETAILER + "', 'Test Retailer'), ('" + OTHER_RETAILER + "', 'Other Retailer')");
 			s.execute("INSERT INTO TH_CATALOGUE (id, retailer_id, country, primary_language) VALUES "
 					+ "('" + CATALOGUE_GR.asString() + "', '" + RETAILER + "', 'GR', 'el'), "
 					+ "('" + CATALOGUE_CY.asString() + "', '" + RETAILER + "', 'CY', 'el'), "
