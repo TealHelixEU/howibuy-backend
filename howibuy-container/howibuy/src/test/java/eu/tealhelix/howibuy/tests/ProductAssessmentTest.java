@@ -1,12 +1,16 @@
 package eu.tealhelix.howibuy.tests;
 
+import static eu.tealhelix.howibuy.tests.AssessmentFixtures.BASE;
+import static eu.tealhelix.howibuy.tests.AssessmentFixtures.CATALOGUE_CY;
+import static eu.tealhelix.howibuy.tests.AssessmentFixtures.CATALOGUE_GR;
+import static eu.tealhelix.howibuy.tests.AssessmentFixtures.as;
+import static eu.tealhelix.howibuy.tests.AssessmentFixtures.listing;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -17,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,20 +29,14 @@ import jakarta.inject.Inject;
 
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.common.test.quarkus.PostgresTestResource;
-import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.Authentication;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelper;
-import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelperImpl;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
-import eu.tealhelix.howibuy.services.model.FoodTerm;
-import eu.tealhelix.howibuy.services.v1.ai.AiSelection;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
-import eu.tealhelix.howibuy.services.v1.ai.impl.ProductAssessmentAiFacadeImpl;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeCorpus;
-import eu.tealhelix.howibuy.v1.model.ProductBaseData;
 import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
@@ -47,10 +44,7 @@ import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
-import io.restassured.specification.RequestSpecification;
-import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -63,25 +57,15 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @WithTestResource(value = PostgresTestResource.class, initArgs = @ResourceArg(name = "contexts", value = "appdata"))
 public class ProductAssessmentTest {
-	private static final String BASE = "/api/howibuy/v1";
-
-	private static final String RETAILER_ID = "6f1f0b52-8a0e-4c1b-9d53-1c7a3e0b2f11";
-	private static final String CATALOGUE_GR = "test-gr";
-	private static final String CATALOGUE_CY = "test-cy";
-
-	private static final User CATALOGUE_SYNC = new UserImpl(new UserIdImpl("1d0c6b0e-3b5f-4d2a-8f7e-2a9c4b6d8e33"), "catalogue-sync", null, false, false, Set.of(Role.CATALOGUE_SYNC));
-	private static final User OPERATOR = new UserImpl(new UserIdImpl("4e2d8c1a-7b3f-4a6e-9c5d-3f1b7a9e2c44"), "operator", null, false, true, Set.of(Role.OPERATOR));
 	private static final User SHOPPER = new UserImpl(new UserIdImpl("8b5e2a17-4c9d-4f3e-a1b6-7d0c3e9f2a55"), "shopper", null, false, true, Set.of());
 
 	/**
 	 * The shopper scans in the Greek Catalogue with a token of the token exchange, and without a Catalogue with any other
 	 * token.
 	 */
-	private static final Map<String, Authentication> AUTHENTICATIONS_BY_TOKEN = Map.of(
-			"sync", new Authentication(CATALOGUE_SYNC, null),
-			"operator", new Authentication(OPERATOR, null),
+	private static final Map<String, Authentication> AUTHENTICATIONS_BY_TOKEN = AssessmentFixtures.authenticationsWith(Map.of(
 			"shopper", new Authentication(SHOPPER, new CatalogueIdImpl(CATALOGUE_GR)),
-			"shopper-without-catalogue", new Authentication(SHOPPER, null));
+			"shopper-without-catalogue", new Authentication(SHOPPER, null)));
 
 	@Inject
 	DataSource dataSource;
@@ -94,27 +78,21 @@ public class ProductAssessmentTest {
 	 */
 	private String archetype;
 
+	private AssessmentFixtures fixtures;
+
 	@BeforeEach
 	void setUp() throws SQLException {
-		QuarkusMock.installMockForType(new StubTokenHelper(), TokenHelper.class);
+		QuarkusMock.installMockForType(new StubTokenHelper(AUTHENTICATIONS_BY_TOKEN), TokenHelper.class);
 		QuarkusMock.installMockForType(new UnreachableProductAssessmentAiFacade(), ProductAssessmentAiFacade.class);
-		try (var c = dataSource.getConnection(); var s = c.createStatement()) {
-			s.execute("DELETE FROM TH_LISTING");
-			s.execute("DELETE FROM TH_RETAILER_PRODUCT_NAME");
-			s.execute("DELETE FROM TH_RETAILER_PRODUCT");
-			s.execute("INSERT INTO TH_RETAILER (id, name) VALUES ('" + RETAILER_ID + "', 'Test Retailer') ON CONFLICT (id) DO NOTHING");
-			s.execute("UPDATE TH_RETAILER SET classification_language = NULL WHERE id = '" + RETAILER_ID + "'");
-			s.execute("INSERT INTO TH_CATALOGUE (id, retailer_id, country, primary_language) VALUES ('" + CATALOGUE_GR + "', '" + RETAILER_ID + "', 'GR', 'el') ON CONFLICT (id) DO NOTHING");
-			s.execute("INSERT INTO TH_CATALOGUE (id, retailer_id, country, primary_language) VALUES ('" + CATALOGUE_CY + "', '" + RETAILER_ID + "', 'CY', 'el') ON CONFLICT (id) DO NOTHING");
-			s.execute("UPDATE TH_CATALOGUE_CHANGE_CURSOR SET last_sequence = 0");
-		}
-		archetype = rows("SELECT id::text FROM TH_ARCHETYPE_PRODUCT ORDER BY id LIMIT 1").getFirst();
+		fixtures = new AssessmentFixtures(dataSource);
+		fixtures.reset();
+		archetype = fixtures.rows("SELECT id::text FROM TH_ARCHETYPE_PRODUCT ORDER BY id LIMIT 1").getFirst();
 	}
 
 	@Test
 	void aClassifiedProductIsAssessedWithItsArchetypeAndHowItWasIdentified() throws SQLException {
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
-		classify("yoghurt", "h1", archetype);
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", archetype);
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.contentType(JSON)
@@ -127,7 +105,7 @@ public class ProductAssessmentTest {
 
 	@Test
 	void aProductOfTheRetailerThatIsNotKnownIsUnknown() {
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
 
 		assessSingle("shopper", single("soap", "el"), 200)
 				.body("productKey", equalTo("soap"))
@@ -139,7 +117,7 @@ public class ProductAssessmentTest {
 
 	@Test
 	void aProductThatWasNeverClassifiedIsNotClassified() {
-		applyProduct("honey", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("honey", 1, "h1", listing(CATALOGUE_GR, true));
 
 		assessSingle("shopper", single("honey", "el"), 200)
 				.body("type", equalTo("FAILURE_TO_IDENTIFY"))
@@ -149,8 +127,8 @@ public class ProductAssessmentTest {
 
 	@Test
 	void aProductThatNoArchetypeMatchesHasNoMatchingArchetype() {
-		applyProduct("soap", 1, "h1", listing(CATALOGUE_GR, true));
-		classify("soap", "h1", null);
+		fixtures.applyProduct("soap", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.classify("soap", "h1", null);
 
 		assessSingle("shopper", single("soap", "el"), 200)
 				.body("type", equalTo("FAILURE_TO_IDENTIFY"))
@@ -160,10 +138,10 @@ public class ProductAssessmentTest {
 
 	@Test
 	void aProductIsAssessedWhetherItsListingIsInactiveOrItIsListedOnlyInAnotherCatalogue() throws SQLException {
-		applyProduct("feta", 1, "h1", listing(CATALOGUE_GR, false));
-		applyProduct("halloumi", 2, "h2", listing(CATALOGUE_CY, true));
-		classify("feta", "h1", archetype);
-		classify("halloumi", "h2", archetype);
+		fixtures.applyProduct("feta", 1, "h1", listing(CATALOGUE_GR, false));
+		fixtures.applyProduct("halloumi", 2, "h2", listing(CATALOGUE_CY, true));
+		fixtures.classify("feta", "h1", archetype);
+		fixtures.classify("halloumi", "h2", archetype);
 
 		assessSingle("shopper", single("feta", "el"), 200)
 				.body("type", equalTo("SUCCESS"))
@@ -179,9 +157,9 @@ public class ProductAssessmentTest {
 	 */
 	@Test
 	void aProductThatChangedSinceItWasClassifiedIsAssessedWithItsArchetypeAndPending() throws SQLException {
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
-		classify("yoghurt", "h1", archetype);
-		applyProduct("yoghurt", 2, "h2", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", archetype);
+		fixtures.applyProduct("yoghurt", 2, "h2", listing(CATALOGUE_GR, true));
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("type", equalTo("SUCCESS"))
@@ -195,8 +173,8 @@ public class ProductAssessmentTest {
 	@Test
 	void aProductIsGoodEnoughWhenTheCatalogueStocksNothingBetterEvenWithItsListingInactive() throws SQLException {
 		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, false));
-		classify("yoghurt", "h1", archetypes.reference().asString());
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, false));
+		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("type", equalTo("SUCCESS"))
@@ -211,14 +189,14 @@ public class ProductAssessmentTest {
 	@Test
 	void aSuggestionNamesTheCheapestProductOfItsArchetypeActivelyListedInTheCatalogue() throws SQLException {
 		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
-		applyProduct("kefir", 2, "h2", listing(CATALOGUE_GR, true, "2.0000"));
-		applyProduct("kefir-organic", 3, "h3", listing(CATALOGUE_GR, true, "3.4900"));
-		applyProduct("kefir-on-offer", 4, "h4", listing(CATALOGUE_GR, false, "0.9900"));
-		applyProduct("kefir-in-cyprus", 5, "h5", listing(CATALOGUE_CY, true, "0.8900"));
-		classify("yoghurt", "h1", archetypes.reference().asString());
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("kefir", 2, "h2", listing(CATALOGUE_GR, true, "2.0000"));
+		fixtures.applyProduct("kefir-organic", 3, "h3", listing(CATALOGUE_GR, true, "3.4900"));
+		fixtures.applyProduct("kefir-on-offer", 4, "h4", listing(CATALOGUE_GR, false, "0.9900"));
+		fixtures.applyProduct("kefir-in-cyprus", 5, "h5", listing(CATALOGUE_CY, true, "0.8900"));
+		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
 		for (var product : Map.of("kefir", "h2", "kefir-organic", "h3", "kefir-on-offer", "h4", "kefir-in-cyprus", "h5").entrySet()) {
-			classify(product.getKey(), product.getValue(), archetypes.better().asString());
+			fixtures.classify(product.getKey(), product.getValue(), archetypes.better().asString());
 		}
 
 		var body = assessSingle("shopper", single("yoghurt", "el"), 200)
@@ -236,10 +214,10 @@ public class ProductAssessmentTest {
 	@Test
 	void aSuggestedProductIsNamedInTheLanguageAskedForElseInTheCataloguesPrimaryLanguage() throws SQLException {
 		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
-		applyProduct("kefir", 2, "h2", Map.of("el", "Κεφίρ", "en", "Kefir"), listing(CATALOGUE_GR, true));
-		classify("yoghurt", "h1", archetypes.reference().asString());
-		classify("kefir", "h2", archetypes.better().asString());
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("kefir", 2, "h2", Map.of("el", "Κεφίρ", "en", "Kefir"), listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
+		fixtures.classify("kefir", "h2", archetypes.better().asString());
 
 		assessSingle("shopper", single("yoghurt", "en"), 200)
 				.body("bestScientificAlternative.product.name", equalTo("Kefir"))
@@ -252,16 +230,16 @@ public class ProductAssessmentTest {
 	@Test
 	void anArchetypeIsSuggestedOnlyWhileAProductOfItIsActivelyListedInTheCatalogue() throws SQLException {
 		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
-		applyProduct("kefir", 2, "h2", listing(CATALOGUE_GR, true));
-		classify("yoghurt", "h1", archetypes.reference().asString());
-		classify("kefir", "h2", archetypes.better().asString());
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("kefir", 2, "h2", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
+		fixtures.classify("kefir", "h2", archetypes.better().asString());
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("bestScientificAlternative.type", equalTo("SUGGESTION"))
 				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.better().asString()));
 
-		applyProduct("kefir", 3, "h2", listing(CATALOGUE_GR, false));
+		fixtures.applyProduct("kefir", 3, "h2", listing(CATALOGUE_GR, false));
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
@@ -271,10 +249,10 @@ public class ProductAssessmentTest {
 	@Test
 	void anArchetypeListedOnlyInAnotherCatalogueIsNeverSuggested() throws SQLException {
 		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
-		applyProduct("kefir", 2, "h2", listing(CATALOGUE_CY, true));
-		classify("yoghurt", "h1", archetypes.reference().asString());
-		classify("kefir", "h2", archetypes.better().asString());
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("kefir", 2, "h2", listing(CATALOGUE_CY, true));
+		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
+		fixtures.classify("kefir", "h2", archetypes.better().asString());
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
@@ -358,7 +336,7 @@ public class ProductAssessmentTest {
 	 */
 	private ArchetypePair anArchetypeAndOneThatWouldRankFirstInItsPlace() throws SQLException {
 		var archetypes = archetypeCorpus.scoredArchetypes().await().atMost(Duration.ofSeconds(60));
-		Set<ArchetypeProductId> all = rows("SELECT id::text FROM TH_ARCHETYPE_PRODUCT").stream()
+		Set<ArchetypeProductId> all = fixtures.rows("SELECT id::text FROM TH_ARCHETYPE_PRODUCT").stream()
 				.map(ArchetypeProductIdImpl::new)
 				.collect(Collectors.toSet());
 		return all.stream().sorted(Comparator.comparing(ArchetypeProductId::asString))
@@ -376,20 +354,20 @@ public class ProductAssessmentTest {
 	 * One product of each kind: classified, never classified, matching no archetype, and classified but listed Inactive.
 	 */
 	private void givenProductsOfEveryKind() {
-		applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
-		applyProduct("honey", 2, "h2", listing(CATALOGUE_GR, true));
-		applyProduct("soap", 3, "h3", listing(CATALOGUE_GR, true));
-		applyProduct("feta", 4, "h4", listing(CATALOGUE_GR, false));
-		classify("yoghurt", "h1", archetype);
-		classify("soap", "h3", null);
-		classify("feta", "h4", archetype);
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("honey", 2, "h2", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("soap", 3, "h3", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("feta", 4, "h4", listing(CATALOGUE_GR, false));
+		fixtures.classify("yoghurt", "h1", archetype);
+		fixtures.classify("soap", "h3", null);
+		fixtures.classify("feta", "h4", archetype);
 	}
 
 	private Map<String, Object> classified(String productKey, boolean pending) throws SQLException {
 		var diagnostics = noMatchingArchetype(productKey);
 		diagnostics.put("pending", pending);
 		diagnostics.put("archetypeProductId", archetype);
-		diagnostics.put("archetypeProductName", rows("SELECT name FROM TH_ARCHETYPE_PRODUCT WHERE id = '" + archetype + "'").getFirst());
+		diagnostics.put("archetypeProductName", fixtures.rows("SELECT name FROM TH_ARCHETYPE_PRODUCT WHERE id = '" + archetype + "'").getFirst());
 		return diagnostics;
 	}
 
@@ -405,7 +383,7 @@ public class ProductAssessmentTest {
 
 	private Map<String, Object> notClassified(String productKey) {
 		var diagnostics = new HashMap<String, Object>();
-		diagnostics.put("retailerProductId", productId(productKey));
+		diagnostics.put("retailerProductId", fixtures.productId(productKey));
 		diagnostics.put("classifier", null);
 		diagnostics.put("needsReview", null);
 		diagnostics.put("pending", null);
@@ -424,10 +402,6 @@ public class ProductAssessmentTest {
 		return values;
 	}
 
-	private static RequestSpecification as(String token) {
-		return RestAssured.given().header("Authorization", "Bearer " + token);
-	}
-
 	private static ValidatableResponse assessSingle(String token, Map<String, Object> request, int expectedStatus) {
 		return as(token).contentType(JSON).body(request).post(BASE + "/assessment/product/single").then().statusCode(expectedStatus);
 	}
@@ -444,120 +418,5 @@ public class ProductAssessmentTest {
 		request.put("language", language);
 		request.put("productKeys", Arrays.asList(productKeys));
 		return request;
-	}
-
-	/**
-	 * An expert's attempt resolves the Classification of the product.
-	 */
-	private void classify(String productKey, String inputHash, String archetypeProductId) {
-		var attempt = new HashMap<String, Object>();
-		attempt.put("retailerProductId", productId(productKey));
-		attempt.put("inputHash", inputHash);
-		attempt.put("language", "el");
-		attempt.put("classifier", "EXPERT");
-		attempt.put("classifierVersion", "test");
-		attempt.put("archetypeProductId", archetypeProductId);
-		as("operator").contentType(JSON).body(attempt).post(BASE + "/classification-attempts").then().statusCode(204);
-	}
-
-	private static Map<String, Object> listing(String catalogueId, boolean active) {
-		return listing(catalogueId, active, "1.99");
-	}
-
-	private static Map<String, Object> listing(String catalogueId, boolean active, String price) {
-		return Map.of("catalogueId", catalogueId, "price", new BigDecimal(price), "currency", "EUR", "active", active);
-	}
-
-	/**
-	 * Apply the product, named in Greek by its key, as the next change of the Catalogue Sync.
-	 */
-	private void applyProduct(String productKey, long changeSequence, String inputHash, Map<String, Object> listing) {
-		applyProduct(productKey, changeSequence, inputHash, Map.of("el", productKey), listing);
-	}
-
-	/**
-	 * Apply the product as the next change of the Catalogue Sync.
-	 */
-	private void applyProduct(String productKey, long changeSequence, String inputHash, Map<String, String> names, Map<String, Object> listing) {
-		var product = new HashMap<String, Object>();
-		product.put("retailerId", RETAILER_ID);
-		product.put("productKey", productKey);
-		product.put("changeSequence", changeSequence);
-		product.put("inputHash", inputHash);
-		product.put("names", names);
-		product.put("characteristics", Map.of());
-		product.put("tags", List.of());
-		product.put("listings", List.of(listing));
-		product.put("removed", false);
-		as("sync").contentType(JSON)
-				.body(Map.of("fromSequence", changeSequence - 1, "toSequence", changeSequence, "products", List.of(product)))
-				.post(BASE + "/catalogue-changes")
-				.then().statusCode(204);
-	}
-
-	private String productId(String productKey) {
-		try {
-			return rows("SELECT id::text FROM TH_RETAILER_PRODUCT WHERE product_key = '" + productKey + "'").getFirst();
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	/**
-	 * @return Each row, its columns joined by {@code |}
-	 */
-	private List<String> rows(String sql) throws SQLException {
-		try (var c = dataSource.getConnection(); var s = c.createStatement(); var rs = s.executeQuery(sql)) {
-			var rows = new ArrayList<String>();
-			var columns = rs.getMetaData().getColumnCount();
-			while (rs.next()) {
-				var row = new StringJoiner("|");
-				for (int i = 1; i <= columns; i++) {
-					row.add(rs.getString(i) != null ? rs.getString(i) : "null");
-				}
-				rows.add(row.toString());
-			}
-			return rows;
-		}
-	}
-
-	/**
-	 * Fails the request of an assessment that asks the language model anything.
-	 */
-	private static final class UnreachableProductAssessmentAiFacade extends ProductAssessmentAiFacadeImpl {
-		UnreachableProductAssessmentAiFacade() {
-			super(null, null);
-		}
-
-		@Override
-		public Uni<AiSelection> extractL1Category(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
-			throw new AssertionError("The assessment asked the language model");
-		}
-
-		@Override
-		public Uni<AiSelection> extractSubcategory(ProductBaseData productData, List<String> categories, List<FoodTerm> recognizedTerms) {
-			throw new AssertionError("The assessment asked the language model");
-		}
-
-		@Override
-		public Uni<AiSelection> extractArchetypeProduct(ProductBaseData productData, List<String> products, List<FoodTerm> recognizedTerms, String categoryGuidance) {
-			throw new AssertionError("The assessment asked the language model");
-		}
-	}
-
-	private static final class StubTokenHelper extends TokenHelperImpl {
-		StubTokenHelper() {
-			super(null, null, null, null, null);
-		}
-
-		@Override
-		public Uni<Authentication> processToken(String token) {
-			return Uni.createFrom().item(AUTHENTICATIONS_BY_TOKEN.get(token));
-		}
-
-		@Override
-		public User makeUnauthenticated() {
-			return new UserImpl(null, null, null, false, true, Set.of());
-		}
 	}
 }

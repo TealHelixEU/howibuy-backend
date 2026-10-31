@@ -22,7 +22,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
-import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import io.smallrye.mutiny.Multi;
@@ -119,11 +118,6 @@ public class ProductAssessmentResource {
 	 */
 	private static List<ProductKey> productKeys(MultiProductAssessmentRequest request) {
 		required("body", request);
-		requiredText("language", request.language());
-		var productKeys = required("productKeys", request.productKeys());
-		if (productKeys.size() > MAX_PRODUCTS) {
-			throw BadInputValueException.fromInputNameAndHint("productKeys", "There must be at most " + MAX_PRODUCTS);
-		}
-		return productKeys.stream().<ProductKey>map(productKey -> new ProductKeyImpl(requiredText("productKeys", productKey))).toList();
+		return AssessmentRequests.productKeys(request.language(), request.productKeys());
 	}
 }

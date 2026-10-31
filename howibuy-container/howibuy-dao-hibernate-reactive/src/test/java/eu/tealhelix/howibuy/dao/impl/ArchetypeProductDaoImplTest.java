@@ -174,7 +174,8 @@ public class ArchetypeProductDaoImplTest {
 
 	/**
 	 * One distinct value per column, so that any two columns mapped to each other's indicator disagree with the
-	 * expectation rather than cancelling out.
+	 * expectation rather than cancelling out. Written with plain JDBC, not JPA: the test is about the mapping of the
+	 * impact columns, which values written through that same mapping could not check.
 	 */
 	private static void writeImpacts(ArchetypeProductId productId) {
 		var assignments = IntStream.range(0, IMPACT_COLUMNS.size())
