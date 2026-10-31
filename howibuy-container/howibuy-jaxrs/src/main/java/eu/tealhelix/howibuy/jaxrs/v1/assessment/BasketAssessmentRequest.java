@@ -10,5 +10,5 @@ public record BasketAssessmentRequest(
 		String language,
 		@Schema(description = "The retailer's keys of the products in the basket, at most " + ProductAssessmentResource.MAX_PRODUCTS + ".")
 		List<String> productKeys
-) {
+) implements BasketRequest {
 }

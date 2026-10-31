@@ -5,7 +5,7 @@ public interface HowiBuyOpenApiTagNames {
 	String PRODUCT_ASSESSMENT_DESC = "Assessment of a product's sustainability and of the alternatives to it that score better. Every assessment is made for the authenticated end-user, against their own weighting of the sustainability dimensions (i.e. the SFC), if they exist.";
 
 	String BASKET_ASSESSMENT = "Basket assessment";
-	String BASKET_ASSESSMENT_DESC = "Assessment of a basket's sustainability as a whole. Every assessment is made for the authenticated end-user, against their own weighting of the sustainability dimensions (i.e. the SFC), if they exist.";
+	String BASKET_ASSESSMENT_DESC = "Assessment of a basket's sustainability as a whole, before and after the purchase. Every assessment is made for an end-user, the authenticated one or the one the retailer names, against their own weighting of the sustainability dimensions (i.e. the SFC), if they exist.";
 
 	String HANDOFF = "Session handoff";
 	String HANDOFF_DESC = "Carrying a user's session from a retailer's application over to the single-page application: the retailer is handed a ticket, the single-page application redeems it for a session of its own, and renews that session's token for as long as the user keeps working.";

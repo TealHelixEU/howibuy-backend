@@ -253,5 +253,9 @@ components:
     LocalDateTime:
       description: A date and time carrying no time zone or offset, in ISO-8601 form.
 
+    OffsetDateTime:
+      description: A date and time with its offset from UTC, in ISO-8601 form.
+      examples: ["2026-10-30T18:45:00+02:00"]
+
     UUID:
       description: A universally unique identifier, in the canonical 8-4-4-4-12 hexadecimal form.

@@ -1,24 +1,41 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
+import static eu.tealhelix.common.utils.UniComprehensions.forc;
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 import static eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType.ASSESSED;
 import static eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType.NOTHING_TO_ASSESS;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
+import eu.tealhelix.common.services.generic.DateTimeService;
+import eu.tealhelix.common.types.Nullable;
+import eu.tealhelix.common.types.entity.NotFoundException;
+import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.common.v1.types.RetailerId;
+import eu.tealhelix.howibuy.dao.CatalogueDao;
+import eu.tealhelix.howibuy.dao.PurchasedBasketDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.scoring.v1.ScoredProduct;
+import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasket;
+import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
+import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.v1.BasketAssessmentService;
 import eu.tealhelix.howibuy.services.v1.basket.BasketGradeLabels;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules;
@@ -26,6 +43,8 @@ import eu.tealhelix.howibuy.services.v1.basket.BasketRules.BasketVerdict;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules.ScoredBasketProduct;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableBasketAssessmentOutcome;
+import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
+import eu.tealhelix.howibuy.v1.types.ProductGrade;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
@@ -34,6 +53,10 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private static final Logger LOG = LoggerFactory.getLogger(BasketAssessmentServiceImpl.class);
+	/**
+	 * How far ahead of the clock of this application a purchase time may be, for a Retailer whose clock runs fast.
+	 */
+	static final Duration MAX_CLOCK_SKEW = Duration.ofMinutes(5);
 
 	private final TealHelixAuthorization authorization;
 	private final ReferenceProductIdentifier referenceProductIdentifier;
@@ -41,6 +64,9 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private final PersonalWeightsProvider personalWeightsProvider;
 	private final ReactivePersistenceContextFactory persistenceContextFactory;
 	private final UserProfileDao userProfileDao;
+	private final CatalogueDao catalogueDao;
+	private final PurchasedBasketDao purchasedBasketDao;
+	private final DateTimeService dateTimeService;
 	private final BasketRules basketRules = new BasketRules();
 	private final BasketGradeLabels basketGradeLabels = new BasketGradeLabels();
 
@@ -55,6 +81,28 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		ScoredBasketProduct toBasketProduct() {
 			return new ScoredBasketProduct(productKey, overallScore);
 		}
+
+		PurchasedBasketProduct toPurchasedBasketProduct(ProductGrade productGrade) {
+			return ImmutablePurchasedBasketProduct.builder()
+					.productKey(productKey)
+					.archetypeProductId(scoredProduct.productId())
+					.overallScore(overallScore)
+					.productGrade(productGrade)
+					.normalisedScores(scoredProduct.normalisedScores())
+					.build();
+		}
+	}
+
+	/**
+	 * The scored products of a basket and the compass Attempt the Weighting Profile in force was derived from.
+	 *
+	 * @param lines            the products of the basket that have an Overall Score
+	 * @param compassAttemptId the compass Attempt, {@code null} when the scientific profile was in force
+	 */
+	private record ScoredBasket(List<ScoredBasketLine> lines, @Nullable UUID compassAttemptId) {
+		BasketVerdict judge(BasketRules basketRules) {
+			return basketRules.judge(lines.stream().map(ScoredBasketLine::toBasketProduct).toList());
+		}
 	}
 
 	@Inject
@@ -64,7 +112,10 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 			ArchetypeCorpus archetypeCorpus,
 			PersonalWeightsProvider personalWeightsProvider,
 			ReactivePersistenceContextFactory persistenceContextFactory,
-			UserProfileDao userProfileDao
+			UserProfileDao userProfileDao,
+			CatalogueDao catalogueDao,
+			PurchasedBasketDao purchasedBasketDao,
+			DateTimeService dateTimeService
 	) {
 		this.authorization = authorization;
 		this.referenceProductIdentifier = referenceProductIdentifier;
@@ -72,6 +123,9 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		this.personalWeightsProvider = personalWeightsProvider;
 		this.persistenceContextFactory = persistenceContextFactory;
 		this.userProfileDao = userProfileDao;
+		this.catalogueDao = catalogueDao;
+		this.purchasedBasketDao = purchasedBasketDao;
+		this.dateTimeService = dateTimeService;
 	}
 
 	@Override
@@ -82,7 +136,62 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		return forcm(
 				scoreBasket(user, catalogueId, productKeys),
 				_ -> persistenceContextFactory.withoutTransaction(em -> userProfileDao.requireXpTotal(em, user.getId())),
-				(lines, totalXp) -> outcome(basketRules.judge(lines.stream().map(ScoredBasketLine::toBasketProduct).toList()), language, totalXp));
+				(scoredBasket, totalXp) -> outcome(scoredBasket.judge(basketRules), language, totalXp));
+	}
+
+	@Override
+	public Uni<BasketAssessmentOutcome> assessPurchasedBasket(
+			User user, CatalogueId catalogueId, @Nullable OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language) {
+		authorization.requirePerson(user);
+		var recordedAt = dateTimeService.getNow();
+		LocalDateTime purchaseTime = purchaseTime(purchasedAt, recordedAt);
+		LOG.info("Assess purchased basket, user: {}, catalogue: {}, purchasedAt: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(),
+				purchaseTime, language, productKeys.stream().map(ProductKey::asString).toList());
+		return persistenceContextFactory.withTransaction(tx -> forcm(
+				scoreBasket(user, catalogueId, productKeys),
+				_ -> requireRetailerOf(tx, catalogueId),
+				(scoredBasket, retailerId) -> {
+					BasketVerdict verdict = scoredBasket.judge(basketRules);
+					var purchasedBasket = ImmutablePurchasedBasket.builder()
+									.userId(user.getId())
+									.retailerId(retailerId)
+									.catalogueId(catalogueId)
+									.purchasedAt(purchaseTime)
+									.recordedAt(recordedAt)
+									.type(typeOf(verdict))
+									.basketGrade(verdict.basketGrade())
+									.xpValue(verdict.xpValue())
+									.compassAttemptId(scoredBasket.compassAttemptId())
+									.products(scoredBasket.lines().stream()
+											.map(line -> line.toPurchasedBasketProduct(verdict.productGrades().get(line.productKey())))
+											.toList())
+									.build();
+					return purchasedBasketDao.store(tx, purchasedBasket).replaceWith(verdict);
+				},
+				verdict -> userProfileDao.addXp(tx, user.getId(), verdict.xpValue()),
+				_ -> userProfileDao.requireXpTotal(tx, user.getId()),
+				(_, _, verdict, _, totalXp) -> outcome(verdict, language, totalXp)
+		));
+	}
+
+	/**
+	 * The time of the purchase as this application tells the time: the time of recording when the caller states none.
+	 * A time ahead of the clock by more than {@link #MAX_CLOCK_SKEW} is refused.
+	 */
+	private static LocalDateTime purchaseTime(@Nullable OffsetDateTime purchasedAt, LocalDateTime recordedAt) {
+		if (purchasedAt == null) {
+			return recordedAt;
+		}
+		var purchaseTime = purchasedAt.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+		if (purchaseTime.isAfter(recordedAt.plus(MAX_CLOCK_SKEW))) {
+			throw BadInputValueException.fromInputNameAndHint("purchasedAt", "The purchase time is in the future, purchasedAt: " + purchasedAt);
+		}
+		return purchaseTime;
+	}
+
+	private Uni<RetailerId> requireRetailerOf(ReactivePersistenceContext em, CatalogueId catalogueId) {
+		return catalogueDao.findRetailers(em, Set.of(catalogueId))
+				.map(retailers -> Optional.ofNullable(retailers.get(catalogueId)).orElseThrow(() -> new NotFoundException(catalogueId)));
 	}
 
 	/**
@@ -91,13 +200,14 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	 * Score (it is outside the Nutri-Score scheme) is left out. The identifications and the corpus are read once for the
 	 * whole basket.
 	 */
-	private Uni<List<ScoredBasketLine>> scoreBasket(User user, CatalogueId catalogueId, List<ProductKey> productKeys) {
+	private Uni<ScoredBasket> scoreBasket(User user, CatalogueId catalogueId, List<ProductKey> productKeys) {
 		var distinctKeys = new LinkedHashSet<>(productKeys);
 		return forcm(
 				personalWeightsProvider.forUser(user),
 				_ -> referenceProductIdentifier.identify(catalogueId, distinctKeys),
 				(_, _) -> archetypeCorpus.scoredArchetypes(),
-				(weights, identifications, archetypes) -> scoredLines(distinctKeys, identifications, archetypes, weights.profile()));
+				(weights, identifications, archetypes) ->
+						new ScoredBasket(scoredLines(distinctKeys, identifications, archetypes, weights.profile()), weights.compassAttemptId()));
 	}
 
 	private static List<ScoredBasketLine> scoredLines(
@@ -119,12 +229,16 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private BasketAssessmentOutcome outcome(BasketVerdict verdict, String language, int totalXp) {
 		var basketGrade = verdict.basketGrade();
 		return ImmutableBasketAssessmentOutcome.builder()
-				.type(basketGrade == null ? NOTHING_TO_ASSESS : ASSESSED)
+				.type(typeOf(verdict))
 				.basketGrade(basketGrade)
 				.basketGradeLabel(basketGrade == null ? null : basketGradeLabels.labelOf(basketGrade, language))
 				.problematicProductKeys(verdict.problematicProductKeys())
 				.xpValue(verdict.xpValue())
 				.totalXp(totalXp)
 				.build();
+	}
+
+	private static BasketAssessmentOutcomeType typeOf(BasketVerdict verdict) {
+		return verdict.basketGrade() == null ? NOTHING_TO_ASSESS : ASSESSED;
 	}
 }

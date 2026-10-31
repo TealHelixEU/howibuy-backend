@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -236,6 +237,29 @@ public class OpenApiContractTest {
 		assertEquals(List.of("A", "B", "C"), at(schemas(document), "BasketGrade", "enum"));
 		for (var status : List.of("400", "401", "403")) {
 			assertNotNull(at(assess, "responses", status, "description"), "a refused basket is documented, status: " + status);
+		}
+	}
+
+	/**
+	 * The Retailer registers a purchase with its own token and gets the same outcome back. The purchase time is a
+	 * date-time with an offset, and the description warns that every call is another purchase.
+	 */
+	@Test
+	void documentsTheRegistrationOfAPurchasedBasket() {
+		var document = openApiDocument();
+		var purchase = operation(document, "post", "/api/howibuy/v1/assessment/basket/purchase");
+
+		assertEquals("#/components/schemas/PurchasedBasketAssessmentRequest",
+				at(purchase, "requestBody", "content", "application/json", "schema", "$ref"));
+		var request = (Map<?, ?>) at(schemas(document), "PurchasedBasketAssessmentRequest", "properties");
+		assertEquals(Set.of("correlationId", "catalogueId", "purchasedAt", "language", "productKeys"), request.keySet());
+		assertEquals("#/components/schemas/OffsetDateTime", at(request, "purchasedAt", "$ref"));
+		assertEquals("date-time", at(schemas(document), "OffsetDateTime", "format"));
+		assertEquals("#/components/schemas/BasketAssessmentOutcome",
+				at(purchase, "responses", "200", "content", "application/json", "schema", "$ref"));
+		assertTrue(((String) purchase.get("description")).contains("exactly once per purchase"), "a repeated call is counted again");
+		for (var status : List.of("400", "401", "403")) {
+			assertNotNull(at(purchase, "responses", status, "description"), "a refused purchase is documented, status: " + status);
 		}
 	}
 
