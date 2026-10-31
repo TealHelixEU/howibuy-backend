@@ -60,7 +60,7 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		authorization.requirePerson(user);
 		LOG.info("Assess single product, user: {}, catalogue: {}, language: {}, key: {}", user.getId().asString(), catalogueId.asString(), language, productKey.asString());
 		return forc(
-				personalWeightsProvider.forUser(user),
+				personalWeightsProvider.forUser(user).map(WeightProfileAndAttemptId::profile),
 				_ -> referenceProductIdentifier.identify(catalogueId, Set.of(productKey)),
 				(_, _) -> catalogueAssortmentService.stockedArchetypes(catalogueId),
 				(personalProfile, identifications, stocked) -> singleProductAssessor.assessOne(productKey, identifications.get(productKey), personalProfile, stocked),
@@ -93,7 +93,7 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		LOG.info("Assess (batch) products, user: {}, catalogue: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(), language,
 				productKeys.stream().map(ProductKey::asString).toList());
 		return forc(
-				personalWeightsProvider.forUser(user),
+				personalWeightsProvider.forUser(user).map(WeightProfileAndAttemptId::profile),
 				_ -> referenceProductIdentifier.identify(catalogueId, Set.copyOf(productKeys)),
 				(_, _) -> catalogueAssortmentService.stockedArchetypes(catalogueId),
 				(personalProfile, identifications, stocked) -> assessProducts(productKeys, identifications, personalProfile, stocked),

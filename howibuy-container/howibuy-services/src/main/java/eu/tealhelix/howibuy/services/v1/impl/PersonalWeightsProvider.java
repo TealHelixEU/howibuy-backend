@@ -3,6 +3,7 @@ package eu.tealhelix.howibuy.services.v1.impl;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -44,13 +45,15 @@ public class PersonalWeightsProvider {
 
 	/**
 	 * The user's weighting profile, or the scientific one if they have never completed an attempt — so the
-	 * recommendations a user gets before they have answered anything are still grounded, just not yet theirs.
+	 * recommendations a user gets before they have answered anything are still grounded, just not yet theirs. The
+	 * scientific one also stands in when the latest completed attempt leaves a scored dimension unanswered.
 	 */
-	public Uni<WeightProfile> forUser(User user) {
+	public Uni<WeightProfileAndAttemptId> forUser(User user) {
 		return compassReadService.findLatestCompletedAnswers(user)
 				.map(answers -> answers
-						.map(completed -> derive(completed.answersByDimension()))
-						.orElseGet(ScientificWeights::profile));
+						.flatMap(completed -> derive(completed.answersByDimension())
+								.map(profile -> new WeightProfileAndAttemptId(profile, completed.attemptId())))
+						.orElseGet(() -> new WeightProfileAndAttemptId(ScientificWeights.profile(), null)));
 	}
 
 	/**
@@ -64,18 +67,18 @@ public class PersonalWeightsProvider {
 	 * indicator weights fixed, every raw single score and the whole min–max normalisation are user-independent and the
 	 * corpus can be scored once, which is what {@link eu.tealhelix.howibuy.scoring.v1.ScoredCorpus} relies on.
 	 */
-	private static WeightProfile derive(Map<SustainabilityDimension, List<ScaleOption>> answersByDimension) {
+	private static Optional<WeightProfile> derive(Map<SustainabilityDimension, List<ScaleOption>> answersByDimension) {
 		var means = meanAnswerPerScoredDimension(answersByDimension);
-		if (means.size() != ScoredSustainabilityDimension.values().length) return ScientificWeights.profile();
+		if (means.size() != ScoredSustainabilityDimension.values().length) return Optional.empty();
 
 		var total = means.values().stream().mapToDouble(Double::doubleValue).sum();
 		var weights = new EnumMap<ScoredSustainabilityDimension, Double>(ScoredSustainabilityDimension.class);
 		means.forEach((dimension, mean) -> weights.put(dimension, mean / total));
 
-		return ImmutableWeightProfile.builder()
+		return Optional.of(ImmutableWeightProfile.builder()
 				.indicatorWeights(ScientificWeights.profile().getIndicatorWeights())
 				.dimensionWeights(weights)
-				.build();
+				.build());
 	}
 
 	/**

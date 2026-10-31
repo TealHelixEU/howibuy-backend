@@ -155,6 +155,42 @@ components:
         `GOOD_ENOUGH` — the assessed product is already good enough, so nothing is put forward in its place.
         `NO_SUGGESTION` — none could be produced.
 
+    BasketAssessmentOutcome:
+      description: >-
+        What the assessment made of a basket as a whole: its grade, the products that pull it down and the experience
+        points it earns. Only the products that can be judged count; nothing is answered per product.
+      properties:
+        type:
+          description: Whether any product of the basket could be judged. The grade and its label are carried only when one could.
+        basketGrade:
+          description: The grade of the basket. Missing when there was nothing to assess.
+        basketGradeLabel:
+          description: >-
+            The grade put in words for the user, in the language asked for, or in English when it has no translation
+            there. Missing when there was nothing to assess.
+        intervention:
+          description: A message to the user about the basket, in the language asked for. Missing when there is none.
+        problematicProductKeys:
+          description: >-
+            The keys of the products graded below the best grade, lowest score first. Empty when there was nothing to
+            assess.
+        totalXp:
+          description: The experience points the user has earned so far, from the baskets they purchased.
+        xpValue:
+          description: The experience points this basket earns. 0 when there was nothing to assess.
+
+    BasketAssessmentOutcomeType:
+      description: >-
+        Whether a basket could be judged. `ASSESSED` — at least one of its products has an overall score, so the basket
+        has a grade. `NOTHING_TO_ASSESS` — none has, e.g. the basket is empty or holds only products that are unknown,
+        not classified, match no archetype or have no Nutri-Score; the basket has no grade and earns nothing.
+
+    BasketGrade:
+      description: >-
+        The grade of a basket, from the sustainability of the products in it. `A` — the basket is good enough, and no
+        meaningful suggestion can be made. `B` — it has some issues. `C` — it has many, and the user is strongly
+        advised to improve it.
+
     ArchetypeProductId:
       description: >-
         Names one archetype product: a leaf of the SAFAD taxonomy, the thing an assessed product is identified as and

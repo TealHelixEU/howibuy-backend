@@ -215,6 +215,31 @@ public class OpenApiContractTest {
 	}
 
 	/**
+	 * A basket is assessed by the keys of its products and the language of the grade's label, the Catalogue coming from
+	 * the token. The outcome says whether there was anything to assess, and grades the basket as a whole: no product is
+	 * answered on its own.
+	 */
+	@Test
+	void documentsTheBasketAssessment() {
+		var document = openApiDocument();
+		var assess = operation(document, "post", "/api/howibuy/v1/assessment/basket");
+
+		assertEquals("#/components/schemas/BasketAssessmentRequest",
+				at(assess, "requestBody", "content", "application/json", "schema", "$ref"),
+				"the products are sent as the request body");
+		assertEquals(Set.of("language", "productKeys"), ((Map<?, ?>) at(schemas(document), "BasketAssessmentRequest", "properties")).keySet());
+		assertEquals("#/components/schemas/BasketAssessmentOutcome",
+				at(assess, "responses", "200", "content", "application/json", "schema", "$ref"));
+		var outcome = at(schemas(document), "BasketAssessmentOutcome", "properties");
+		assertEquals(Set.of("type", "basketGrade", "basketGradeLabel", "intervention", "problematicProductKeys", "totalXp", "xpValue"), ((Map<?, ?>) outcome).keySet());
+		assertEquals(List.of("ASSESSED", "NOTHING_TO_ASSESS"), at(schemas(document), "BasketAssessmentOutcomeType", "enum"));
+		assertEquals(List.of("A", "B", "C"), at(schemas(document), "BasketGrade", "enum"));
+		for (var status : List.of("400", "401", "403")) {
+			assertNotNull(at(assess, "responses", status, "description"), "a refused basket is documented, status: " + status);
+		}
+	}
+
+	/**
 	 * Left to itself the generator names every operation after the Java method behind it ("Assess Single Product") and
 	 * leaves it at that, which tells a consumer no more than the URL already did. Every operation carries a summary and
 	 * a description written for the consumer, and so does every path and query parameter it takes.
@@ -262,7 +287,7 @@ public class OpenApiContractTest {
 
 		var declared = tags.stream().map(tag -> String.valueOf(tag.get("name"))).collect(Collectors.toSet());
 		assertEquals(
-				Set.of("Product assessment", "Session handoff", "Token exchange", "Catalogue changes", "Classification", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
+				Set.of("Product assessment", "Basket assessment", "Session handoff", "Token exchange", "Catalogue changes", "Classification", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
 				declared,
 				"the API is grouped by what its parts do");
 		var ungrouped = new ArrayList<String>();

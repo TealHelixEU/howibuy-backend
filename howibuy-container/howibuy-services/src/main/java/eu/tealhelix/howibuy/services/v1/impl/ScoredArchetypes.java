@@ -99,6 +99,13 @@ public final class ScoredArchetypes {
 	}
 
 	/**
+	 * @return The scored archetype product, empty for one outside the Nutri-Score scheme, which has no overall score
+	 */
+	public Optional<ScoredProduct> find(ArchetypeProductId productId) {
+		return scoredCorpus.find(productId);
+	}
+
+	/**
 	 * @return The name of the archetype product, empty if it is not in the corpus
 	 */
 	public Optional<String> nameOf(ArchetypeProductId productId) {

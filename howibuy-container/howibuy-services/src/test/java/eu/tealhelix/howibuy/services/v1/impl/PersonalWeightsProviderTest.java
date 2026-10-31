@@ -10,6 +10,7 @@ import static eu.tealhelix.sfc.v1.types.ScaleOption.NOT_IMPORTANT;
 import static eu.tealhelix.sfc.v1.types.ScaleOption.SLIGHTLY_IMPORTANT;
 import static eu.tealhelix.sfc.v1.types.ScaleOption.VERY_IMPORTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
@@ -64,7 +65,7 @@ class PersonalWeightsProviderTest {
 				SustainabilityDimension.HEALTH, List.of(NOT_IMPORTANT),
 				SustainabilityDimension.ANIMAL_WELFARE, List.of(NOT_IMPORTANT)));
 
-		var weights = sut.forUser(USER).await().atMost(WAIT).getDimensionWeights();
+		var weights = sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
 
 		assertEquals(0.500, weights.get(ENVIRONMENT), TOLERANCE, "4 of 8; ecological and environment are one facet under two names");
 		assertEquals(0.250, weights.get(SOCIAL), TOLERANCE, "2 of 8");
@@ -75,10 +76,10 @@ class PersonalWeightsProviderTest {
 	@Test
 	void discardsTheEconomicDimensionWhateverTheUserSaidAboutIt() {
 		givenCompleted(withEconomic(EXTREMELY_IMPORTANT));
-		var emphatic = sut.forUser(USER).await().atMost(WAIT).getDimensionWeights();
+		var emphatic = sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
 
 		givenCompleted(withEconomic(NOT_IMPORTANT));
-		var indifferent = sut.forUser(USER).await().atMost(WAIT).getDimensionWeights();
+		var indifferent = sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
 
 		assertEquals(emphatic, indifferent,
 				"the compass asks about the economy, but the product data carries no economic indicator to weight");
@@ -94,10 +95,11 @@ class PersonalWeightsProviderTest {
 	void fallsBackToTheScientificProfileWhenTheUserHasCompletedNoAttempt() {
 		when(compassReadService.findLatestCompletedAnswers(USER)).thenReturn(Uni.createFrom().item(Optional.empty()));
 
-		var profile = sut.forUser(USER).await().atMost(WAIT);
+		var weights = sut.forUser(USER).await().atMost(WAIT);
 
-		assertEquals(ScientificWeights.profile().getDimensionWeights(), profile.getDimensionWeights(),
+		assertEquals(ScientificWeights.profile().getDimensionWeights(), weights.profile().getDimensionWeights(),
 				"a user who has not taken the compass still gets all three recommendations");
+		assertNull(weights.compassAttemptId(), "no attempt the profile was derived from");
 	}
 
 	@Test
@@ -107,17 +109,25 @@ class PersonalWeightsProviderTest {
 				SustainabilityDimension.SOCIAL, List.of(VERY_IMPORTANT),
 				SustainabilityDimension.HEALTH, List.of(VERY_IMPORTANT)));
 
-		var profile = sut.forUser(USER).await().atMost(WAIT);
+		var weights = sut.forUser(USER).await().atMost(WAIT);
 
-		assertEquals(ScientificWeights.profile().getDimensionWeights(), profile.getDimensionWeights(),
+		assertEquals(ScientificWeights.profile().getDimensionWeights(), weights.profile().getDimensionWeights(),
 				"nothing was said about animal welfare, so there is no personal profile to derive");
+		assertNull(weights.compassAttemptId(), "the attempt exists, but the profile was not derived from it");
+	}
+
+	@Test
+	void reportsTheAttemptThePersonalProfileWasDerivedFrom() {
+		givenCompleted(withEconomic(SLIGHTLY_IMPORTANT));
+
+		assertEquals(ATTEMPT_ID, sut.forUser(USER).await().atMost(WAIT).compassAttemptId());
 	}
 
 	@Test
 	void keepsTheScientificWeightsWithinEachDimension() {
 		givenCompleted(withEconomic(SLIGHTLY_IMPORTANT));
 
-		var profile = sut.forUser(USER).await().atMost(WAIT);
+		var profile = sut.forUser(USER).await().atMost(WAIT).profile();
 
 		assertEquals(ScientificWeights.profile().getIndicatorWeights(), profile.getIndicatorWeights(),
 				"the compass sets how the dimensions weigh against each other, nothing finer");
@@ -125,7 +135,7 @@ class PersonalWeightsProviderTest {
 
 	private Map<ScoredSustainabilityDimension, Double> weightsForUniformAnswers(ScaleOption everywhere) {
 		givenCompleted(withEconomic(everywhere));
-		return sut.forUser(USER).await().atMost(WAIT).getDimensionWeights();
+		return sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
 	}
 
 	private void givenCompleted(Map<SustainabilityDimension, List<ScaleOption>> answers) {

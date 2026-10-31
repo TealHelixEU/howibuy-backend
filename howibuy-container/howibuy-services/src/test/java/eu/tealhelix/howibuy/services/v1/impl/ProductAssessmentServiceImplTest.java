@@ -274,7 +274,7 @@ public class ProductAssessmentServiceImplTest {
 	}
 
 	private void mockPersonalWeights() {
-		when(personalWeightsProvider.forUser(USER)).thenReturn(Uni.createFrom().item(PERSONAL));
+		when(personalWeightsProvider.forUser(USER)).thenReturn(Uni.createFrom().item(new WeightProfileAndAttemptId(PERSONAL, null)));
 	}
 
 	private void mockStockedArchetypes() {
