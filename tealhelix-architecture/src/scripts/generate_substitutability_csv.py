@@ -17,7 +17,9 @@ category is always substitutable for itself, which is what makes a self-recommen
 Category UUIDs are resolved by name against the already-seeded archetype_category.csv. L2 names are
 globally unique today; the script fails loudly if that stops being true.
 
-Usage:  python3 generate_substitutability_csv.py [--out PATH] [--check]
+The category CSV and the output default to the archetype seed files of howibuy-dao-hibernate-reactive.
+
+Usage:  python3 generate_substitutability_csv.py MATRIX_CSV [--categories PATH] [--out PATH] [--check]
 """
 import argparse
 import collections
@@ -25,18 +27,15 @@ import csv
 import os
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 ARCHETYPE_DIR = os.path.join(
-    REPO, "howibuy-container", "howibuy-dao-hibernate-reactive",
+    REPO_ROOT, "howibuy-container", "howibuy-dao-hibernate-reactive",
     "src", "main", "resources", "db", "archetype")
-ENCODING_CSV = os.path.abspath(os.path.join(
-    REPO, "..", "R-algorithm", "R version algorithm", "Step1_encoding_v2026-05-28.csv"))
+DEFAULT_CATEGORIES = os.path.join(ARCHETYPE_DIR, "archetype_category.csv")
 DEFAULT_OUT = os.path.join(ARCHETYPE_DIR, "archetype_substitutability.csv")
 
 
-def l2_ids_by_name():
-    path = os.path.join(ARCHETYPE_DIR, "archetype_category.csv")
+def l2_ids_by_name(path):
     rows = [r for r in csv.reader(open(path, encoding="utf8")) if r and r[0] != "id"]
     l2 = [r for r in rows if r[2] == "2"]
     duplicates = [n for n, c in collections.Counter(r[3] for r in l2).items() if c > 1]
@@ -45,8 +44,8 @@ def l2_ids_by_name():
     return {r[3]: r[0] for r in l2}
 
 
-def read_matrix():
-    rows = list(csv.reader(open(ENCODING_CSV, encoding="latin1")))
+def read_matrix(path):
+    rows = list(csv.reader(open(path, encoding="latin1")))
     header = rows[0][1:]
     matrix = {r[0]: dict(zip(header, [int(v) for v in r[1:]])) for r in rows[1:] if r}
     return header, matrix
@@ -54,13 +53,18 @@ def read_matrix():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out", default=DEFAULT_OUT)
+    parser.add_argument("matrix",
+                        help="the WP3 substitutability matrix, e.g. Step1_encoding_v2026-05-28.csv")
+    parser.add_argument("--categories", default=DEFAULT_CATEGORIES,
+                        help="the seeded archetype categories (default: %(default)s)")
+    parser.add_argument("--out", default=DEFAULT_OUT,
+                        help="the seed CSV to write (default: %(default)s)")
     parser.add_argument("--check", action="store_true",
                         help="report on the matrix without writing anything")
     args = parser.parse_args()
 
-    ids = l2_ids_by_name()
-    header, matrix = read_matrix()
+    ids = l2_ids_by_name(args.categories)
+    header, matrix = read_matrix(args.matrix)
 
     unknown = sorted((set(header) | set(matrix)) - set(ids))
     if unknown:
