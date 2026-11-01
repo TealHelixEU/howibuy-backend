@@ -63,7 +63,9 @@ COPY . .
 
 # Swagger UI configuration is fixed at augmentation time, so it has to be present in the environment
 # of the Maven build rather than in the runtime container. This one is used to overcome the path swap
-# in the production URLs: api/howibuy/v1 becomes howibuy/api/v1
+# in the production URLs: api/howibuy/v1 becomes howibuy/api/v1 (api/catalogue/v1 becomes catalogue/api/v1 when building
+# the catalogue target). The build compiles every deployable with the one value given, so it is right only for the
+# deployable of the target being built.
 ARG QUARKUS_SWAGGER_UI_URLS_DEFAULT
 
 # The JAX-RS application path is baked into the OpenAPI path keys during the same augmentation, so leaving it out is
@@ -75,7 +77,21 @@ ARG MP_OPENAPI_EXTENSIONS_SMALLRYE_APPLICATION_PATH_DISABLE
 # Build the full multi-module project and skip test execution.
 RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp clean package -DskipTests
 
-FROM eclipse-temurin:25-jre
+# One final stage per deployable, picked with --target (the target of a Compose build). The Ingestion of Retailer
+# Catalogues comes first, so that a build without a target still makes HowiBuy, the last stage.
+FROM eclipse-temurin:25-jre AS catalogue
+WORKDIR /opt/quarkus
+
+COPY --from=build /workspace/catalogue-container/catalogue/target/quarkus-app/lib/ ./lib/
+COPY --from=build /workspace/catalogue-container/catalogue/target/quarkus-app/*.jar ./
+COPY --from=build /workspace/catalogue-container/catalogue/target/quarkus-app/app/ ./app/
+COPY --from=build /workspace/catalogue-container/catalogue/target/quarkus-app/quarkus/ ./quarkus/
+
+EXPOSE 8380
+
+ENTRYPOINT ["java", "-jar", "/opt/quarkus/quarkus-run.jar"]
+
+FROM eclipse-temurin:25-jre AS howibuy
 WORKDIR /opt/quarkus
 
 COPY --from=build /workspace/howibuy-container/howibuy/target/quarkus-app/lib/ ./lib/
