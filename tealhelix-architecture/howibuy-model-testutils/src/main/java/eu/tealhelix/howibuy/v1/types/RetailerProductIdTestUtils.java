@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.mockito.ArgumentMatcher;
 
 public interface RetailerProductIdTestUtils {
-	class MatchesHasRetailerProductId implements ArgumentMatcher<HasRetailerProductId> {
+	final class MatchesHasRetailerProductId implements ArgumentMatcher<HasRetailerProductId> {
 		private final RetailerProductId retailerProductId;
 
 		public MatchesHasRetailerProductId(HasRetailerProductId hasRetailerProductId) {

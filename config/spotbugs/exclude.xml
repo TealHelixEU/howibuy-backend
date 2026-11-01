@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+	<Match>
+		<Class name="~.*\.Immutable.*"/>
+	</Match>
+	<!--
+		Why? The rules for "xxx may expose internal representation by returning/storing yyy" guard against untrusted code
+		in the same JVM, which we do not have. They fire on every record or DTO that carries a collection, on JPA entities
+		and their associations, and on the collaborators (DAOs, the shared Jackson ObjectMapper, the Keycloak admin client)
+		that beans receive through constructor injection, where storing a shared bean is the point of dependency injection.
+		Defensive copies would change behaviour instead: List/Set/Map.copyOf reject nulls and Map.copyOf drops the order.
+	-->
+	<Match>
+		<Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+	</Match>
+	<!-- Why? SpotBugs + FindSecBugs incorrectly applies the rules for the generated JPA metamodel -->
+	<Match>
+		<Class name="~.*\.dao\.jpa\..+_"/>
+		<Bug pattern="UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD,UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
+	</Match>
+	<!--
+		Why? The input hash of a retailer product is a fingerprint of its data that detects changes, not a secret, so its
+		comparison does not need to run in constant time.
+	-->
+	<Match>
+		<Or>
+			<Class name="eu.tealhelix.howibuy.dao.impl.ClassificationDaoImpl"/>
+			<Class name="eu.tealhelix.howibuy.services.v1.classification.impl.ClassificationResolutionImpl"/>
+		</Or>
+		<Bug pattern="UNSAFE_HASH_EQUALS"/>
+	</Match>
+	<!-- Why? The iterator delegates to Jackson's MappingIterator.nextValue(), which throws NoSuchElementException itself -->
+	<Match>
+		<Class name="~eu\.tealhelix\.catalogue\.feeds\.rimi\.RimiFeedReader\$.*"/>
+		<Method name="next"/>
+		<Bug pattern="IT_NO_SUCH_ELEMENT"/>
+	</Match>
+	<!--
+		Why? resolve() returns a path strictly inside the absolute, normalized directory of the store, so the path always
+		has a parent.
+	-->
+	<Match>
+		<Class name="eu.tealhelix.catalogue.services.v1.impl.FeedStoreImpl"/>
+		<Method name="store"/>
+		<Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+	</Match>
+</FindBugsFilter>

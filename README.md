@@ -235,3 +235,12 @@ mvn versions:set -DnewVersion=1.0.0-SNAPSHOT -DgenerateBackupPoms=false
 git commit -am "Continue development with 1.0.0-SNAPSHOT"
 git push --tags origin master:master develop:develop
 ```
+
+
+## Security & code quality
+
+### SpotBugs + FindSecBugs
+
+```bash
+mvn verify -Pspotbugs -DskipTests -DskipITs
+```

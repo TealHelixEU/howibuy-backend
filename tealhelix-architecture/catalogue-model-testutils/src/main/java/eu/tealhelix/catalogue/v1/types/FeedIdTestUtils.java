@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.mockito.ArgumentMatcher;
 
 public interface FeedIdTestUtils {
-	class MatchesHasFeedId implements ArgumentMatcher<HasFeedId> {
+	final class MatchesHasFeedId implements ArgumentMatcher<HasFeedId> {
 		private final FeedId feedId;
 
 		public MatchesHasFeedId(HasFeedId hasFeedId) {

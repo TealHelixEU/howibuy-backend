@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.common.v1.types.UserId;
 
-public class UserIdImpl implements UserId {
+public final class UserIdImpl implements UserId {
 	private final String representation;
 
 	public UserIdImpl(String representation) {

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.common.v1.types.RetailerId;
 
-public class GenericRetailerId implements RetailerId {
+public final class GenericRetailerId implements RetailerId {
 	private final String representation;
 
 	public GenericRetailerId(String representation) {

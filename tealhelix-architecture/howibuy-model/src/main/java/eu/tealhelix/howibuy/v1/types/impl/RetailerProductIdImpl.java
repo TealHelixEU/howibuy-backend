@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.howibuy.v1.types.RetailerProductId;
 
-public class RetailerProductIdImpl implements RetailerProductId {
+public final class RetailerProductIdImpl implements RetailerProductId {
 	private final String representation;
 
 	public RetailerProductIdImpl(String representation) {

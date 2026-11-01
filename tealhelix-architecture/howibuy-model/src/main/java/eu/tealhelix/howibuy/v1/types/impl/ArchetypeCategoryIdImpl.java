@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 
-public class ArchetypeCategoryIdImpl implements ArchetypeCategoryId {
+public final class ArchetypeCategoryIdImpl implements ArchetypeCategoryId {
 	private final String representation;
 
 	public ArchetypeCategoryIdImpl(String representation) {

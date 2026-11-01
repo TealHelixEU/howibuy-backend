@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.mockito.ArgumentMatcher;
 
 public interface IngestionRunIdTestUtils {
-	class MatchesHasIngestionRunId implements ArgumentMatcher<HasIngestionRunId> {
+	final class MatchesHasIngestionRunId implements ArgumentMatcher<HasIngestionRunId> {
 		private final IngestionRunId ingestionRunId;
 
 		public MatchesHasIngestionRunId(HasIngestionRunId hasIngestionRunId) {

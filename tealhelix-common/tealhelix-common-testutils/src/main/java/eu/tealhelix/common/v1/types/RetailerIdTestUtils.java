@@ -9,7 +9,7 @@ import eu.tealhelix.common.v1.types.UserId;
 import org.mockito.ArgumentMatcher;
 
 public interface RetailerIdTestUtils {
-	class MatchesRetailerIdWithUserId implements ArgumentMatcher<RetailerId> {
+	final class MatchesRetailerIdWithUserId implements ArgumentMatcher<RetailerId> {
 		private final UserId userId;
 
 		public MatchesRetailerIdWithUserId(UserId userId) {
@@ -32,7 +32,7 @@ public interface RetailerIdTestUtils {
 		}
 	}
 
-	class MatchesRetailerIdWithUser implements ArgumentMatcher<RetailerId> {
+	final class MatchesRetailerIdWithUser implements ArgumentMatcher<RetailerId> {
 		private final User user;
 
 		public MatchesRetailerIdWithUser(User user) {
@@ -55,7 +55,7 @@ public interface RetailerIdTestUtils {
 		}
 	}
 
-	class MatchesHasRetailerIdWithUser implements ArgumentMatcher<HasRetailerId> {
+	final class MatchesHasRetailerIdWithUser implements ArgumentMatcher<HasRetailerId> {
 		private final User user;
 
 		public MatchesHasRetailerIdWithUser(User user) {

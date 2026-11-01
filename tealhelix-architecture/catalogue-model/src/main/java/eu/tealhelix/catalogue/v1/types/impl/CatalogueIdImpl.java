@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 
-public class CatalogueIdImpl implements CatalogueId {
+public final class CatalogueIdImpl implements CatalogueId {
 	private final String representation;
 
 	public CatalogueIdImpl(String representation) {

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.sfc.v1.types.CategoryId;
 
-public class CategoryIdImpl implements CategoryId {
+public final class CategoryIdImpl implements CategoryId {
 	private final String representation;
 
 	public CategoryIdImpl(String representation) {

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.catalogue.v1.types.FeedId;
 
-public class FeedIdImpl implements FeedId {
+public final class FeedIdImpl implements FeedId {
 	private final String representation;
 
 	public FeedIdImpl(String representation) {

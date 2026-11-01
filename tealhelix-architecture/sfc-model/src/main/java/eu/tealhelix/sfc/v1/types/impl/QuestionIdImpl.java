@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.sfc.v1.types.QuestionId;
 
-public class QuestionIdImpl implements QuestionId {
+public final class QuestionIdImpl implements QuestionId {
 	private final String representation;
 
 	public QuestionIdImpl(String representation) {

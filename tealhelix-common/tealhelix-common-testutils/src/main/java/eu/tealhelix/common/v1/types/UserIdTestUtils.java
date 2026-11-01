@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.mockito.ArgumentMatcher;
 
 public interface UserIdTestUtils {
-	class MatchesHasUserIdWithHasUserId implements ArgumentMatcher<HasUserId> {
+	final class MatchesHasUserIdWithHasUserId implements ArgumentMatcher<HasUserId> {
 		private final HasUserId hasUserId;
 
 		public MatchesHasUserIdWithHasUserId(HasUserId hasUserId) {

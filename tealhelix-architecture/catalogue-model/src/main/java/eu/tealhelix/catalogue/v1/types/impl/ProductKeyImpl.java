@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 
-public class ProductKeyImpl implements ProductKey {
+public final class ProductKeyImpl implements ProductKey {
 	private final String representation;
 
 	public ProductKeyImpl(String representation) {

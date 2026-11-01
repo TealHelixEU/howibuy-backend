@@ -370,7 +370,7 @@
 
 	<profiles>
 		<profile>
-			<id>jacoco</id>
+			<id>coverage</id>
 
 			<build>
 				<pluginManagement>
@@ -408,6 +408,39 @@
 								<phase>verify</phase>
 								<goals>
 									<goal>report</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
+			<!-- Run static analysis with `mvn verify -Pspotbugs` -->
+			<id>spotbugs</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.github.spotbugs</groupId>
+						<artifactId>spotbugs-maven-plugin</artifactId>
+						<version>4.10.5.0</version>
+						<configuration>
+							<effort>Max</effort>
+							<excludeFilterFile>${maven.multiModuleProjectDirectory}/config/spotbugs/exclude.xml</excludeFilterFile>
+							<threshold>Medium</threshold>
+							<plugins>
+								<plugin>
+									<groupId>com.h3xstream.findsecbugs</groupId>
+									<artifactId>findsecbugs-plugin</artifactId>
+									<version>1.14.0</version>
+								</plugin>
+							</plugins>
+						</configuration>
+						<executions>
+							<execution>
+								<goals>
+									<goal>check</goal>
 								</goals>
 							</execution>
 						</executions>

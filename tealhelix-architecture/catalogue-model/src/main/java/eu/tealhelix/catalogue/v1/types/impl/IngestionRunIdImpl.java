@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 
-public class IngestionRunIdImpl implements IngestionRunId {
+public final class IngestionRunIdImpl implements IngestionRunId {
 	private final String representation;
 
 	public IngestionRunIdImpl(String representation) {
