@@ -74,12 +74,6 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 		return assessBatch(user, catalogueId, productKeys, language);
 	}
 
-	@Override
-	public Multi<ProductAssessmentOutcome> assessMultipleProductsAsync(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language) {
-		authorization.requirePerson(user);
-		return assessBatch(user, catalogueId, productKeys, language).onItem().transformToMulti(outcomes -> Multi.createFrom().iterable(outcomes));
-	}
-
 	/**
 	 * Assesses each product in order, one outcome per key sent. Every per-product failure is isolated into that
 	 * product's outcome by {@link #assessOneIsolated}, so a failure in one product never terminates the batch.

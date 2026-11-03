@@ -273,23 +273,6 @@ public class ProductAssessmentTest {
 				.body("assessments.failureReason", equalTo(Arrays.asList(null, "UNKNOWN_PRODUCT", "NOT_CLASSIFIED", "NO_MATCHING_ARCHETYPE", null, null)));
 	}
 
-	/**
-	 * The stream has no enclosing array, so its outcomes are told apart by their keys and reasons alone.
-	 */
-	@Test
-	void aStreamedBatchIsAnsweredOneOutcomePerKeySentInTheOrderSent() {
-		givenProductsOfEveryKind();
-		var request = multi("el", "yoghurt", "unknown", "honey", "soap", "feta");
-
-		var body = as("shopper").contentType(JSON).body(request).post(BASE + "/assessment/product/multi-async")
-				.then()
-				.statusCode(200)
-				.extract().asString();
-
-		assertEquals(List.of("\"yoghurt\"", "\"unknown\"", "\"honey\"", "\"soap\"", "\"feta\""), valuesOf("productKey", body));
-		assertEquals(List.of("null", "\"UNKNOWN_PRODUCT\"", "\"NOT_CLASSIFIED\"", "\"NO_MATCHING_ARCHETYPE\"", "null"), valuesOf("failureReason", body));
-	}
-
 	@Test
 	void aBatchOfTheMostProductsIsAssessedAndOneMoreIsRefused() {
 		var keys = new ArrayList<>(Collections.nCopies(400, "unknown"));
@@ -297,10 +280,8 @@ public class ProductAssessmentTest {
 		as("shopper").contentType(JSON).body(multi("el", keys.toArray(String[]::new))).post(BASE + "/assessment/product/multi")
 				.then().statusCode(200).body("assessments.size()", equalTo(400));
 		keys.add("unknown");
-		for (var path : List.of("/assessment/product/multi", "/assessment/product/multi-async")) {
-			as("shopper").contentType(JSON).body(multi("el", keys.toArray(String[]::new))).post(BASE + path)
-					.then().statusCode(400).body("message", equalTo("The value of input 'productKeys' is illegal."));
-		}
+		as("shopper").contentType(JSON).body(multi("el", keys.toArray(String[]::new))).post(BASE + "/assessment/product/multi")
+				.then().statusCode(400).body("message", equalTo("The value of input 'productKeys' is illegal."));
 	}
 
 	@Test
@@ -309,22 +290,18 @@ public class ProductAssessmentTest {
 				.body("message", equalTo("Required input 'language' is missing."));
 		assessSingle("shopper", single(null, "el"), 400)
 				.body("message", equalTo("Required input 'productKey' is missing."));
-		for (var path : List.of("/assessment/product/multi", "/assessment/product/multi-async")) {
-			as("shopper").contentType(JSON).body(multi(null, "yoghurt")).post(BASE + path)
-					.then().statusCode(400).body("message", equalTo("Required input 'language' is missing."));
-			as("shopper").contentType(JSON).body(multi("el", "yoghurt", null)).post(BASE + path)
-					.then().statusCode(400).body("message", equalTo("Required input 'productKeys' is missing."));
-			as("shopper").contentType(JSON).body(Map.of("language", "el")).post(BASE + path)
-					.then().statusCode(400).body("message", equalTo("Required input 'productKeys' is missing."));
-		}
+		as("shopper").contentType(JSON).body(multi(null, "yoghurt")).post(BASE + "/assessment/product/multi")
+				.then().statusCode(400).body("message", equalTo("Required input 'language' is missing."));
+		as("shopper").contentType(JSON).body(multi("el", "yoghurt", null)).post(BASE + "/assessment/product/multi")
+				.then().statusCode(400).body("message", equalTo("Required input 'productKeys' is missing."));
+		as("shopper").contentType(JSON).body(Map.of("language", "el")).post(BASE + "/assessment/product/multi")
+				.then().statusCode(400).body("message", equalTo("Required input 'productKeys' is missing."));
 	}
 
 	@Test
 	void anAssessmentWhoseTokenNamesNoCatalogueIsForbidden() {
 		assessSingle("shopper-without-catalogue", single("yoghurt", "el"), 403);
-		for (var path : List.of("/assessment/product/multi", "/assessment/product/multi-async")) {
-			as("shopper-without-catalogue").contentType(JSON).body(multi("el", "yoghurt")).post(BASE + path).then().statusCode(403);
-		}
+		as("shopper-without-catalogue").contentType(JSON).body(multi("el", "yoghurt")).post(BASE + "/assessment/product/multi").then().statusCode(403);
 	}
 
 	private record ArchetypePair(ArchetypeProductId reference, ArchetypeProductId better) {
@@ -390,16 +367,6 @@ public class ProductAssessmentTest {
 		diagnostics.put("archetypeProductId", null);
 		diagnostics.put("archetypeProductName", null);
 		return diagnostics;
-	}
-
-	/**
-	 * @return The JSON values of the field in the order they appear in the body
-	 */
-	private static List<String> valuesOf(String field, String body) {
-		var values = new ArrayList<String>();
-		var matcher = Pattern.compile("\"" + field + "\":(null|\"[^\"]*\")").matcher(body);
-		while (matcher.find()) values.add(matcher.group(1));
-		return values;
 	}
 
 	private static ValidatableResponse assessSingle(String token, Map<String, Object> request, int expectedStatus) {

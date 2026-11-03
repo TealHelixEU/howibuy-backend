@@ -24,13 +24,11 @@ import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
-import org.jboss.resteasy.reactive.RestMulti;
 
 @Path("assessment/product")
 @Tag(name = PRODUCT_ASSESSMENT, description = PRODUCT_ASSESSMENT_DESC)
@@ -85,23 +83,6 @@ public class ProductAssessmentResource {
 		return Uni.createFrom().item(() -> productKeys(request))
 				.flatMap(productKeys -> productAssessmentService.assessMultipleProductsSync(user, catalogueId, productKeys, request.language()))
 				.map(MultiProductAssessmentResponse::new);
-	}
-
-	@Operation(
-			summary = "Assess several products, streaming each outcome as it is ready",
-			description = "The same assessment as the batch operation, but each outcome is written out as soon as it is produced, so a client can show the first results without waiting for the last. "
-					+ "**The response body is a stream of JSON objects written one after another with no enclosing array and no separators.** The schema below describes one such object, not the body as a whole.")
-	@APIResponse(responseCode = "200", description = "The stream of outcomes, one per product, in the order sent.")
-	@APIResponse(responseCode = "400", description = BAD_PRODUCTS)
-	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)
-	@APIResponse(responseCode = "403", description = FORBIDDEN)
-	@POST
-	@Path("multi-async")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Multi<ProductAssessmentOutcome> assessMultipleProductsAsync(@Context ContainerRequestContext crc, MultiProductAssessmentRequest request) {
-		return RestMulti.fromMultiData(productAssessmentService.assessMultipleProductsAsync(currentUser(crc), requireCatalogue(crc), productKeys(request), request.language()))
-				.encodeAsJsonArray(false).build();
 	}
 
 	/**

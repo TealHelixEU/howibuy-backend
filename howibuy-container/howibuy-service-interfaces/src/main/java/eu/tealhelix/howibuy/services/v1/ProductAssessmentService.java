@@ -6,7 +6,6 @@ import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -17,6 +16,4 @@ public interface ProductAssessmentService {
 	Uni<ProductAssessmentOutcome> assessSingleProduct(User user, CatalogueId catalogueId, ProductKey productKey, String language);
 
 	Uni<List<ProductAssessmentOutcome>> assessMultipleProductsSync(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language);
-
-	Multi<ProductAssessmentOutcome> assessMultipleProductsAsync(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language);
 }

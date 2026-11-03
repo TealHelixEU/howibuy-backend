@@ -45,7 +45,6 @@ import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import org.jboss.weld.junit5.auto.AddBeanClasses;
 import org.jboss.weld.junit5.auto.EnableAutoWeld;
 import org.jboss.weld.junit5.auto.ExcludeBean;
@@ -128,11 +127,6 @@ public class ProductAssessmentServiceImplTest {
 	}
 
 	@Test
-	void assessMultipleProductsAsyncRejectsAServiceUser() {
-		assertThrows(NotAuthorizedException.class, () -> sut.assessMultipleProductsAsync(SERVICE_USER, CATALOGUE, List.of(PRODUCT), LANGUAGE));
-	}
-
-	@Test
 	void syncBatchReportsOneOutcomePerProductInOrder() {
 		mockPersonalWeights();
 		mockStockedArchetypes();
@@ -181,25 +175,6 @@ public class ProductAssessmentServiceImplTest {
 		assertEquals(2, outcomes.size());
 		assertEquals(SUCCESS, outcomes.get(0).getType());
 		assertEquals(PRODUCT2, outcomes.get(1).getProductKey());
-		assertEquals(FAILURE_OTHER, outcomes.get(1).getType());
-	}
-
-	@Test
-	void asyncBatchStreamsOneOutcomePerProductIsolatingFailures() {
-		mockPersonalWeights();
-		mockStockedArchetypes();
-		mockListedProducts(Set.of(), Map.of());
-		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
-
-		var outcomes = sut.assessMultipleProductsAsync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2), LANGUAGE)
-				.subscribe().withSubscriber(AssertSubscriber.create(Long.MAX_VALUE))
-				.awaitCompletion(WAIT)
-				.getItems();
-
-		assertEquals(2, outcomes.size());
-		assertEquals(SUCCESS, outcomes.get(0).getType());
 		assertEquals(FAILURE_OTHER, outcomes.get(1).getType());
 	}
 
