@@ -86,62 +86,99 @@ _Avoid_: original, source product, input product
 
 **Scored Sustainability Dimension**:
 One of four facets an Archetype Product is measured and scored on: Environment, Animal Welfare,
-Social, Health. Deliberately **not** the compass's five Sustainability Dimensions — the compass
-additionally elicits Economic, which is scored nowhere because no economic indicator exists in the
-product data. Ecological (compass) and Environment (here) name the same facet under two names. The
-two sets are distinct types and must never share one enum without an explicit mapping.
+Socio-economic, Health. Deliberately **not** the compass's five Sustainability Dimensions:
+Socio-economic covers the compass's Social and Economic together, because the product data's social
+indicators include economic ones, such as a fair wage; and Ecological (compass) and Environment
+(here) name the same facet under two names. The two sets are distinct types and must never share
+one enum without an explicit mapping.
 _Avoid_: sustainability dimension (unqualified — that is the compass's term), axis, pillar, aspect,
-criterion; and never write "the five dimensions" in this context
+criterion, Social (for Socio-economic); and never write "the five dimensions" in this context
 
 **Indicator**:
 One measured quantity of an Archetype Product contributing to a single Scored Sustainability
-Dimension — an environmental impact category, an animal welfare index, a social indicator. Health
-has none: it is derived from the product's Nutri-Score.
+Dimension — an environmental impact category, an animal welfare index, a socio-economic indicator.
+Health has none: it is derived from the product's Nutri-Score Points.
 _Avoid_: metric, factor, variable, impact (bare)
+
+**Nutri-Score Points**:
+The number behind an Archetype Product's Nutri-Score letter, lower being healthier, from which its
+Health is derived. Some Archetype Products, such as alcoholic drinks and infant food, have **no
+Nutri-Score**, and so no points: they have no Normalised Scores and no Overall Score, and the
+assessment says nothing about them.
+_Avoid_: FNS score, nutrition score, health points, Nutri-Score (bare, for the number — that is the
+letter)
 
 **Single Score**:
 One Scored Sustainability Dimension of one Archetype Product reduced to a single number, by
-weighting its Indicators and summing. Expressed in the dimension's own units and direction, so
-scores of different dimensions are not comparable and a higher one is not necessarily better.
+weighting its Indicators and summing; Health's is the Nutri-Score Points. Expressed in the
+dimension's own units and direction, so scores of different dimensions are not comparable and a
+higher one is not necessarily better.
 _Avoid_: raw score, aggregate, subtotal, sum
 
 **Normalised Score**:
-A Single Score rescaled against the whole corpus of Archetype Products so that the four dimensions
-become comparable, and inverted so that higher always means more sustainable. Only ever meaningful
-relative to the corpus it was computed over, which is why that corpus is always the complete one.
+A Single Score rescaled between 0 and 1 so that the four dimensions become comparable, and
+inverted so that higher always means more sustainable. The scale runs between the 1st and the 99th
+percentile of the corpus, every Archetype Product that has a Nutri-Score, and a score beyond either
+end is held at it; Animal Welfare and Socio-economic, whose Single Scores are heavily skewed, are
+compressed logarithmically first. Only ever meaningful relative to that corpus.
 _Avoid_: scaled score, index, percentage, rating
 
 **Weighting Profile**:
-The set of weights that reduces a product's four Normalised Scores to one overall score. Two exist:
-the **scientific** profile, WP3's expert weights, identical for everyone; and the **personal**
-profile, derived from a user's completed compass Attempt. Every product is scored under both.
+The four weights, one per Scored Sustainability Dimension, that reduce a product's four Normalised
+Scores to one Overall Score. Two exist: the **scientific** profile, which weighs the four equally
+and is the same for everyone; and the **personal** profile, derived from a user's completed compass
+Attempt — how important they said each Sustainability Dimension is, the lowest Scale Option
+weighing nothing, with Social and Economic averaged into Socio-economic. A user without a completed
+Attempt is given the scientific profile in place of a personal one.
 _Avoid_: weights (bare), preference vector, user profile, settings
 
 **Overall Score**:
 An Archetype Product's four Normalised Scores combined under one Weighting Profile — the single
-number products are ranked by. A product has one per profile, so "the overall score" is never said
-without naming the profile.
+number, between 0 and 1, by which products are compared. A product has one per profile, so "the
+overall score" is never said without naming the profile. The scientific one decides what counts as
+better; the personal one only which of the better products is offered.
 _Avoid_: final score, total, sustainability score
 
 **Substitutability**:
 The directional judgement that one Level 2 category's foods may stand in for another's on the
-plate, graded by how readily. Established by WP3 and fixed; not derived from the scores, and not a
-statement that the substitute is better.
+plate, graded by a degree: the higher the degree, the more readily. Established by WP3 and fixed;
+not derived from the scores, and not a statement that the substitute is better.
 _Avoid_: similarity, compatibility, interchangeability, swappability
 
 **Substitutability Level**:
-How far a substitution is allowed to stray — Small, Medium, or Large — by setting how strong the
-Substitutability must be to qualify. A larger level admits more distant categories.
-_Avoid_: radius, distance, tolerance, strictness, threshold
+How far a substitution is allowed to stray, named by the lowest degree of Substitutability that
+qualifies: level 4 admits the categories substitutable at degree 4 or 5. The assessment uses level
+4.
+_Avoid_: radius, distance, tolerance, strictness, threshold, Small/Medium/Large
+
+**Recommendation**:
+The assessment's answer to "is there something better to buy?", one of four. **Recommended**:
+Alternatives are offered. **Good Enough**: the Reference Product passes the Gate, so none is sought.
+**No Alternative**: the Pool is empty. **No Score**: the Reference Product has no Nutri-Score, so
+nothing is said.
+_Avoid_: suggestion, advice, verdict, result; "good choice" for No Alternative (nothing better being
+stocked does not make a product good)
+
+**Gate**:
+The scientific Overall Score, fixed by WP3, at or above which a Reference Product is Good Enough:
+no Alternative is sought for it, whatever the user's weights.
+_Avoid_: threshold (bare), cut-off, pass mark
+
+**Pool**:
+The Archetype Products an Alternative is drawn from: those some active Listing of the user's
+Catalogue is classified as, whose category is substitutable for the Reference Product's at the
+Substitutability Level, and whose scientific Overall Score is strictly higher than the Reference
+Product's. The Reference Product itself is never in it.
+_Avoid_: shortlist, options
 
 **Alternative**:
 A Retailer Product, from an active Listing in the user's Catalogue, offered in place of the scanned
-product. It is chosen from the Archetype Product that is substitutable for the Reference Product, no
-worse on the scientific Overall Score, and the best one the Catalogue stocks under one ranking
-criterion. Three are produced per assessment: best personal, best scientific and best combined.
-When the best archetype is the Reference Product itself, no Retailer Product is offered: the outcome
-says "what you have is already a good choice" instead.
-_Avoid_: substitute, suggestion, recommendation, swap, replacement
+product. It stands for an Archetype Product drawn at random from the Pool, the draw favouring a
+higher personal Overall Score; the same user scanning the same product is offered the same one, as
+long as the Pool and their Weighting Profile stay the same. At most one is offered per assessment.
+How much better it is is always told on the scientific Overall Score, the only one guaranteed to
+improve.
+_Avoid_: substitute, suggestion, recommendation (that is the answer as a whole), swap, replacement
 
 ## Basket Assessment
 

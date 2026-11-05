@@ -1,0 +1,3096 @@
+---
+title: "Sustainable Food Compass — scoring, recommendation algorithm and validation"
+subtitle: "TealHelix WP3 · analysis notebook for the SFC paper"
+author: "Timothee"
+date: today
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    toc-expand: 2
+    number-sections: true
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    code-overflow: wrap
+    fig-width: 9
+    fig-height: 6
+    fig-dpi: 130
+    tbl-cap-location: top
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+  cache: false
+editor_options:
+  chunk_output_type: console
+---
+
+```{r}
+#| label: knitr-setup
+#| include: false
+knitr::opts_chunk$set(echo = TRUE, collapse = FALSE, comment = "#>")
+```
+
+::: {.callout-note appearance="simple"}
+**How to read this document.** Every code block is collapsed by default — click
+*Show code* to expand one, or use the `</> Code` menu at the top right to expand
+or collapse all of them at once. Each analysis section opens with a short note
+saying **which run of the algorithm** it is based on, because several different
+runs coexist in this document (equal weights vs. the 1,771-weight grid vs. real
+respondents; one substitutability level vs. three).
+:::
+
+# Parameters and setup {#sec-parameters}
+
+Everything that can be tuned lives in this one chunk. Nothing below re-defines a
+parameter; downstream code only reads them.
+
+The one structural change versus `sensitivity_analysis_2026_07_17_v11.R`:
+**the gate and the pool are now always driven by the objective, equal-weight
+overall score.** Consumer or scenario weights only re-score the candidates that
+have already cleared that shared floor. The old "full personalization" mode
+(gate + pool + selection all on the personal score) is no longer the default
+anywhere; it survives only as an explicit comparison in @sec-personalization.
+
+```{r}
+#| label: parameters
+
+## ========================================================================== #
+## 1.1  Core parameters ====
+## ========================================================================== #
+
+# --- Normalization -----------------------------------------------------------
+# PRIMARY profile: drives every algorithm run and every result in sections 3-7
+# and 9. Section 8 compares profiles against each other regardless of this value.
+# Candidates: "initial", "minmax_pct", "log_tails", "log_tails_TL",
+#             "zscore", "rank", "log_EAWS", "log_EAWS_TL"
+norm_profile <- "log_tails"
+
+# Offset used inside the log transform (AW & SE).
+#   "absolute"        : the same raw-unit constant for both dimensions
+#   "relative_median" : a fixed FRACTION of each dimension's own median nonzero
+#                       raw value -- avoids the AW/SE scale asymmetry
+LOG_OFFSET_MODE  <- "relative_median"
+LOG_OFFSET_VALUE <- 1
+
+# --- Substitutability --------------------------------------------------------
+# 5 = perfect substitutes only (strictest); 3 = loosest.
+SUBST_LEVELS           <- c(3, 4, 5)
+substitutability_level <- 4          # the level used for all single-level results
+
+# --- Gate / pool -------------------------------------------------------------
+GATE_THRESHOLD <- 0.80   # reference score >= this  -> "good enough", no recommendation
+POOL_THRESHOLD <- 0.75   # only used when POOL_MODE == "absolute"
+# GATE_MODE: what "good enough, no recommendation needed" means
+#   "overall"        : the single equal-weight overall score >= GATE_THRESHOLD   <-- default
+#   "all_dimensions" : EVERY one of E, AW, SE, H >= GATE_THRESHOLD individually.
+#                      A product with three dimensions at 0.95 and one at 0.40
+#                      is "good enough" under "overall" (its average clears 0.75)
+#                      but gated under "all_dimensions" (that one weak dimension
+#                      triggers a search for an alternative). Candidate ranking
+#                      and pool eligibility (POOL_MODE) are unaffected either way
+#                      - only whether the reference itself needs a recommendation
+#                      changes. Compared head-to-head in @sec-gatemode.
+GATE_MODE <- "overall"
+# POOL_MODE: how a candidate becomes eligible
+#   "absolute"       : score >= POOL_THRESHOLD (the original fixed 0.75 cut-off)
+#   "beat_reference" : score > the reference's own score      <-- default
+#   "none"           : every relevant product is eligible; softmax alone decides
+POOL_MODE <- "beat_reference"
+
+# Objective weights: used for the overall score that drives BOTH gate and pool
+# in every run in this document. Order: E, AW, SE, H.
+ALGO_WEIGHTS <- c(0.25, 0.25, 0.25, 0.25)
+
+# --- Selection among eligible candidates -------------------------------------
+RANDOMIZE   <- TRUE   # the app's behaviour; validation code overrides to FALSE
+SHARPNESS   <- 15     # softmax temperature = 1/SHARPNESS. 0 = uniform draw.
+RANDOM_SEED <- 42
+
+# --- Theoretical weight grid (section 5) -------------------------------------
+# Uniform simplex grid: every (E,AW,SE,H) multiple of the step summing to 1.
+# 0.05 -> 1,771 vectors. (The Dirichlet and trimmed grids of v11 are dropped.)
+WEIGHT_GRID_STEP <- 0.05
+
+# --- Section 8: which normalization profiles to compare ----------------------
+# Set to NULL for "all". Edit this vector to include/exclude profiles.
+PROFILES_TO_COMPARE <- NULL
+
+# --- Worked basket example (section 5.7) -------------------------------------
+# Everyday products used to illustrate what a shopper actually sees. Codes that
+# do not exist in the current database are silently skipped. Resolved by exact
+# food_product name match against the database (22 items requested):
+#   Pork loin / Beef minced steak 15% / Chicken meat / Milk semi-skimmed UHT /
+#   Emmental / Butter 80% / Baguette / Sugar / Sunflower oil / Olive oil extra
+#   virgin / Potato peeled / Orange pulp / Apple pulp / Tap water / Coffee
+#   ready-to-drink / Beer regular / Shepherd's pie / Liquid cream 30% / Cashew
+#   nut / Salmon farmed / Chocolate cake / Egg powder.
+BASKET_TH <- c("TH1594", "TH1514", "TH1709", "TH1996", "TH1872", "TH0046",
+               "TH0855", "TH2249", "TH0097", "TH0090", "TH2171", "TH0728",
+               "TH0787", "TH0427", "TH2035", "TH0009", "TH0323", "TH1963",
+               "TH1404", "TH0580", "TH1017", "TH0440")
+
+# --- I/O ---------------------------------------------------------------------
+path_db     <- "data_raw/TH_WP3-FULL DATABASE-v2026-07-14.csv"
+path_matrix <- "data_raw/Step1_encoding_v2026-05-28.csv"
+path_xlsx   <- "data_raw/RawData.xlsx"        # five-country consumer survey
+
+HAS_CONSUMERS   <- file.exists(here::here(path_xlsx))   # section 6 runs only if present
+MAKE_PLOTS      <- TRUE
+FORCE_RECOMPUTE <- TRUE   # TRUE = ignore the cache and recompute everything
+
+# The cache is keyed on parameters and input files, NOT on the code inside a
+# cached block. If you edit the body of a cached() call, bump this string (or set
+# FORCE_RECOMPUTE) or you will silently keep reading the old result.
+CACHE_VERSION <- "v12.0" 
+
+dim_cols <- c("E", "AW", "SE", "H")           # canonical dimension order
+stopifnot(substitutability_level %in% SUBST_LEVELS)
+```
+
+```{r}
+#| label: libraries-helpers
+
+## ========================================================================== #
+## 1.2  Libraries, folders and small helpers ====
+## ========================================================================== #
+
+suppressPackageStartupMessages({
+  library(here); library(dplyr); library(tidyr); library(ggplot2)
+})
+options(width = 110)
+theme_set(theme_bw(base_size = 10))
+
+for (d in c("output", "cache")) if (!dir.exists(here(d))) dir.create(here(d), recursive = TRUE)
+
+# --- Table printer: kableExtra if available, plain kable otherwise ------------
+show_tbl <- function(df, caption = NULL, digits = 3, full_width = FALSE) {
+  df <- as.data.frame(df)
+  k  <- knitr::kable(df, caption = caption, digits = digits, row.names = FALSE)
+  if (requireNamespace("kableExtra", quietly = TRUE)) {
+    k <- tryCatch({
+      kk <- kableExtra::kable_styling(
+        k, bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+        full_width = full_width, font_size = 12, position = "left")
+      if (nrow(df) > 25) kk <- tryCatch(kableExtra::scroll_box(kk, height = "520px"),
+                                        error = function(e) kk)
+      kk
+    }, error = function(e) k)
+  }
+  k
+}
+
+# --- Caching -----------------------------------------------------------------
+# cached(key, fingerprint, expr): reuse a cached result unless the fingerprint
+# changed or FORCE_RECOMPUTE is TRUE. expr is lazy: only evaluated on a miss.
+cached <- function(key, fingerprint, expr) {
+  fingerprint <- c(fingerprint, CACHE_VERSION)     # bumping CACHE_VERSION invalidates all
+  fp   <- substr(paste(as.character(fingerprint), collapse = "|"), 1, 4000)
+  tag  <- abs(sum(utf8ToInt(fp)) * 31L + nchar(fp))
+  path <- here("cache", sprintf("%s__%d.rds", key, tag))
+  if (!FORCE_RECOMPUTE && file.exists(path)) return(readRDS(path))
+  val <- eval.parent(substitute(expr))
+  saveRDS(val, path); val
+}
+file_fp <- function(p) if (file.exists(p)) {
+  fi <- file.info(p); paste(fi$size, as.numeric(fi$mtime))
+} else "missing"
+
+# --- Statistics --------------------------------------------------------------
+skewness <- function(x) {
+  x <- x[!is.na(x)]; n <- length(x); s <- sd(x)
+  if (n < 3 || s == 0) return(NA_real_)
+  (sum((x - mean(x))^3) / n) / s^3
+}
+eta_sq <- function(x, g) {                      # between-group variance share
+  ok <- !is.na(x) & !is.na(g); x <- x[ok]; g <- as.factor(g[ok])
+  if (length(x) < 3) return(NA_real_)
+  grand <- mean(x); ss_tot <- sum((x - grand)^2)
+  if (ss_tot == 0) return(NA_real_)
+  sum(tapply(x, g, function(v) length(v) * (mean(v) - grand)^2)) / ss_tot
+}
+jacc <- function(a, b) if (length(a) == 0 && length(b) == 0) NA_real_ else
+  length(intersect(a, b)) / length(union(a, b))
+
+# --- Artifact register -------------------------------------------------------
+# Every file this document writes is registered here and listed in the appendix,
+# so there is one place to see what exists on disk.
+.ARTIFACTS <- new.env(parent = emptyenv()); .ARTIFACTS$rows <- list()
+register_out <- function(file, what) {
+  .ARTIFACTS$rows[[length(.ARTIFACTS$rows) + 1]] <-
+    data.frame(file = file, contents = what, row.names = NULL); invisible(NULL)
+}
+save_out <- function(x, file, what) {
+  utils::write.csv(x, here("output", file), row.names = FALSE)
+  register_out(file, what); invisible(x)
+}
+```
+
+# Data, normalization and the algorithm {#sec-engine}
+
+## Load the database and the substitutability matrix
+
+```{r}
+#| label: load-data
+
+## ========================================================================== #
+## 2.1  Load ====
+## ========================================================================== #
+
+raw <- cached("raw_inputs", c(file_fp(here(path_db)), file_fp(here(path_matrix)), "v2"), {
+  db <- read.csv(here(path_db), encoding = "latin1", blank.lines.skip = TRUE) %>%
+    arrange(TH_code)
+  # Shorten L1 category names for display: drop parenthetical qualifiers. Done
+  # once here so every table and figure downstream inherits it automatically -
+  # e.g. "Meat and meat products (including edible offal)" -> "Meat and meat
+  # products". One-to-one, no collisions (checked against the full category list).
+  db$SAFAD_L1_cat <- trimws(gsub("\\s*\\([^)]*\\)", "", db$SAFAD_L1_cat))
+  db <- mutate(db, SAFAD_L1_cat = case_when(SAFAD_L1_cat == "Fruit and fruit products" ~ "Fruits",
+                                            SAFAD_L1_cat == "Vegetables and vegetable products" ~ "Vegetables",
+                                            SAFAD_L1_cat == "Animal and vegetable fats and oils" ~ "Fats and oils",
+                                            SAFAD_L1_cat == "Eggs and egg products" ~ "Eggs",
+                                            SAFAD_L1_cat == "Fish and other seafood" ~ "Fish and seafood",
+                                            SAFAD_L1_cat == "Food for infants and small children" ~ "Baby food",
+                                            SAFAD_L1_cat == "Fruit and vegetable juices" ~ "Juices",
+                                            SAFAD_L1_cat == "Grains and grain-based products" ~ "Grains and grain products",
+                                            SAFAD_L1_cat == "Herbs, spices and condiments" ~ "Herbs and spices",
+                                            SAFAD_L1_cat == "Legumes, nuts and oilseeds" ~ "Legumes, nuts and seeds",
+                                            SAFAD_L1_cat == "Meat and meat products" ~ "Meat",
+                                            SAFAD_L1_cat == "Milk and dairy products" ~ "Milk and dairy",
+                                            SAFAD_L1_cat == "Products for special nutritional use" ~ "Special nutritional products",
+                                            SAFAD_L1_cat == "Snacks, desserts, and other foods" ~ "Snacks and desserts",
+                                            SAFAD_L1_cat == "Alcoholic beverages" ~ "Beverages (alcoholic)",
+                                            SAFAD_L1_cat == "Non-alcoholic beverages" ~ "Beverages (non-alcoholic)",
+                                            TRUE ~ SAFAD_L1_cat)
+               )
+  mA <- read.csv(here(path_matrix), row.names = 1, check.names = FALSE,
+                 blank.lines.skip = TRUE, encoding = "latin1")
+  list(db = db, matrix_A = mA)
+})
+DB       <- raw$db
+matrix_A <- raw$matrix_A
+n_all    <- nrow(DB)
+
+cat(sprintf("Database: %d products, %d L2 subcategories, %d L1 categories.\n",
+            n_all, dplyr::n_distinct(DB$SAFAD_L2_cat), dplyr::n_distinct(DB$SAFAD_L1_cat)))
+cat(sprintf("Substitutability matrix: %d x %d.\n", nrow(matrix_A), ncol(matrix_A)))
+```
+
+## Raw dimension scores
+
+Higher raw value = **worse** (an impact / risk score) on all four dimensions.
+Normalization flips them so that higher = better.
+
+```{r}
+#| label: raw-scores
+
+## ========================================================================== #
+## 2.2  Dimension-level raw impact scores ====
+## ========================================================================== #
+
+# --- Environment: PEF / EF3.1 single score -----------------------------------
+E_normalization_factors <- c(
+  E_climate_change = 7553.08316285117, E_ozon_depletion = 0.0523483833840181,
+  E_ionizing_radiation = 4220.16339014993, E_ozon_formation = 40.8591977347772,
+  E_particulate_matter = 0.000595366821125478,
+  E_non.carcinogenic_toxicity = 0.000128735735008072,
+  E_carcinogenic_toxicity = 1.72528976538705E-05,
+  E_land_water_acidification = 55.5695412306019,
+  E_freshwater_eutrophication = 1.60685212828813,
+  E_marine_eutrophication = 19.5451815519191,
+  E_terrestrial_eutrophication = 176.754999788942,
+  E_freshwater_ecotoxicity = 56716.5863370596, E_land_use = 819498.182923031,
+  E_water_use = 11468.7086407597, E_energy_use = 65004.2596640165,
+  E_mineral_use = 0.0636226152369547)
+E_weights <- c(
+  E_climate_change = 0.2106, E_ozon_depletion = 0.0631,
+  E_ionizing_radiation = 0.0501, E_ozon_formation = 0.0478,
+  E_particulate_matter = 0.0896, E_non.carcinogenic_toxicity = 0.0184,
+  E_carcinogenic_toxicity = 0.0213, E_land_water_acidification = 0.062,
+  E_freshwater_eutrophication = 0.028, E_marine_eutrophication = 0.0296,
+  E_terrestrial_eutrophication = 0.0371, E_freshwater_ecotoxicity = 0.0192,
+  E_land_use = 0.0794, E_water_use = 0.0851,
+  E_energy_use = 0.0832, E_mineral_use = 0.0755)
+E_factors <- 1000 * E_weights / E_normalization_factors
+DB$E_SS <- c(as.matrix(DB[, names(E_factors)]) %*% E_factors)
+
+# --- Animal welfare: PAALA index + antibiotic index --------------------------
+AW_weights <- c(AW_AW_index = 0.5, AW_antibio_index = 0.5)
+DB$AW_SS <- c(as.matrix(DB[, names(AW_weights)]) %*% AW_weights)
+
+# --- Socio-economic: PSILCA / Mancini, 14 equally-weighted subcategories ------
+SE_weights <- rep(0.071429, 14)
+names(SE_weights) <- c("S_child_labour", "S_forced_labour", "S_fair_salary",
+  "S_working_time", "S_discrimination", "S_health_safety_workers",
+  "S_social_benefits_legal_issues", "S_workers_rights", "S_fair_competition",
+  "S_corruption", "S_contribution_econ_dev", "S_illiteracy",
+  "S_health_safety_society", "S_indigenous_rights")
+DB$SE_SS <- c(as.matrix(DB[, names(SE_weights)]) %*% SE_weights)
+
+# --- Health ------------------------------------------------------------------
+# H_letter_goodness : the initial Nutri-Score letter mapping (A=1 ... E=0)
+# H_SS              : the continuous FNS score (HIGHER = WORSE nutrition), so
+#                     that H can be normalized with the same transforms as the
+#                     other three dimensions when a profile asks for it.
+DB$H_letter_goodness <- dplyr::case_when(
+  DB$H_nutriscore == "Nutriscore_A" ~ 1,   DB$H_nutriscore == "Nutriscore_B" ~ 0.75,
+  DB$H_nutriscore == "Nutriscore_C" ~ 0.5, DB$H_nutriscore == "Nutriscore_D" ~ 0.25,
+  DB$H_nutriscore == "Nutriscore_E" ~ 0,   .default = NA_real_)
+DB$H_SS <- DB$H_FNS_score
+
+RAW_IMPACT <- DB[, c("E_SS", "AW_SS", "SE_SS", "H_SS")]
+names(RAW_IMPACT) <- dim_cols
+subcat <- DB$SAFAD_L2_cat
+l1cat  <- DB$SAFAD_L1_cat
+```
+
+## Normalization profiles
+
+```{r}
+#| label: normalization
+
+## ========================================================================== #
+## 2.3  Normalization: one transform per dimension, bundled into profiles ====
+## ========================================================================== #
+# norm_one_dim() maps a raw IMPACT vector (higher = worse) to a GOODNESS score
+# (higher = better).
+#   minmax_whisker : global min; max = largest Tukey top-whisker across L1 cats
+#   minmax_p       : min-max anchored at the 1st/99th percentile, clamped
+#   log_minmax_p   : log(x + offset) first, THEN percentile min-max
+#   zscore         : standardise then flip sign (unbounded)
+#   rank           : percentile rank then flip (discards magnitude)
+
+norm_one_dim <- function(impact, method, l1 = NULL, p_lo = 0.01, p_hi = 0.99) {
+  x <- impact; ok <- !is.na(x)
+
+  if (method == "minmax_whisker") {
+    thr <- data.frame(x = x, g = l1) %>% filter(!is.na(x)) %>% group_by(g) %>%
+      summarise(Q3 = quantile(x, .75), IQR = IQR(x),
+                tw = max(x[x <= Q3 + 1.5 * IQR]), .groups = "drop")
+    max_val <- max(thr$tw, na.rm = TRUE); min_val <- min(x, na.rm = TRUE)
+    return(pmax(1 - (x - min_val) / (max_val - min_val), 0))
+  }
+  if (method == "log_minmax_p") {
+    o <- if (LOG_OFFSET_MODE == "relative_median")
+           LOG_OFFSET_VALUE * median(x[x > 0], na.rm = TRUE) else LOG_OFFSET_VALUE
+    x <- log(pmax(x, 0) + o)
+  }
+  if (method %in% c("minmax_p", "log_minmax_p")) {
+    lo <- as.numeric(quantile(x, p_lo, na.rm = TRUE))
+    hi <- as.numeric(quantile(x, p_hi, na.rm = TRUE))
+    return(1 - pmin(pmax((x - lo) / (hi - lo), 0), 1))
+  }
+  if (method == "zscore") return(-(x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE))
+  if (method == "rank")
+    return(1 - (rank(x, na.last = "keep", ties.method = "average") - 1) / (sum(ok) - 1))
+  stop("Unknown normalization method: ", method)
+}
+
+# A profile is a per-dimension choice of method. H = "letters" uses the A-E map.
+norm_profiles <- list(
+  initial      = list(E = "minmax_whisker", AW = "minmax_whisker", SE = "minmax_whisker", H = "letters"),
+  minmax_pct   = list(E = "minmax_p",       AW = "minmax_p",       SE = "minmax_p",       H = "minmax_p"),
+  log_tails    = list(E = "minmax_p",       AW = "log_minmax_p",   SE = "log_minmax_p",   H = "minmax_p"),
+  log_tails_TL = list(E = "minmax_whisker", AW = "log_minmax_p",   SE = "log_minmax_p",   H = "minmax_p"),
+  log_EAWS     = list(E = "log_minmax_p",   AW = "log_minmax_p",   SE = "log_minmax_p",   H = "minmax_p"),
+  log_EAWS_TL  = list(E = "log_minmax_p",   AW = "log_minmax_p",   SE = "log_minmax_p",   H = "letters"),
+  zscore       = list(E = "zscore",         AW = "zscore",         SE = "zscore",         H = "zscore"),
+  rank         = list(E = "rank",           AW = "rank",           SE = "rank",           H = "rank")
+)
+
+build_norm_matrix <- function(db, profile) {
+  m <- cbind(
+    E  = norm_one_dim(db$E_SS,  profile$E,  db$SAFAD_L1_cat),
+    AW = norm_one_dim(db$AW_SS, profile$AW, db$SAFAD_L1_cat),
+    SE = norm_one_dim(db$SE_SS, profile$SE, db$SAFAD_L1_cat),
+    H  = if (profile$H == "letters") db$H_letter_goodness
+         else norm_one_dim(db$H_SS, profile$H, db$SAFAD_L1_cat))
+  rownames(m) <- NULL; m
+}
+
+weight_archetypes <- list(
+  Equal        = c(.25, .25, .25, .25), `Env-heavy`    = c(.55, .15, .15, .15),
+  `AW-heavy`   = c(.15, .55, .15, .15), `SE-heavy`     = c(.15, .15, .55, .15),
+  `Health-heavy` = c(.15, .15, .15, .55))
+```
+
+## The algorithm {#sec-algo}
+
+One function, one code path. The design point that matters for everything below:
+
+* **`gp_score`** (gate/pool score) decides *who gets a recommendation* and
+  *which candidates are eligible*. In this document it is **always** the
+  objective equal-weight overall score.
+* **`select_mat %*% w`** decides *which* of the eligible candidates is shown.
+  This is the only place personal weights act.
+
+Because `gp_score` no longer depends on the weights, **eligibility can be
+computed once and reused** for all 1,771 grid vectors and all ~2,800
+respondents. That is what makes the big runs in @sec-runs cheap, and it also
+means coverage (who is gated, who is served) is *identical* across all weight
+vectors — only the identity of the recommended product changes.
+
+```{r}
+#| label: algorithm
+
+## ========================================================================== #
+## 2.4  Eligibility, selection, and the user-facing run_algo() ====
+## ========================================================================== #
+
+# ---- Step 1: eligibility (weight-independent when gp_score is objective) ----
+# Returns, per product: its eligible candidate set and the outcome reason.
+#   good_enough    : reference already >= gate            -> alternative = itself
+#   no_alternative : gated, but nothing relevant qualifies -> alternative = itself
+#   recommended    : a real alternative exists
+build_eligibility <- function(gp_score, compat, ref_cat, gate_thr, pool_thr,
+                              pool_mode = POOL_MODE, dim_mat = NULL, gate_mode = GATE_MODE) {
+  n <- length(gp_score)
+  cand <- vector("list", n); reason <- character(n)
+  if (gate_mode == "all_dimensions" && is.null(dim_mat))
+    stop("gate_mode = 'all_dimensions' requires dim_mat (the per-dimension score matrix)")
+  for (i in seq_len(n)) {
+    s <- gp_score[i]
+    if (is.na(s)) { cand[[i]] <- integer(0); reason[i] <- "no_score"; next }
+    if (gate_mode == "all_dimensions") {
+      if (anyNA(dim_mat[i, ])) { cand[[i]] <- integer(0); reason[i] <- "no_score"; next }
+      good_enough <- all(dim_mat[i, ] >= gate_thr)
+    } else {
+      good_enough <- s >= gate_thr
+    }
+    if (good_enough) { cand[[i]] <- integer(0); reason[i] <- "good_enough"; next }
+    pool <- compat[[ ref_cat[i] ]]; if (is.null(pool)) pool <- integer(0)
+    pool <- pool[pool != i]
+    ok   <- !is.na(gp_score[pool])
+    cc <- if (pool_mode == "none")                pool[ok]
+          else if (pool_mode == "beat_reference") pool[ok & gp_score[pool] > s]
+          else                                    pool[ok & gp_score[pool] >= pool_thr]
+    if (length(cc) == 0) { cand[[i]] <- integer(0); reason[i] <- "no_alternative" }
+    else                 { cand[[i]] <- cc;         reason[i] <- "recommended"    }
+  }
+  gated <- if (gate_mode == "all_dimensions")
+    !is.na(gp_score) & !apply(dim_mat, 1, function(r) !anyNA(r) && all(r >= gate_thr))
+  else !is.na(gp_score) & gp_score < gate_thr
+  list(cand = cand, reason = reason, gated = gated, served = reason == "recommended")
+}
+
+# ---- Step 2: selection, vectorised over MANY weight vectors at once ---------
+# W = K x 4 matrix of weight vectors. Returns an n x K integer matrix of chosen
+# alternative row ids (self when not served).
+# Randomized draws use the Gumbel-max trick, which is an exact sample from the
+# softmax over sharpness * score -- identical in distribution to v11's per-product
+# `sample(prob = softmax)`, but vectorised. (v11 re-seeded per product; here the
+# stream is seeded once per call, so individual draws differ while the
+# distribution and the reproducibility guarantee do not.)
+pick_alternatives <- function(elig, select_mat, W, randomize = FALSE,
+                              seed = RANDOM_SEED, sharpness = 0) {
+  W <- as.matrix(W); if (ncol(W) != 4L) stop("W must be K x 4 (E, AW, SE, H)")
+  n <- length(elig$cand); K <- nrow(W)
+  alt <- matrix(rep.int(seq_len(n), K), nrow = n, ncol = K)   # default: itself
+  set.seed(seed)
+  tW <- t(W)
+  for (i in which(elig$served)) {
+    cc <- elig$cand[[i]]; m <- length(cc)
+    S  <- select_mat[cc, , drop = FALSE] %*% tW               # m x K
+    if (randomize && m > 1) {
+      U <- matrix(stats::runif(m * K), m, K)
+      S <- if (sharpness > 0) sharpness * S - log(-log(U)) else U
+    }
+    alt[i, ] <- cc[max.col(t(S), ties.method = "first")]
+  }
+  alt
+}
+
+# ---- Step 3: the single-weight-vector wrapper -------------------------------
+# Same signature and semantics as v11's run_gated_algo(), but built on the two
+# functions above so there is only one implementation to trust.
+run_algo <- function(gp_score, compat, ref_cat, gate_thr, pool_thr,
+                     randomize = FALSE, seed = RANDOM_SEED, sharpness = 0,
+                     select_mat = NULL, select_weights = NULL,
+                     pool_mode = POOL_MODE, elig = NULL,
+                     dim_mat = NULL, gate_mode = GATE_MODE) {
+  if (is.null(elig))
+    elig <- build_eligibility(gp_score, compat, ref_cat, gate_thr, pool_thr, pool_mode,
+                              dim_mat = dim_mat, gate_mode = gate_mode)
+  personalize <- !is.null(select_mat) && !is.null(select_weights)
+  sm <- if (personalize) select_mat else cbind(gp_score, 0, 0, 0)
+  w  <- if (personalize) matrix(select_weights, nrow = 1) else matrix(c(1, 0, 0, 0), nrow = 1)
+  alt <- pick_alternatives(elig, sm, w, randomize, seed, sharpness)[, 1]
+  out <- data.frame(
+    row_id = seq_along(gp_score), TH_code = DB$TH_code, food_product = DB$food_product,
+    SAFAD_L1_cat = DB$SAFAD_L1_cat, SAFAD_L2_cat = ref_cat,
+    overall_score = round(gp_score, 4), gated = elig$gated,
+    alt_row_id = alt, alt_TH_code = DB$TH_code[alt], alt_product = DB$food_product[alt],
+    alt_overall = round(gp_score[alt], 4), alt_is_self = alt == seq_along(gp_score),
+    alt_reason = elig$reason,
+    gain = round(gp_score[alt] - gp_score, 4),        # objective gain
+    stringsAsFactors = FALSE)
+  if (personalize) {
+    ps <- as.numeric(select_mat %*% as.numeric(select_weights))
+    out$gain_personal <- round(ps[alt] - ps, 4)       # gain on the consumer's own score
+  }
+  out
+}
+```
+
+## Relevance sets
+
+```{r}
+#| label: relevance-sets
+
+## ========================================================================== #
+## 2.5  Relevance (substitutability) sets, one per level ====
+## ========================================================================== #
+# compat_by_level[["L4"]][[cat]] = row indices of products that are acceptable
+# alternatives for category `cat` at level 4 (i.e. matrix_A entry in {4, 5}).
+cats_present <- intersect(unique(DB$SAFAD_L2_cat), colnames(matrix_A))
+ref_cat_vec  <- DB$SAFAD_L2_cat
+
+compat_by_level <- cached(
+  paste0("compat_", paste(SUBST_LEVELS, collapse = ""), "_", n_all),
+  c(SUBST_LEVELS, n_all, file_fp(here(path_matrix))), {
+  setNames(lapply(SUBST_LEVELS, function(L) {
+    codes <- as.character(L:5)
+    setNames(lapply(cats_present, function(cc) {
+      rel <- rownames(matrix_A)[matrix_A[, cc] %in% codes]
+      which(DB$SAFAD_L2_cat %in% rel)
+    }), cats_present)
+  }), paste0("L", SUBST_LEVELS))
+})
+
+bind_rows(lapply(SUBST_LEVELS, function(L) {
+  s <- lengths(compat_by_level[[paste0("L", L)]])
+  data.frame(level = L, n_categories = length(s), min_pool = min(s),
+             median_pool = as.integer(median(s)), max_pool = max(s))
+})) %>% show_tbl(caption = "Size of the relevant-alternatives pool, by substitutability level.")
+```
+
+::: {.callout-tip appearance="simple"}
+Every diagonal entry of `matrix_A` is 5, so every L2 category is always a
+substitute for itself. A product's pool therefore always contains its own
+subcategory, and the effective decision problem is at the level of the 124
+subcategories rather than the 2,451 products.
+:::
+
+# Raw data diagnostics {#sec-raw}
+
+::: {.callout-note appearance="simple"}
+**Run used:** none. Everything here is on the raw impact scale, before any
+normalization or any algorithm.
+:::
+
+## Skewness
+
+Why this matters: a long right tail is exactly what makes plain min-max
+compress a dimension. A handful of extreme products pin the top of the scale and
+everything else is squashed toward one end — the reason AW and SE get a log
+transform in the primary profile.
+
+```{r}
+#| label: raw-skewness
+data.frame(
+  dimension = dim_cols,
+  min    = sapply(RAW_IMPACT, function(x) min(x, na.rm = TRUE)),
+  median = sapply(RAW_IMPACT, function(x) median(x, na.rm = TRUE)),
+  max    = sapply(RAW_IMPACT, function(x) max(x, na.rm = TRUE)),
+  skewness = sapply(RAW_IMPACT, skewness),
+  pct_zero_or_negative = sapply(RAW_IMPACT, function(x) 100 * mean(x <= 0, na.rm = TRUE))
+) %>% show_tbl(caption = "Raw impact distribution per dimension (higher = worse).", digits = 2)
+```
+
+::: {.callout-important appearance="simple"}
+Note the last column, which matters again in @sec-relgain: **AW is zero for every
+plant-based product (~41% of the catalogue) and H (the FNS score) is negative for
+~29%.** Any metric that divides by a raw impact is therefore undefined or
+sign-flipped for a large, non-random part of the database.
+:::
+
+## Correlations between raw dimensions
+
+Spearman is invariant to any monotone per-dimension normalization, so the
+Spearman block below is what survives into every bounded profile unchanged.
+Pearson is what the log transform actually alters.
+
+```{r}
+#| label: raw-correlations
+.pear  <- cor(RAW_IMPACT, use = "pairwise.complete.obs", method = "pearson")
+.spear <- cor(RAW_IMPACT, use = "pairwise.complete.obs", method = "spearman")
+raw_corr <- .pear; raw_corr[upper.tri(raw_corr)] <- .spear[upper.tri(.spear)]
+raw_corr_tbl <- cbind(dimension = rownames(raw_corr), as.data.frame(round(raw_corr, 3)))
+save_out(raw_corr_tbl, "raw_dimension_correlations.csv",
+         "Raw-scale correlations: Pearson below the diagonal, Spearman above.")
+show_tbl(raw_corr_tbl,
+         caption = "Raw dimension correlations. Lower triangle = Pearson, upper = Spearman.")
+```
+
+## Raw dimension pairs
+
+```{r}
+#| label: fig-raw-pairs
+#| fig-cap: "All six raw dimension pairs. Each facet header names the x and y dimension."
+#| fig-height: 7
+prs <- combn(dim_cols, 2, simplify = FALSE)
+bind_rows(lapply(prs, function(p) data.frame(
+  pair = paste0("x = ", p[1], "   |   y = ", p[2]),
+  x = RAW_IMPACT[[p[1]]], y = RAW_IMPACT[[p[2]]]))) %>%
+  ggplot(aes(x, y)) + geom_point(size = .4, alpha = .25) +
+  facet_wrap(~ pair, scales = "free") +
+  labs(title = "Raw dimension pairs (impact scale, higher = worse)",
+       x = "x-axis dimension (see facet header)", y = "y-axis dimension (see facet header)")
+```
+
+## Raw impact by dimension and food category
+
+```{r}
+#| label: fig-raw-boxplots
+#| fig-cap: "Raw impact per L1 food category, one panel per dimension. Free x scales — the four dimensions are on completely different units and cannot be compared across panels."
+#| fig-height: 9
+raw_long <- data.frame(L1 = l1cat, RAW_IMPACT) %>%
+  pivot_longer(-L1, names_to = "dimension", values_to = "impact") %>%
+  filter(!is.na(impact)) %>%
+  mutate(dimension = factor(dimension, levels = dim_cols),
+         L1 = factor(L1, levels = rev(sort(unique(L1)))))
+ggplot(raw_long, aes(impact, L1, fill = dimension)) +
+  geom_boxplot(outlier.size = .35, alpha = .8, linewidth = .3) +
+  facet_wrap(~ dimension, nrow = 1, scales = "free_x") +
+  scale_fill_brewer(palette = "Set2", guide = "none") +
+  labs(title = "Raw impact by L1 category and dimension",
+       subtitle = "(lower score = more sustainable)",
+       x = "Raw impact score (different scale per panel – reversed axes)", y = NULL) +
+  scale_x_reverse() +
+  theme(axis.text.y = element_text(size = 7))
+```
+
+# Core algorithm runs {#sec-runs}
+
+Everything in @sec-theoretical through @sec-sweeps is extracted from a small
+number of objects built here. Nothing downstream re-runs the algorithm except
+@sec-sweeps, which is explicitly about varying the parameters.
+
+| Object | What it is | Weights | Levels | Selection |
+|---|---|---|---|---|
+| `SCORES` | 4 normalized dimension scores + overall, for every product, under every normalization profile | equal | — | — |
+| `REC` | the recommendation table — one row per product, one column block per level | equal (objective) | 3, 4, 5 | randomized, sharpness `r SHARPNESS` |
+| `GRID` | the algorithm re-run for all 1,771 theoretical weight vectors | 1,771-vector simplex grid | 3, 4, 5 | deterministic best-in-pool |
+| `CONS` | the algorithm re-run per survey respondent (@sec-consumers) | ~2,800 real weight vectors | primary only | randomized, sharpness `r SHARPNESS` |
+
+In **all four**, the gate and the pool run on the objective equal-weight score.
+
+## `SCORES` — normalized scores under every profile
+
+```{r}
+#| label: build-scores
+
+## ========================================================================== #
+## 4.1  SCORES: normalized dimension scores + overall, per profile ====
+## ========================================================================== #
+NORM <- lapply(norm_profiles, function(p) {
+  m <- build_norm_matrix(DB, p); colnames(m) <- dim_cols; m
+})
+OVERALL_BY_PROFILE <- lapply(NORM, function(m) as.numeric(m %*% ALGO_WEIGHTS))
+
+SCORES <- bind_rows(lapply(names(NORM), function(pn) {
+  data.frame(row_id = seq_len(n_all), TH_code = DB$TH_code, food_product = DB$food_product,
+             SAFAD_L1_cat = l1cat, SAFAD_L2_cat = subcat, profile = pn,
+             NORM[[pn]], overall = OVERALL_BY_PROFILE[[pn]],
+             check.names = FALSE, row.names = NULL)
+}))
+save_out(SCORES, "CORE_scores_by_profile.csv",
+         "CORE 1/4. Per product x normalization profile: E, AW, SE, H and the equal-weight overall score.")
+
+# Handles for the primary profile, used everywhere downstream.
+select_mat_primary <- NORM[[norm_profile]]
+overall_primary    <- OVERALL_BY_PROFILE[[norm_profile]]
+
+cat(sprintf("SCORES: %d rows = %d products x %d profiles. Primary profile = '%s'.\n",
+            nrow(SCORES), n_all, length(NORM), norm_profile))
+```
+
+## `REC` — the recommendation table (equal weights, three levels)
+
+```{r}
+#| label: build-rec
+
+## ========================================================================== #
+## 4.2  REC: the objective recommendation table, one column block per level ====
+## ========================================================================== #
+ELIG <- setNames(lapply(SUBST_LEVELS, function(L)
+  build_eligibility(overall_primary, compat_by_level[[paste0("L", L)]],
+                    ref_cat_vec, GATE_THRESHOLD, POOL_THRESHOLD, POOL_MODE,
+                    dim_mat = select_mat_primary, gate_mode = GATE_MODE)),
+  paste0("L", SUBST_LEVELS))
+cat("Gate mode in effect for REC / GRID / CONS:", GATE_MODE, "\n")
+
+algo_by_level <- setNames(lapply(SUBST_LEVELS, function(L)
+  run_algo(overall_primary, compat_by_level[[paste0("L", L)]], ref_cat_vec,
+           GATE_THRESHOLD, POOL_THRESHOLD, randomize = RANDOMIZE, seed = RANDOM_SEED,
+           sharpness = SHARPNESS, elig = ELIG[[paste0("L", L)]])),
+  paste0("L", SUBST_LEVELS))
+
+REC <- algo_by_level[[1]][, c("row_id", "TH_code", "food_product",
+                              "SAFAD_L1_cat", "SAFAD_L2_cat", "overall_score", "gated")]
+for (L in SUBST_LEVELS) {
+  a <- algo_by_level[[paste0("L", L)]]
+  REC[[paste0("alt_TH_L", L)]]      <- a$alt_TH_code
+  REC[[paste0("alt_product_L", L)]] <- a$alt_product
+  REC[[paste0("alt_reason_L", L)]]  <- a$alt_reason
+  REC[[paste0("alt_row_id_L", L)]]  <- a$alt_row_id
+  REC[[paste0("gain_L", L)]]        <- a$gain
+}
+save_out(REC, "CORE_recommendations_by_level.csv",
+         paste0("CORE 2/4. Equal-weight recommendations at levels ",
+                paste(SUBST_LEVELS, collapse = "/"), ", profile ", norm_profile, "."))
+
+bind_rows(lapply(SUBST_LEVELS, function(L) {
+  a <- algo_by_level[[paste0("L", L)]]; ng <- sum(a$gated)
+  data.frame(level = L,
+             pct_gated          = round(100 * mean(a$gated), 1),
+             pct_good_enough    = round(100 * mean(a$alt_reason == "good_enough"), 1),
+             pct_no_alternative = round(100 * mean(a$alt_reason == "no_alternative"), 1),
+             pct_recommended    = round(100 * mean(a$alt_reason == "recommended"), 1),
+             pct_gated_served   = round(100 * sum(a$alt_reason == "recommended") / max(ng, 1), 1),
+             mean_gain          = round(mean(a$gain[a$alt_reason == "recommended"]), 3),
+             distinct_alts      = length(unique(a$alt_row_id[a$alt_reason == "recommended"])))
+})) %>% show_tbl(caption = "Algorithm behaviour by substitutability level (equal weights).")
+```
+
+`pct_gated` is identical at every level because the gate depends only on the
+reference product's own score. What the level changes is whether a gated product
+can *find* an alternative, and how good that alternative is.
+
+## `GRID` — the 1,771-vector theoretical weight grid
+
+```{r}
+#| label: build-grid
+
+## ========================================================================== #
+## 4.3  GRID: every weight vector on the 0.05 simplex grid, all three levels ====
+## ========================================================================== #
+# The grid is UNIFORM over the simplex. Note that the marginal distribution of
+# any single dimension's weight is then Beta(1,3): most vectors give a given
+# dimension very little weight, and single-dimension dominance is rare because
+# it requires the other three to be near zero simultaneously.
+build_weight_grid <- function(step = WEIGHT_GRID_STEP) {
+  N <- round(1 / step); rows <- list()
+  for (a in 0:N) for (b in 0:(N - a)) for (cc in 0:(N - a - b))
+    rows[[length(rows) + 1]] <- c(a, b, cc, N - a - b - cc) * step
+  m <- do.call(rbind, rows); colnames(m) <- dim_cols; m
+}
+W_GRID <- build_weight_grid()
+
+GRID <- cached(
+  paste0("GRID_", norm_profile, "_step", WEIGHT_GRID_STEP, "_",
+         paste(SUBST_LEVELS, collapse = ""), "_", POOL_MODE),
+  c(norm_profile, WEIGHT_GRID_STEP, SUBST_LEVELS, POOL_MODE, GATE_THRESHOLD,
+    POOL_THRESHOLD, ALGO_WEIGHTS, LOG_OFFSET_MODE, LOG_OFFSET_VALUE, GATE_MODE), {
+  out <- list(W = W_GRID, served = list(), alt = list())
+  for (L in SUBST_LEVELS) {
+    e <- ELIG[[paste0("L", L)]]
+    full <- pick_alternatives(e, select_mat_primary, W_GRID,
+                              randomize = FALSE, seed = RANDOM_SEED)
+    out$served[[paste0("L", L)]] <- which(e$served)
+    out$alt[[paste0("L", L)]]    <- full[e$served, , drop = FALSE]   # n_served x 1771
+  }
+  out
+})
+
+# Dominant dimension of each weight vector (used for the heatmaps in section 5).
+GRID$dominant <- dim_cols[max.col(GRID$W, ties.method = "first")]
+
+data.frame(level = SUBST_LEVELS,
+           n_weight_vectors = nrow(GRID$W),
+           n_products_served = sapply(paste0("L", SUBST_LEVELS), function(k) length(GRID$served[[k]])),
+           n_cells = sapply(paste0("L", SUBST_LEVELS), function(k) length(GRID$alt[[k]]))) %>%
+  show_tbl(caption = "GRID dimensions: one chosen alternative per served product per weight vector.")
+
+data.frame(dominant_dimension = names(table(GRID$dominant)),
+           n_weight_vectors = as.integer(table(GRID$dominant)),
+           pct = round(100 * as.numeric(table(GRID$dominant)) / nrow(GRID$W), 1)) %>%
+  show_tbl(caption = "How the 1,771 grid vectors split by their highest-weighted dimension.")
+```
+
+::: {.callout-note appearance="simple"}
+Because eligibility is objective, `GRID$served` is the **same set of products for
+every one of the 1,771 weight vectors**. The grid therefore isolates exactly one
+thing: how the weights change *which* alternative is shown, holding coverage
+fixed. That is a cleaner tailoring experiment than v11's full-personalization
+battery, where coverage and choice moved at the same time.
+:::
+
+```{r}
+#| label: grid-consistency-check
+# Sanity check: the vectorised grid engine must reproduce run_algo() exactly for
+# a single weight vector. If this ever fails, the fast path has drifted.
+.k    <- which(apply(GRID$W, 1, function(r) all(abs(r - 0.25) < 1e-9)))[1]
+.slow <- run_algo(overall_primary, compat_by_level[[paste0("L", substitutability_level)]],
+                  ref_cat_vec, GATE_THRESHOLD, POOL_THRESHOLD, randomize = FALSE,
+                  select_mat = select_mat_primary, select_weights = GRID$W[.k, ],
+                  elig = ELIG[[paste0("L", substitutability_level)]])
+.srv  <- GRID$served[[paste0("L", substitutability_level)]]
+stopifnot(identical(as.integer(.slow$alt_row_id[.srv]),
+                    as.integer(GRID$alt[[paste0("L", substitutability_level)]][, .k])))
+cat("Consistency check passed: vectorised grid == run_algo() for the equal-weight vector.\n")
+```
+
+# Performance under theoretical weights {#sec-theoretical}
+
+::: {.callout-note appearance="simple"}
+**Run used:** `GRID` (1,771 weight vectors, deterministic best-in-pool, all three
+levels) for everything about tailoring; `REC` (equal weights, randomized,
+level `r substitutability_level`) for the before/after picture and the basket.
+Gate and pool are objective in both.
+:::
+
+```{r}
+#| label: sec5-handles
+LKEY   <- paste0("L", substitutability_level)
+SRV    <- GRID$served[[LKEY]]                      # row ids of served products
+ALT    <- GRID$alt[[LKEY]]                         # n_served x 1771
+K_GRID <- ncol(ALT)
+cat(sprintf("Primary run: level %d, %d served products x %d weight vectors.\n",
+            substitutability_level, length(SRV), K_GRID))
+```
+
+## Most-recommended alternatives per subcategory {#sec-top5}
+
+For every L2 subcategory we count how often each product is served as the
+alternative, pooling over (a) every reference product belonging to that
+subcategory and (b) all 1,771 weight vectors. The top five per subcategory and
+per level is the "what does this subcategory actually get pushed towards"
+summary.
+
+`share` is the percentage of all (reference × weight-vector) recommendations
+issued for that subcategory that landed on this alternative.
+
+```{r}
+#| label: top5-by-subcat
+top_alts_by_cat <- cached(
+  paste0("top5_", norm_profile, "_step", WEIGHT_GRID_STEP, "_", POOL_MODE),
+  c(norm_profile, WEIGHT_GRID_STEP, SUBST_LEVELS, POOL_MODE, GATE_THRESHOLD, GATE_MODE), {
+  bind_rows(lapply(SUBST_LEVELS, function(L) {
+    key <- paste0("L", L); srv <- GRID$served[[key]]; A <- GRID$alt[[key]]
+    data.frame(SAFAD_L2_cat = rep(ref_cat_vec[srv], times = ncol(A)),
+               alt_row_id   = as.vector(A)) %>%
+      count(SAFAD_L2_cat, alt_row_id, name = "times") %>%
+      group_by(SAFAD_L2_cat) %>%
+      mutate(share = 100 * times / sum(times)) %>%
+      slice_max(times, n = 5, with_ties = FALSE) %>%
+      mutate(rank = row_number()) %>% ungroup() %>%
+      transmute(level = L, SAFAD_L2_cat, rank,
+                alt_TH_code = DB$TH_code[alt_row_id],
+                alt_product = DB$food_product[alt_row_id],
+                alt_L2_cat  = DB$SAFAD_L2_cat[alt_row_id],
+                times, share = round(share, 1))
+  }))
+})
+
+# Subcategories where nothing is ever recommended (every product clears the gate)
+# are added explicitly so the table covers all 124, rather than silently dropping.
+all_cats <- sort(unique(ref_cat_vec))
+never_served <- bind_rows(lapply(SUBST_LEVELS, function(L) {
+  miss <- setdiff(all_cats, top_alts_by_cat$SAFAD_L2_cat[top_alts_by_cat$level == L])
+  if (!length(miss)) return(NULL)
+  data.frame(level = L, SAFAD_L2_cat = miss, rank = NA_integer_,
+             alt_TH_code = NA_character_, alt_product = "(no product in this subcategory is ever gated)",
+             alt_L2_cat = NA_character_, times = 0L, share = NA_real_)
+}))
+top_alts_by_cat <- bind_rows(top_alts_by_cat, never_served) %>% arrange(level, SAFAD_L2_cat, rank)
+
+save_out(top_alts_by_cat, "top5_alternatives_by_subcategory.csv",
+         "Top-5 most-recommended alternatives per L2 subcategory, per substitutability level, over the 1,771-weight grid.")
+
+cat(sprintf("%d rows = %d subcategories x %d levels, up to 5 alternatives each.\n",
+            nrow(top_alts_by_cat), length(all_cats), length(SUBST_LEVELS)))
+top_alts_by_cat %>% filter(level == substitutability_level) %>%
+  select(-level) %>% head(60) %>%
+  show_tbl(caption = paste0("Top-5 alternatives per subcategory at level ",
+                            substitutability_level, " (first 60 rows; full table in output/)."))
+```
+
+### Most-recommended products overall
+
+The subcategory view above answers "what does THIS subcategory get pushed
+towards"; this collapses that same count across every subcategory at once, to
+answer "which handful of products account for a disproportionate share of all
+recommendations, catalogue-wide". A product dominating this list is either a
+genuinely excellent all-rounder, or a signal that the pool for its category is
+thin — worth cross-checking against @sec-distinct's `top_alt_share` column.
+
+```{r}
+#| label: top10-overall
+top10_overall <- data.frame(
+    SAFAD_L2_cat = rep(ref_cat_vec[SRV], times = ncol(ALT)),
+    alt_row_id   = as.vector(ALT)) %>%
+  count(alt_row_id, name = "times") %>%
+  mutate(share = round(100 * times / sum(times), 2)) %>%
+  slice_max(times, n = 10, with_ties = FALSE) %>%
+  mutate(rank = row_number()) %>%
+  transmute(rank, alt_TH_code = DB$TH_code[alt_row_id], alt_product = DB$food_product[alt_row_id],
+            alt_L1_cat = DB$SAFAD_L1_cat[alt_row_id], alt_L2_cat = DB$SAFAD_L2_cat[alt_row_id],
+            times, share)
+save_out(top10_overall, "top10_alternatives_overall.csv",
+         "Top-10 most-recommended products catalogue-wide, over the 1,771-weight grid, primary level.")
+show_tbl(top10_overall, caption = paste0("Top-10 most-recommended products overall, level ",
+                                         substitutability_level, ", over the 1,771-weight grid."))
+```
+
+## Before vs. after, by dimension and L1 category {#sec-beforeafter}
+
+::: {.callout-warning appearance="default"}
+## Why categories were missing from this figure in v11
+
+They were not dropped by a plotting bug. The v11 code built this figure from
+`alt_reason == "recommended"` only, and in those categories **no product is ever
+gated** — every one of them already scores above 0.75, so the algorithm
+correctly leaves them alone and they contribute zero rows.
+
+The table below is the check. With the current database and settings, **seven**
+categories have zero served products, not four: on top of the four you spotted
+(starchy roots and tubers, non-alcoholic beverages, fruit and vegetable juices,
+food for infants and small children) there are also alcoholic beverages,
+drinking water, and products for special nutritional use.
+
+The fix is to plot **the whole catalogue** rather than only served products.
+Every product contributes; those that are `good_enough` or `no_alternative`
+simply have *after = before*. This is also the more honest figure for a paper:
+it is the improvement the catalogue actually realises, not the improvement
+conditional on having been served.
+:::
+
+```{r}
+#| label: coverage-by-l1
+coverage_L1 <- REC %>%
+  transmute(L1 = SAFAD_L1_cat, reason = .data[[paste0("alt_reason_", LKEY)]]) %>%
+  count(L1, reason) %>% pivot_wider(names_from = reason, values_from = n, values_fill = 0)
+for (cl in c("good_enough", "no_alternative", "recommended"))
+  if (!cl %in% names(coverage_L1)) coverage_L1[[cl]] <- 0L
+coverage_L1 <- coverage_L1 %>%
+  mutate(n_products = good_enough + no_alternative + recommended,
+         pct_recommended = round(100 * recommended / n_products, 1)) %>%
+  arrange(pct_recommended)
+save_out(coverage_L1, "coverage_by_L1_category.csv",
+         "Per L1 category: how many products are good_enough / have no alternative / are served.")
+show_tbl(coverage_L1, caption = paste0(
+  "Why some categories carry no recommendations at level ", substitutability_level,
+  ". Categories with pct_recommended = 0 were the ones absent from the v11 figure."))
+```
+
+::: {.callout-important appearance="default"}
+## Why the arrows below are so much shorter than in earlier drafts — corrected
+
+My first explanation for this (comparing to a draft tagged `sub4_rank`) was
+right as far as it went, but incomplete, and a second draft you sent — same
+`log_tails` profile, same level 4, dated July 7 — makes that clear: the
+normalization profile is held fixed between that draft and this one, yet the
+shrinkage is still large. So the profile cannot be the (whole) story. It also
+isn't the substitutability level: both drafts are explicitly titled "level 4".
+
+The actual cause is a change **I** made to how the figure aggregates, not
+anything about the algorithm or the data. The July drafts averaged
+before/after **only over products that actually received a recommendation**
+(`alt_reason == "recommended"`) — which is also exactly what the v11 code did,
+as you can see in its section 5.4. My "whole catalogue" fix in the previous
+message averaged over **every** product instead, so that categories with zero
+recommendations would still appear (rather than silently vanishing, which was
+the original v11 bug). That fix was correct for the *missing-categories*
+problem, but it has a side effect I didn't flag: for a category where only,
+say, 30% of products get swapped, the other 70% now contribute `after = before`
+to the mean, diluting the visible movement by roughly that same 70%.
+
+Verified, same run (log_tails, level 4, equal weights) — whole-catalogue mean
+vs. served-only mean:
+
+| category | dimension | % served | whole-catalogue Δ | served-only Δ |
+|---|---|---|---|---|
+| Milk and dairy products | E  | 56% | 0.075 | **0.134** |
+| Milk and dairy products | AW | 56% | 0.154 | **0.274** |
+| Eggs and egg products   | AW | 31% | 0.145 | **0.472** |
+| Snacks, desserts, and other foods | AW | 11% | 0.012 | **0.106** |
+| Meat and meat products  | AW | 96% | 0.640 | 0.667 |
+
+The pattern is exactly what dilution predicts: where coverage is high (Meat, 96%
+served) the two numbers are nearly identical, because there's almost nothing
+left to dilute with. Where coverage is low (Snacks, 11% served) the
+whole-catalogue number is a small fraction of the served-only one. Milk and
+dairy's "barely any improvement" on E and AW was never true of the products
+that actually get swapped — it was the average being pulled toward zero by the
+44% of the category the algorithm correctly leaves alone.
+
+**Fix below:** the figure now reports the served-only mean again (so real
+swap sizes are visible), while still solving the original missing-categories
+problem explicitly — a category with zero recommendations gets a flat grey
+marker labelled as such, rather than either vanishing (the v11 bug) or being
+diluted into a near-invisible line (my overcorrection last time). Each
+category's label also states what fraction of it was actually served, and the
+line's transparency scales with that same fraction, so a long, faint arrow
+reads visually as "large gain, but based on few products" rather than looking
+identical to a short, opaque one.
+:::
+
+```{r}
+#| label: fig-before-after
+#| fig-cap: "Mean normalized score before vs. after recommendation, among products that actually receive one, by dimension and L1 category. Categories with zero recommendations are shown as a flat grey marker. Line transparency scales with the share of the category that was served; red arrowheads mark decreases."
+#| fig-height: 9
+#| fig-width: 13
+alt_col    <- paste0("alt_row_id_", LKEY)
+reason_col <- paste0("alt_reason_", LKEY)
+served_mask <- REC[[reason_col]] == "recommended"
+
+before_after_rows <- bind_rows(lapply(dim_cols, function(d) data.frame(
+    L1 = REC$SAFAD_L1_cat, dimension = d,
+    before = select_mat_primary[REC$row_id, d],
+    after_if_served = select_mat_primary[REC[[alt_col]], d],   # = before itself when not served
+    served = served_mask)))
+
+before_after <- before_after_rows %>% group_by(dimension, L1) %>%
+  summarise(n_products = n(), n_served = sum(served),
+            before = if (any(served)) mean(before[served], na.rm = TRUE) else mean(before, na.rm = TRUE),
+            after  = if (any(served)) mean(after_if_served[served], na.rm = TRUE) else mean(before, na.rm = TRUE),
+            .groups = "drop") %>%
+  left_join(coverage_L1[, c("L1", "pct_recommended")], by = "L1") %>%
+  mutate(delta = after - before,
+         direction = dplyr::case_when(
+           n_served == 0     ~ "no recommendations issued",
+           delta < -1e-9     ~ "decrease",
+           TRUE              ~ "increase"),
+         dimension = factor(dimension, levels = dim_cols))
+
+save_out(before_after, "before_after_by_dimension_L1_served_only.csv",
+         "Mean normalized score before vs after recommendation, per dimension x L1 category, among SERVED products only (n_served = 0 rows have before = after by construction).")
+
+l1_order <- coverage_L1 %>% arrange(pct_recommended) %>%
+  mutate(lab = sprintf("%s (%.0f%% served)", L1, pct_recommended))
+before_after <- before_after %>%
+  left_join(l1_order[, c("L1", "lab")], by = "L1") %>%
+  mutate(lab = factor(lab, levels = rev(l1_order$lab)))
+
+decreases <- before_after %>% filter(direction == "decrease") %>%
+  select(dimension, L1, n_served, pct_recommended, before, after, delta) %>% arrange(delta)
+
+ggplot(before_after) +
+  geom_segment(data = ~ filter(.x, n_served > 0),
+               aes(x = before, xend = after, y = lab, yend = lab,
+                   colour = direction, alpha = pct_recommended),
+               arrow = arrow(length = unit(0.10, "cm"), type = "closed"), linewidth = .6) +
+  geom_point(data = ~ filter(.x, n_served == 0),
+             aes(before, lab), colour = "grey55", shape = 4, size = 1.6, stroke = .8) +
+  geom_point(aes(before, lab), colour = "grey35", size = .9) +
+  facet_wrap(~ dimension, nrow = 1) +
+  scale_colour_manual(values = c(decrease = "#c0392b", increase = "#2e8540",
+                                `no recommendations issued` = "grey55"), name = NULL) +
+  scale_alpha_continuous(range = c(0.25, 1), limits = c(0, 100), name = "% of category served") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+  labs(title = paste0("Mean score before vs. after, among SERVED products, by L1 category (level ",
+                      substitutability_level, ", equal weights)"),
+       subtitle = "Grey x = category has zero recommendations (before = after trivially). Fainter arrow = based on a smaller share of the category.",
+       x = "normalized goodness (higher = better)", y = NULL) +
+  theme(legend.position = "top", axis.text.y = element_text(size = 6.5))
+```
+
+```{r}
+#| label: tbl-decreases
+show_tbl(decreases, caption = "Dimension x L1 combinations where the SERVED-ONLY mean normalized score falls after recommendation.")
+```
+
+These are genuine trade-offs, not errors: the algorithm maximises the *overall*
+equal-weight score, so it will accept a loss on one dimension when the other
+three gain more.
+
+### The same figure, averaged over the whole catalogue instead
+
+This is the complementary view: every product contributes, with unserved
+products (`good_enough` or `no_alternative`) counted as `after = before`. No
+category can vanish here (that was the original v11 bug), but a category's
+visible movement is now diluted in proportion to `1 - pct_recommended` — a
+category where only 10% of products are swapped will look like it barely
+changes, even if those swaps are individually large (compare to the served-only
+version above, or to the `pct_recommended` column in each label). Read this
+version when you want "how much does the catalogue move as a whole"; read the
+served-only version above when you want "how big is a swap when one happens".
+
+```{r}
+#| label: fig-before-after-wholecat
+#| fig-cap: "The same comparison, averaged over the WHOLE catalogue rather than served products only. Unserved products contribute after = before, so movement is diluted in proportion to how much of the category was actually touched."
+#| fig-height: 9
+#| fig-width: 13
+before_after_wholecat <- before_after_rows %>% group_by(dimension, L1) %>%
+  summarise(before = mean(before, na.rm = TRUE), after = mean(after_if_served, na.rm = TRUE),
+            .groups = "drop") %>%
+  left_join(coverage_L1[, c("L1", "pct_recommended")], by = "L1") %>%
+  mutate(delta = after - before,
+         direction = ifelse(delta < -1e-9, "decrease", "increase or unchanged"),
+         dimension = factor(dimension, levels = dim_cols)) %>%
+  left_join(l1_order[, c("L1", "lab")], by = "L1") %>%
+  mutate(lab = factor(lab, levels = rev(l1_order$lab)))
+
+save_out(before_after_wholecat, "before_after_by_dimension_L1_whole_catalogue.csv",
+         "Mean normalized score before vs after recommendation, per dimension x L1 category, over the WHOLE catalogue (unserved products contribute after = before).")
+
+ggplot(before_after_wholecat) +
+  geom_segment(aes(x = before, xend = after, y = lab, yend = lab, colour = direction),
+               arrow = arrow(length = unit(0.10, "cm"), type = "closed"), linewidth = .5) +
+  geom_point(aes(before, lab), colour = "grey35", size = 1.1) +
+  facet_wrap(~ dimension, nrow = 1) +
+  scale_colour_manual(values = c(decrease = "#c0392b", `increase or unchanged` = "#2e8540"), name = NULL) +
+  labs(title = paste0("Mean score before vs. after, WHOLE CATALOGUE, by L1 category (level ",
+                      substitutability_level, ", equal weights)"),
+       subtitle = "Every product contributes; unserved products have after = before by construction.",
+       x = "normalized goodness (higher = better)", y = NULL) +
+  theme(legend.position = "top", axis.text.y = element_text(size = 6.5))
+```
+
+### Breaking the average apart: one arrow per quartile instead of one per category
+
+The whole-catalogue arrow above is a single mean, and a mean can hide a lot —
+a category could move a little because everyone moves a little, or because a
+quarter of it moves a lot while the rest doesn't move at all. This is the
+Gantt-chart version: within **each category x dimension cell separately**,
+products are split into four quartiles by their own reference score on that
+dimension (Q1 = worst 25% on this dimension, Q4 = already the best 25%), and
+each quartile gets its own before/after arrow, still computed the
+whole-catalogue way (unserved products contribute `after = before`). Behind
+each arrow, a coloured band shows the range of "before" scores actually inside
+that quartile, and a fainter grey band behind that shows the full range for
+the whole category x dimension cell, so you can see both how wide a quartile
+is and how it sits inside the category as a whole.
+
+```{r}
+#| label: fig-before-after-quartile
+#| fig-cap: "Whole-catalogue before/after, broken into one arrow per quartile per category (Q1 = worst 25% on that dimension, Q4 = best 25%). Coloured band = range of 'before' scores within the quartile; pale grey band = full category range on that dimension. Arrow transparency scales with the quartile's own share served."
+#| fig-height: 24
+#| fig-width: 14
+quart_labels <- c("Q1 (worst 25%)", "Q2", "Q3", "Q4 (best 25%)")
+
+before_after_quartile <- before_after_rows %>%
+  group_by(dimension, L1) %>%
+  mutate(n_in_cell = n(),
+         quartile = ifelse(n_in_cell >= 4, ntile(before, 4), NA_integer_)) %>%
+  ungroup() %>%
+  filter(!is.na(quartile)) %>%
+  group_by(dimension, L1, quartile) %>%
+  summarise(n_products = n(), n_served = sum(served),
+            before_mean = mean(before, na.rm = TRUE),
+            after_mean  = mean(after_if_served, na.rm = TRUE),
+            q_min = min(before, na.rm = TRUE), q_max = max(before, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(pct_served = round(100 * n_served / n_products, 1),
+         quart_label = factor(quart_labels[quartile], levels = quart_labels),
+         direction = dplyr::case_when(
+           n_served == 0 ~ "no recommendations issued",
+           after_mean - before_mean < -1e-9 ~ "decrease",
+           TRUE ~ "increase"))
+
+cat(sprintf("%d of %d categories have at least 4 products per dimension and get a quartile breakdown; the rest are too small to split and are omitted from this figure only.\n",
+            n_distinct(before_after_quartile$L1), length(unique(l1cat))))
+
+cat_range <- before_after_rows %>% group_by(dimension, L1) %>%
+  summarise(cat_min = min(before, na.rm = TRUE), cat_max = max(before, na.rm = TRUE), .groups = "drop")
+
+# Build one combined y-axis: each category's 4 quartile-rows kept adjacent, in
+# the same category order as the averaged figure above (l1_order, by coverage).
+quartile_levels <- unlist(lapply(l1_order$lab[l1_order$L1 %in% unique(before_after_quartile$L1)],
+                                 function(L) paste0(L, "  |  ", quart_labels)))
+before_after_quartile <- before_after_quartile %>%
+  left_join(l1_order[, c("L1", "lab")], by = "L1") %>%
+  left_join(cat_range, by = c("L1", "dimension")) %>%
+  mutate(row_label = paste0(lab, "  |  ", quart_label),
+         row_label = factor(row_label, levels = rev(quartile_levels)),
+         y_pos = as.numeric(row_label))
+
+save_out(before_after_quartile, "before_after_by_dimension_L1_quartile.csv",
+         "Whole-catalogue before/after broken down by quartile of the reference product's own dimension score, per L1 category x dimension.")
+
+n_rows <- nlevels(before_after_quartile$row_label)
+ggplot(before_after_quartile) +
+  geom_rect(aes(xmin = cat_min, xmax = cat_max, ymin = y_pos - 0.44, ymax = y_pos + 0.44),
+            fill = "grey82", colour = NA) +
+  geom_rect(aes(xmin = q_min, xmax = q_max, ymin = y_pos - 0.32, ymax = y_pos + 0.32, fill = quart_label),
+            alpha = .55, colour = NA) +
+  geom_segment(aes(x = before_mean, xend = after_mean, y = y_pos, yend = y_pos,
+                   colour = direction, alpha = pct_served),
+               arrow = arrow(length = unit(0.08, "cm"), type = "closed"), linewidth = .55) +
+  geom_point(aes(before_mean, y_pos), colour = "grey15", size = .7) +
+  facet_wrap(~ dimension, nrow = 1) +
+  scale_y_continuous(breaks = seq_len(n_rows), labels = levels(before_after_quartile$row_label),
+                     expand = expansion(add = 1)) +
+  scale_fill_brewer(palette = "RdYlBu", name = "quartile (within category x dimension)") +
+  scale_colour_manual(values = c(decrease = "#c0392b", increase = "#2e8540",
+                                `no recommendations issued` = "grey55"), name = NULL) +
+  scale_alpha_continuous(range = c(0.3, 1), limits = c(0, 100), name = "% of quartile served") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)),
+        fill = guide_legend(override.aes = list(alpha = .8))) +
+  labs(title = paste0("Before vs. after by QUARTILE, WHOLE CATALOGUE (level ", substitutability_level, ", equal weights)"),
+       subtitle = "Grey band = full category range; coloured band = this quartile's own range. A tight coloured band inside a wide grey one means this quartile is a narrow slice of a diverse category.",
+       x = "normalized goodness (higher = better)", y = NULL) +
+  theme(legend.position = "top", legend.box = "vertical",
+        axis.text.y = element_text(size = 5.8), panel.spacing.x = unit(4, "mm"))
+```
+
+A few reading notes: a quartile with a wide coloured band contains products
+that don't have much in common on this dimension despite being in the same
+category — the average for that row is doing more work than it looks. A
+narrow coloured band sitting far from the category's grey band means that
+quartile is a genuinely distinct, homogeneous slice (e.g. Q1 for a category
+where a handful of products are dramatically worse than the rest). Comparing
+Q1's arrow length to Q4's directly answers "does the algorithm concentrate its
+effort on the worst products in a category, or spread improvement evenly" —
+Q1 should generally show the largest movement if it's working as intended,
+since those are the products furthest from the gate.
+
+
+## Gain by dominant dimension — normalized scores {#sec-gainheat}
+
+For each of the 1,771 weight vectors we take the mean gain delivered on each
+dimension across all served products, then group the vectors by which dimension
+carries the most weight. A well-tailored system puts each row's largest value on
+the diagonal.
+
+```{r}
+#| label: gain-by-dominant
+gain_by_scenario <- cached(
+  paste0("gain_by_scenario_", norm_profile, "_", LKEY, "_step", WEIGHT_GRID_STEP),
+  c(norm_profile, substitutability_level, WEIGHT_GRID_STEP, POOL_MODE, GATE_THRESHOLD, GATE_MODE), {
+  sapply(dim_cols, function(d) {
+    nd  <- select_mat_primary[, d]
+    del <- matrix(nd[ALT], nrow(ALT), ncol(ALT)) - nd[SRV]
+    colMeans(del, na.rm = TRUE)                       # one mean gain per weight vector
+  })
+})
+
+gain_by_dom <- as.data.frame(gain_by_scenario) %>%
+  mutate(dominant_dim = GRID$dominant) %>%
+  group_by(dominant_dim) %>%
+  summarise(n_scenarios = n(), across(all_of(dim_cols), ~ round(mean(.x), 3)), .groups = "drop") %>%
+  mutate(dominant_dim = factor(dominant_dim, levels = dim_cols)) %>% arrange(dominant_dim)
+save_out(gain_by_dom, "gain_by_dominant_dimension_normalized.csv",
+         "Mean normalized gain on each dimension, grouped by the weight vector's dominant dimension.")
+show_tbl(gain_by_dom, caption = "Mean normalized gain per dimension, by the scenario's dominant dimension.")
+```
+
+```{r}
+#| label: fig-gain-heatmap
+#| fig-cap: "Mean gain delivered ON each dimension (columns), BY the dominant dimension of the weight vector (rows). Read across each row: the diagonal cell should be the largest."
+#| fig-height: 5
+#| fig-width: 7
+gain_by_dom %>% select(dominant_dim, all_of(dim_cols)) %>%
+  pivot_longer(-dominant_dim, names_to = "gain_dim", values_to = "val") %>%
+  mutate(gain_dim = factor(gain_dim, levels = dim_cols)) %>%
+  ggplot(aes(gain_dim, dominant_dim, fill = val)) +
+  geom_tile(colour = "white") +
+  geom_text(aes(label = sprintf("%.3f", val)), size = 3.3) +
+  scale_fill_gradient(low = "#f7fbff", high = "#08519c", name = "mean gain") +
+  labs(title = "Normalized gain by dominant dimension (1,771-weight grid)",
+       x = "gain on dimension", y = "scenario's dominant dimension")
+```
+
+## Reduction in raw impact — and why the v11 version was wrong {#sec-relgain}
+
+::: {.callout-important appearance="default"}
+## The v11 metric was not measurable on this data
+
+v11 computed, per recommendation,
+$\text{rel}_d = 100 \times (r_{\text{ref}} - r_{\text{alt}})\, /\, r_{\text{ref}}$
+and then averaged. Three independent things break it, and together they produce
+exactly the kind of impossible number you spotted (−236% on AW, and values above
++100% on H, which would mean the impact went below zero):
+
+1. **H changes sign.** `H_SS` is the FNS score, which is negative for ~29% of
+   products and zero for another ~8%. When $r_{\text{ref}} < 0$ the division
+   flips the sign of the whole expression, so a genuine *improvement* is recorded
+   as a large negative "reduction". A ratio is simply not defined on an interval
+   scale that crosses zero.
+2. **AW is zero for 41% of the catalogue.** Every plant-based product has
+   `AW_SS = 0`. The guard `abs(r_ref) > 1e-9` silently drops all of them, so the
+   AW figure is computed on a *non-random* subsample — only products that contain
+   animal input. The near-zero survivors (e.g. 0.46) then generate values like
+   −178% from an absolute change that is trivially small.
+3. **The ratio is asymmetric and unbounded below.** An improvement can never
+   exceed +100%, but a deterioration is unbounded. Halving an impact scores
+   +50%; doubling it scores −100%. Averaging such a quantity is systematically
+   dragged negative. v11 compounded this by taking the **mean** of the ratios
+   *within* each weight scenario before taking the median *across* scenarios, so
+   a single pathological product contaminated every scenario and the outer
+   median could never wash it out.
+
+**Replacement.** For the three non-negative dimensions (E, AW, SE) we use the
+**median fold-change**, computed with the *same offset the normalization uses*,
+so zeros are handled identically in the score and in the reported effect:
+
+$$\text{fold}_d=\frac{r_{\text{alt}}+o_d}{r_{\text{ref}}+o_d},\qquad
+o_d = \texttt{LOG\_OFFSET\_VALUE}\times \operatorname{median}\!\left(r_d \mid r_d>0\right)$$
+
+then report $100 \times (1 - \operatorname{median}(\text{fold}_d))$. This is
+defined for every product (no silent dropping), symmetric in log space, and
+robust to the skew. For **H** a ratio is meaningless, so we report the median
+change in **FNS points** and the share of swaps that improve the Nutri-Score
+letter — both directly interpretable.
+:::
+
+```{r}
+#| label: relative-impact
+RAW_OFFSET <- sapply(dim_cols, function(d) {
+  x <- RAW_IMPACT[[d]]; LOG_OFFSET_VALUE * median(x[x > 0], na.rm = TRUE)
+})
+
+# Nutri-Score letter as an ordinal grade (A = 5 ... E = 1) for the H read-out.
+grade_num <- c(Nutriscore_A = 5, Nutriscore_B = 4, Nutriscore_C = 3,
+               Nutriscore_D = 2, Nutriscore_E = 1)[DB$H_nutriscore]
+
+rel_by_scenario <- cached(
+  paste0("rel_by_scenario_", norm_profile, "_", LKEY, "_step", WEIGHT_GRID_STEP),
+  c(norm_profile, substitutability_level, WEIGHT_GRID_STEP, POOL_MODE, LOG_OFFSET_VALUE, GATE_MODE), {
+  out <- list()
+  for (d in c("E", "AW", "SE")) {
+    r <- RAW_IMPACT[[d]]; o <- RAW_OFFSET[[d]]
+    fold <- (matrix(r[ALT], nrow(ALT), ncol(ALT)) + o) / (r[SRV] + o)
+    # Geometric mean of the fold change = the multiplicative analogue of the mean.
+    # It uses every served product and responds to the whole distribution, while
+    # staying symmetric: halving and doubling are equal and opposite in logs.
+    out[[paste0("pct_cut_", d)]] <- 100 * (1 - exp(colMeans(log(fold), na.rm = TRUE)))
+    # Median fold change: the robustness companion, insensitive to the tails.
+    out[[paste0("med_cut_", d)]] <- 100 * (1 - apply(fold, 2, median, na.rm = TRUE))
+    # the v11 metric, reproduced for the comparison table below
+    naive <- 100 * (r[SRV] - matrix(r[ALT], nrow(ALT), ncol(ALT))) / r[SRV]
+    naive[!is.finite(naive)] <- NA_real_
+    out[[paste0("v11_mean_", d)]] <- colMeans(naive, na.rm = TRUE)
+  }
+  hs <- RAW_IMPACT[["H"]]
+  dH <- hs[SRV] - matrix(hs[ALT], nrow(ALT), ncol(ALT))       # positive = better
+  out[["delta_H_points"]] <- colMeans(dH, na.rm = TRUE)
+  gg <- matrix(grade_num[ALT], nrow(ALT), ncol(ALT)) - grade_num[SRV]
+  out[["pct_H_grade_up"]] <- 100 * colMeans(gg > 0, na.rm = TRUE)
+  naiveH <- 100 * (hs[SRV] - matrix(hs[ALT], nrow(ALT), ncol(ALT))) / hs[SRV]
+  naiveH[!is.finite(naiveH)] <- NA_real_
+  out[["v11_mean_H"]] <- colMeans(naiveH, na.rm = TRUE)
+  as.data.frame(out)
+})
+
+rel_by_dom <- rel_by_scenario %>% mutate(dominant_dim = GRID$dominant) %>%
+  group_by(dominant_dim) %>%
+  summarise(n_scenarios = n(),
+            across(starts_with("pct_cut_"), ~ round(mean(.x, na.rm = TRUE), 1)),
+            across(starts_with("med_cut_"), ~ round(mean(.x, na.rm = TRUE), 1)),
+            delta_H_points = round(mean(delta_H_points, na.rm = TRUE), 2),
+            pct_H_grade_up = round(mean(pct_H_grade_up, na.rm = TRUE), 1),
+            .groups = "drop") %>%
+  mutate(dominant_dim = factor(dominant_dim, levels = dim_cols)) %>% arrange(dominant_dim)
+save_out(rel_by_dom, "raw_impact_reduction_by_dominant_dimension.csv",
+         "Median % raw-impact reduction (E/AW/SE, offset fold-change) and median FNS-point gain (H), by dominant dimension.")
+show_tbl(rel_by_dom, caption = "Corrected raw-impact effect by dominant dimension. E/AW/SE in % impact cut; H in FNS points and % of swaps improving the letter grade.")
+```
+
+```{r}
+#| label: fig-relgain-heatmap
+#| fig-cap: "Median reduction in raw impact for the three non-negative dimensions. Green = impact reduced."
+#| fig-height: 4.5
+#| fig-width: 6.5
+rel_by_dom %>% select(dominant_dim, starts_with("pct_cut_")) %>%
+  pivot_longer(-dominant_dim, names_to = "gain_dim", values_to = "pct") %>%
+  mutate(gain_dim = factor(sub("pct_cut_", "", gain_dim), levels = c("E", "AW", "SE"))) %>%
+  ggplot(aes(gain_dim, dominant_dim, fill = pct)) +
+  geom_tile(colour = "white") + geom_text(aes(label = sprintf("%.0f%%", pct)), size = 3.5) +
+  scale_fill_gradient2(low = "#b2182b", mid = "#f7f7f7", high = "#1a9850", midpoint = 0,
+                       name = "median %\nimpact cut") +
+  labs(title = "Median reduction in raw impact, by dominant dimension",
+       subtitle = "offset-consistent median fold-change; H is on a separate scale (see table)",
+       x = "% reduction on dimension", y = "scenario's dominant dimension")
+```
+
+```{r}
+#| label: tbl-relgain-method-comparison
+rel_by_scenario %>% mutate(dominant_dim = GRID$dominant) %>% group_by(dominant_dim) %>%
+  summarise(`AW: v11 metric`  = round(mean(v11_mean_AW, na.rm = TRUE), 1),
+            `AW: corrected`   = round(mean(pct_cut_AW,  na.rm = TRUE), 1),
+            `H: v11 metric`   = round(mean(v11_mean_H,  na.rm = TRUE), 1),
+            `H: corrected (FNS points)` = round(mean(delta_H_points, na.rm = TRUE), 2),
+            .groups = "drop") %>%
+  show_tbl(caption = "Old vs. new metric, same runs. The v11 columns are the ones that produce values below -100% or above +100%, which are not attainable for a genuine percentage reduction.")
+```
+
+## Variety: distinct alternatives per reference product {#sec-distinct}
+
+Across the 1,771 weight vectors, how many *different* alternatives does a given
+reference product end up being pushed towards? A spike at 1 means the
+subcategory has a candidate that wins under every possible weighting — no
+trade-off exists there, so no tailoring is possible.
+
+```{r}
+#| label: fig-distinct-alts
+#| fig-cap: "Number of distinct alternatives a reference product receives across the 1,771 theoretical weight vectors."
+#| fig-height: 5
+distinct_alts <- data.frame(
+  row_id       = SRV,
+  TH_code      = DB$TH_code[SRV],
+  food_product = DB$food_product[SRV],
+  SAFAD_L2_cat = ref_cat_vec[SRV],
+  n_distinct_alts = apply(ALT, 1, function(r) length(unique(r))),
+  top_alt_share   = apply(ALT, 1, function(r) max(table(r)) / length(r)))
+save_out(distinct_alts, "distinct_alternatives_per_product.csv",
+         "Per served product: number of distinct alternatives and top-alternative share across the weight grid.")
+
+cat(sprintf("Mean distinct alternatives per product: %.2f | median top-alt share: %.1f%% | %.1f%% of products get exactly one alternative under every weighting.\n",
+            mean(distinct_alts$n_distinct_alts), 100 * median(distinct_alts$top_alt_share),
+            100 * mean(distinct_alts$n_distinct_alts == 1)))
+
+ggplot(distinct_alts, aes(n_distinct_alts)) +
+  geom_histogram(binwidth = 1, boundary = -0.5, fill = "#4c72b0", colour = "white") +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  labs(title = "Distinct alternatives per reference product across the theoretical weight grid",
+       subtitle = paste0("level ", substitutability_level,
+                         ", deterministic best-in-pool; a spike at 1 = no trade-off to tailor on"),
+       x = "number of distinct alternatives", y = "reference products")
+```
+
+## Tailoring per dimension {#sec-tailoring-theory}
+
+The apples-to-apples test. **Within each reference product**, across the 1,771
+weight vectors, correlate the weight put on dimension *d* with the score on *d*
+of the alternative that gets selected. Then average over reference products,
+weighted by nothing in particular since every product sees the same 1,771
+vectors.
+
+Doing it within-product is what makes it deconfounded: it never compares across
+reference products, so it cannot pick up "certain products sit in pools with
+systematically different scores".
+
+```{r}
+#| label: tailoring-theoretical
+tailoring_grid <- cached(
+  paste0("tailoring_grid_", norm_profile, "_", LKEY, "_step", WEIGHT_GRID_STEP),
+  c(norm_profile, substitutability_level, WEIGHT_GRID_STEP, POOL_MODE, GATE_MODE), {
+  rw <- lapply(dim_cols, function(d) rank(GRID$W[, d]))   # Spearman = Pearson on ranks
+  names(rw) <- dim_cols
+  res <- sapply(dim_cols, function(d) {
+    nd <- select_mat_primary[, d]
+    vapply(seq_len(nrow(ALT)), function(i) {
+      y <- nd[ALT[i, ]]
+      if (length(unique(y)) < 2) return(NA_real_)
+      suppressWarnings(cor(rw[[d]], rank(y)))
+    }, numeric(1))
+  })
+  as.data.frame(res)
+})
+
+tailoring_summary <- data.frame(
+  dimension = dim_cols,
+  mean_within_product_spearman = round(sapply(dim_cols, function(d)
+    mean(tailoring_grid[[d]], na.rm = TRUE)), 3),
+  n_products_with_variation = sapply(dim_cols, function(d) sum(!is.na(tailoring_grid[[d]]))),
+  pct_products_positive = round(sapply(dim_cols, function(d)
+    100 * mean(tailoring_grid[[d]] > 0, na.rm = TRUE)), 1))
+save_out(tailoring_summary, "tailoring_per_dimension_theoretical.csv",
+         "Within-product Spearman between the weight on d and the selected alternative's score on d, over the weight grid.")
+show_tbl(tailoring_summary, caption = "Tailoring per dimension (theoretical weights, within-product Spearman).")
+```
+
+```{r}
+#| label: fig-tailoring-dist
+#| fig-cap: "Distribution of the within-product tailoring correlation. Mass to the right of zero means putting more weight on a dimension does steer the pick towards that dimension."
+#| fig-height: 4.5
+tailoring_grid %>% pivot_longer(everything(), names_to = "dimension", values_to = "rho") %>%
+  filter(!is.na(rho)) %>% mutate(dimension = factor(dimension, levels = dim_cols)) %>%
+  ggplot(aes(rho, dimension, fill = dimension)) +
+  geom_violin(alpha = .7, linewidth = .3) +
+  geom_boxplot(width = .13, outlier.size = .3, fill = "white", linewidth = .3) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+  scale_fill_brewer(palette = "Set2", guide = "none") +
+  labs(title = "Within-product tailoring correlation, per dimension",
+       x = "Spearman(weight on d, selected alternative's score on d)", y = NULL)
+```
+
+## A worked basket {#sec-basket}
+
+The metrics above are aggregate. This is the concrete version: 22 everyday
+products spanning most L1 categories, what the algorithm says about each item,
+and the alternatives it pushes most often across the whole weight grid. Items
+that clear the gate are shown too — "no change needed" is a legitimate and
+frequent output.
+
+```{r}
+#| label: basket-table
+basket_idx <- match(BASKET_TH, DB$TH_code)
+missing_th <- BASKET_TH[is.na(basket_idx)]
+if (length(missing_th)) cat("Not in this database, skipped:", paste(missing_th, collapse = ", "), "\n")
+basket_idx <- basket_idx[!is.na(basket_idx)]
+
+basket_status <- data.frame(
+  TH_code = DB$TH_code[basket_idx], product = DB$food_product[basket_idx],
+  subcategory = ref_cat_vec[basket_idx],
+  overall = round(overall_primary[basket_idx], 3),
+  E = round(select_mat_primary[basket_idx, "E"], 2),
+  AW = round(select_mat_primary[basket_idx, "AW"], 2),
+  SE = round(select_mat_primary[basket_idx, "SE"], 2),
+  H = round(select_mat_primary[basket_idx, "H"], 2),
+  status = ELIG[[LKEY]]$reason[basket_idx],
+  n_eligible_alternatives = lengths(ELIG[[LKEY]]$cand[basket_idx]))
+show_tbl(basket_status, caption = "The basket: objective score, dimension profile, and whether the gate fires.")
+```
+
+```{r}
+#| label: basket-alternatives
+srv_pos <- match(basket_idx, SRV)                 # position within the GRID matrices
+
+# For each (reference, rank) alternative: among the weight vectors that
+# actually selected it, which dimension carried the most weight most often?
+# Reported as a single dimension, or two joined by "/" when the runner-up is
+# within 60% of the leader's count (a genuinely close second, not noise).
+dominant_dims_for <- function(idx_wv) {
+  tab <- sort(table(GRID$dominant[idx_wv]), decreasing = TRUE)
+  if (length(tab) > 1 && tab[2] >= 0.6 * tab[1]) paste(names(tab)[1:2], collapse = " / ") else names(tab)[1]
+}
+
+basket_alts_long <- bind_rows(lapply(which(!is.na(srv_pos)), function(j) {
+  i <- basket_idx[j]; r <- ALT[srv_pos[j], ]
+  tb <- sort(table(r), decreasing = TRUE)[1:min(3, length(unique(r)))]
+  alt_ids <- as.integer(names(tb))
+  data.frame(
+    reference = DB$food_product[i], rank = seq_along(tb),
+    alt_product = DB$food_product[alt_ids],
+    pct_of_weightings = round(100 * as.numeric(tb) / length(r), 1),
+    alt_overall = round(overall_primary[alt_ids], 3),
+    overall_gain = round(overall_primary[alt_ids] - overall_primary[i], 3),
+    dominant_dims = sapply(alt_ids, function(a) dominant_dims_for(which(r == a))))
+}))
+save_out(basket_alts_long, "basket_example_alternatives_long.csv",
+         "Worked basket: top-3 alternatives per basket item across the 1,771-weight grid, with the dimension(s) most often dominant when each alternative is chosen (long format).")
+
+# Wide format: one row per basket item, one column block (product, % of
+# weightings, overall, gain, dominant dimension(s)) per alternative rank.
+basket_alts_wide <- basket_alts_long %>%
+  pivot_wider(id_cols = reference, names_from = rank,
+              values_from = c(alt_product, pct_of_weightings, alt_overall, overall_gain, dominant_dims),
+              names_glue = "alt{rank}_{.value}") %>%
+  select(reference,
+         alt1_alt_product, alt1_pct_of_weightings, alt1_alt_overall, alt1_overall_gain, alt1_dominant_dims,
+         alt2_alt_product, alt2_pct_of_weightings, alt2_alt_overall, alt2_overall_gain, alt2_dominant_dims,
+         alt3_alt_product, alt3_pct_of_weightings, alt3_alt_overall, alt3_overall_gain, alt3_dominant_dims) %>%
+  setNames(c("reference",
+             "Alt 1", "Alt 1: % of weightings", "Alt 1: overall", "Alt 1: gain", "Alt 1: dominant dim(s)",
+             "Alt 2", "Alt 2: % of weightings", "Alt 2: overall", "Alt 2: gain", "Alt 2: dominant dim(s)",
+             "Alt 3", "Alt 3: % of weightings", "Alt 3: overall", "Alt 3: gain", "Alt 3: dominant dim(s)"))
+save_out(basket_alts_wide, "basket_example_alternatives_wide.csv",
+         "Worked basket: top-3 alternatives per basket item, one column block per alternative (wide format), including each alternative's most often dominant dimension(s).")
+show_tbl(basket_alts_wide, caption = "The three alternatives each gated basket item is most often steered towards, side by side. 'dominant dim(s)' is the weight-vector dimension that was carrying the most weight, most often, among the draws that picked that specific alternative - i.e. the kind of shopper this swap is really for.")
+```
+
+```{r}
+#| label: fig-basket
+#| fig-cap: "Dimension profile of each gated basket item (grey) and its top 3 most frequently recommended alternatives (shades of green, darkest = most frequent, rank consistent across every panel). Exact % of weightings for each alternative is in the table above; none of the alternatives dominates on every dimension - that is the trade-off the weights arbitrate."
+#| fig-height: 22
+#| fig-width: 11
+basket_profile <- bind_rows(lapply(which(!is.na(srv_pos)), function(j) {
+  i <- basket_idx[j]; r <- ALT[srv_pos[j], ]
+  tb <- sort(table(r), decreasing = TRUE)[1:min(3, length(unique(r)))]
+  top3 <- as.integer(names(tb))
+  bind_rows(
+    data.frame(item = DB$food_product[i], role = "current product",
+               dimension = dim_cols, score = select_mat_primary[i, ]),
+    bind_rows(lapply(seq_along(top3), function(k) data.frame(
+      item = DB$food_product[i], role = paste0("alt #", k),
+      dimension = dim_cols, score = select_mat_primary[top3[k], ]))))
+})) %>% mutate(dimension = factor(dimension, levels = dim_cols),
+              role = factor(role, levels = c("current product", "alt #1", "alt #2", "alt #3")))
+
+alt_colours <- c("alt #1" = "#1b5e20", "alt #2" = "#4c9a4c", "alt #3" = "#a5d6a7")
+
+ggplot(basket_profile, aes(score, dimension, colour = role, group = role)) +
+  geom_line(orientation = "y", linewidth = .5, alpha = .6) +
+  geom_point(size = 2.2) +
+  facet_wrap(~ item, ncol = 3, labeller = label_wrap_gen(34)) +
+  scale_colour_manual(values = c(`current product` = "grey45", alt_colours), name = NULL) +
+  labs(title = "What the swap actually changes, dimension by dimension",
+       x = "normalized goodness (higher = better)", y = NULL) +
+  theme(legend.position = "top", legend.text = element_text(size = 8),
+        strip.text = element_text(size = 7))
+```
+
+# Performance under real consumer weights {#sec-consumers}
+
+::: {.callout-note appearance="simple"}
+**Run used:** `CONS` — the algorithm run once per survey respondent at level
+`r substitutability_level`, randomized with sharpness `r SHARPNESS`, gate and
+pool objective. Same battery of metrics as @sec-theoretical, so the two sections
+are directly comparable: the only thing that changes is where the weight vectors
+come from.
+:::
+
+```{r}
+#| label: consumer-flag
+if (!HAS_CONSUMERS)
+  cat("RawData.xlsx not found at", path_xlsx, "- this whole section is skipped.\n")
+```
+
+## Consumer weight vectors
+
+Survey points are given on five dimensions. The algorithm has four, so
+`points_social` and `points_economy` are averaged into a single socio-economic
+weight, then each respondent's four points are normalised to sum to 1.
+Respondents with a missing or all-zero answer are dropped (their weights would
+be undefined).
+
+```{r}
+#| label: consumer-weights
+#| eval: !expr HAS_CONSUMERS
+suppressPackageStartupMessages(library(readxl))
+sheets   <- excel_sheets(here(path_xlsx))
+five_pts <- c("points_ecology", "points_social", "points_animalwelfare",
+              "points_health", "points_economy")
+
+consumer_raw <- bind_rows(lapply(sheets, function(sh) {
+  d <- read_excel(here(path_xlsx), sheet = sh, skip = 1)   # row 1 is a title
+  names(d) <- tolower(trimws(names(d)))
+  d <- d[, five_pts, drop = FALSE]; d$country <- sh; d
+})) %>%
+  mutate(points_socioeconomic = (points_social + points_economy) / 2) %>%
+  select(points_ecology, points_socioeconomic, points_animalwelfare,
+         points_health, country) %>%
+  filter(if_all(starts_with("points_"), ~ !is.na(.)))
+
+rs <- rowSums(consumer_raw[, c("points_ecology", "points_socioeconomic",
+                               "points_animalwelfare", "points_health")])
+consumer_raw <- consumer_raw[rs > 0, ]; rs <- rs[rs > 0]
+
+consumer_weights <- consumer_raw %>%
+  mutate(consumer_id = row_number(),
+         E = points_ecology / rs, AW = points_animalwelfare / rs,
+         SE = points_socioeconomic / rs, H = points_health / rs) %>%
+  select(consumer_id, country, all_of(dim_cols))
+n_consumer <- nrow(consumer_weights)
+W_CONS     <- as.matrix(consumer_weights[, dim_cols])
+
+save_out(consumer_weights, "consumer_weights.csv",
+         "Per respondent: country and the four normalised dimension weights.")
+
+consumer_weights %>% mutate(max_w = pmax(E, AW, SE, H)) %>% group_by(country) %>%
+  summarise(n = n(), across(all_of(dim_cols), ~ round(mean(.x), 3)),
+            mean_max_weight = round(mean(max_w), 3), .groups = "drop") %>%
+  show_tbl(caption = "Mean respondent weights by country, plus how lopsided the average respondent is (0.25 = perfectly equal).")
+```
+
+Real respondents cluster far more tightly than the theoretical grid — country
+means sit close to 0.25 on every dimension. That narrow range mechanically
+attenuates every correlation in this section relative to @sec-theoretical, even
+where the tailoring machinery behaves identically. It is a property of the
+survey, not of the algorithm.
+
+## `CONS` — one algorithm run per respondent
+
+```{r}
+#| label: build-cons
+#| eval: !expr HAS_CONSUMERS
+CONS <- cached(
+  paste0("CONS_", norm_profile, "_", LKEY, "_n", n_consumer, "_sh", SHARPNESS),
+  c(norm_profile, substitutability_level, n_consumer, SHARPNESS, RANDOM_SEED,
+    POOL_MODE, GATE_THRESHOLD, file_fp(here(path_xlsx)), GATE_MODE), {
+  list(alt = pick_alternatives(ELIG[[LKEY]], select_mat_primary, W_CONS,
+                               randomize = TRUE, seed = RANDOM_SEED, sharpness = SHARPNESS),
+       served = SRV)
+})
+ALT_C <- CONS$alt[SRV, , drop = FALSE]        # n_served x n_consumer
+cat(sprintf("CONS: %d served products x %d respondents = %.1fM recommendations.\n",
+            nrow(ALT_C), ncol(ALT_C), length(ALT_C) / 1e6))
+```
+
+## Most-recommended alternatives per subcategory
+
+```{r}
+#| label: cons-top5
+#| eval: !expr HAS_CONSUMERS
+cons_top_alts <- data.frame(
+    SAFAD_L2_cat = rep(ref_cat_vec[SRV], times = ncol(ALT_C)),
+    alt_row_id   = as.vector(ALT_C)) %>%
+  count(SAFAD_L2_cat, alt_row_id, name = "times") %>%
+  group_by(SAFAD_L2_cat) %>% mutate(share = 100 * times / sum(times)) %>%
+  slice_max(times, n = 5, with_ties = FALSE) %>% mutate(rank = row_number()) %>% ungroup() %>%
+  transmute(SAFAD_L2_cat, rank, alt_TH_code = DB$TH_code[alt_row_id],
+            alt_product = DB$food_product[alt_row_id], times, share = round(share, 1))
+save_out(cons_top_alts, "top5_alternatives_by_subcategory_consumers.csv",
+         "Top-5 most-recommended alternatives per L2 subcategory across real respondents.")
+show_tbl(head(cons_top_alts, 40),
+         caption = "Top-5 alternatives per subcategory under real respondent weights (first 40 rows).")
+```
+
+### Most-recommended products overall
+
+Same collapse as @sec-top5's grid version, but counted across real respondent
+weight vectors instead of the theoretical grid.
+
+```{r}
+#| label: cons-top10-overall
+#| eval: !expr HAS_CONSUMERS
+cons_top10_overall <- data.frame(
+    SAFAD_L2_cat = rep(ref_cat_vec[SRV], times = ncol(ALT_C)),
+    alt_row_id   = as.vector(ALT_C)) %>%
+  count(alt_row_id, name = "times") %>%
+  mutate(share = round(100 * times / sum(times), 2)) %>%
+  slice_max(times, n = 10, with_ties = FALSE) %>%
+  mutate(rank = row_number()) %>%
+  transmute(rank, alt_TH_code = DB$TH_code[alt_row_id], alt_product = DB$food_product[alt_row_id],
+            alt_L1_cat = DB$SAFAD_L1_cat[alt_row_id], alt_L2_cat = DB$SAFAD_L2_cat[alt_row_id],
+            times, share)
+save_out(cons_top10_overall, "top10_alternatives_overall_consumers.csv",
+         "Top-10 most-recommended products catalogue-wide, across real respondents.")
+show_tbl(cons_top10_overall, caption = "Top-10 most-recommended products overall, across real respondent weights.")
+```
+
+## Before vs. after, by dimension and L1 category
+
+Built the same catalogue-wide way as @sec-beforeafter: unserved products
+contribute *after = before*, so every L1 category appears.
+
+```{r}
+#| label: fig-cons-before-after
+#| eval: !expr HAS_CONSUMERS
+#| fig-cap: "Mean normalized score before vs. after recommendation across all respondents, among products that actually receive one, by dimension and L1 category. Same served/not-served split as @sec-beforeafter, since the gate and pool are objective and therefore identical for every respondent - only the pick among eligible candidates differs by consumer."
+#| fig-height: 9
+#| fig-width: 13
+cons_before_after <- bind_rows(lapply(dim_cols, function(d) {
+  nd <- select_mat_primary[, d]
+  data.frame(L1 = REC$SAFAD_L1_cat[SRV], dimension = d,
+             before = nd[SRV],
+             after  = rowMeans(matrix(nd[ALT_C], nrow(ALT_C), ncol(ALT_C)), na.rm = TRUE))
+})) %>%
+  group_by(dimension, L1) %>%
+  summarise(before = mean(before, na.rm = TRUE), after = mean(after, na.rm = TRUE), .groups = "drop")
+
+# L1 categories with zero served products at all (identical set to section 5,
+# since gate/pool is objective): before = after = the category's own mean.
+cons_before_after <- bind_rows(lapply(dim_cols, function(d) {
+  zero_cov <- setdiff(unique(REC$SAFAD_L1_cat), unique(REC$SAFAD_L1_cat[SRV]))
+  if (!length(zero_cov)) return(NULL)
+  m <- select_mat_primary[, d]
+  data.frame(dimension = d, L1 = zero_cov,
+             before = sapply(zero_cov, function(cc) mean(m[REC$SAFAD_L1_cat == cc], na.rm = TRUE)))
+}), .id = NULL) %>% mutate(after = before) %>% bind_rows(cons_before_after)
+
+cons_before_after <- cons_before_after %>%
+  left_join(coverage_L1[, c("L1", "pct_recommended")], by = "L1") %>%
+  mutate(delta = after - before,
+         direction = dplyr::case_when(
+           pct_recommended == 0 ~ "no recommendations issued",
+           delta < -1e-9         ~ "decrease",
+           TRUE                  ~ "increase"),
+         dimension = factor(dimension, levels = dim_cols)) %>%
+  left_join(l1_order[, c("L1", "lab")], by = "L1") %>%
+  mutate(lab = factor(lab, levels = rev(l1_order$lab)))
+
+save_out(cons_before_after, "before_after_by_dimension_L1_consumers.csv",
+         "Mean normalized score before vs after recommendation per dimension x L1, among served products only, averaged over respondents.")
+
+ggplot(cons_before_after) +
+  geom_segment(data = ~ filter(.x, pct_recommended > 0),
+               aes(x = before, xend = after, y = lab, yend = lab,
+                   colour = direction, alpha = pct_recommended),
+               arrow = arrow(length = unit(0.10, "cm"), type = "closed"), linewidth = .6) +
+  geom_point(data = ~ filter(.x, pct_recommended == 0),
+             aes(before, lab), colour = "grey55", shape = 4, size = 1.6, stroke = .8) +
+  geom_point(aes(before, lab), colour = "grey35", size = .9) +
+  facet_wrap(~ dimension, nrow = 1) +
+  scale_colour_manual(values = c(decrease = "#c0392b", increase = "#2e8540",
+                                `no recommendations issued` = "grey55"), name = NULL) +
+  scale_alpha_continuous(range = c(0.25, 1), limits = c(0, 100), name = "% of category served") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+  labs(title = "Mean score before vs. after among SERVED products, averaged over real respondents",
+       subtitle = "Grey x = category has zero recommendations. Fainter arrow = based on a smaller share of the category.",
+       x = "normalized goodness (higher = better)", y = NULL) +
+  theme(legend.position = "top", axis.text.y = element_text(size = 6.5))
+```
+
+### The same figure, averaged over the whole catalogue instead
+
+Same caveat as @sec-beforeafter: every product contributes here, so a
+category's visible movement is diluted in proportion to `1 - pct_recommended`.
+
+```{r}
+#| label: fig-cons-before-after-wholecat
+#| eval: !expr HAS_CONSUMERS
+#| fig-cap: "The same comparison, averaged over the WHOLE catalogue rather than served products only. Unserved products contribute after = before."
+#| fig-height: 9
+#| fig-width: 13
+cons_before_after_wholecat <- bind_rows(lapply(dim_cols, function(d) {
+  nd <- select_mat_primary[, d]
+  after <- nd                                    # default: unchanged (unserved)
+  after[SRV] <- rowMeans(matrix(nd[ALT_C], nrow(ALT_C), ncol(ALT_C)), na.rm = TRUE)
+  data.frame(L1 = REC$SAFAD_L1_cat, dimension = d, before = nd, after = after)
+})) %>%
+  group_by(dimension, L1) %>%
+  summarise(before = mean(before, na.rm = TRUE), after = mean(after, na.rm = TRUE), .groups = "drop") %>%
+  mutate(delta = after - before,
+         direction = ifelse(delta < -1e-9, "decrease", "increase or unchanged"),
+         dimension = factor(dimension, levels = dim_cols)) %>%
+  left_join(l1_order[, c("L1", "lab")], by = "L1") %>%
+  mutate(lab = factor(lab, levels = rev(l1_order$lab)))
+
+save_out(cons_before_after_wholecat, "before_after_by_dimension_L1_consumers_whole_catalogue.csv",
+         "Mean normalized score before vs after recommendation per dimension x L1, over the WHOLE catalogue, averaged over respondents.")
+
+ggplot(cons_before_after_wholecat) +
+  geom_segment(aes(x = before, xend = after, y = lab, yend = lab, colour = direction),
+               arrow = arrow(length = unit(0.10, "cm"), type = "closed"), linewidth = .5) +
+  geom_point(aes(before, lab), colour = "grey35", size = 1.1) +
+  facet_wrap(~ dimension, nrow = 1) +
+  scale_colour_manual(values = c(decrease = "#c0392b", `increase or unchanged` = "#2e8540"), name = NULL) +
+  labs(title = "Mean score before vs. after, WHOLE CATALOGUE, averaged over real respondents",
+       subtitle = "Every product contributes; unserved products have after = before by construction.",
+       x = "normalized goodness (higher = better)", y = NULL) +
+  theme(legend.position = "top", axis.text.y = element_text(size = 6.5))
+```
+
+## Gain by dominant dimension
+
+```{r}
+#| label: cons-gain-heatmap
+#| eval: !expr HAS_CONSUMERS
+cons_dominant <- dim_cols[max.col(W_CONS, ties.method = "first")]
+cons_gain <- sapply(dim_cols, function(d) {
+  nd <- select_mat_primary[, d]
+  colMeans(matrix(nd[ALT_C], nrow(ALT_C), ncol(ALT_C)) - nd[SRV], na.rm = TRUE)
+})
+cons_gain_by_dom <- as.data.frame(cons_gain) %>% mutate(dominant_dim = cons_dominant) %>%
+  group_by(dominant_dim) %>%
+  summarise(n_consumers = n(), across(all_of(dim_cols), ~ round(mean(.x), 3)), .groups = "drop") %>%
+  mutate(dominant_dim = factor(dominant_dim, levels = dim_cols)) %>% arrange(dominant_dim)
+save_out(cons_gain_by_dom, "gain_by_dominant_dimension_consumers.csv",
+         "Mean normalized gain per dimension by respondents' dominant dimension.")
+show_tbl(cons_gain_by_dom, caption = "Mean normalized gain per dimension, grouped by each respondent's highest-weighted dimension.")
+```
+
+```{r}
+#| label: fig-cons-gain-heatmap
+#| eval: !expr HAS_CONSUMERS
+#| fig-cap: "Mean gain delivered ON each dimension, BY respondents' dominant dimension."
+#| fig-height: 5
+#| fig-width: 7
+cons_gain_by_dom %>% select(dominant_dim, all_of(dim_cols)) %>%
+  pivot_longer(-dominant_dim, names_to = "gain_dim", values_to = "val") %>%
+  mutate(gain_dim = factor(gain_dim, levels = dim_cols)) %>%
+  ggplot(aes(gain_dim, dominant_dim, fill = val)) +
+  geom_tile(colour = "white") + geom_text(aes(label = sprintf("%.3f", val)), size = 3.3) +
+  scale_fill_gradient(low = "#f7fbff", high = "#08519c", name = "mean gain") +
+  labs(title = "Normalized gain by dominant dimension (real respondents)",
+       x = "gain on dimension", y = "respondent's dominant dimension")
+```
+
+## Reduction in raw impact
+
+Same corrected metric as @sec-relgain: offset-consistent median fold change for
+E/AW/SE, FNS points and grade improvement for H.
+
+```{r}
+#| label: cons-relgain
+#| eval: !expr HAS_CONSUMERS
+cons_rel <- local({
+  out <- list()
+  for (d in c("E", "AW", "SE")) {
+    r <- RAW_IMPACT[[d]]; o <- RAW_OFFSET[[d]]
+    fold <- (matrix(r[ALT_C], nrow(ALT_C), ncol(ALT_C)) + o) / (r[SRV] + o)
+    out[[paste0("pct_cut_", d)]] <- 100 * (1 - exp(colMeans(log(fold), na.rm = TRUE)))
+  }
+  hs <- RAW_IMPACT[["H"]]
+  out[["delta_H_points"]] <- colMeans(hs[SRV] - matrix(hs[ALT_C], nrow(ALT_C), ncol(ALT_C)),
+                                      na.rm = TRUE)
+  out[["pct_H_grade_up"]] <- 100 * colMeans(
+    matrix(grade_num[ALT_C], nrow(ALT_C), ncol(ALT_C)) - grade_num[SRV] > 0, na.rm = TRUE)
+  as.data.frame(out)
+})
+cons_rel_by_dom <- cons_rel %>% mutate(dominant_dim = cons_dominant) %>%
+  group_by(dominant_dim) %>%
+  summarise(n_consumers = n(),
+            across(starts_with("pct_cut_"), ~ round(mean(.x, na.rm = TRUE), 1)),
+            delta_H_points = round(mean(delta_H_points, na.rm = TRUE), 2),
+            pct_H_grade_up = round(mean(pct_H_grade_up, na.rm = TRUE), 1), .groups = "drop") %>%
+  mutate(dominant_dim = factor(dominant_dim, levels = dim_cols)) %>% arrange(dominant_dim)
+save_out(cons_rel_by_dom, "raw_impact_reduction_by_dominant_dimension_consumers.csv",
+         "Median % raw-impact reduction and FNS-point gain by respondents' dominant dimension.")
+show_tbl(cons_rel_by_dom, caption = "Corrected raw-impact effect by respondents' dominant dimension.")
+```
+
+## Variety and tailoring
+
+```{r}
+#| label: fig-cons-distinct
+#| eval: !expr HAS_CONSUMERS
+#| fig-cap: "Distinct alternatives per reference product across respondents. Wider than the theoretical grid because the selection here is randomized (sharpness 15) rather than deterministic."
+#| fig-height: 5
+cons_distinct <- data.frame(
+  row_id = SRV, food_product = DB$food_product[SRV], SAFAD_L2_cat = ref_cat_vec[SRV],
+  n_distinct_alts = apply(ALT_C, 1, function(r) length(unique(r))),
+  top_alt_share   = apply(ALT_C, 1, function(r) max(table(r)) / length(r)))
+save_out(cons_distinct, "distinct_alternatives_per_product_consumers.csv",
+         "Per served product: distinct alternatives across respondents.")
+cat(sprintf("Mean distinct alternatives per product: %.2f | median top-alt share: %.1f%% | %.1f%% get exactly one.\n",
+            mean(cons_distinct$n_distinct_alts), 100 * median(cons_distinct$top_alt_share),
+            100 * mean(cons_distinct$n_distinct_alts == 1)))
+ggplot(cons_distinct, aes(n_distinct_alts)) +
+  geom_histogram(binwidth = 1, boundary = -0.5, fill = "#8d6e97", colour = "white") +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  labs(title = "Distinct alternatives per reference product across real respondents",
+       x = "number of distinct alternatives", y = "reference products")
+```
+
+```{r}
+#| label: cons-tailoring
+#| eval: !expr HAS_CONSUMERS
+# (i) WITHIN-PRODUCT: correlate, for one reference product, each respondent's
+#     weight on d against the score on d of the alternative they were shown.
+#     Deconfounded and directly comparable to section 5.
+# (ii) POOLED: the same correlation over all (product, respondent) pairs at once.
+#     Kept only as a contrast -- it mixes in between-product differences, so it
+#     is not a clean measure of tailoring.
+cons_tailoring <- cached(
+  paste0("cons_tailoring_", norm_profile, "_", LKEY, "_n", n_consumer),
+  c(norm_profile, substitutability_level, n_consumer, SHARPNESS, RANDOM_SEED), {
+  rw <- lapply(dim_cols, function(d) rank(W_CONS[, d])); names(rw) <- dim_cols
+  as.data.frame(sapply(dim_cols, function(d) {
+    nd <- select_mat_primary[, d]
+    vapply(seq_len(nrow(ALT_C)), function(i) {
+      y <- nd[ALT_C[i, ]]
+      if (length(unique(y)) < 2) return(NA_real_)
+      suppressWarnings(cor(rw[[d]], rank(y)))
+    }, numeric(1))
+  }))
+})
+pooled_tailoring <- sapply(dim_cols, function(d) {
+  nd <- select_mat_primary[, d]
+  suppressWarnings(cor(rep(W_CONS[, d], each = nrow(ALT_C)),
+                       as.vector(matrix(nd[ALT_C], nrow(ALT_C), ncol(ALT_C))),
+                       method = "spearman", use = "pairwise.complete.obs"))
+})
+cons_tailoring_summary <- data.frame(
+  dimension = dim_cols,
+  within_product = round(sapply(dim_cols, function(d) mean(cons_tailoring[[d]], na.rm = TRUE)), 3),
+  pooled_confounded = round(as.numeric(pooled_tailoring), 3),
+  n_products_with_variation = sapply(dim_cols, function(d) sum(!is.na(cons_tailoring[[d]]))),
+  theoretical_grid_reference = tailoring_summary$mean_within_product_spearman)
+save_out(cons_tailoring_summary, "tailoring_per_dimension_consumers.csv",
+         "Within-product and pooled tailoring correlations for real respondents, next to the theoretical-grid value.")
+show_tbl(cons_tailoring_summary,
+         caption = "Tailoring per dimension. Compare 'within_product' to the theoretical-grid column: real weights span a much narrower range, which attenuates the correlation even when the mechanism is unchanged.")
+```
+
+## Behaviour by country
+
+```{r}
+#| label: cons-by-country
+#| eval: !expr HAS_CONSUMERS
+by_country <- local({
+  gains <- colMeans(matrix(overall_primary[ALT_C], nrow(ALT_C), ncol(ALT_C)) - overall_primary[SRV])
+  ndist <- apply(ALT_C, 2, function(cc) length(unique(cc)))
+  data.frame(country = consumer_weights$country, mean_gain = gains, distinct_alts = ndist) %>%
+    group_by(country) %>%
+    summarise(n_respondents = n(),
+              mean_objective_gain = round(mean(mean_gain), 4),
+              mean_distinct_products_served = round(mean(distinct_alts), 1), .groups = "drop")
+})
+save_out(by_country, "algorithm_by_country.csv",
+         "Per country: mean objective gain and how many distinct products get served.")
+show_tbl(by_country, caption = "Algorithm behaviour by country. Coverage is identical everywhere by construction, since the gate and pool are objective; only the picks differ.")
+```
+
+# Diagnostics for the primary normalization profile {#sec-normdiag}
+
+::: {.callout-note appearance="simple"}
+**Run used:** none — these are properties of the normalized scores under
+`r norm_profile` (and `initial` for contrast), before any recommendation.
+:::
+
+## Raw vs. normalized, AW and SE
+
+E and H are monotone linear rescalings, so only the two logged dimensions are
+worth plotting: this is where the long right tail gets compressed.
+
+```{r}
+#| label: fig-raw-vs-norm
+#| fig-cap: "Raw impact mapped to normalized goodness for the two logged dimensions under the primary profile."
+#| fig-height: 4.5
+bind_rows(lapply(c("AW", "SE"), function(d) data.frame(
+  dimension = d, raw = RAW_IMPACT[[d]], norm = select_mat_primary[, d]))) %>%
+  ggplot(aes(raw, norm)) + geom_point(size = .5, alpha = .35) +
+  facet_wrap(~ dimension, scales = "free_x") +
+  labs(title = paste0("Raw impact to normalized goodness (", norm_profile, ")"),
+       subtitle = "log(x + offset) then percentile min-max: the long right tail is compressed",
+       x = "raw impact (higher = worse)", y = "normalized goodness (higher = better)")
+```
+
+## Normalized scores by category
+
+```{r}
+#| label: fig-boxplots-by-cat
+#| fig-cap: "Normalized scores by L1 category under `initial` (top) and the primary profile (bottom). Watch AW and SE lift off the floor under the log profile."
+#| fig-height: 11
+#| fig-width: 15
+make_dim_boxplot <- function(m, ttl) {
+  data.frame(L1 = l1cat, Overall = as.numeric(m %*% ALGO_WEIGHTS),
+             E = m[, "E"], AW = m[, "AW"], SE = m[, "SE"], H = m[, "H"]) %>%
+    pivot_longer(-L1, names_to = "dimension", values_to = "score") %>% filter(!is.na(score)) %>%
+    mutate(dimension = factor(dimension, levels = c("Overall", dim_cols))) %>%
+    ggplot(aes(dimension, score, fill = dimension)) +
+    geom_boxplot(outlier.size = .35, alpha = .85, linewidth = .3) +
+    facet_wrap(~ L1) +
+    labs(title = paste0("Normalized scores by L1 category - ", ttl), x = NULL,
+         y = "normalized score (higher = better)") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6),
+          legend.position = "none", strip.text = element_text(size = 6.5))
+}
+print(make_dim_boxplot(NORM[["initial"]], "initial"))
+print(make_dim_boxplot(NORM[[norm_profile]], norm_profile))
+```
+
+The layout above groups by category, which is best for comparing dimensions
+*within* one category. The version below mirrors @sec-raw's raw-impact
+figure instead — one panel per dimension, category on the y-axis — which is
+better for comparing one dimension *across* every category at a glance.
+Primary profile only, shown on a shared 0-1 axis since (unlike the raw
+figure) all four dimensions are already on the same normalized scale, so
+there's no need for `free_x`.
+
+```{r}
+#| label: fig-norm-boxplots-by-dim
+#| fig-cap: "Normalized scores per L1 food category, one panel per dimension, primary profile. Same layout as the raw-impact figure in the raw diagnostics, but all four panels now share the same 0-1 axis since the dimensions are already on a common scale."
+#| fig-height: 9
+norm_long <- data.frame(L1 = l1cat, select_mat_primary) %>%
+  pivot_longer(-L1, names_to = "dimension", values_to = "score") %>% filter(!is.na(score)) %>%
+  mutate(dimension = factor(dimension, levels = dim_cols),
+         L1 = factor(L1, levels = rev(sort(unique(L1)))))
+ggplot(norm_long, aes(score, L1, fill = dimension)) +
+  geom_boxplot(outlier.size = .35, alpha = .8, linewidth = .3) +
+  facet_wrap(~ dimension, nrow = 1) +
+  scale_fill_brewer(palette = "Set2", guide = "none") +
+  coord_cartesian(xlim = c(0, 1)) +
+  labs(title = paste0("Normalized scores by L1 category and dimension"), # (", norm_profile, ")"),
+       #subtitle = "Shared 0-1 axis across all four panels - directly comparable to each other, unlike the raw-impact version",
+       x = "Normalized score (higher = better)", y = NULL) +
+  theme(axis.text.y = element_text(size = 7))
+```
+
+## Normalized dimension pairs
+
+```{r}
+#| label: fig-norm-pairs
+#| fig-cap: "All six normalized dimension pairs under the primary profile (goodness scale, higher = better)."
+#| fig-height: 7
+bind_rows(lapply(prs, function(p) data.frame(
+  pair = paste0("x = ", p[1], "   |   y = ", p[2]),
+  x = select_mat_primary[, p[1]], y = select_mat_primary[, p[2]]))) %>%
+  ggplot(aes(x, y)) + geom_point(size = .4, alpha = .25) + facet_wrap(~ pair) +
+  labs(title = paste0("Normalized dimension pairs (", norm_profile, ")"),
+       x = "x-axis dimension (see facet header)", y = "y-axis dimension (see facet header)")
+```
+
+## Quartile grid: what do the other dimensions look like?
+
+Column = the dimension used to split products into quartiles; row = which
+quartile. Orange is that dimension's own range; blue is the other three
+dimensions and the overall score, **for exactly the same products**. This shows
+the trade-off structure as it is actually distributed, rather than as a single
+correlation coefficient.
+
+```{r}
+#| label: fig-quartile-grid
+#| fig-cap: "Dimension trade-offs by quartile under the primary profile."
+#| fig-height: 10
+#| fig-width: 12
+ov_q <- as.numeric(select_mat_primary %*% ALGO_WEIGHTS)
+bind_rows(lapply(dim_cols, function(ref_d) {
+  qs <- factor(dplyr::ntile(select_mat_primary[, ref_d], 4), levels = 1:4,
+               labels = c("Q1 (worst 25%)", "Q2", "Q3", "Q4 (best 25%)"))
+  bind_rows(lapply(c(dim_cols, "Overall"), function(show_d) data.frame(
+    ref_dim = ref_d, quartile = qs, shown = show_d,
+    score = if (show_d == "Overall") ov_q else select_mat_primary[, show_d])))
+})) %>%
+  filter(!is.na(quartile), !is.na(score)) %>%
+  mutate(ref_dim = factor(ref_dim, levels = dim_cols),
+         shown   = factor(shown, levels = c(dim_cols, "Overall")),
+         is_ref  = shown == as.character(ref_dim)) %>%
+  ggplot(aes(shown, score, fill = is_ref)) +
+  geom_boxplot(outlier.size = .3, alpha = .85, linewidth = .3) +
+  facet_grid(quartile ~ ref_dim,
+             labeller = labeller(ref_dim = function(x) paste0("split on ", x))) +
+  scale_fill_manual(values = c(`TRUE` = "#d95f02", `FALSE` = "#7fc7d9"),
+                    labels = c(`TRUE` = "the splitting dimension", `FALSE` = "other dimensions"),
+                    name = NULL) +
+  labs(title = paste0("Dimension trade-offs by quartile (", norm_profile, ")"),
+       x = NULL, y = "normalized score (higher = better)") +
+  theme(legend.position = "top")
+```
+
+# Comparing normalization profiles {#sec-normcompare}
+
+::: {.callout-note appearance="simple"}
+**Run used:** every profile is put through the same objective-gate algorithm at
+level `r substitutability_level`, deterministic best-in-pool, so differences
+reflect the normalization and nothing else.
+:::
+
+::: {.callout-tip appearance="simple"}
+**Choosing which profiles to compare.** Quarto renders to static HTML, so a live
+"include/exclude" button would need Shiny. The selector is therefore the
+`PROFILES_TO_COMPARE` parameter in @sec-parameters — set it to `NULL` for all
+profiles, or to e.g. `c("initial", "log_tails", "log_tails_TL")` to restrict.
+Where `kableExtra`/`DT` is installed the tables below are also scrollable and
+sortable, which covers most of the "hide what I don't need" use case.
+:::
+
+```{r}
+#| label: profile-selection
+PROFILES <- if (is.null(PROFILES_TO_COMPARE)) names(norm_profiles) else
+  intersect(PROFILES_TO_COMPARE, names(norm_profiles))
+cat("Profiles compared:", paste(PROFILES, collapse = ", "), "\n")
+```
+
+## Correlations between normalized dimensions
+
+Spearman is invariant to any monotone per-dimension transform, so it is
+identical for every bounded profile and equal to the raw Spearman from
+@sec-raw. It is reported anyway, as requested, because seeing it constant is the
+cleanest evidence that the profiles differ in *magnitude* handling and not in
+*ordering*. Pearson is what the log actually moves.
+
+```{r}
+#| label: profile-correlations
+profile_corr <- bind_rows(lapply(PROFILES, function(pn) {
+  m <- NORM[[pn]]
+  bind_rows(lapply(prs, function(p) data.frame(
+    profile = pn, pair = paste0(p[1], "-", p[2]),
+    pearson  = round(cor(m[, p[1]], m[, p[2]], use = "pairwise.complete.obs"), 3),
+    spearman = round(cor(m[, p[1]], m[, p[2]], method = "spearman",
+                         use = "pairwise.complete.obs"), 3))))
+}))
+save_out(profile_corr, "normalized_dimension_correlations_by_profile.csv",
+         "Pearson and Spearman correlations between normalized dimensions, per profile.")
+profile_corr %>% pivot_wider(names_from = pair, values_from = c(pearson, spearman)) %>%
+  show_tbl(caption = "Correlations between normalized dimensions, by profile. The spearman_* block is constant across bounded profiles by construction.")
+```
+
+## Skewness of the normalized scores
+
+Raw skewness (@sec-raw) told you which dimensions needed a transform. This is
+the same statistic computed *after* each profile's transform, so it shows how
+much skew survives. `rank` should read almost exactly 0 on every dimension by
+construction (a rank is, up to ties, uniformly distributed). `log_tails` should
+show AW and SE much closer to 0 than `initial`, while E and H barely move,
+since only AW and SE are logged in that profile.
+
+```{r}
+#| label: profile-skewness
+profile_skew <- bind_rows(lapply(PROFILES, function(pn) {
+  m <- NORM[[pn]]
+  data.frame(profile = pn,
+             skew_E  = round(skewness(m[, "E"]),  3), skew_AW = round(skewness(m[, "AW"]), 3),
+             skew_SE = round(skewness(m[, "SE"]), 3), skew_H  = round(skewness(m[, "H"]),  3),
+             skew_overall = round(skewness(OVERALL_BY_PROFILE[[pn]]), 3), row.names = NULL)
+}))
+save_out(profile_skew, "normalized_skewness_by_profile.csv",
+         "Skewness of each normalized dimension and of the equal-weight overall score, per profile.")
+show_tbl(profile_skew, caption = "Skewness of the normalized scores, per profile. Compare to the raw-scale skewness in the raw diagnostics: initial should still show a positive AW/SE tail; log_tails should not; rank should be near 0 everywhere.")
+```
+
+### Why these numbers look so different from the raw skewness in @sec-raw
+
+They shouldn't be compared directly — two things change between raw impact and
+this table, and only one of them is about the transform actually working.
+
+1. **The sign flips.** Normalization turns "impact" (higher = worse) into
+   "goodness" (higher = better). Skewness of `-X` is exactly `-1` times the
+   skewness of `X`, so the sign of every number above is expected to be the
+   mirror image of the raw table, regardless of what the transform did.
+   `zscore` makes this exact: it only centres and rescales (which never
+   changes skewness) before flipping the sign, so its skewness here should
+   equal *minus* the raw skewness almost exactly. Checked: raw AW skewness is
+   10.546 and `zscore`'s is -10.362; raw SE is 5.438 against -5.438 for
+   `zscore` — matching to three decimals once you flip the sign.
+2. **The percentile clamp trims the tail further.** `minmax_p`/`log_minmax_p`
+   clip at the 1st/99th percentile before flipping, which chops off exactly
+   the most extreme contributors to the third moment — so the final number is
+   usually *smaller in magnitude* than the sign-flip alone would predict, not
+   larger. There's no boundary-pile-up inflation here.
+
+Neither of those tells you whether the **log step itself** reduced the skew,
+which is the actual question a log transform is supposed to answer. To check
+that in a way that's directly comparable to @sec-raw (same sign, same units,
+before either the sign flip or the percentile clamp), the next table measures
+skewness right after `log(raw + offset)` — for dimensions a profile doesn't
+log, this is identical to the raw-skewness table, since there's nothing else
+to measure before the rescale.
+
+```{r}
+#| label: profile-skewness-prerescale
+# Skewness measured right after the log step (if the profile has one) and
+# BEFORE the percentile min-max / clamp / sign-flip. Same sign convention as
+# @sec-raw (higher = worse), so this is the number directly comparable to it -
+# it isolates "did logging fix the skew" from the two cosmetic effects above.
+pre_rescale_skew <- function(raw, method) {
+  if (method == "log_minmax_p") {
+    o <- if (LOG_OFFSET_MODE == "relative_median") LOG_OFFSET_VALUE * median(raw[raw > 0], na.rm = TRUE)
+         else LOG_OFFSET_VALUE
+    return(skewness(log(pmax(raw, 0) + o)))
+  }
+  skewness(raw)   # minmax_p, minmax_whisker, zscore, rank: nothing happens before the rescale step
+}
+
+profile_skew_prerescale <- bind_rows(lapply(PROFILES, function(pn) {
+  p <- norm_profiles[[pn]]
+  data.frame(profile = pn,
+             skew_E  = round(pre_rescale_skew(RAW_IMPACT$E,  p$E),  3),
+             skew_AW = round(pre_rescale_skew(RAW_IMPACT$AW, p$AW), 3),
+             skew_SE = round(pre_rescale_skew(RAW_IMPACT$SE, p$SE), 3),
+             skew_H  = if (p$H == "letters") NA_real_ else round(pre_rescale_skew(RAW_IMPACT$H, p$H), 3),
+             row.names = NULL)
+}))
+save_out(profile_skew_prerescale, "normalized_skewness_prerescale_by_profile.csv",
+         "Skewness right after the log step and before the percentile min-max/clamp/sign-flip - directly comparable to the raw-impact skewness in the raw diagnostics.")
+show_tbl(profile_skew_prerescale, caption = "Skewness comparable to the raw-impact table: same sign convention, measured before the rescale step. skew_H is NA for profiles using the discrete Nutri-Score letter mapping, since skewness of a 5-level ordinal variable isn't comparable to a continuous one.")
+```
+
+This is where the log transform's actual effect on AW and SE shows up: raw AW
+skewness is **10.546**; after `log(raw + offset)` it drops to **1.716** (an
+84% reduction). Raw SE skewness is **5.438**, dropping to **1.947** (64%) after
+the same treatment. That is the real diagnostic for "did logging work" — the
+final flipped-and-clamped table above is answering a related but different
+question (how skewed is the score the algorithm actually uses), and both are
+legitimate, they just aren't the same measurement.
+
+## Distribution shift across profiles
+
+The tables above summarise *where* each profile puts its mean and its spread;
+this shows the actual shape. `initial` is the un-logged baseline, `log_tails` is
+the primary profile, `rank` is the fully de-skewed extreme — together they
+bracket the range of behaviour the other profiles fall between.
+
+```{r}
+#| label: fig-profile-distributions
+#| fig-cap: "Distribution of each normalized dimension (and the equal-weight overall score) under three profiles. All three are on the same 0-1 goodness scale, so the panels are directly comparable."
+#| fig-height: 13
+#| fig-width: 8
+dist_profiles <- c("initial", "log_tails", "rank")
+dist_long <- bind_rows(lapply(intersect(dist_profiles, names(NORM)), function(pn) {
+  bind_rows(
+    as.data.frame(NORM[[pn]]) %>% mutate(profile = pn) %>%
+      pivot_longer(all_of(dim_cols), names_to = "dimension", values_to = "score"),
+    data.frame(profile = pn, dimension = "Overall", score = OVERALL_BY_PROFILE[[pn]]))
+})) %>% mutate(dimension = factor(dimension, levels = c(dim_cols, "Overall")),
+              profile = factor(profile, levels = dist_profiles))
+
+ggplot(dist_long, aes(score, colour = profile, fill = profile)) +
+  geom_density(alpha = .15, linewidth = .7, na.rm = TRUE) +
+  facet_wrap(~ dimension, ncol = 1, scales = "free_y") +
+  scale_colour_brewer(palette = "Dark2", name = NULL) +
+  scale_fill_brewer(palette = "Dark2", name = NULL) +
+  labs(title = "Normalized-score distributions: initial vs. log_tails vs. rank",
+       x = "normalized goodness (higher = better)", y = "density") +
+  theme(legend.position = "top", strip.text = element_text(size = 9))
+```
+
+::: {.callout-note appearance="simple"}
+This is also the picture behind the "why does almost nothing move under
+log_tails" question in @sec-beforeafter: watch the AW panel above — under
+`log_tails` roughly half the catalogue is bunched at the very top of the scale
+(the zero-AW-impact plant products), while under `rank` the same dimension is
+close to uniform across the whole range by construction.
+:::
+
+## Signal retention, spread, and magnitude preservation
+
+Three complementary questions about what a normalization keeps:
+
+* **Signal retention** ($\eta^2$): how much of the variance in normalized
+  goodness still distinguishes one subcategory from another. Higher = the
+  transform did not squash categories together.
+* **Spread and `spread_CV`**: the standard deviation of subcategory means per
+  dimension, and the coefficient of variation across the four. `spread_CV` near
+  0 means each dimension gets an equal say under equal weights; high means some
+  dimensions are effectively muted.
+* **Gap structure**: does the normalized distance between two subcategories track
+  their *linear* raw distance or their *multiplicative* (log) one? AW and SE come
+  from multiplicative source methodologies (PAALA is a product of factors, PSILCA
+  characterisation factors are powers of ten), so for those two the log profiles
+  should track the log gap better. E and H are additive constructs, so linear
+  min-max should track the linear gap at least as well.
+
+```{r}
+#| label: profile-retention
+norm_diag <- bind_rows(lapply(PROFILES, function(pn) {
+  m <- NORM[[pn]]
+  sub_sd <- sapply(dim_cols, function(d) sd(tapply(m[, d], subcat, mean, na.rm = TRUE), na.rm = TRUE))
+  osens <- sapply(dim_cols, function(d) {
+    meth <- norm_profiles[[pn]][[d]]
+    if (meth == "letters") return(0)
+    cn <- paste0(d, "_SS"); base <- norm_one_dim(DB[[cn]], meth, l1cat)
+    x2 <- DB[[cn]]; x2[which.max(x2)] <- NA
+    mean(abs(base - norm_one_dim(x2, meth, l1cat)), na.rm = TRUE)
+  })
+  data.frame(profile = pn,
+             sd_E = round(sub_sd["E"], 3), sd_AW = round(sub_sd["AW"], 3),
+             sd_SE = round(sub_sd["SE"], 3), sd_H = round(sub_sd["H"], 3),
+             spread_CV = round(sd(sub_sd) / mean(sub_sd), 3),
+             outlier_sens = round(mean(osens), 4),
+             eta2_E  = round(eta_sq(m[, "E"],  subcat), 3),
+             eta2_AW = round(eta_sq(m[, "AW"], subcat), 3),
+             eta2_SE = round(eta_sq(m[, "SE"], subcat), 3),
+             eta2_H  = round(eta_sq(m[, "H"],  subcat), 3), row.names = NULL)
+}))
+save_out(norm_diag, "normalization_spread_and_signal_retention.csv",
+         "Per profile: subcategory-level spread per dimension, cross-dimension homogeneity, outlier sensitivity, and eta-squared signal retention.")
+show_tbl(norm_diag, caption = "Spread, cross-dimension homogeneity (spread_CV) and between-category signal retention (eta^2).")
+```
+
+```{r}
+#| label: profile-gap-structure
+gap_tbl <- bind_rows(lapply(PROFILES, function(pn) {
+  m <- NORM[[pn]]
+  bind_rows(lapply(dim_cols, function(d) {
+    raw <- tapply(RAW_IMPACT[[d]], subcat, mean, na.rm = TRUE)
+    g   <- tapply(m[, d], subcat, mean, na.rm = TRUE)
+    ok  <- !is.na(raw) & !is.na(g); raw <- raw[ok]; g <- g[ok]
+    o   <- 0.01 * max(raw[raw > 0], na.rm = TRUE)
+    ij  <- combn(length(raw), 2)
+    ng  <- abs(g[ij[1, ]] - g[ij[2, ]])
+    data.frame(profile = pn, dimension = d,
+      r_with_linear_gap = round(suppressWarnings(cor(ng,
+        abs(raw[ij[1, ]] - raw[ij[2, ]]), method = "spearman")), 3),
+      r_with_log_gap = round(suppressWarnings(cor(ng,
+        abs(log(raw[ij[1, ]] + o) - log(raw[ij[2, ]] + o)), method = "spearman")), 3))
+  }))
+}))
+save_out(gap_tbl, "gap_structure_preservation.csv",
+         "Spearman of the normalized subcategory gap against the linear and the log raw gap, per profile x dimension.")
+gap_tbl %>% pivot_wider(names_from = dimension,
+                        values_from = c(r_with_linear_gap, r_with_log_gap)) %>%
+  show_tbl(caption = "Gap-structure preservation. For AW and SE the chosen profile should track the log gap more closely than the linear one.")
+```
+
+## Construct validity on known pairs
+
+Does the normalized gap between two products you have a strong prior about look
+sensible, or does it just echo an accident of raw units? The sign should be
+stable across profiles; the *size* is what discriminates them.
+
+```{r}
+#| label: construct-validity
+find_th <- function(code) { i <- which(DB$TH_code == code); if (!length(i)) NA_integer_ else i[1] }
+domain_pairs <- list(
+  list(dim = "E",  a = "TH1533", b = "TH1705", note = "E: beef vs chicken"),
+  list(dim = "AW", a = "TH1705", b = "TH1533", note = "AW: chicken vs beef"),
+  list(dim = "SE", a = "TH1404", b = "TH1401", note = "SE: cashew vs almond"))
+cv_tbl <- bind_rows(lapply(domain_pairs, function(dp) {
+  ia <- find_th(dp$a); ib <- find_th(dp$b)
+  if (is.na(ia) || is.na(ib)) return(NULL)
+  cbind(data.frame(pair = dp$note, a = DB$food_product[ia], b = DB$food_product[ib]),
+        as.data.frame(lapply(setNames(PROFILES, PROFILES), function(pn)
+          round(NORM[[pn]][ia, dp$dim] - NORM[[pn]][ib, dp$dim], 3))))
+}))
+save_out(cv_tbl, "construct_validity_pairs.csv",
+         "Normalized goodness gap (a - b) on known product pairs, per profile.")
+show_tbl(cv_tbl, caption = "Construct validity: normalized gap (a - b). Positive = 'a' is the more sustainable of the two on that dimension.")
+```
+
+## Where the aggregate variance comes from
+
+```{r}
+#| label: agg-variance-share
+agg_share <- bind_rows(lapply(PROFILES, function(pn) {
+  m <- NORM[[pn]]; ov <- OVERALL_BY_PROFILE[[pn]]; vov <- var(ov, na.rm = TRUE)
+  s <- sapply(seq_len(4), function(k)
+    ALGO_WEIGHTS[k] * cov(m[, k], ov, use = "pairwise.complete.obs") / vov)
+  data.frame(profile = pn, E = round(s[1], 3), AW = round(s[2], 3),
+             SE = round(s[3], 3), H = round(s[4], 3))
+}))
+save_out(agg_share, "aggregate_variance_share.csv",
+         "Share of the equal-weight overall score's variance driven by each dimension, per profile (rows sum to 1).")
+show_tbl(agg_share, caption = "Share of aggregate-score variance driven by each dimension. Rows sum to 1; equal shares mean equal weights really do give equal influence.")
+```
+
+```{r}
+#| label: dim-vs-overall
+dim_vs_overall <- bind_rows(lapply(PROFILES, function(pn) {
+  m <- NORM[[pn]]
+  bind_rows(lapply(names(weight_archetypes), function(an) {
+    ov <- as.numeric(m %*% weight_archetypes[[an]])
+    data.frame(profile = pn, archetype = an,
+      as.data.frame(as.list(setNames(round(sapply(dim_cols, function(d)
+        cor(m[, d], ov, use = "pairwise.complete.obs")), 3), paste0("pearson_", dim_cols)))),
+      as.data.frame(as.list(setNames(round(sapply(dim_cols, function(d)
+        cor(m[, d], ov, method = "spearman", use = "pairwise.complete.obs")), 3),
+        paste0("spearman_", dim_cols)))))
+  }))
+}))
+save_out(dim_vs_overall, "dimension_vs_overall_correlation.csv",
+         "Correlation of each normalized dimension with the overall score, per profile x weight archetype.")
+show_tbl(dim_vs_overall, caption = "Correlation of each dimension with the overall score, per profile and weight archetype. For 'AW-heavy', AW should top its own row; where it does not, another dimension is dominating the aggregate regardless of the stated weights.")
+```
+
+## Tailoring, per profile
+
+Same construction as @sec-tailoring-theory but with the small systematic sweep
+(vary one dimension's weight, split the rest equally) so it stays cheap across
+eight profiles. Gate and pool are that profile's own objective equal-weight
+score; only the selection is swept.
+
+```{r}
+#| label: tailoring-per-profile
+WEIGHT_SWEEP_GRID <- seq(0.05, 0.85, by = 0.10)
+tailoring_per_profile <- cached(
+  paste0("tailoring_per_profile_", LKEY, "_n", length(WEIGHT_SWEEP_GRID), "_", POOL_MODE),
+  c(names(norm_profiles), substitutability_level, WEIGHT_SWEEP_GRID, POOL_MODE,
+    GATE_THRESHOLD, LOG_OFFSET_MODE, LOG_OFFSET_VALUE, GATE_MODE), {
+  cmp <- compat_by_level[[LKEY]]
+  bind_rows(lapply(names(norm_profiles), function(pn) {
+    m <- NORM[[pn]]
+    e <- build_eligibility(OVERALL_BY_PROFILE[[pn]], cmp, ref_cat_vec,
+                           GATE_THRESHOLD, POOL_THRESHOLD, POOL_MODE, dim_mat = m)
+    srv <- which(e$served)
+    td <- sapply(dim_cols, function(d) {
+      Wd <- t(sapply(WEIGHT_SWEEP_GRID, function(wd) {
+        w <- setNames(rep((1 - wd) / 3, 4), dim_cols); w[d] <- wd; w[dim_cols] }))
+      A <- pick_alternatives(e, m, Wd, randomize = FALSE)[srv, , drop = FALSE]
+      gains <- colMeans(matrix(m[A, d], nrow(A), ncol(A)) - m[srv, d], na.rm = TRUE)
+      suppressWarnings(cor(WEIGHT_SWEEP_GRID, gains, method = "spearman"))
+    })
+    data.frame(profile = pn, tail_E = round(td["E"], 3), tail_AW = round(td["AW"], 3),
+               tail_SE = round(td["SE"], 3), tail_H = round(td["H"], 3),
+               tail_min = round(min(td, na.rm = TRUE), 3), row.names = NULL)
+  }))
+})
+show_tbl(tailoring_per_profile[tailoring_per_profile$profile %in% PROFILES, ],
+         caption = "Per-profile tailoring: Spearman between the weight on d and the mean gain delivered on d.")
+```
+
+## Head-to-head
+
+One table to answer "should I change normalization?". Look for a profile that
+lifts AW/SE tailoring without destabilising E/H, without collapsing coverage,
+and with a reasonable `spread_CV`.
+
+```{r}
+#| label: head-to-head
+algo_compare <- bind_rows(lapply(PROFILES, function(pn) {
+  a <- run_algo(OVERALL_BY_PROFILE[[pn]], compat_by_level[[LKEY]], ref_cat_vec,
+                GATE_THRESHOLD, POOL_THRESHOLD, randomize = FALSE)
+  ng <- sum(a$gated)
+  data.frame(profile = pn, bounded_0_1 = !(pn %in% c("zscore")),
+             pct_gated = round(100 * mean(a$gated), 1),
+             pct_no_alternative = round(100 * mean(a$alt_reason == "no_alternative"), 1),
+             pct_gated_served = round(100 * sum(a$alt_reason == "recommended") / max(ng, 1), 1),
+             mean_gain = round(mean(a$gain[a$alt_reason == "recommended"]), 3),
+             distinct_alts = length(unique(a$alt_row_id[a$alt_reason == "recommended"])))
+}))
+
+norm_head_to_head <- algo_compare %>%
+  left_join(norm_diag[, c("profile", "spread_CV", "outlier_sens",
+                          "eta2_E", "eta2_AW", "eta2_SE", "eta2_H")], by = "profile") %>%
+  left_join(agg_share %>% rename_with(~ paste0("aggshare_", .x), all_of(dim_cols)), by = "profile") %>%
+  left_join(tailoring_per_profile, by = "profile")
+save_out(norm_head_to_head, "normalization_head_to_head.csv",
+         "Consolidated normalization comparison: algorithm behaviour, spread, signal retention, variance share and tailoring in one table.")
+show_tbl(norm_head_to_head, caption = "Consolidated normalization head-to-head. zscore is unbounded, so its 0.75 gate is not on the same footing as the bounded profiles.")
+```
+
+::: {.callout-note appearance="simple"}
+**Why `rank` is not a candidate despite scoring well here.** Rank normalization
+is population-dependent: a score describes a product's position in *this*
+database rather than an absolute sustainability property, which makes the 0.75
+gate meaningless as a standard and makes every result non-transferable to a
+different catalogue. It also destroys magnitude — the roughly 39-fold raw
+difference between cashew and lentil on the socio-economic dimension collapses
+to a percentile gap of about 0.036.
+:::
+
+# Parameter and design-choice sweeps {#sec-sweeps}
+
+::: {.callout-note appearance="simple"}
+**Run used:** each subsection re-runs the algorithm while varying exactly one
+parameter, at level `r substitutability_level` under the primary profile,
+deterministic unless stated. **Weight source varies by subsection** — most of
+this section deliberately isolates one parameter at a time using a single
+weight vector, so a shift in outcome can only be attributed to that parameter:
+
+| Subsection | Weight source |
+|---|---|
+| Gate threshold | equal weights (single vector) |
+| Pool threshold, pool mode | equal weights (single vector) |
+| Sharpness | equal weights, repeated 30 times (randomization only, not weight variation) |
+| Log offset | equal weights (single vector) |
+| Gate definition (overall vs. all-dimensions) | equal weights (single vector) |
+| Substitutability level | **the full 1,771-weight grid** (as requested) |
+| Objective floor vs. full personalization | 5 archetypes + 60 random draws from the grid |
+
+If you want any of the equal-weight-only subsections repeated across the full
+grid instead, the pattern to copy is the substitutability-level subsection
+below — it is the one place in this section already built that way.
+:::
+
+## Gate threshold {#sec-gate-sweep}
+
+The gate decides *who* gets a recommendation. Raising it serves more people but
+the extra people pulled in were already doing fine, so their individual gain is
+small. What matters for impact is the product of the two: `total_improvement`,
+the sum of gains over all served products.
+
+```{r}
+#| label: gate-sweep
+GATE_GRID <- seq(0.50, 0.95, by = 0.05)
+gate_sweep <- bind_rows(lapply(GATE_GRID, function(gt) {
+  a <- run_algo(overall_primary, compat_by_level[[LKEY]], ref_cat_vec,
+                gt, POOL_THRESHOLD, randomize = FALSE)
+  g <- a$gain[a$alt_reason == "recommended"]
+  data.frame(gate_threshold = gt,
+             pct_gated = round(100 * mean(a$gated), 1),
+             pct_recommended = round(100 * mean(a$alt_reason == "recommended"), 1),
+             pct_no_alternative = round(100 * mean(a$alt_reason == "no_alternative"), 1),
+             mean_gain = round(mean(g, na.rm = TRUE), 3),
+             median_gain = round(median(g, na.rm = TRUE), 3),
+             total_improvement = round(sum(g, na.rm = TRUE), 1))
+}))
+save_out(gate_sweep, "sweep_gate_threshold.csv", "Gate-threshold sweep including total catalogue-wide improvement.")
+show_tbl(gate_sweep, caption = "Gate threshold sweep.")
+```
+
+```{r}
+#| label: fig-gate-sweep
+#| fig-cap: "Coverage rises and per-swap gain falls as the gate rises; total_improvement is their product and typically peaks at an interior value. That peak is the empirically motivated gate, as opposed to the hand-chosen 0.75."
+#| fig-height: 4
+gate_sweep %>% select(gate_threshold, pct_recommended, mean_gain, total_improvement) %>%
+  pivot_longer(-gate_threshold, names_to = "metric", values_to = "value") %>%
+  ggplot(aes(gate_threshold, value)) +
+  geom_line(colour = "#2c7fb8") + geom_point(size = 1.6, colour = "#2c7fb8") +
+  geom_vline(xintercept = GATE_THRESHOLD, linetype = "dashed", colour = "grey45") +
+  facet_wrap(~ metric, scales = "free_y") +
+  labs(title = "Gate threshold sweep", subtitle = "dashed line = the gate currently in use",
+       x = "gate threshold", y = NULL)
+```
+
+## Pool threshold and pool mode
+
+```{r}
+#| label: pool-sweep
+pool_sweep <- bind_rows(lapply(c(0.50, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90), function(pt) {
+  a <- run_algo(overall_primary, compat_by_level[[LKEY]], ref_cat_vec,
+                GATE_THRESHOLD, pt, randomize = FALSE, pool_mode = "absolute")
+  ng <- sum(a$gated)
+  data.frame(pool_threshold = pt,
+             pct_gated_served = round(100 * sum(a$alt_reason == "recommended") / max(ng, 1), 1),
+             pct_no_alternative = round(100 * mean(a$alt_reason == "no_alternative"), 1),
+             mean_gain = round(mean(a$gain[a$alt_reason == "recommended"]), 3))
+}))
+save_out(pool_sweep, "sweep_pool_threshold.csv", "Pool-threshold sweep under POOL_MODE = absolute.")
+show_tbl(pool_sweep, caption = "Pool-threshold sweep (deterministic best-pick, POOL_MODE = 'absolute'). mean_gain is nearly flat because the single best candidate in a pool of dozens is usually well above 0.75 anyway; the threshold mostly changes pool size, not the winner.")
+```
+
+```{r}
+#| label: pool-mode
+pool_mode_cmp <- bind_rows(lapply(c("absolute", "beat_reference", "none"), function(pm) {
+  e <- build_eligibility(overall_primary, compat_by_level[[LKEY]], ref_cat_vec,
+                         GATE_THRESHOLD, POOL_THRESHOLD, pm)
+  a <- run_algo(overall_primary, compat_by_level[[LKEY]], ref_cat_vec,
+                GATE_THRESHOLD, POOL_THRESHOLD, randomize = TRUE, seed = RANDOM_SEED,
+                sharpness = SHARPNESS, pool_mode = pm, elig = e)
+  srv <- a$alt_reason == "recommended"
+  data.frame(pool_mode = pm,
+             pct_no_alternative = round(100 * mean(a$alt_reason == "no_alternative"), 1),
+             pct_recommended = round(100 * mean(srv), 1),
+             mean_gain_randomized = round(mean(a$gain[srv], na.rm = TRUE), 3),
+             n_worse_than_ref = sum(a$gain[srv] < 0, na.rm = TRUE),
+             pct_worse_than_ref = round(100 * mean(a$gain[srv] < 0, na.rm = TRUE), 2),
+             distinct_alts = length(unique(a$alt_row_id[srv])))
+}))
+save_out(pool_mode_cmp, "sweep_pool_mode.csv", "Comparison of the three pool-eligibility modes.")
+show_tbl(pool_mode_cmp, caption = "Pool mode comparison. pct_worse_than_ref is the decisive column: under 'none', softmax makes a downgrade unlikely but not impossible, whereas 'beat_reference' drops the arbitrary 0.75 constant and still guarantees zero downgrades.")
+```
+
+## Sharpness
+
+How the randomized draw actually behaves across repeated visits — the real user
+experience, which neither the single randomized run nor the deterministic
+validation code shows.
+
+```{r}
+#| label: sharpness-mc
+N_MC <- 30
+sharpness_grid <- c(0, 5, 15, 30, 60)
+mc_validation <- cached(
+  paste0("mc_", norm_profile, "_", LKEY, "_N", N_MC),
+  c(norm_profile, substitutability_level, N_MC, sharpness_grid, RANDOM_SEED, POOL_MODE, GATE_MODE), {
+  e <- ELIG[[LKEY]]; srv <- which(e$served)
+  Wrep <- matrix(rep(ALGO_WEIGHTS, each = N_MC), nrow = N_MC)   # same weights, N_MC draws
+  best <- vapply(srv, function(i) e$cand[[i]][which.max(overall_primary[e$cand[[i]]])], integer(1))
+  bind_rows(lapply(sharpness_grid, function(sh) {
+    A <- pick_alternatives(e, select_mat_primary, Wrep, randomize = TRUE,
+                           seed = RANDOM_SEED, sharpness = sh)[srv, , drop = FALSE]
+    data.frame(sharpness = sh,
+      mean_distinct_alts = round(mean(apply(A, 1, function(r) length(unique(r)))), 2),
+      mean_entropy_bits  = round(mean(apply(A, 1, function(r) {
+        p <- table(r) / length(r); -sum(p * log2(p)) })), 3),
+      mean_realized_gain = round(mean(rowMeans(
+        matrix(overall_primary[A], nrow(A), ncol(A)) - overall_primary[srv])), 3),
+      pct_draws_is_best  = round(100 * mean(A == best), 1))
+  }))
+})
+save_out(mc_validation, "sweep_sharpness.csv", "Monte Carlo behaviour of the randomized pick across sharpness levels.")
+show_tbl(mc_validation, caption = paste0("Sharpness sweep, ", N_MC, " draws per product. Sharpness 0 is a uniform draw (most variety, lowest realized gain); as sharpness rises, realized gain climbs toward the deterministic ceiling while variety falls. This is the variety-vs-quality trade-off made explicit."))
+```
+
+## Log offset
+
+```{r}
+#| label: offset-sweep
+median_nonzero <- function(x) median(x[x > 0], na.rm = TRUE)
+aw_med <- median_nonzero(RAW_IMPACT$AW); se_med <- median_nonzero(RAW_IMPACT$SE)
+offset_grid <- list(
+  list(kind = "absolute", val = 1,     label = "absolute_1"),
+  list(kind = "absolute", val = 0.1,   label = "absolute_0.1"),
+  list(kind = "relative", val = 0.001, label = "relative_0.1pct_median"),
+  list(kind = "relative", val = 0.01,  label = "relative_1pct_median"),
+  list(kind = "relative", val = 0.05,  label = "relative_5pct_median"),
+  list(kind = "relative", val = 0.10,  label = "relative_10pct_median"),
+  list(kind = "relative", val = 1.00,  label = "relative_100pct_median (current)"))
+log_at <- function(x, kind, val, med) log(pmax(x, 0) + if (kind == "relative") val * med else val)
+minmax_p_of <- function(x, p_lo = .01, p_hi = .99) {
+  lo <- as.numeric(quantile(x, p_lo, na.rm = TRUE)); hi <- as.numeric(quantile(x, p_hi, na.rm = TRUE))
+  1 - pmin(pmax((x - lo) / (hi - lo), 0), 1)
+}
+e_fixed <- norm_one_dim(DB$E_SS, norm_profiles[[norm_profile]]$E, l1cat)
+h_fixed <- if (norm_profiles[[norm_profile]]$H == "letters") DB$H_letter_goodness else
+  norm_one_dim(DB$H_SS, norm_profiles[[norm_profile]]$H, l1cat)
+
+offset_sens <- bind_rows(lapply(offset_grid, function(og) {
+  o_aw <- if (og$kind == "relative") og$val * aw_med else og$val
+  o_se <- if (og$kind == "relative") og$val * se_med else og$val
+  aw_g <- minmax_p_of(log_at(RAW_IMPACT$AW, og$kind, og$val, aw_med))
+  se_g <- minmax_p_of(log_at(RAW_IMPACT$SE, og$kind, og$val, se_med))
+  m  <- cbind(E = e_fixed, AW = aw_g, SE = se_g, H = h_fixed)
+  ov <- as.numeric(m %*% ALGO_WEIGHTS)
+  a  <- run_algo(ov, compat_by_level[[LKEY]], ref_cat_vec, GATE_THRESHOLD,
+                 POOL_THRESHOLD, randomize = FALSE)
+  rec <- a[a$alt_reason == "recommended", ]
+  ia <- find_th("TH1705"); ib <- find_th("TH1533")
+  data.frame(offset = og$label,
+    pct_of_AW_median = round(100 * o_aw / aw_med, 2),
+    pct_of_SE_median = round(100 * o_se / se_med, 2),
+    eta2_AW = round(eta_sq(aw_g, subcat), 3), eta2_SE = round(eta_sq(se_g, subcat), 3),
+    aggshare_AW = round(ALGO_WEIGHTS[2] * cov(m[, "AW"], ov, use = "pairwise.complete.obs") /
+                          var(ov, na.rm = TRUE), 3),
+    cv_AW_chicken_vs_beef = if (is.na(ia) || is.na(ib)) NA_real_ else round(aw_g[ia] - aw_g[ib], 3),
+    pct_gated = round(100 * mean(a$gated), 1),
+    top1_share_recommended = round(100 * max(table(rec$alt_TH_code)) / nrow(rec), 1))
+}))
+save_out(offset_sens, "sweep_log_offset.csv",
+         "Log-offset sensitivity at both the normalization and the algorithm level.")
+show_tbl(offset_sens, caption = "Log-offset sensitivity. The two 'absolute' rows should differ sharply between pct_of_AW_median and pct_of_SE_median: that asymmetry is the reason to prefer a relative offset. Watch aggshare_AW and top1_share_recommended move together - a smaller offset that raises AW's variance share also concentrates recommendations on fewer products.")
+```
+
+## Gate definition: overall score vs. all-dimensions {#sec-gatemode}
+
+`GATE_MODE` (set in @sec-parameters) controls what "good enough, no
+recommendation needed" means. This compares the two options head-to-head,
+independent of whatever `GATE_MODE` is currently set to for the rest of the
+document, at equal weights, level `r substitutability_level`:
+
+* **`overall`** (the default used everywhere else in this document): good
+  enough if the equal-weight average of the four dimensions clears
+  `r GATE_THRESHOLD`.
+* **`all_dimensions`**: good enough only if *every one* of E, AW, SE, H
+  individually clears `r GATE_THRESHOLD`. A product that is excellent on three
+  dimensions but weak on the fourth no longer escapes attention by averaging
+  its way over the bar.
+
+```{r}
+#| label: gate-mode-comparison
+gate_mode_cmp <- bind_rows(lapply(c("overall", "all_dimensions"), function(gm) {
+  e <- build_eligibility(overall_primary, compat_by_level[[LKEY]], ref_cat_vec,
+                         GATE_THRESHOLD, POOL_THRESHOLD, POOL_MODE,
+                         dim_mat = select_mat_primary, gate_mode = gm)
+  a <- run_algo(overall_primary, compat_by_level[[LKEY]], ref_cat_vec,
+                GATE_THRESHOLD, POOL_THRESHOLD, randomize = FALSE, elig = e)
+  g <- a$gain[a$alt_reason == "recommended"]
+  data.frame(gate_mode = gm,
+             pct_gated = round(100 * mean(e$gated), 1),
+             pct_good_enough = round(100 * mean(a$alt_reason == "good_enough"), 1),
+             pct_recommended = round(100 * mean(a$alt_reason == "recommended"), 1),
+             pct_no_alternative = round(100 * mean(a$alt_reason == "no_alternative"), 1),
+             mean_gain = round(mean(g, na.rm = TRUE), 3),
+             total_improvement = round(sum(g, na.rm = TRUE), 1))
+}))
+save_out(gate_mode_cmp, "sweep_gate_mode.csv",
+         "Overall-score gate vs. all-dimensions gate, same equal weights and level.")
+show_tbl(gate_mode_cmp, caption = "Gate definition comparison. all_dimensions gates strictly more products (a superset of what overall gates), so pct_gated only rises.")
+```
+
+```{r}
+#| label: gate-mode-hidden-weakness
+# The interesting case: products that are "good enough" under overall (their
+# average clears the gate) but would be gated under all_dimensions (at least
+# one dimension does not). These are exactly the products the overall-score
+# gate is silently accepting despite a weak dimension.
+hidden_weak <- which(overall_primary >= GATE_THRESHOLD &
+                     apply(select_mat_primary, 1, function(r) anyNA(r) || any(r < GATE_THRESHOLD)))
+hidden_weak_tbl <- data.frame(
+  TH_code = DB$TH_code[hidden_weak], food_product = DB$food_product[hidden_weak],
+  SAFAD_L2_cat = ref_cat_vec[hidden_weak], overall = round(overall_primary[hidden_weak], 3),
+  E = round(select_mat_primary[hidden_weak, "E"], 2), AW = round(select_mat_primary[hidden_weak, "AW"], 2),
+  SE = round(select_mat_primary[hidden_weak, "SE"], 2), H = round(select_mat_primary[hidden_weak, "H"], 2),
+  weakest_dim = dim_cols[apply(select_mat_primary[hidden_weak, , drop = FALSE], 1, which.min)])
+save_out(hidden_weak_tbl, "gate_mode_hidden_weakness_products.csv",
+         "Products that clear the overall-score gate (average >= 0.75) despite at least one individual dimension below 0.75.")
+cat(sprintf("%d products (%.1f%% of the catalogue) clear the overall gate despite a weak dimension - these are only caught by the all_dimensions gate.\n",
+            length(hidden_weak), 100 * length(hidden_weak) / n_all))
+table(hidden_weak_tbl$weakest_dim) %>% as.data.frame() %>%
+  setNames(c("weakest_dimension", "n_products")) %>% arrange(desc(n_products)) %>%
+  show_tbl(caption = "Which dimension is the one dragging these otherwise-good-enough products down.")
+```
+
+The `all_dimensions` gate is strictly more cautious by construction — every
+product it gates, `overall` also gates, plus this extra set — so
+`total_improvement` rising under `all_dimensions` mixes two effects: more
+coverage (mechanically larger) and whether the newly-caught products are worth
+catching. The hidden-weakness table above answers the second part directly:
+these are real products with a real single-dimension problem the averaged gate
+was masking, not an artifact of the comparison.
+
+## Substitutability level
+
+::: {.callout-note appearance="simple"}
+**Run used:** the full 1,771-weight grid (`GRID`), all three levels, primary
+profile — as requested, rather than equal weights alone. Coverage
+(`pct_recommended`, `pct_gated`) itself does **not** need re-deriving here: it
+is identical for every weight vector at a given level, since the gate and pool
+are objective (see @sec-runs's "Algorithm behaviour by substitutability level"
+table). What genuinely varies with the weight vector — and is therefore worth
+running on the full grid — is *which* alternative gets picked, how similar it
+is to the reference, and how much it improves each dimension.
+:::
+
+### How similar are the alternatives actually chosen?
+
+`matrix_A` codes range 0-5; a level-L pool only ever admits codes in `{L,...,5}`.
+This tabulates, among alternatives **actually selected** across every served
+product and every one of the 1,771 weight vectors, how that admitted range gets
+used in practice — not just what the pool allows, but what the softmax-weighted
+selection actually picks.
+
+```{r}
+#| label: subst-composition
+
+## ========================================================================== #
+## 9.x  Substitutability-level composition and impact, on the 1,771 grid ====
+## ========================================================================== #
+matrix_A_num <- as.matrix(matrix_A); storage.mode(matrix_A_num) <- "numeric"
+
+# code_of(alt_row_id_matrix, ref_L2_vector): matrix_A code between each chosen
+# alternative and its (fixed, per-row) reference category. matrix_A is indexed
+# [candidate_category, reference_category] (see compat_by_level in @sec-engine).
+code_of <- function(alt_mat, ref_L2) {
+  alt_L2  <- matrix(DB$SAFAD_L2_cat[alt_mat], nrow(alt_mat), ncol(alt_mat))
+  alt_idx <- matrix(match(alt_L2, rownames(matrix_A_num)), nrow(alt_mat), ncol(alt_mat))
+  ref_idx <- matrix(match(ref_L2, colnames(matrix_A_num)), nrow(alt_mat), ncol(alt_mat))
+  matrix(matrix_A_num[cbind(as.vector(alt_idx), as.vector(ref_idx))], nrow(alt_mat), ncol(alt_mat))
+}
+
+subst_composition <- bind_rows(lapply(SUBST_LEVELS, function(L) {
+  key <- paste0("L", L); srv <- GRID$served[[key]]; A <- GRID$alt[[key]]
+  codes <- code_of(A, ref_cat_vec[srv])
+  tab <- table(factor(as.vector(codes), levels = 3:5))
+  data.frame(main_level = L, pct_code_3 = 100*tab["3"]/sum(tab),
+             pct_code_4 = 100*tab["4"]/sum(tab), pct_code_5 = 100*tab["5"]/sum(tab),
+             n_recommendations = sum(tab), row.names = NULL)
+})) %>% mutate(across(starts_with("pct_code"), ~ round(.x, 2)))
+save_out(subst_composition, "substitutability_composition_by_level.csv",
+         "Among all (served product x weight vector) recommendations on the 1,771 grid, the matrix_A code actually realised, by main substitutability level.")
+show_tbl(subst_composition, caption = "Composition of CHOSEN alternatives by their true matrix_A code. Impossible cells (e.g. code 3 at main_level 5) are exactly 0, confirming the pool restriction is respected.")
+```
+
+```{r}
+#| label: subst-pool-composition
+# Secondary view: the MENU rather than the pick -- what the eligible pool looks
+# like before selection, per category (unweighted by how many products sit in
+# that category, unlike the table above which is naturally product-weighted).
+pool_composition <- bind_rows(lapply(SUBST_LEVELS, function(L) {
+  cmp <- compat_by_level[[paste0("L", L)]]
+  codes <- unlist(lapply(names(cmp), function(cc) {
+    cand_L2 <- DB$SAFAD_L2_cat[cmp[[cc]]]
+    matrix_A_num[match(cand_L2, rownames(matrix_A_num)), match(cc, colnames(matrix_A_num))]
+  }))
+  tab <- table(factor(codes, levels = 3:5))
+  data.frame(main_level = L, pct_code_3 = 100*tab["3"]/sum(tab),
+             pct_code_4 = 100*tab["4"]/sum(tab), pct_code_5 = 100*tab["5"]/sum(tab), row.names = NULL)
+})) %>% mutate(across(starts_with("pct_code"), ~ round(.x, 2)))
+save_out(pool_composition, "substitutability_pool_composition_by_level.csv",
+         "Composition of the ELIGIBLE POOL (menu) by matrix_A code, per category, by main level - contrast with the chosen-alternative composition above.")
+show_tbl(pool_composition, caption = "Composition of the eligible POOL rather than the pick (one entry per category x candidate, not weighted by product count). Compare to the table above: if the pick's code-5 share exceeds the pool's, the algorithm is gravitating toward closer substitutes even when looser ones are available.")
+```
+
+### Average improvement by level, per dimension
+
+Pooled across every served product and all 1,771 weight vectors.
+
+```{r}
+#| label: gain-by-level
+gain_by_level <- bind_rows(lapply(SUBST_LEVELS, function(L) {
+  key <- paste0("L", L); srv <- GRID$served[[key]]; A <- GRID$alt[[key]]
+  per_dim <- sapply(dim_cols, function(d) {
+    nd <- select_mat_primary[, d]; mean(matrix(nd[A], nrow(A), ncol(A)) - nd[srv])
+  })
+  ov_gain <- mean(matrix(overall_primary[A], nrow(A), ncol(A)) - overall_primary[srv])
+  data.frame(level = L, E = per_dim["E"], AW = per_dim["AW"], SE = per_dim["SE"],
+             H = per_dim["H"], Overall = ov_gain, n_served = length(srv),
+             n_cells = length(A), row.names = NULL)
+})) %>% mutate(across(c(E, AW, SE, H, Overall), ~ round(.x, 3)))
+save_out(gain_by_level, "gain_by_substitutability_level.csv",
+         "Mean normalized gain per dimension and overall, by main substitutability level, over the 1,771-weight grid.")
+show_tbl(gain_by_level, caption = "Mean gain by substitutability level, per dimension and overall, over the full weight grid.")
+```
+
+```{r}
+#| label: fig-gain-by-level
+#| fig-cap: "Mean gain by dimension, grouped by substitutability level. Looser substitutability (level 3) has strictly more room to find a bigger improvement; the question is how much of that room actually gets used."
+#| fig-height: 4.5
+gain_by_level %>% select(level, E, AW, SE, H) %>%
+  pivot_longer(-level, names_to = "dimension", values_to = "gain") %>%
+  mutate(dimension = factor(dimension, levels = dim_cols), level = factor(level)) %>%
+  ggplot(aes(dimension, gain, fill = level)) +
+  geom_col(position = position_dodge(width = .75), width = .65) +
+  scale_fill_brewer(palette = "Blues", name = "substitutability\nlevel") +
+  labs(title = "Mean gain by dimension, by substitutability level", x = NULL, y = "mean normalized gain")
+```
+
+### Variety by level
+
+```{r}
+#| label: distinct-by-level
+distinct_by_level <- bind_rows(lapply(SUBST_LEVELS, function(L) {
+  A <- GRID$alt[[paste0("L", L)]]
+  data.frame(level = L,
+             mean_distinct_alts = round(mean(apply(A, 1, function(r) length(unique(r)))), 2),
+             pct_single_alt_always = round(100 * mean(apply(A, 1, function(r) length(unique(r)) == 1)), 1),
+             median_top_alt_share_pct = round(100 * median(apply(A, 1, function(r) max(table(r)) / length(r))), 1))
+}))
+save_out(distinct_by_level, "distinct_alternatives_by_level.csv",
+         "Variety of alternatives shown across the 1,771-weight grid, by substitutability level.")
+show_tbl(distinct_by_level, caption = "Variety by level. A looser pool (level 3) gives the softmax more distinct products to draw from, which should show up as higher mean_distinct_alts and a lower top-alternative share.")
+```
+
+### Putting it together
+
+```{r}
+#| label: subst-level-master
+pool_size <- bind_rows(lapply(SUBST_LEVELS, function(L) {
+  s <- lengths(compat_by_level[[paste0("L", L)]])
+  data.frame(level = L, median_pool_size = as.integer(median(s)))
+}))
+subst_master <- pool_size %>%
+  left_join(subst_composition %>% rename(level = main_level), by = "level") %>%
+  left_join(gain_by_level %>% select(level, Overall, mean_gain_AW = AW), by = "level") %>%
+  left_join(distinct_by_level, by = "level")
+save_out(subst_master, "substitutability_level_master_comparison.csv",
+         "Consolidated substitutability-level comparison: pool size, chosen-alternative composition, gains, and variety.")
+show_tbl(subst_master, caption = "Consolidated view. The trade-off worth reading off this row-by-row: does a bigger median_pool_size at looser levels translate into materially higher Overall/mean_gain_AW and mean_distinct_alts, or mostly into a lower pct_code_5 (less similar swaps) for little extra gain?")
+```
+
+```{r}
+#| label: level-agreement
+det_by_level <- setNames(lapply(SUBST_LEVELS, function(L)
+  run_algo(overall_primary, compat_by_level[[paste0("L", L)]], ref_cat_vec,
+           GATE_THRESHOLD, POOL_THRESHOLD, randomize = FALSE,
+           elig = ELIG[[paste0("L", L)]])), paste0("L", SUBST_LEVELS))
+cross_level <- bind_rows(lapply(combn(SUBST_LEVELS, 2, simplify = FALSE), function(pr) {
+  a <- det_by_level[[paste0("L", pr[1])]]; b <- det_by_level[[paste0("L", pr[2])]]
+  both <- a$alt_reason == "recommended" & b$alt_reason == "recommended"
+  data.frame(levels = paste0("L", pr[1], " vs L", pr[2]),
+             pct_same_reason = round(100 * mean(a$alt_reason == b$alt_reason), 1),
+             pct_same_alternative_if_both_served =
+               round(100 * mean((a$alt_row_id == b$alt_row_id)[both]), 1),
+             n_both_served = sum(both))
+}))
+save_out(cross_level, "sweep_substitutability_level.csv", "Cross-level agreement of recommendations (equal weights, deterministic).")
+show_tbl(cross_level, caption = "Cross-level agreement, equal weights. Lower agreement between distant levels is expected: a broader pool (L3) can offer a better alternative that a strict pool (L5) simply does not contain.")
+```
+
+## Objective floor vs. full personalization {#sec-personalization}
+
+This is the comparison that replaces v11's "pool pre-filter leak" table. That
+table reported how far the personalized pool diverges from the objective pool
+(Jaccard 0.67–0.80), but as you pointed out, divergence alone says nothing about
+whether the divergent picks are any *good*. So the Jaccard is kept here as one
+column among several, and the decisive columns are the last two.
+
+The two modes:
+
+* **objective floor** (this document's default): gate and pool on the objective
+  equal-weight score; the personal weights only re-rank the survivors.
+* **full personalization** (v11's default in its sections 6–7): gate, pool and
+  selection all on the personal score.
+
+```{r}
+#| label: personalization-comparison
+N_PERSONALIZATION_COMPARE <- 60   # random grid vectors, on top of the 5 archetypes
+
+pers_cmp <- cached(
+  paste0("pers_cmp_", norm_profile, "_", LKEY, "_n", N_PERSONALIZATION_COMPARE),
+  c(norm_profile, substitutability_level, N_PERSONALIZATION_COMPARE, POOL_MODE,
+    GATE_THRESHOLD, POOL_THRESHOLD, RANDOM_SEED, GATE_MODE), {
+  set.seed(RANDOM_SEED)
+  Wtest <- rbind(do.call(rbind, weight_archetypes),
+                 GRID$W[sample(nrow(GRID$W), N_PERSONALIZATION_COMPARE), , drop = FALSE])
+  rownames(Wtest) <- c(names(weight_archetypes),
+                       paste0("grid_", seq_len(N_PERSONALIZATION_COMPARE)))
+  cmp <- compat_by_level[[LKEY]]
+  e_obj <- ELIG[[LKEY]]
+
+  bind_rows(lapply(seq_len(nrow(Wtest)), function(k) {
+    w  <- Wtest[k, ]
+    ps <- as.numeric(select_mat_primary %*% w)         # this consumer's own score
+
+    # --- mode A: objective floor, personalized selection ---------------------
+    altA <- pick_alternatives(e_obj, select_mat_primary, matrix(w, nrow = 1),
+                              randomize = FALSE)[, 1]
+    # --- mode B: full personalization ----------------------------------------
+    e_per <- build_eligibility(ps, cmp, ref_cat_vec, GATE_THRESHOLD, POOL_THRESHOLD, POOL_MODE,
+                              dim_mat = select_mat_primary)
+    altB  <- pick_alternatives(e_per, select_mat_primary, matrix(w, nrow = 1),
+                               randomize = FALSE)[, 1]
+
+    sA <- e_obj$served; sB <- e_per$served
+    pool_j <- mean(vapply(which(sA | sB), function(i)
+      jacc(e_obj$cand[[i]], e_per$cand[[i]]), numeric(1)), na.rm = TRUE)
+
+    data.frame(
+      weights = rownames(Wtest)[k],
+      is_archetype = k <= length(weight_archetypes),
+      mean_pool_jaccard = round(pool_j, 3),
+      pct_served_objective = round(100 * mean(sA), 1),
+      pct_served_personalized = round(100 * mean(sB), 1),
+      pct_same_pick = round(100 * mean(altA[sA & sB] == altB[sA & sB]), 1),
+      personal_gain_objective = round(mean(ps[altA[sA]] - ps[sA]), 4),
+      personal_gain_personalized = round(mean(ps[altB[sB]] - ps[sB]), 4),
+      objective_gain_objective = round(mean(overall_primary[altA[sA]] - overall_primary[sA]), 4),
+      objective_gain_personalized = round(mean(overall_primary[altB[sB]] - overall_primary[sB]), 4),
+      pct_alt_objectively_worse_objective =
+        round(100 * mean(overall_primary[altA[sA]] < overall_primary[sA]), 2),
+      pct_alt_objectively_worse_personalized =
+        round(100 * mean(overall_primary[altB[sB]] < overall_primary[sB]), 2))
+  }))
+})
+save_out(pers_cmp, "objective_floor_vs_full_personalization.csv",
+         "Per weight vector: coverage, pool overlap, gains and downgrade rate under the objective floor vs full personalization.")
+
+pers_cmp %>% filter(is_archetype) %>% select(-is_archetype) %>%
+  show_tbl(caption = "The five weight archetypes under both modes.")
+
+pers_cmp %>% summarise(
+  n_weight_vectors = n(),
+  `mean pool Jaccard` = round(mean(mean_pool_jaccard), 3),
+  `% served (objective)` = round(mean(pct_served_objective), 1),
+  `% served (personalized)` = round(mean(pct_served_personalized), 1),
+  `% identical pick` = round(mean(pct_same_pick), 1),
+  `personal gain (objective)` = round(mean(personal_gain_objective), 4),
+  `personal gain (personalized)` = round(mean(personal_gain_personalized), 4),
+  `objective gain (objective)` = round(mean(objective_gain_objective), 4),
+  `objective gain (personalized)` = round(mean(objective_gain_personalized), 4),
+  `% downgrades (objective)` = round(mean(pct_alt_objectively_worse_objective), 2),
+  `% downgrades (personalized)` = round(mean(pct_alt_objectively_worse_personalized), 2)) %>%
+  pivot_longer(everything(), names_to = "metric", values_to = "value") %>%
+  show_tbl(caption = "Averaged over all tested weight vectors.", digits = 4)
+```
+
+**How to read this.** `% downgrades` counts recommendations whose alternative is
+*worse than the reference on the objective equal-weight score*. Under the
+objective floor this is zero by construction — `POOL_MODE = "beat_reference"` is
+applied to the objective score, so no recommendation can ever be an objective
+downgrade. Under full personalization the same rule is applied to the *personal*
+score, so a product that is better on the dimensions this consumer cares about
+can still be worse overall, and the rate is non-zero. That is precisely the
+question the Jaccard table could not answer: the divergent pools do contain
+different products, and some of those products are objectively worse.
+
+The price of the floor is visible in `personal gain`: full personalization
+delivers a slightly higher gain *measured on the consumer's own score*, because
+it is optimising exactly that quantity without constraint. The trade is
+therefore explicit — a small amount of personal-score gain, in exchange for a
+guarantee that no consumer is ever steered to something that is worse by the
+shared objective standard, plus identical coverage for everyone.
+
+# Appendix {.appendix}
+
+## What changed from `sensitivity_analysis_2026_07_17_v11.R`
+
+```{r}
+#| label: changes-table
+#| echo: false
+changes <- read.csv(text = '
+item,status,note
+"Raw skewness + correlation tables",kept,"now one table incl. share of zero/negative values"
+"Raw dimension-pair scatterplots",kept,unchanged
+"Raw impact boxplots by L1 and dimension",added,"requested; free x scales per dimension"
+"Recommendation table (3 levels)",kept,"now the CORE_recommendations_by_level.csv object"
+"Algorithm behaviour by level",kept,unchanged
+"Top-5 alternatives per L2 subcategory x level",added,"requested; over the 1771-weight grid"
+"Before/after by dimension and L1",fixed,"now catalogue-wide so all L1 categories appear; decreases highlighted"
+"Coverage-by-L1 diagnostic",added,"explains why categories were missing before"
+"Gain-by-dominant-dimension heatmap",kept,"raw_grid only, as requested"
+"Relative raw-impact reduction heatmap",fixed,"offset-consistent median fold change; H reported in FNS points"
+"Old-vs-new relative-impact comparison",added,"evidence for the methodology change"
+"Distinct alternatives per reference product",kept,unchanged
+"Tailoring per dimension (within-product)",kept,"plus a distribution plot"
+"Worked basket example",added,"proposed illustration of what a shopper sees"
+"Consumer weights import and country summary",kept,unchanged
+"Per-consumer algorithm run",kept,"vectorised; objective gate/pool instead of full personalization"
+"Consumer tailoring (within-product + pooled)",kept,"pooled kept only as a labelled contrast"
+"Country-level behaviour",kept,"coverage columns dropped (identical by construction)"
+"Raw vs normalized AW/SE plots",kept,unchanged
+"Boxplots by category (initial + primary)",kept,unchanged
+"Normalized dimension pairs",kept,unchanged
+"Quartile grid",kept,unchanged
+"Per-profile correlations (Pearson + Spearman)",kept,"Spearman added as requested"
+"Signal retention (eta^2)",kept,"merged into the spread table"
+"Spread per dimension + spread_CV",kept,"merged into the spread table"
+"Gap-structure preservation",kept,unchanged
+"Construct validity pairs",kept,unchanged
+"Aggregate variance share",kept,unchanged
+"Dimension-vs-overall correlation per archetype",kept,unchanged
+"Per-profile tailoring",kept,"objective gate/pool instead of full personalization"
+"Normalization head-to-head",kept,"consolidated: spread + eta2 + variance share + tailoring in one table"
+"Gate sweep + plot",kept,unchanged
+"Pool threshold sweep",kept,unchanged
+"Pool mode comparison",kept,"no longer mutates a global variable"
+"Sharpness Monte Carlo",kept,"vectorised; same statistics"
+"Log offset sensitivity",kept,"normalization-level and algorithm-level merged into one table"
+"Cross-level agreement",kept,unchanged
+"Objective floor vs full personalization",added,"replaces the pool pre-filter leak table"
+"Pool pre-filter leak (Jaccard) table",folded,"now the mean_pool_jaccard column of the comparison above"
+"Dirichlet weight grid",dropped,"requested"
+"Trimmed weight grid",dropped,"requested"
+"Weight-scenario distribution plot",dropped,"only described the dropped grids"
+"Gate/pool set overlap vs initial per profile",dropped,"requested"
+"Products differing between initial and log variants",dropped,"development diagnostic"
+"Selection-only demo (demo_aw)",dropped,"superseded by the section 9 comparison"
+"10 most-recommended alternatives (global)",dropped,"superseded by the per-subcategory top-5"
+"Monte Carlo pct_draws_is_best sanity text",kept,unchanged
+')
+show_tbl(changes, caption = "Every table and figure from v11, and what happened to it.")
+```
+
+## Files written
+
+```{r}
+#| label: artifact-register
+#| echo: false
+bind_rows(.ARTIFACTS$rows) %>% show_tbl(caption = "Everything written to output/ by this document.")
+```
+
+## Run configuration
+
+```{r}
+#| label: session
+#| echo: false
+data.frame(parameter = c("normalization profile", "substitutability levels", "primary level",
+                         "gate threshold", "pool mode", "pool threshold", "objective weights",
+                         "randomize", "sharpness", "seed", "weight grid step", "n weight vectors",
+                         "log offset", "R version"),
+           value = c(norm_profile, paste(SUBST_LEVELS, collapse = ", "), substitutability_level,
+                     GATE_THRESHOLD, POOL_MODE, POOL_THRESHOLD,
+                     paste(ALGO_WEIGHTS, collapse = "/"), RANDOMIZE, SHARPNESS, RANDOM_SEED,
+                     WEIGHT_GRID_STEP, nrow(GRID$W),
+                     paste(LOG_OFFSET_MODE, LOG_OFFSET_VALUE), R.version.string)) %>%
+  show_tbl(caption = "Configuration used for this render.")
+```

@@ -1,0 +1,524 @@
+---
+title: "TealHelix Algorithm Implementation and Data Analysis"
+author: "Timothée Lefebvre (KU Leuven)"
+date: "`r Sys.Date()`"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 90
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+
+# install package tinytex to Knit as PDF; not required if you just want to keep it as Rmd code
+
+#install.packages("tinytex") 
+#tinytex::install_tinytex()
+
+# clean environment
+
+#rm(list=ls()) 
+```
+
+
+# Setup
+
+Set your working directory:
+
+
+```{r}
+# adjust working directory
+setwd("C:/Users/u0180297/OneDrive - KU Leuven/BEE - TealHelix - TealHelix consortium/WP3/WP 3.2 & WP 3.3/R version algorithm")
+```
+
+
+# Load data
+
+```{r}
+data <- read.csv("TH_WP3-FULL DATABASE-v2026-05-27.csv", encoding = "latin1", 
+                 blank.lines.skip = TRUE)                                          
+#old version of database:"TH_WP3-FULL DATABASE-v2026-03-18.csv"
+score_calculation_db <- data %>% arrange(TH_code)
+
+# data for step 1 of algorithm
+matrix_A <- read.csv("Step1_encoding.csv", row.names = 1, check.names = FALSE, 
+                     blank.lines.skip = TRUE, encoding = "latin1")
+```
+
+
+# Compute dimension-level scores
+
+## Environment
+
+```{r}
+
+
+
+
+# Normalization and weighting factors
+E_normalization_factors <- c(
+            E_climate_change = 7553.08316285117,
+            E_ozon_depletion = 0.0523483833840181,
+            E_ionizing_radiation = 4220.16339014993,
+            E_ozon_formation = 40.8591977347772,
+            E_particulate_matter = 0.000595366821125478,
+            E_non.carcinogenic_toxicity = 0.000128735735008072,
+            E_carcinogenic_toxicity = 1.72528976538705E-05,
+            E_land_water_acidification = 55.5695412306019,
+            E_freshwater_eutrophication = 1.60685212828813,
+            E_marine_eutrophication = 19.5451815519191,
+            E_terrestrial_eutrophication = 176.754999788942,
+            E_freshwater_ecotoxicity = 56716.5863370596,
+            E_land_use = 819498.182923031,
+            E_water_use = 11468.7086407597,
+            E_energy_use = 65004.2596640165,
+            E_mineral_use = 0.0636226152369547)
+
+E_scientific_weights <- c(
+            E_climate_change = 0.2106,
+            E_ozon_depletion = 0.0631,
+            E_ionizing_radiation = 0.0501,
+            E_ozon_formation = 0.0478,
+            E_particulate_matter = 0.0896,
+            E_non.carcinogenic_toxicity = 0.0184,
+            E_carcinogenic_toxicity = 0.0213,
+            E_land_water_acidification = 0.062,
+            E_freshwater_eutrophication = 0.028,
+            E_marine_eutrophication = 0.0296,
+            E_terrestrial_eutrophication = 0.0371,
+            E_freshwater_ecotoxicity = 0.0192,
+            E_land_use = 0.0794,
+            E_water_use = 0.0851,
+            E_energy_use = 0.0832,
+            E_mineral_use = 0.0755)
+
+E_personal_weights <- c(
+            E_climate_change = 0.15,
+            E_ozon_depletion = 0.1,
+            E_ionizing_radiation = 0.1,
+            E_ozon_formation = 0.05,
+            E_particulate_matter = 0.05,
+            E_non.carcinogenic_toxicity = 0.05,
+            E_carcinogenic_toxicity = 0.05,
+            E_land_water_acidification = 0.05,
+            E_freshwater_eutrophication = 0.05,
+            E_marine_eutrophication = 0.05,
+            E_terrestrial_eutrophication = 0.05,
+            E_freshwater_ecotoxicity = 0.05,
+            E_land_use = 0.05,
+            E_water_use = 0.05,
+            E_energy_use = 0.05,
+            E_mineral_use = 0.05)
+
+# Multiplying normalization and weighting factors, following PEF methodology
+E_factors_scientific_clean= 1000* E_scientific_weights / E_normalization_factors 
+E_factors_personal_clean = 1000* E_personal_weights / E_normalization_factors
+
+# Aggregation into single scores
+score_calculation_db$E_scientific_SS <- c(as.matrix(score_calculation_db[, names(E_factors_scientific_clean)]) %*% E_factors_scientific_clean)
+
+score_calculation_db$E_personal_SS <- c(as.matrix(score_calculation_db[, names(E_factors_personal_clean)]) %*% E_factors_personal_clean)
+
+
+
+# =============== Min-max Normalization =============
+# ======Scientific=========
+# Choose "outlier" treshold
+upper_threshold <- 4  # adjust this to your needs
+
+# compute min excluding outliers (values below threshold are ignored)
+max_no_outlier <- max(score_calculation_db$E_scientific_SS[score_calculation_db$E_scientific_SS <= upper_threshold], na.rm = TRUE)
+min_val        <- min(score_calculation_db$E_scientific_SS, na.rm = TRUE)
+
+score_calculation_db$E_scientific_SS_MMnorm <- pmax(
+  (1-(score_calculation_db$E_scientific_SS - min_val) / (max_no_outlier - min_val)), 0)
+
+# =======Personal==========
+
+# compute min excluding outliers (values below threshold are ignored)
+max_no_outlier <- max(score_calculation_db$E_personal_SS[score_calculation_db$E_personal_SS <= upper_threshold], na.rm = TRUE)
+min_val        <- min(score_calculation_db$E_personal_SS, na.rm = TRUE)
+
+score_calculation_db$E_personal_SS_MMnorm <- pmax(
+  (1-(score_calculation_db$E_personal_SS - min_val) / (max_no_outlier - min_val)),  0 )
+
+
+
+
+# test <- score_calculation_db %>% select(food_product, E_personal_SS_MMnorm, TH_code)
+
+```
+
+## Animal Welfare
+
+```{r}
+
+AW_scientific_weights <- c(AW_AW_index = 0.5,    AW_antibio_index = 0.5)
+AW_personal_weights   <- c(AW_AW_index = 0.75,   AW_antibio_index = 0.25)
+
+# Aggregation into single scores
+score_calculation_db$AW_scientific_SS <- c(as.matrix(score_calculation_db[, names(AW_scientific_weights)]) %*% AW_scientific_weights)
+
+score_calculation_db$AW_personal_SS   <- c(as.matrix(score_calculation_db[, names(AW_personal_weights)]) %*% AW_personal_weights)
+
+
+# =============== Min-max Normalization =============
+# ======Scientific=========
+# Choose "outlier" treshold
+upper_threshold <- 100  # adjust this to your needs
+
+# compute min excluding outliers (values below threshold are ignored)
+max_no_outlier <- max(score_calculation_db$AW_scientific_SS[score_calculation_db$AW_scientific_SS <= upper_threshold], na.rm = TRUE)
+min_val        <- min(score_calculation_db$AW_scientific_SS, na.rm = TRUE)
+
+score_calculation_db$AW_scientific_SS_MMnorm <- pmax(
+  (1-(score_calculation_db$AW_scientific_SS - min_val) / (max_no_outlier - min_val)), 0)
+
+# =======Personal==========
+
+# compute min excluding outliers (values below threshold are ignored)
+max_no_outlier <- max(score_calculation_db$AW_personal_SS[score_calculation_db$AW_personal_SS <= upper_threshold], na.rm = TRUE)
+min_val        <- min(score_calculation_db$AW_personal_SS, na.rm = TRUE)
+
+score_calculation_db$AW_personal_SS_MMnorm <- pmax(
+  (1-(score_calculation_db$AW_personal_SS - min_val) / (max_no_outlier - min_val)),  0 )
+
+
+
+
+
+# # Min-max normalization of single scores
+# score_calculation_db <- score_calculation_db %>%
+#     mutate ( AW_scientific_SS_MMnorm = 1 - 
+#                                        (AW_scientific_SS                    - min(AW_scientific_SS, na.rm = TRUE)) / 
+#                                        (max(AW_scientific_SS, na.rm = TRUE) - min(AW_scientific_SS, na.rm = TRUE)) 
+#              )
+# 
+# score_calculation_db <- score_calculation_db  %>%
+#   mutate(AW_personal_SS_MMnorm = 1 -
+#                                  (AW_personal_SS                    - min(AW_personal_SS, na.rm = TRUE)) / 
+#                                  (max(AW_personal_SS, na.rm = TRUE) - min(AW_personal_SS, na.rm = TRUE)) 
+#          )
+
+```
+
+
+## Social
+
+```{r}
+
+S_scientific_weights <- c(    S_child_labour = 0.071429,
+                              S_forced_labour = 0.071429,
+                              S_fair_salary = 0.071429,
+                              S_working_time = 0.071429,
+                              S_discrimination = 0.071429,
+                              S_health_safety_workers = 0.071429,
+                              S_social_benefits_legal_issues = 0.071429,
+                              S_workers_rights = 0.071429,
+                              S_fair_competition = 0.071429,
+                              S_corruption = 0.071429,
+                              S_contribution_econ_dev = 0.071429,
+                              S_illiteracy = 0.071429,
+                              S_health_safety_society = 0.071429,
+                              S_indigenous_rights = 0.071429
+                             )
+
+S_personal_weights   <- c(      S_child_labour = 0.096386,
+                                S_forced_labour = 0,
+                                S_fair_salary = 0.060241,
+                                S_working_time = 0.072289,
+                                S_discrimination = 0.096386,
+                                S_health_safety_workers = 0.024096,
+                                S_social_benefits_legal_issues = 0.072289,
+                                S_workers_rights = 0.096386,
+                                S_fair_competition = 0.096386,
+                                S_corruption = 0,
+                                S_contribution_econ_dev = 0.096386,
+                                S_illiteracy = 0.096386,
+                                S_health_safety_society = 0.096386,
+                                S_indigenous_rights = 0.096386
+                         )
+
+# Aggregation into single scores
+score_calculation_db$S_scientific_SS <- c(as.matrix(score_calculation_db[, names(S_scientific_weights)]) %*% S_scientific_weights)
+score_calculation_db$S_personal_SS   <- c(as.matrix(score_calculation_db[, names(S_personal_weights)]) %*% S_personal_weights)
+
+# Min-max normalization of single scores
+score_calculation_db <- score_calculation_db %>%
+    mutate ( S_scientific_SS_MMnorm = 1 - 
+                                       (S_scientific_SS                    - min(S_scientific_SS, na.rm = TRUE)) / 
+                                       (max(S_scientific_SS, na.rm = TRUE) - min(S_scientific_SS, na.rm = TRUE)) 
+             )
+
+score_calculation_db <- score_calculation_db  %>%
+  mutate(S_personal_SS_MMnorm = 1 -
+                                 (S_personal_SS                    - min(S_personal_SS, na.rm = TRUE)) / 
+                                 (max(S_personal_SS, na.rm = TRUE) - min(S_personal_SS, na.rm = TRUE)) 
+         )
+
+
+```
+
+
+
+## Health
+
+```{r}
+score_calculation_db$H_scientific_SS_MMnorm <- case_when(
+  score_calculation_db$H_nutriscore == "Nutriscore_A" ~ 1    ,
+  score_calculation_db$H_nutriscore == "Nutriscore_B" ~ 0.75 ,
+  score_calculation_db$H_nutriscore == "Nutriscore_C" ~ 0.5  ,
+  score_calculation_db$H_nutriscore == "Nutriscore_D" ~ 0.25 ,
+  score_calculation_db$H_nutriscore == "Nutriscore_E" ~ 0    ,
+  .default = NA
+)
+
+score_calculation_db$H_personal_SS_MMnorm <- score_calculation_db$H_scientific_SS_MMnorm
+
+```
+
+
+## Compute aggregate single scores
+
+```{r}
+
+# dimension-level weights
+overall_scientific_weights <- c(AW_scientific_SS_MMnorm = 0.25, E_scientific_SS_MMnorm = 0.25, S_scientific_SS_MMnorm = 0.25, H_scientific_SS_MMnorm = 0.25)
+overall_personal_weights <- c(AW_personal_SS_MMnorm = 0.1, E_personal_SS_MMnorm = 0.1, S_personal_SS_MMnorm = 0.1, H_personal_SS_MMnorm = 0.7)
+
+# check if weights sum up to 1
+if (round(sum(overall_scientific_weights)) != 1) {print("ERROR: scientific dimension weights don't sum up to 1")}
+if (round(sum(overall_personal_weights)) != 1) {print("ERROR: personal dimension weights don't sum up to 1")}
+
+# Aggregation into overall single scores
+score_calculation_db$overall_scientific_SS <- c(as.matrix(score_calculation_db[, names(overall_scientific_weights)]) %*% overall_scientific_weights)
+score_calculation_db$overall_personal_SS   <- c(as.matrix(score_calculation_db[, names(overall_personal_weights)]) %*% overall_personal_weights)
+
+```
+
+
+
+# Algorithm
+
+# Setup
+
+```{r}
+alg_db <- score_calculation_db %>%
+  select(food_product, SAFAD_L1_cat, SAFAD_L2_cat, TH_code,overall_scientific_SS, overall_personal_SS) %>%
+  filter(!is.na(overall_scientific_SS))
+
+# --- Weights for the weighted average (step 3) ---
+weight_personal  <- 0.6
+weight_scientific <- 0.4
+
+# --- Initialize the three new columns ---
+alg_db$alt_best_personal  <- NA
+alg_db$alt_best_scientific <- NA
+alg_db$alt_best_combined   <- NA
+
+# large, medium or small substitutability
+
+large <- c("x", "m", "v")
+medium <- c("x", "m")
+small <- c("x")
+```
+
+## Choose level of substitutability:
+
+```{r}
+
+# CHOOSE substitutability here
+level <- small
+```
+
+## Algorithm implementation
+
+```{r}
+# --- Main loop ---
+for (i in 1:nrow(alg_db)) {
+  
+  product_A <- alg_db[i, ]
+  subcategory_A <- product_A$SAFAD_L2_cat # replace with your actual column name
+  
+  # Step 1: select relevant products based on matrix_A
+  # get all categories that are compatible with category_A
+  compatible_categories <- rownames(matrix_A)[matrix_A[, subcategory_A] %in% level]
+
+  step1_relevant <- alg_db[alg_db$SAFAD_L2_cat %in% compatible_categories, ]
+  
+  # Step 2: keep only products with overall_scientific_score >= product_A
+  step2_more_sustainable <- step1_relevant[step1_relevant$overall_scientific_SS >= product_A$overall_scientific_SS, ]
+  
+
+  # Step 3: if no relevant products found, skip
+  if (nrow(step2_more_sustainable) == 0) next
+
+  # compute weighted average score
+  step2_more_sustainable$combined_SS <- 
+    weight_personal   * step2_more_sustainable$overall_personal_SS   +
+    weight_scientific * step2_more_sustainable$overall_scientific_SS
+  
+  # select best for each criterion
+  best_personal   <- step2_more_sustainable[which.max(step2_more_sustainable$overall_personal_SS),   ]
+  best_scientific <- step2_more_sustainable[which.max(step2_more_sustainable$overall_scientific_SS), ]
+  best_combined   <- step2_more_sustainable[which.max(step2_more_sustainable$combined_SS),           ]
+  
+  # Step 4: store the results on the row of product_A
+  alg_db$alt_best_personal[i]   <- best_personal$food_product    # replace with your product ID column
+  alg_db$alt_best_scientific[i] <- best_scientific$food_product 
+  alg_db$alt_best_combined[i]   <- best_combined$food_product 
+
+}
+
+```
+
+
+# Data analysis
+
+# Results of algorithm
+```{r}
+# products most recommended as alternatives 
+alg_db %>% count(alt_best_scientific) %>% arrange(desc(n))
+alg_db %>% count(alt_best_personal) %>% arrange(desc(n))
+alg_db %>% count(alt_best_combined) %>% arrange(desc(n))
+```
+
+
+## Scores by category
+
+
+```{r}
+#plot name number
+pltnb <- 4
+
+
+#temporary variable
+score_calculation_db$H_scientific_SS <- score_calculation_db$H_scientific_SS_MMnorm
+
+# --- 1. RESHAPE DATA TO LONG FORMAT ---
+# Before normalization
+scores_raw <- score_calculation_db %>%
+  select(food_product, TH_code, SAFAD_L1_cat, SAFAD_L2_cat,
+         E_scientific_SS, AW_scientific_SS, S_scientific_SS, H_scientific_SS) %>%
+  pivot_longer(cols = c(E_scientific_SS, AW_scientific_SS, S_scientific_SS, H_scientific_SS),
+               names_to = "dimension",
+               values_to = "score") %>%
+  mutate(type = "Raw")
+
+# After normalization
+scores_norm <- score_calculation_db %>%
+  select(food_product, TH_code, SAFAD_L1_cat, SAFAD_L2_cat,
+         E_scientific_SS_MMnorm, AW_scientific_SS_MMnorm, 
+         S_scientific_SS_MMnorm, H_scientific_SS_MMnorm) %>%
+  pivot_longer(cols = c(E_scientific_SS_MMnorm, AW_scientific_SS_MMnorm,
+                        S_scientific_SS_MMnorm, H_scientific_SS_MMnorm),
+               names_to = "dimension",
+               values_to = "score") %>%
+  mutate(type = "Normalized",
+         dimension = gsub("_MMnorm", "", dimension))  # harmonize dimension names
+
+
+# overall_scores
+scores_overall <- score_calculation_db %>%
+  select(food_product, TH_code, SAFAD_L1_cat, SAFAD_L2_cat, overall_scientific_SS) %>%
+  pivot_longer(cols = overall_scientific_SS,
+               names_to = "dimension",
+               values_to = "score") %>%
+  mutate(type = "Normalized",
+         dimension = "_Overall")
+
+# Combine both
+scores_all <- bind_rows(scores_raw, scores_norm, scores_overall)
+
+
+
+# Clean up dimension names for display (remove "_scientific_SS")
+scores_all <- scores_all %>%
+  mutate(dimension = gsub("_scientific_SS", "", dimension)) %>%
+  mutate(SAFAD_L1_cat = recode(SAFAD_L1_cat,
+    "Drinking water (water without any additives except carbon dioxide; includes water ice for consumption)" = "Drinking water",
+    "Fish and other seafood (including amphibians, reptiles, snails and insects)" = "Fish and other seafood",
+    "Meat and meat products (including edible offal)" = "Meat and meat products",
+    "Non-alcoholic beverages (excepting milk based beverages)" = "Non-alcoholic beverages",
+    "Vegetables and vegetable products (including fungi)" = "Vegetables and vegetable products", 
+    "Composite food (including frozen products)" = "Composite food"
+  ))
+
+
+# --- 2. SUMMARY TABLE PER L1 CATEGORY ---
+
+summary_table <- scores_all %>%
+  group_by(SAFAD_L1_cat, dimension, type) %>%
+  summarise(
+    mean   = round(mean(score,   na.rm = TRUE), 3),
+    median = round(median(score, na.rm = TRUE), 3),
+    sd     = round(sd(score,     na.rm = TRUE), 3),
+    min    = round(min(score,    na.rm = TRUE), 3),
+    max    = round(max(score,    na.rm = TRUE), 3),
+    .groups = "drop"
+  )
+
+print(summary_table)
+
+
+# --- 3. BOXPLOTS: one plot per dimension, raw vs normalized side by side ---
+
+dimensions <- c("E", "AW", "S", "H")
+
+for (dim in dimensions) {
+  
+  plot_data <- scores_all %>% filter(dimension == dim)
+  
+p <- ggplot(plot_data, aes(x = SAFAD_L1_cat, y = score, fill = SAFAD_L1_cat)) +
+    geom_boxplot(outlier.size = 0.8, alpha = 0.7) +
+    facet_wrap(~ type, scales = "free_y") +  # free_y because raw and norm have different scales
+    labs(
+      title = paste("Distribution of", dim, "scores by food category"),
+      x     = "Food category (L1)",
+      y     = "Score",
+      fill  = "Category"
+    ) +
+    theme_bw() +
+    theme(
+      axis.text.x  = element_text(angle = 45, hjust = 1),
+      legend.position = "none"  # remove legend since x axis already shows categories
+    )
+  print(p)
+  ggsave(paste0("boxplot_",dim, "_", pltnb, ".png"), p, width = 12, height = 8)
+
+}
+  
+
+plot_data_norm <- scores_all %>% 
+  filter(type == "Normalized")
+
+p_all_dim <- ggplot(plot_data_norm, aes(x = dimension, y = score, fill = dimension)) +
+  geom_boxplot(outlier.size = 0.8, alpha = 0.7) +
+  facet_wrap(~ SAFAD_L1_cat)+    #, scales = "free_y") +
+  labs(
+    title = "Normalized scores across all 4 dimensions (and overall score) by food category",
+    x     = "Dimension",
+    y     = "Normalized score",
+    fill  = "Dimension"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x    = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+print(p_all_dim)
+
+ggsave(paste0("boxplots_all_dim_by_category_", pltnb, ".png"), p_all_dim, width = 16, height = 12)
+  
+    
+#remove the temporary H_scientific_SS as this score doesn't have any real meaning (it's the nutri-score)
+score_calculation_db <- select(score_calculation_db,-H_scientific_SS)
+```
+
+
