@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.random.RandomGenerator;
 
 import eu.tealhelix.common.types.Nullable;
+import eu.tealhelix.howibuy.scoring.v1.Alternative;
 import eu.tealhelix.howibuy.scoring.v1.ProductIndicators;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.scoring.v1.ScoredCorpus;
@@ -71,7 +72,7 @@ public final class ScoredArchetypes {
 	 * The Recommendation for the given archetype product, under the given personal weighting profile, among the
 	 * archetypes the user's Catalogue stocks.
 	 *
-	 * @param random The source of the draw that picks the Alternative
+	 * @param random The source of the draws that pick the Alternatives
 	 */
 	public ProductRecommendation recommendationFor(
 			ArchetypeProductId referenceProductId, WeightProfile personalProfile, Set<ArchetypeProductId> stocked, RandomGenerator random) {
@@ -86,9 +87,11 @@ public final class ScoredArchetypes {
 	/**
 	 * Told on the scientific Overall Score, the only one sure to beat the Reference Product's.
 	 */
-	private AlternativeForProduct alternative(ScoredProduct product) {
+	private AlternativeForProduct alternative(Alternative alternative) {
+		var product = alternative.product();
 		return ImmutableAlternativeForProduct.builder()
 				.archetype(archetypesByProductId.get(product.productId()))
+				.substitutability(alternative.substitutability())
 				.overallScore(product.overallScore(ScientificWeights.profile()))
 				.build();
 	}

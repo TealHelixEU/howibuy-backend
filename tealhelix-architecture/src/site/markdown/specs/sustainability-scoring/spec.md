@@ -47,18 +47,20 @@ out of the corpus altogether.
 
 1. **No score:** it has no Nutri-Score, so nothing is said about it.
 2. **Gate:** its scientific Overall Score is at least 0.80. It is good enough; no Alternative is sought.
-3. **Pool:** the stocked Archetype Products of every category substitutable for its own at degree 4 or 5, whose
-   scientific Overall Score is strictly higher than its own. An empty pool means no Alternative exists.
-4. **Draw:** one Archetype Product from the pool, at random, with probability proportional to
-   `exp(15 × personal Overall Score)`. The random source is seeded from the user and the Reference Product, so the same
-   user scanning the same product sees the same Alternative.
+3. **Pools:** one for each of the degrees of substitutability 5, 4 and 3: the stocked Archetype Products of every
+   category substitutable for its own at exactly that degree, whose scientific Overall Score is strictly higher than
+   its own. When every pool is empty, no Alternative exists.
+4. **Draws:** one Archetype Product from each pool that is not empty, the closest degree first, at random, with
+   probability proportional to `exp(15 × personal Overall Score)`. The random source is seeded from the user and the
+   Reference Product, so the same user scanning the same product sees the same Alternatives.
 
-The draw is the only place the user's weights act. The gate and the pool use the scientific profile alone, so no
+The draws are the only place the user's weights act. The gate and the pools use the scientific profile alone, so no
 weighting a user can express can lead to an objectively worse product.
 
-**Two steps.** Step 1 (issues 01–07) delivers the method with one Alternative, at WP3's level 4 (matrix degrees 4–5).
-Step 2 (issue 08) offers up to three, one per "ring" of the substitutability matrix (degree 5, 4 and 3 each on its
-own). The API carries a list of Alternatives from step 1, so the Retailers adapt once.
+**Two steps.** Step 1 (issues 01–07) builds the method with one Alternative, at WP3's level 4 (matrix degrees 4–5), the
+notebook's default. Step 2 (issue 08) offers up to three, one per "ring" of the substitutability matrix (degree 5, 4
+and 3 each on its own), as above. The API carries a list of Alternatives from step 1, so the Retailers adapt once. The
+two ship together, in API 0.3.0 (Nikos, 2026-11-05): step 1 is not released on its own.
 
 ## User Stories
 
@@ -82,7 +84,8 @@ own). The API carries a list of Alternatives from step 1, so the Retailers adapt
   `log(max(x, 0) + m)` first, where `m` is the median of the dimension's positive Single Scores, then percentile
   min–max. Percentiles 0.01 and 0.99, R's default quantile (type 7, linear interpolation).
 - Gate: scientific Overall Score `>= 0.80`. Pool: scientific Overall Score `>` the Reference Product's, the Reference
-  Product itself excluded. Substitutability: degree `>= 4` (step 1). Softmax sharpness 15.
+  Product itself excluded. Substitutability: degree `>= 4` (step 1); degrees 5, 4 and 3 apart (step 2, which WP3
+  agreed to). Softmax sharpness 15.
 - The scientific profile weights the four dimensions equally (0.25).
 - The indicator weights and PEF normalisation factors are unchanged from the current transcription; v15 uses the same
   values.
@@ -127,10 +130,11 @@ scores were computed that way.
   normalisation and the points-based health score replace them.
 - `SubstitutionSearch`'s three criteria, `SubstitutionSettings` (the 0.6/0.4 blend, the SMALL/MEDIUM/LARGE cut-offs)
   and `SubstitutabilityLevel` go. The search returns a recommendation: one of the four outcomes, the Reference
-  Product's scientific Overall Score when it has one, and a list of Alternatives (at most one in step 1).
+  Product's scientific Overall Score when it has one, and a list of Alternatives (at most one in step 1, up to three in
+  step 2).
 - The draw takes a `java.util.random.RandomGenerator` as a parameter; the engine never creates one. Candidates are
-  ordered by AGB code before the draw, so a seed always picks the same product from the same pool. A pool of one is
-  returned without drawing.
+  ordered by AGB code before the draw, so a seed always picks the same product from the same pool. In step 1 a pool of
+  one was returned without drawing; in step 2 each degree takes one number, whatever its pool holds (see "Step 2").
 - No argmax ("deterministic") mode: parity on the picks was dropped, so nothing would use it. It comes back if WP3
   asks for pick-by-pick output.
 
@@ -162,6 +166,7 @@ scores were computed that way.
   `alternativeOverallScore` to `overallScore`, also scientific. Only the scientific score is guaranteed to improve, so
   only it can say how much better an Alternative is: the personal Overall Score of a draw may be below the Reference
   Product's.
+- `AlternativeForProduct` gains `substitutability` (step 2): the degree of the pool it was drawn from, 5, 4 or 3.
 - `AlternativeForProductType` goes; the new enum is `RecommendationType` in `eu.tealhelix.howibuy.v1.types`.
 - The list is named `alternatives`, not `suggestions`, after the glossary term.
 - `openapi.yaml` describes the new fields; `OpenApiContractTest` keeps passing.
@@ -169,19 +174,34 @@ scores were computed that way.
 **Basket assessment** is unchanged in behaviour. Its Product Grades and stored scores move with the new normalisation,
 and its tests follow the new numbers.
 
-## Step 2: rings (issue 08, after step 1 is released)
+## Step 2: rings (issue 08)
 
 Up to three Alternatives, one per ring of the matrix: degree 5 ("closest match"), degree 4, degree 3, each ring drawn
 on its own from its own pool, in that order, with the same seeded random source. The rings are disjoint (a category has
 one degree against the Reference Product's), so no exclusion between draws is needed. An empty ring is skipped. WP3
-measured "level 4 is the best balance" on nested pools only and may test rings; step 2 waits for that if it comes.
+measured "level 4 is the best balance" on nested pools only and may test rings; Nikos decided (2026-11-05) not to wait
+for that.
+
+Decided with Nikos (2026-11-05):
+- Each ring takes exactly one number from the random source, in the order 5, 4, 3, whether its pool is empty, of one
+  or of more. Each Alternative then depends on its own pool alone: stocking a product in one ring never moves another
+  ring's Alternative.
+- Each Alternative says its degree (`substitutability`), since the order of the list cannot tell which ring an
+  Alternative came from once a ring is skipped.
+- The glossary's Substitutability Level is retired, and no term replaces it: "ring" is this spec's word only.
+
+What it changes, estimated with every Archetype Product stocked, the 47 without a Nutri-Score left out, on the scale
+of WP3's parity file (which differs slightly from the app's): of the 1,401 products below the Gate, 1,334 get three
+Alternatives, 65 two, 1 one and 1 none. The one with a single Alternative has it at degree 3: No Alternative at level
+4, it is Recommended with rings.
 
 ## Testing Decisions
 
 1. **Engine unit tests** (plain JUnit + AssertJ). Hand-computed fixtures: the type-7 quantile, including interpolation
    between two values; the log offset over positive values only; clamping at both ends; the inversion; the scale
    defined by the given products only; the gate at exactly 0.80; the strict pool (equal score excluded, self excluded);
-   the Substitutability Level; the stocked filter; the four outcomes; the draw with a stubbed `RandomGenerator`
+   the pool of each degree (5, 4 and 3 apart, an empty one skipped; 2 and an absent category in none); one number per
+   degree, in turn; the stocked filter; the four outcomes; the draw with a stubbed `RandomGenerator`
    choosing each candidate; the draw's distribution with a seeded generator over many draws, against the softmax
    probabilities; determinism of the order before the draw.
 2. **Parity with WP3.** All 2,451 products of 10-27 scored by the engine against the `log_tails` rows of WP3's
@@ -200,7 +220,6 @@ measured "level 4 is the best balance" on nested pools only and may test rings; 
 
 ## Out of Scope
 
-- Rings and several Alternatives (step 2, issue 08).
 - Gamification: XP, streaks, badges, the basket thresholds against the new scale. It follows this work.
 - Scoring products without a Nutri-Score on their other dimensions.
 - Exposing dimension scores through the product assessment API.

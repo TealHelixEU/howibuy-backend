@@ -30,15 +30,15 @@ public final class SubstitutabilityMatrix {
 	}
 
 	/**
-	 * The categories that may substitute for the given one at or above the given degree. A category is normally
-	 * substitutable for itself, so the answer usually contains the category asked about; it is empty for a category
-	 * the matrix does not mention at all.
+	 * The categories that may substitute for the given one at exactly the given degree. A category is normally
+	 * substitutable for itself at degree 5, so the answer for 5 usually contains the category asked about; it is empty
+	 * for a category the matrix does not mention at all.
 	 */
-	public Set<ArchetypeCategoryId> categoriesSubstitutableFor(ArchetypeCategoryId categoryId, short minimumDegree) {
+	public Set<ArchetypeCategoryId> categoriesSubstitutableFor(ArchetypeCategoryId categoryId, short degree) {
 		var substitutes = substitutesByCategory.get(categoryId);
 		if (substitutes == null) return Set.of();
 		return substitutes.entrySet().stream()
-				.filter(substitute -> substitute.getValue() >= minimumDegree)
+				.filter(substitute -> substitute.getValue() == degree)
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toSet());
 	}

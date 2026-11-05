@@ -212,6 +212,7 @@ public class ProductAssessmentServiceImplTest {
 		assertEquals(List.of(KEFIR_PRODUCT, AYRAN_PRODUCT), outcome.getAlternatives().stream().map(AlternativeForProduct::getProduct).toList());
 		assertEquals(KEFIR, outcome.getAlternatives().getFirst().getArchetype(), "the rest of the Alternative as recommended");
 		assertEquals(0.75, outcome.getAlternatives().getFirst().getOverallScore());
+		assertEquals(5, outcome.getAlternatives().getFirst().getSubstitutability());
 	}
 
 	/**
@@ -289,6 +290,7 @@ public class ProductAssessmentServiceImplTest {
 		return ImmutableAlternativeForProduct.builder()
 				.archetype(archetype)
 				.overallScore(0.75)
+				.substitutability(5)
 				.build();
 	}
 

@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.services.model.Substitutability;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.Branch;
+import eu.tealhelix.howibuy.v1.model.AlternativeForProduct;
 import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
@@ -45,10 +47,10 @@ class ScoredArchetypesTest {
 	private static final Branch WATER = new Branch("Beverages", "Water", "Spring waters");
 	private static final Branch CANDY = new Branch("Sweets", "Candy", "Candy bars");
 
-	/** Water substitutes for juices only barely, and candy not at all — it is absent from the matrix. */
+	/** Water substitutes for juices less readily than another juice, and candy not at all — it is absent from the matrix. */
 	private static final List<Substitutability> MATRIX = List.of(
 			substitutability(JUICES.id(), JUICES.id(), (short) 5),
-			substitutability(WATER.id(), JUICES.id(), (short) 1));
+			substitutability(WATER.id(), JUICES.id(), (short) 3));
 
 	private static final ArchetypeProductId REFERENCE = productId("reference");
 	private static final ArchetypeProductId GREENEST = productId("greenest");
@@ -85,14 +87,17 @@ class ScoredArchetypesTest {
 	private static final WeightProfile PERSONAL = personalProfileOnEnvironment();
 	private static final Set<ArchetypeProductId> ALL_STOCKED = CORPUS.stream().map(ArchetypeProductImpacts::getId).collect(Collectors.toSet());
 
-	/** A random source for the answers here, none of which needs a draw: a Pool of one is offered as it is. */
+	/** A random source for the answers that seek no Pool, and so draw nothing. */
 	private static final RandomGenerator NEVER_CONSULTED = () -> {
 		throw new AssertionError("The random source was consulted, but there was nothing to draw between");
 	};
 
+	/** A random source for the answers here that seek Pools, none of which holds more than one product to draw. */
+	private static final RandomGenerator ANY_DRAW = new Random(0);
+
 	@Test
 	void recommendsTheAlternativeDrawnFromThePoolScoredScientifically() {
-		var recommendation = archetypes().recommendationFor(REFERENCE, PERSONAL, Set.of(GREENEST), NEVER_CONSULTED);
+		var recommendation = archetypes().recommendationFor(REFERENCE, PERSONAL, Set.of(GREENEST), ANY_DRAW);
 
 		assertEquals(RECOMMENDED, recommendation.type());
 		assertEquals(0.5625, recommendation.referenceOverallScore(), TOLERANCE, "the reference product's scientific score");
@@ -106,7 +111,18 @@ class ScoredArchetypesTest {
 		assertEquals(JUICES.l3(), archetype.getL3Category());
 		assertEquals(0.75, alternative.getOverallScore(), TOLERANCE,
 				"its scientific score, the one sure to beat the reference's, where its personal score is 1.0");
+		assertEquals(5, alternative.getSubstitutability(), "of the reference's own category");
 		assertNull(alternative.getProduct(), "the product of the Catalogue is chosen after the Recommendation");
+	}
+
+	@Test
+	void offersAnAlternativeAtEachDegreeOfSubstitutabilityTheClosestFirst() {
+		var recommendation = archetypes().recommendationFor(REFERENCE, PERSONAL, Set.of(SPRING_WATER, GREENEST), ANY_DRAW);
+
+		assertEquals(RECOMMENDED, recommendation.type());
+		assertEquals(List.of(GREENEST, SPRING_WATER), recommendation.alternatives().stream().map(alternative -> alternative.getArchetype().getId()).toList());
+		assertEquals(List.of(5, 3), recommendation.alternatives().stream().map(AlternativeForProduct::getSubstitutability).toList());
+		assertEquals(1.0, recommendation.alternatives().getLast().getOverallScore(), TOLERANCE, "each told on its own scientific score");
 	}
 
 	@Test
@@ -120,7 +136,7 @@ class ScoredArchetypesTest {
 
 	@Test
 	void findsNoAlternativeWhenNothingSubstitutesForTheReferenceCategory() {
-		var recommendation = archetypes().recommendationFor(CANDY_BAR, PERSONAL, ALL_STOCKED, NEVER_CONSULTED);
+		var recommendation = archetypes().recommendationFor(CANDY_BAR, PERSONAL, ALL_STOCKED, ANY_DRAW);
 
 		assertEquals(NO_ALTERNATIVE, recommendation.type());
 		assertEquals(0.625, recommendation.referenceOverallScore(), TOLERANCE);
@@ -138,7 +154,7 @@ class ScoredArchetypesTest {
 
 	@Test
 	void neverOffersAProductOutsideTheNutriScoreScheme() {
-		var recommendation = archetypes().recommendationFor(REFERENCE, PERSONAL, Set.of(SPIRITS), NEVER_CONSULTED);
+		var recommendation = archetypes().recommendationFor(REFERENCE, PERSONAL, Set.of(SPIRITS), ANY_DRAW);
 
 		assertEquals(NO_ALTERNATIVE, recommendation.type(),
 				"Spirits shares the reference's category and is stocked, but has no overall score to be better with");

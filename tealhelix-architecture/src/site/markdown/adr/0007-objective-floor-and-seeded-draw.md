@@ -2,21 +2,24 @@
 
 The assessment answers every Reference Product with one of four Recommendations: Recommended, Good Enough, No
 Alternative or No Score. Whether an Alternative is sought at all (the Gate: a scientific Overall Score of at least
-0.80), and which products may be one (the Pool: stocked, substitutable at degree 4 or 5, and strictly better on the
-scientific Overall Score), are decided on the scientific Weighting Profile alone. The user's own weights decide only
-which product of the Pool is offered, by a random draw that favours a higher personal Overall Score: each product with
-probability proportional to `exp(15 × its personal Overall Score)`.
+0.80), and which products may be one (the Pools: one for each of the degrees of Substitutability 5, 4 and 3, holding
+the stocked products substitutable at exactly that degree and strictly better on the scientific Overall Score), are
+decided on the scientific Weighting Profile alone. The user's own weights decide only which product of each Pool is
+offered, by a random draw that favours a higher personal Overall Score: each product with probability proportional to
+`exp(15 × its personal Overall Score)`. Up to three Alternatives are offered, one from each Pool that is not empty, the
+closest degree first.
 
-**The random source is seeded from the user and the Reference Product, so the same user scanning the same product is offered the same Alternative, and two users, or one user scanning two products, need not be.**
+**The random source is seeded from the user and the Reference Product, so the same user scanning the same product is offered the same Alternatives, and two users, or one user scanning two products, need not be.**
 
 This is the method of WP3's notebook `paper_analysis_2026_07_31_v15.qmd`, apart from the seeding, which the notebook
-leaves open and WP3 left to us.
+leaves open and WP3 left to us, and the three Pools, which WP3 agreed to: the notebook draws one Alternative from
+degrees 5 and 4 together.
 
 ## Considered Options
 
 ### What the user's weights decide
 
-- **The choice within an objective floor (chosen).** The Gate and the Pool use the scientific profile, the draw the
+- **The choice within an objective floor (chosen).** The Gate and the Pools use the scientific profile, the draws the
   personal one. No weighting a user can express can lead to an objectively worse product, or talk a product into being
   good enough. The notebook's comparison of its pool modes shows the point: a pool open to every substitutable product
   lets the draw make a downgrade unlikely, not impossible, where the strict floor rules it out.
@@ -43,6 +46,16 @@ leaves open and WP3 left to us.
   Reference Product's `ArchetypeProductId`, fed to `java.util.Random`, whose algorithm the JDK specifies. Nothing
   identity- or run-dependent goes in, so the answer survives restarts and redeploys.
 
+### How the three Pools share the random source
+
+- **One number per degree, in turn, whatever its Pool holds (chosen).** Degrees 5, 4 and 3 each take one number, in
+  that order, whether their Pool is empty, of one or of more. Each Alternative depends on its own Pool alone, and the
+  seed stays one hash per assessment. A Pool that is empty or of one takes a number it has no use for.
+- **A number only for a Pool with something to draw between.** The fewest numbers, but stocking a second product at
+  degree 5 would move the user's Alternatives at degrees 4 and 3, though nothing changed there.
+- **A seed per degree,** a hash of the user, the Reference Product and the degree. The same independence, for three
+  hashes per assessment and a seed whose specification has to name the degree.
+
 ## Consequences
 
 - The engine never creates a random source. It takes a `java.util.random.RandomGenerator`, so its tests stub the draw
@@ -50,12 +63,14 @@ leaves open and WP3 left to us.
 - The draw samples the notebook's softmax by inversion over the Pool in the order of the AGB codes, where the notebook
   uses the Gumbel-max trick. The distribution is the same; the products picked from a given seed are not, and need not
   be.
-- A Pool of one is offered without drawing.
-- A user's Alternative for a product changes when, and only when:
+- Each degree takes one number from the random source, in the order 5, 4, 3, whatever its Pool holds.
+- Each Alternative says the degree of the Pool it was drawn from, since the order of the list cannot tell once a degree
+  is skipped.
+- A user's Alternative from a Pool changes when, and only when:
   - they retake the compass, since their weights move the probabilities;
-  - the Pool changes: the Catalogue stocks or drops a product of it. Any such change can move the Alternative, even
+  - that Pool changes: the Catalogue stocks or drops a product of it. Any such change can move the Alternative, even
     when the product stocked or dropped is not the one offered: the draw maps one random number onto the shares of the
-    whole Pool, and every share moves with the total;
+    whole Pool, and every share moves with the total. A change to one Pool never moves the Alternative of another;
   - WP3's data or substitutability matrix change.
 
   It does not change with a restart, a redeploy, the order the corpus is loaded in, or the time of day.

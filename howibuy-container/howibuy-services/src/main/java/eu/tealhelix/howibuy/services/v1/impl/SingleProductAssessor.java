@@ -35,7 +35,7 @@ public class SingleProductAssessor {
 	}
 
 	/**
-	 * @param userId          The user the product is assessed for, whom the draw of the Alternative is seeded from
+	 * @param userId          The user the product is assessed for, whom the draws of the Alternatives are seeded from
 	 * @param productKey      The key of the scanned product
 	 * @param identification  How the archetype of the product was looked up
 	 * @param personalProfile The user's weighting profile
@@ -56,7 +56,7 @@ public class SingleProductAssessor {
 	}
 
 	/**
-	 * The assessed product's archetype identified, the Recommendation follows from the scored corpus, its draw seeded
+	 * The assessed product's archetype identified, the Recommendation follows from the scored corpus, its draws seeded
 	 * from the user and the archetype.
 	 */
 	private Uni<ProductAssessmentOutcome> successfulAssessment(
@@ -81,10 +81,10 @@ public class SingleProductAssessor {
 	}
 
 	/**
-	 * The seed of the draw for a user and a Reference Product, so that the same user scanning the same product is
-	 * offered the same Alternative (ADR 0007).
+	 * The seed of the draws for a user and a Reference Product, so that the same user scanning the same product is
+	 * offered the same Alternatives (ADR 0007).
 	 * <p>
-	 * It is fixed by specification, so that the Alternative survives restarts and redeploys: the name-based UUID of
+	 * It is fixed by specification, so that the Alternatives survive restarts and redeploys: the name-based UUID of
 	 * RFC 4122 (version 3, MD5) of {@code "<user id>/<archetype id>"}, its two halves XORed. The hash also keeps the
 	 * seeds of ids that differ in a character or two far apart: the first numbers {@link Random} draws from close seeds
 	 * are close too.

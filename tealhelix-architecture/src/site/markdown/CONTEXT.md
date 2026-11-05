@@ -145,16 +145,10 @@ plate, graded by a degree: the higher the degree, the more readily. Established 
 not derived from the scores, and not a statement that the substitute is better.
 _Avoid_: similarity, compatibility, interchangeability, swappability
 
-**Substitutability Level**:
-How far a substitution is allowed to stray, named by the lowest degree of Substitutability that
-qualifies: level 4 admits the categories substitutable at degree 4 or 5. The assessment uses level
-4.
-_Avoid_: radius, distance, tolerance, strictness, threshold, Small/Medium/Large
-
 **Recommendation**:
 The assessment's answer to "is there something better to buy?", one of four. **Recommended**:
 Alternatives are offered. **Good Enough**: the Reference Product passes the Gate, so none is sought.
-**No Alternative**: the Pool is empty. **No Score**: the Reference Product has no Nutri-Score, so
+**No Alternative**: every Pool is empty. **No Score**: the Reference Product has no Nutri-Score, so
 nothing is said.
 _Avoid_: suggestion, advice, verdict, result; "good choice" for No Alternative (nothing better being
 stocked does not make a product good)
@@ -165,19 +159,20 @@ no Alternative is sought for it, whatever the user's weights.
 _Avoid_: threshold (bare), cut-off, pass mark
 
 **Pool**:
-The Archetype Products an Alternative is drawn from: those some active Listing of the user's
-Catalogue is classified as, whose category is substitutable for the Reference Product's at the
-Substitutability Level, and whose scientific Overall Score is strictly higher than the Reference
-Product's. The Reference Product itself is never in it.
+The Archetype Products an Alternative is drawn from, one Pool for each of the degrees of
+Substitutability 5, 4 and 3: those some active Listing of the user's Catalogue is classified as,
+whose category is substitutable for the Reference Product's at exactly that degree, and whose
+scientific Overall Score is strictly higher than the Reference Product's. The Reference Product
+itself is never in one.
 _Avoid_: shortlist, options
 
 **Alternative**:
 A Retailer Product, from an active Listing in the user's Catalogue, offered in place of the scanned
-product. It stands for an Archetype Product drawn at random from the Pool, the draw favouring a
+product. It stands for an Archetype Product drawn at random from a Pool, the draw favouring a
 higher personal Overall Score; the same user scanning the same product is offered the same one, as
-long as the Pool and their Weighting Profile stay the same. At most one is offered per assessment.
-How much better it is is always told on the scientific Overall Score, the only one guaranteed to
-improve.
+long as that Pool and their Weighting Profile stay the same. One is offered from each Pool that is
+not empty, so up to three per assessment, the closest degree of Substitutability first. How much
+better it is is always told on the scientific Overall Score, the only one guaranteed to improve.
 _Avoid_: substitute, suggestion, recommendation (that is the answer as a whole), swap, replacement
 
 ## Basket Assessment

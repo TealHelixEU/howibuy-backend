@@ -15,7 +15,7 @@ import eu.tealhelix.howibuy.dao.jpa.values.ArchetypeSubstitutabilityPK;
 /**
  * One substitutable pair of the WP3 substitutability matrix, read as: {@link #getFromCategory() from} may substitute
  * for {@link #getToCategory() to}. Both ends are L2 categories of the SAFAD taxonomy. Only substitutable pairs are
- * stored, so a missing row means the substitution is not allowed at any level.
+ * stored, so a missing row means the substitution is not allowed at any degree.
  *
  * <p>
  * The relation is stored directionally even though the matrix WP3 delivered is symmetric, so that a future

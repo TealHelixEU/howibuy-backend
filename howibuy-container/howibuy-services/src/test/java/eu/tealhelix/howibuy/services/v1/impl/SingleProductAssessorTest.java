@@ -139,6 +139,7 @@ public class SingleProductAssessorTest {
 		assertEquals("Juices", alternative.getArchetype().getL2Category());
 		assertEquals("Orange juice", alternative.getArchetype().getL3Category());
 		assertEquals(1.0, alternative.getOverallScore(), 1e-9);
+		assertEquals(5, alternative.getSubstitutability(), "of the identified archetype's own category");
 	}
 
 	@Test

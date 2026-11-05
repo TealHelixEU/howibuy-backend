@@ -175,7 +175,7 @@ public class OpenApiContractTest {
 	/**
 	 * An assessment answers with its Recommendation, the scientific Overall Score of the Reference Product and the
 	 * Alternatives, each naming the archetype product it stands for with the SAFAD taxonomy path that archetype sits in,
-	 * its scientific Overall Score, and the product of the Catalogue that stands for it. All of it is what the front-end
+	 * its degree of Substitutability, its scientific Overall Score, and the product of the Catalogue that stands for it. All of it is what the front-end
 	 * shows the user, so it belongs to the published contract rather than only to the Java type. This shape is the
 	 * contract's version 0.3.0.
 	 */
@@ -198,7 +198,7 @@ public class OpenApiContractTest {
 				.body("components.schemas.ProductAssessmentOutcome.properties.alternatives.items.'$ref'",
 						equalTo("#/components/schemas/AlternativeForProduct"))
 				.body("components.schemas.AlternativeForProduct.properties.keySet()",
-						equalTo(Set.of("archetype", "overallScore", "product")))
+						equalTo(Set.of("archetype", "substitutability", "overallScore", "product")))
 				.body("components.schemas.AlternativeForProduct.properties.archetype.'$ref'",
 						equalTo("#/components/schemas/RecommendedArchetype"))
 				.body("components.schemas.RecommendedArchetype.properties.id.'$ref'",
@@ -209,6 +209,7 @@ public class OpenApiContractTest {
 				.body("components.schemas.RecommendedArchetype.properties.l1Category.type", equalTo("string"))
 				.body("components.schemas.RecommendedArchetype.properties.l2Category.type", equalTo("string"))
 				.body("components.schemas.RecommendedArchetype.properties.l3Category.type", equalTo("string"))
+				.body("components.schemas.AlternativeForProduct.properties.substitutability.type", equalTo("integer"))
 				.body("components.schemas.AlternativeForProduct.properties.overallScore.type", equalTo("number"))
 				.body("components.schemas.AlternativeForProduct.properties.product.'$ref'",
 						equalTo("#/components/schemas/ListedProduct"))

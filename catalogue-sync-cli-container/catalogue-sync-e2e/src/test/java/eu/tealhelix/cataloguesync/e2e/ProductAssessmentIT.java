@@ -69,6 +69,7 @@ class ProductAssessmentIT {
 				.body("recommendation", equalTo("RECOMMENDED"))
 				.body("alternatives.size()", equalTo(1))
 				.body("alternatives[0].archetype.id", equalTo(OLIVE_OIL))
+				.body("alternatives[0].substitutability", equalTo(4))
 				.body("alternatives[0].product.productKey", equalTo("e2e-olive-oil"))
 				.body("alternatives[0].product.name", equalTo("Extra virgin olive oil"))
 				.body("alternatives[0].product.language", equalTo("en"))

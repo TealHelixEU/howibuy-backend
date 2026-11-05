@@ -37,7 +37,8 @@ components:
         alternatives:
           description: >-
             What to buy in place of the product. Non-empty exactly when the recommendation is `RECOMMENDED`, and it
-            then holds one alternative.
+            then holds up to three alternatives: one for each degree of substitutability, 5, 4 and 3, at which the
+            Catalogue stocks something better, the closest first.
         diagnostics:
           description: >-
             How the product was identified, for tracing an assessment rather than for showing to a shopper. Missing
@@ -52,7 +53,12 @@ components:
             picked at random in favour of a higher overall score under the user's own weighting of the sustainability
             dimensions, as their compass records it (the scientific one until they complete it). The same user
             assessing the same product is put forward the same one, as long as their compass and what the Catalogue
-            stocks stay the same.
+            stocks at its degree of substitutability stay the same.
+        substitutability:
+          description: >-
+            How readily the archetype product's kind of food stands in for the assessed product's, as WP3's
+            substitutability matrix grades it: 5, 4 or 3, 5 being the closest match, which takes in the assessed
+            product's own kind. An assessment puts forward one alternative at each degree at most.
         overallScore:
           description: >-
             The overall score of that archetype product under the scientific weighting, always higher than the

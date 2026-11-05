@@ -239,6 +239,7 @@ public class ProductAssessmentTest {
 				.body("recommendation", equalTo("RECOMMENDED"))
 				.body("alternatives.size()", equalTo(1))
 				.body("alternatives[0].archetype.id", equalTo(archetypes.better().asString()))
+				.body("alternatives[0].substitutability", equalTo(archetypes.substitutability()))
 				.body("alternatives[0].product.productKey", equalTo("kefir"))
 				.body("alternatives[0].product.name", equalTo("kefir"))
 				.body("alternatives[0].product.language", equalTo("el"))
@@ -250,6 +251,24 @@ public class ProductAssessmentTest {
 		var outcome = response.jsonPath();
 		assertEquals(scientificOverallScoreOf(archetypes.reference()), outcome.getDouble("referenceOverallScore"), SCORE_TOLERANCE);
 		assertEquals(scientificOverallScoreOf(archetypes.better()), outcome.getDouble("alternatives[0].overallScore"), SCORE_TOLERANCE);
+	}
+
+	@Test
+	void anAssessmentOffersAnAlternativeAtEachDegreeOfSubstitutabilityTheClosestFirst() throws SQLException {
+		var archetypes = anArchetypeWithAnAlternativeAtEveryDegree();
+		var alternativeKeys = List.of("closest", "close", "further");
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
+		for (int i = 0; i < alternativeKeys.size(); i++) {
+			fixtures.applyProduct(alternativeKeys.get(i), i + 2, "h" + (i + 2), listing(CATALOGUE_GR, true));
+			fixtures.classify(alternativeKeys.get(i), "h" + (i + 2), archetypes.alternatives().get(i).asString());
+		}
+
+		assessSingle("shopper", single("yoghurt", "el"), 200)
+				.body("recommendation", equalTo("RECOMMENDED"))
+				.body("alternatives.substitutability", equalTo(List.of(5, 4, 3)))
+				.body("alternatives.archetype.id", equalTo(archetypes.alternatives().stream().map(ArchetypeProductId::asString).toList()))
+				.body("alternatives.product.productKey", equalTo(alternativeKeys));
 	}
 
 	@Test
@@ -345,19 +364,40 @@ public class ProductAssessmentTest {
 		as("shopper-without-catalogue").contentType(JSON).body(multi("el", "yoghurt")).post(BASE + "/assessment/product/multi").then().statusCode(403);
 	}
 
-	private record ArchetypePair(ArchetypeProductId reference, ArchetypeProductId better) {
+	private record ArchetypePair(ArchetypeProductId reference, ArchetypeProductId better, int substitutability) {
+	}
+
+	private record ArchetypeAndItsAlternatives(ArchetypeProductId reference, List<ArchetypeProductId> alternatives) {
 	}
 
 	/**
-	 * @return An archetype of the seed data below the Gate, and an archetype of its Pool when every archetype is
-	 *         stocked: the Alternative whenever a Catalogue stocks it alone of the archetypes of that Pool
+	 * @return An archetype of the seed data below the Gate, and the first of its Alternatives when every archetype is
+	 *         stocked: its only Alternative in a Catalogue that stocks no other archetype
 	 */
 	private ArchetypePair anArchetypeAndOneOfItsPool() throws SQLException {
 		var archetypes = scoredArchetypes();
 		Set<ArchetypeProductId> all = seedArchetypes();
 		return all.stream().sorted(Comparator.comparing(ArchetypeProductId::asString))
 				.flatMap(reference -> archetypes.recommendationFor(reference, ScientificWeights.profile(), all, new Random(0)).alternatives().stream()
-						.map(alternative -> new ArchetypePair(reference, alternative.getArchetype().getId())))
+						.map(alternative -> new ArchetypePair(reference, alternative.getArchetype().getId(), alternative.getSubstitutability())))
+				.findFirst()
+				.orElseThrow();
+	}
+
+	/**
+	 * @return An archetype of the seed data with an Alternative at each of the degrees 5, 4 and 3 when every archetype is
+	 *         stocked, and those Alternatives, the closest first: its Alternatives in a Catalogue that stocks no other
+	 *         archetype
+	 */
+	private ArchetypeAndItsAlternatives anArchetypeWithAnAlternativeAtEveryDegree() throws SQLException {
+		var archetypes = scoredArchetypes();
+		Set<ArchetypeProductId> all = seedArchetypes();
+		return all.stream().sorted(Comparator.comparing(ArchetypeProductId::asString))
+				.map(reference -> new ArchetypeAndItsAlternatives(reference,
+						archetypes.recommendationFor(reference, ScientificWeights.profile(), all, new Random(0)).alternatives().stream()
+								.map(alternative -> alternative.getArchetype().getId())
+								.toList()))
+				.filter(candidate -> candidate.alternatives().size() == 3)
 				.findFirst()
 				.orElseThrow();
 	}

@@ -51,12 +51,15 @@ class SubstitutionSearchTest {
 			new SubstitutablePair(JUICES, JUICES, (short) 5),
 			new SubstitutablePair(NECTARS, JUICES, (short) 4),
 			new SubstitutablePair(SOFT_DRINKS, JUICES, (short) 3),
-			new SubstitutablePair(WATER, JUICES, (short) 1));
+			new SubstitutablePair(WATER, JUICES, (short) 2));
 
-	/** A random source for the answers that need no draw: a Pool of one is offered as it is, and no other answer draws. */
+	/** A random source for the answers that seek no Pool, and so draw nothing. */
 	private static final RandomGenerator NEVER_CONSULTED = () -> {
 		throw new AssertionError("The random source was consulted, but there was nothing to draw between");
 	};
+
+	/** A random source for Pools of one product at most, from which every number draws the same. */
+	private static final RandomGenerator ANY_NUMBER = drawingAt(0.5);
 
 	private static final ScoredProduct REFERENCE = scored("100", JUICES, 0.40, 0.40, 0.40, 0.40);
 
@@ -101,10 +104,10 @@ class SubstitutionSearchTest {
 		var belowTheGate = scored("120", JUICES, 1.00, 0.80, 0.80, 0.56);
 		var better = scored("220", NECTARS, 1.00, 1.00, 1.00, 1.00);
 
-		var recommendation = recommend(belowTheGate, NEVER_CONSULTED, better);
+		var recommendation = recommend(belowTheGate, ANY_NUMBER, better);
 
 		assertThat(recommendation.type()).as("the gate is on the scientific Overall Score").isEqualTo(RECOMMENDED);
-		assertThat(recommendation.alternatives()).containsExactly(better);
+		assertThat(recommendation.alternatives()).containsExactly(atDegree(4, better));
 	}
 
 	@Test
@@ -113,28 +116,29 @@ class SubstitutionSearchTest {
 		var reference = scored("130", JUICES, 0.20, 0.40, 0.60, 0.40);
 		var better = scored("220", NECTARS, 1.00, 1.00, 1.00, 1.00);
 
-		var recommendation = recommend(reference, NEVER_CONSULTED, better);
+		var recommendation = recommend(reference, ANY_NUMBER, better);
 
 		assertThat(recommendation.type()).isEqualTo(RECOMMENDED);
 		assertThat(recommendation.referenceOverallScore()).hasValueCloseTo(0.40, within(TOLERANCE));
 	}
 
 	@Test
-	void recommendsTheOnlyBetterProductWithoutDrawing() {
+	void recommendsTheOnlyBetterProductWhateverTheNumberDrawn() {
 		var better = scored("230", NECTARS, 0.60, 0.60, 0.60, 0.60);
 
-		var recommendation = recommend(REFERENCE, NEVER_CONSULTED, better);
+		var recommendation = recommend(REFERENCE, drawingAt(0.0), better);
 
 		assertThat(recommendation.type()).isEqualTo(RECOMMENDED);
 		assertThat(recommendation.referenceOverallScore()).hasValueCloseTo(0.40, within(TOLERANCE));
-		assertThat(recommendation.alternatives()).containsExactly(better);
+		assertThat(recommendation.alternatives()).containsExactly(atDegree(4, better));
+		assertThat(recommend(REFERENCE, drawingAt(0.999), better).alternatives()).containsExactly(atDegree(4, better));
 	}
 
 	@Test
 	void findsNoAlternativeWhenNothingStockedIsBetter() {
 		var worse = scored("240", NECTARS, 0.10, 0.10, 0.10, 0.10);
 
-		var recommendation = recommend(REFERENCE, NEVER_CONSULTED, worse);
+		var recommendation = recommend(REFERENCE, ANY_NUMBER, worse);
 
 		assertThat(recommendation.type()).isEqualTo(NO_ALTERNATIVE);
 		assertThat(recommendation.referenceOverallScore()).as("below the gate, and said so").hasValueCloseTo(0.40, within(TOLERANCE));
@@ -145,12 +149,12 @@ class SubstitutionSearchTest {
 	void neverOffersAProductOnlyAsGoodAsTheReferenceProduct() {
 		var asGood = scored("250", NECTARS, 0.40, 0.40, 0.40, 0.40);
 
-		assertThat(recommend(REFERENCE, NEVER_CONSULTED, asGood).type()).as("no improvement").isEqualTo(NO_ALTERNATIVE);
+		assertThat(recommend(REFERENCE, ANY_NUMBER, asGood).type()).as("no improvement").isEqualTo(NO_ALTERNATIVE);
 	}
 
 	@Test
 	void neverOffersTheReferenceProductItself() {
-		var recommendation = recommendStocking(Set.of(REFERENCE.productId()), REFERENCE, NEVER_CONSULTED);
+		var recommendation = recommendStocking(Set.of(REFERENCE.productId()), REFERENCE, ANY_NUMBER);
 
 		assertThat(recommendation.type()).as("stocked, and of a category substitutable for itself at degree 5")
 				.isEqualTo(NO_ALTERNATIVE);
@@ -162,29 +166,43 @@ class SubstitutionSearchTest {
 		var temptingButWorse = scored("260", NECTARS, 1.00, 0.00, 0.00, 0.00);
 		var better = scored("270", NECTARS, 0.50, 0.50, 0.50, 0.50);
 
-		var recommendation = recommend(REFERENCE, NEVER_CONSULTED, temptingButWorse, better);
+		var recommendation = recommend(REFERENCE, ANY_NUMBER, temptingButWorse, better);
 
 		assertThat(recommendation.alternatives()).as("the user's weights choose among the better products, never which are better")
-				.containsExactly(better);
+				.containsExactly(atDegree(4, better));
 	}
 
 	@Test
-	void admitsTheCategoriesSubstitutableAtDegreeFourOrFive() {
+	void offersOneAlternativeAtEachOfTheDegreesFiveFourAndThreeTheClosestFirst() {
 		var sameCategory = scored("280", JUICES, 0.60, 0.60, 0.60, 0.60);
 		var nectar = scored("290", NECTARS, 0.60, 0.60, 0.60, 0.60);
+		var softDrink = scored("310", SOFT_DRINKS, 0.60, 0.60, 0.60, 0.60);
 
-		assertThat(recommend(REFERENCE, NEVER_CONSULTED, sameCategory).alternatives()).as("degree 5").containsExactly(sameCategory);
-		assertThat(recommend(REFERENCE, NEVER_CONSULTED, nectar).alternatives()).as("degree 4").containsExactly(nectar);
+		var recommendation = recommend(REFERENCE, ANY_NUMBER, softDrink, nectar, sameCategory);
+
+		assertThat(recommendation.type()).isEqualTo(RECOMMENDED);
+		assertThat(recommendation.alternatives()).as("whatever order the corpus comes in")
+				.containsExactly(atDegree(5, sameCategory), atDegree(4, nectar), atDegree(3, softDrink));
 	}
 
 	@Test
-	void admitsNoCategoryLessSubstitutableThanDegreeFour() {
-		var softDrink = scored("310", SOFT_DRINKS, 1.00, 1.00, 1.00, 1.00);
+	void skipsADegreeAtWhichNothingBetterIsStocked() {
+		var sameCategory = scored("280", JUICES, 0.60, 0.60, 0.60, 0.60);
+		var worseNectar = scored("290", NECTARS, 0.10, 0.10, 0.10, 0.10);
+		var softDrink = scored("310", SOFT_DRINKS, 0.60, 0.60, 0.60, 0.60);
+
+		var recommendation = recommend(REFERENCE, ANY_NUMBER, sameCategory, worseNectar, softDrink);
+
+		assertThat(recommendation.alternatives()).containsExactly(atDegree(5, sameCategory), atDegree(3, softDrink));
+	}
+
+	@Test
+	void admitsNoCategoryLessSubstitutableThanDegreeThree() {
 		var water = scored("320", WATER, 1.00, 1.00, 1.00, 1.00);
 		var candy = scored("330", CANDY, 1.00, 1.00, 1.00, 1.00);
 
-		assertThat(recommend(REFERENCE, NEVER_CONSULTED, softDrink, water, candy).type())
-				.as("degree 3, degree 1, and a category missing from the matrix").isEqualTo(NO_ALTERNATIVE);
+		assertThat(recommend(REFERENCE, ANY_NUMBER, water, candy).type())
+				.as("degree 2, and a category missing from the matrix").isEqualTo(NO_ALTERNATIVE);
 	}
 
 	@Test
@@ -192,9 +210,9 @@ class SubstitutionSearchTest {
 		var stocked = scored("340", NECTARS, 0.60, 0.60, 0.60, 0.60);
 		var unstocked = scored("350", NECTARS, 1.00, 1.00, 1.00, 1.00);
 
-		var recommendation = recommendStocking(Set.of(stocked.productId()), REFERENCE, NEVER_CONSULTED, stocked, unstocked);
+		var recommendation = recommendStocking(Set.of(stocked.productId()), REFERENCE, ANY_NUMBER, stocked, unstocked);
 
-		assertThat(recommendation.alternatives()).as("the best product is not in the Catalogue").containsExactly(stocked);
+		assertThat(recommendation.alternatives()).as("the best product is not in the Catalogue").containsExactly(atDegree(4, stocked));
 	}
 
 	/**
@@ -203,9 +221,9 @@ class SubstitutionSearchTest {
 	 */
 	@Test
 	void drawsTheCandidateInWhoseShareOfTheWeightTheRandomNumberFalls() {
-		assertThat(recommend(REFERENCE, drawingAt(1.0 / 14), ONCE, TWICE, FOUR_TIMES).alternatives()).containsExactly(ONCE);
-		assertThat(recommend(REFERENCE, drawingAt(2.0 / 7), ONCE, TWICE, FOUR_TIMES).alternatives()).containsExactly(TWICE);
-		assertThat(recommend(REFERENCE, drawingAt(5.0 / 7), ONCE, TWICE, FOUR_TIMES).alternatives()).containsExactly(FOUR_TIMES);
+		assertThat(recommend(REFERENCE, drawingAt(1.0 / 14), ONCE, TWICE, FOUR_TIMES).alternatives()).containsExactly(atDegree(4, ONCE));
+		assertThat(recommend(REFERENCE, drawingAt(2.0 / 7), ONCE, TWICE, FOUR_TIMES).alternatives()).containsExactly(atDegree(4, TWICE));
+		assertThat(recommend(REFERENCE, drawingAt(5.0 / 7), ONCE, TWICE, FOUR_TIMES).alternatives()).containsExactly(atDegree(4, FOUR_TIMES));
 	}
 
 	@Test
@@ -215,7 +233,7 @@ class SubstitutionSearchTest {
 		var drawn = new HashMap<ScoredProduct, Integer>();
 
 		for (int i = 0; i < draws; i++) {
-			drawn.merge(recommend(REFERENCE, random, ONCE, TWICE, FOUR_TIMES).alternatives().getFirst(), 1, Integer::sum);
+			drawn.merge(recommend(REFERENCE, random, ONCE, TWICE, FOUR_TIMES).alternatives().getFirst().product(), 1, Integer::sum);
 		}
 
 		assertThat((double) drawn.get(ONCE) / draws).isCloseTo(1.0 / 7, within(0.005));
@@ -232,8 +250,45 @@ class SubstitutionSearchTest {
 		var oneOrder = recommend(REFERENCE, drawingAt(0.1), first, second, third);
 		var otherOrder = recommend(REFERENCE, drawingAt(0.1), third, second, first);
 
-		assertThat(oneOrder.alternatives()).as("the first third of the weight belongs to the lowest AGB code").containsExactly(first);
-		assertThat(otherOrder.alternatives()).as("whichever comes first in the corpus").containsExactly(first);
+		assertThat(oneOrder.alternatives()).as("the first third of the weight belongs to the lowest AGB code").containsExactly(atDegree(4, first));
+		assertThat(otherOrder.alternatives()).as("whichever comes first in the corpus").containsExactly(atDegree(4, first));
+	}
+
+	/**
+	 * Each degree takes its number in turn, 5, 4 and 3. Nothing better is stocked at degree 5, and the number it takes
+	 * would draw the last of the nectars.
+	 */
+	@Test
+	void aDegreeAtWhichNothingBetterIsStockedStillTakesItsNumber() {
+		var recommendation = recommend(REFERENCE, drawingInTurn(0.99, 1.0 / 14, 0.99), ONCE, TWICE, FOUR_TIMES);
+
+		assertThat(recommendation.alternatives()).as("degree 4 draws with the second number").containsExactly(atDegree(4, ONCE));
+	}
+
+	@Test
+	void aDegreeWithASingleBetterProductStockedStillTakesItsNumber() {
+		var juice = scored("610", JUICES, 0.60, 0.60, 0.60, 0.60);
+
+		var recommendation = recommend(REFERENCE, drawingInTurn(0.99, 1.0 / 14, 0.99), juice, ONCE, TWICE, FOUR_TIMES);
+
+		assertThat(recommendation.alternatives()).as("degree 4 draws with the second number")
+				.containsExactly(atDegree(5, juice), atDegree(4, ONCE));
+	}
+
+	@Test
+	void stockingAnotherProductAtOneDegreeLeavesTheAlternativesAtTheOthersAlone() {
+		var juice = scored("610", JUICES, 0.60, 0.60, 0.60, 0.60);
+		var anotherJuice = scored("620", JUICES, 0.60, 0.60, 0.60, 0.60);
+		var softDrink = scored("630", SOFT_DRINKS, 0.60, 0.60, 0.60, 0.60);
+		var anotherSoftDrink = scored("640", SOFT_DRINKS, 0.60, 0.60, 0.60, 0.60);
+
+		for (long seed = 0; seed < 50; seed++) {
+			var before = recommend(REFERENCE, new Random(seed), juice, ONCE, TWICE, FOUR_TIMES, softDrink, anotherSoftDrink);
+			var after = recommend(REFERENCE, new Random(seed), juice, anotherJuice, ONCE, TWICE, FOUR_TIMES, softDrink, anotherSoftDrink);
+
+			assertThat(after.alternatives().subList(1, 3)).as("seed %d, a second juice stocked at degree 5", seed)
+					.isEqualTo(before.alternatives().subList(1, 3));
+		}
 	}
 
 	/**
@@ -259,6 +314,10 @@ class SubstitutionSearchTest {
 		return product.overallScore(ScientificWeights.profile());
 	}
 
+	private static Alternative atDegree(int substitutability, ScoredProduct product) {
+		return new Alternative(product, (short) substitutability);
+	}
+
 	/**
 	 * A random source whose every draw lands at the given fraction of the candidates' total weight.
 	 */
@@ -267,6 +326,27 @@ class SubstitutionSearchTest {
 			@Override
 			public double nextDouble() {
 				return fraction;
+			}
+
+			@Override
+			public long nextLong() {
+				throw new UnsupportedOperationException("The draw takes a double");
+			}
+		};
+	}
+
+	/**
+	 * A random source whose draws land at the given fractions of the candidates' total weight in turn, and that has no
+	 * more numbers to give.
+	 */
+	private static RandomGenerator drawingInTurn(double... fractions) {
+		return new RandomGenerator() {
+			private int taken;
+
+			@Override
+			public double nextDouble() {
+				if (taken == fractions.length) throw new AssertionError("More numbers were taken than there are degrees to draw at");
+				return fractions[taken++];
 			}
 
 			@Override

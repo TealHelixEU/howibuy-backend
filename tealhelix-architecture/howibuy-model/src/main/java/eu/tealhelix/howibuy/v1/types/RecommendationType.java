@@ -5,7 +5,8 @@ package eu.tealhelix.howibuy.v1.types;
  */
 public enum RecommendationType {
 	/**
-	 * Alternatives are offered: the Reference Product does not pass the Gate, and the Pool holds something better.
+	 * Alternatives are offered: the Reference Product does not pass the Gate, and at least one Pool holds something
+	 * better.
 	 */
 	RECOMMENDED,
 	/**
@@ -13,7 +14,7 @@ public enum RecommendationType {
 	 */
 	GOOD_ENOUGH,
 	/**
-	 * The Reference Product does not pass the Gate, and the Pool is empty. Nothing better being stocked does not make
+	 * The Reference Product does not pass the Gate, and every Pool is empty. Nothing better being stocked does not make
 	 * the Reference Product good.
 	 */
 	NO_ALTERNATIVE,

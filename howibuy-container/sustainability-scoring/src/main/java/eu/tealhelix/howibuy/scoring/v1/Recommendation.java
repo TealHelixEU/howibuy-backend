@@ -11,10 +11,11 @@ import eu.tealhelix.howibuy.v1.types.RecommendationType;
  * @param type                  Which of the four answers it is
  * @param referenceOverallScore The Reference Product's scientific Overall Score, absent for
  *                              {@link RecommendationType#NO_SCORE}
- * @param alternatives          The Archetype Products drawn from the Pool: one for {@link RecommendationType#RECOMMENDED},
- *                              none otherwise
+ * @param alternatives          The Archetype Products drawn, one from each Pool that is not empty, the closest degree of
+ *                              Substitutability first: at least one for {@link RecommendationType#RECOMMENDED}, none
+ *                              otherwise
  */
-public record Recommendation(RecommendationType type, OptionalDouble referenceOverallScore, List<ScoredProduct> alternatives) {
+public record Recommendation(RecommendationType type, OptionalDouble referenceOverallScore, List<Alternative> alternatives) {
 	static Recommendation noScore() {
 		return new Recommendation(RecommendationType.NO_SCORE, OptionalDouble.empty(), List.of());
 	}
@@ -27,7 +28,7 @@ public record Recommendation(RecommendationType type, OptionalDouble referenceOv
 		return new Recommendation(RecommendationType.NO_ALTERNATIVE, OptionalDouble.of(referenceOverallScore), List.of());
 	}
 
-	static Recommendation recommended(double referenceOverallScore, ScoredProduct alternative) {
-		return new Recommendation(RecommendationType.RECOMMENDED, OptionalDouble.of(referenceOverallScore), List.of(alternative));
+	static Recommendation recommended(double referenceOverallScore, List<Alternative> alternatives) {
+		return new Recommendation(RecommendationType.RECOMMENDED, OptionalDouble.of(referenceOverallScore), List.copyOf(alternatives));
 	}
 }

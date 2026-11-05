@@ -9,9 +9,16 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface AlternativeForProduct {
 	/**
-	 * The Archetype Product drawn from the Pool.
+	 * The Archetype Product drawn from the Pool of its degree of Substitutability.
 	 */
 	RecommendedArchetype getArchetype();
+
+	/**
+	 * The degree of Substitutability of the Archetype Product's category for the Reference Product's: 5, 4 or 3, the
+	 * higher the more readily it stands in. An assessment offers one Alternative at each degree at most, the closest
+	 * first.
+	 */
+	int getSubstitutability();
 
 	/**
 	 * The scientific Overall Score of the Archetype Product, which is always higher than the Reference Product's. The

@@ -43,7 +43,7 @@ public interface ProductAssessmentOutcome extends HasProductKey {
 
 	/**
 	 * What to buy in place of the Reference Product, non-empty exactly when the recommendation is
-	 * {@link RecommendationType#RECOMMENDED}.
+	 * {@link RecommendationType#RECOMMENDED}: up to three, one for each degree of Substitutability, the closest first.
 	 */
 	List<AlternativeForProduct> getAlternatives();
 
