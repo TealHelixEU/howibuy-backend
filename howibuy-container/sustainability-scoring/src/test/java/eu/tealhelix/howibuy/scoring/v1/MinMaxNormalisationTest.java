@@ -3,7 +3,7 @@ package eu.tealhelix.howibuy.scoring.v1;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.HEALTH;
-import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL;
+import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.OptionalDouble;
@@ -66,7 +66,7 @@ class MinMaxNormalisationTest {
 	void appliesWp3sOutlierThresholdsToTheDimensionsThatHaveThem() {
 		assertThat(MinMaxNormalisation.outlierThresholdFor(ENVIRONMENT)).hasValue(4.0);
 		assertThat(MinMaxNormalisation.outlierThresholdFor(ANIMAL_WELFARE)).hasValue(100.0);
-		assertThat(MinMaxNormalisation.outlierThresholdFor(SOCIAL)).isEmpty();
+		assertThat(MinMaxNormalisation.outlierThresholdFor(SOCIO_ECONOMIC)).isEmpty();
 		assertThat(MinMaxNormalisation.outlierThresholdFor(HEALTH)).isEmpty();
 	}
 }

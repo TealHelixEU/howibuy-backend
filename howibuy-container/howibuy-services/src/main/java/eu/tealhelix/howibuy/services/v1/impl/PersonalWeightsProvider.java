@@ -31,8 +31,8 @@ import io.smallrye.mutiny.Uni;
 public class PersonalWeightsProvider {
 	/**
 	 * The compass's five dimensions against the four an archetype product is scored on. Ecological and environment are
-	 * one facet under two names. Economic maps to nothing: the compass asks about it, and the WP3 product data carries
-	 * no economic indicator to weight, so the answer is elicited and discarded (ADR 0005).
+	 * one facet under two names, and social maps to socio-economic. Economic maps to nothing: the compass asks about it,
+	 * and the answer is elicited and discarded (ADR 0005).
 	 */
 	private static final Map<SustainabilityDimension, ScoredSustainabilityDimension> SCORED_DIMENSIONS = scoredDimensions();
 
@@ -57,15 +57,8 @@ public class PersonalWeightsProvider {
 	}
 
 	/**
-	 * The compass moves the four dimension weights and nothing finer: the indicator weights stay at their scientific
-	 * values for every user. That is an assumption about the method's intended granularity, pending question 2.1 to KU
-	 * Leuven — the compass has no instrument at the resolution of a single PEF impact category or social indicator, and
-	 * WP3's own sensitivity analysis sweeps only the four dimension weights.
-	 * <p>
-	 * Should the answer be that personalisation reaches inside a dimension, {@link WeightProfile} already carries both
-	 * levels, so the change lands here rather than in the engine. It would cost more than an edit, though: with the
-	 * indicator weights fixed, every raw single score and the whole min–max normalisation are user-independent and the
-	 * corpus can be scored once, which is what {@link eu.tealhelix.howibuy.scoring.v1.ScoredCorpus} relies on.
+	 * The compass moves the four dimension weights and nothing finer, as WP3 confirmed: it has no instrument at the
+	 * resolution of a single PEF impact category or socio-economic indicator.
 	 */
 	private static Optional<WeightProfile> derive(Map<SustainabilityDimension, List<ScaleOption>> answersByDimension) {
 		var means = meanAnswerPerScoredDimension(answersByDimension);
@@ -76,7 +69,6 @@ public class PersonalWeightsProvider {
 		means.forEach((dimension, mean) -> weights.put(dimension, mean / total));
 
 		return Optional.of(ImmutableWeightProfile.builder()
-				.indicatorWeights(ScientificWeights.profile().getIndicatorWeights())
 				.dimensionWeights(weights)
 				.build());
 	}
@@ -100,7 +92,7 @@ public class PersonalWeightsProvider {
 	private static Map<SustainabilityDimension, ScoredSustainabilityDimension> scoredDimensions() {
 		var scored = new EnumMap<SustainabilityDimension, ScoredSustainabilityDimension>(SustainabilityDimension.class);
 		scored.put(SustainabilityDimension.ECOLOGICAL, ScoredSustainabilityDimension.ENVIRONMENT);
-		scored.put(SustainabilityDimension.SOCIAL, ScoredSustainabilityDimension.SOCIAL);
+		scored.put(SustainabilityDimension.SOCIAL, ScoredSustainabilityDimension.SOCIO_ECONOMIC);
 		scored.put(SustainabilityDimension.HEALTH, ScoredSustainabilityDimension.HEALTH);
 		scored.put(SustainabilityDimension.ANIMAL_WELFARE, ScoredSustainabilityDimension.ANIMAL_WELFARE);
 		return Map.copyOf(scored);

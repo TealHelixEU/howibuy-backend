@@ -111,7 +111,7 @@ scores were computed that way.
   - `addNotNullConstraint` on `nutri_score_points`, preconditioned on the update having run: a database migrated
     first without `appdata` and then with it loads the original products, which have no points, after every changeset
     without a context;
-  - `renameColumn` of `TH_PURCHASED_BASKET_PRODUCT.score_social` to `score_socio_economic`.
+  - `renameColumn` of `TH_PURCHASED_BASKET_PRODUCT.score_social` to `score_socio_economic`, with its remark.
 - `generate-archetype-data.js` gets the 10-27 input, the new column and an option naming the product file it writes,
   so the original `archetype_product.csv` stays byte-identical. The category CSV it regenerates must not change; if
   it does, the script's output is wrong for this changelog and the work stops.

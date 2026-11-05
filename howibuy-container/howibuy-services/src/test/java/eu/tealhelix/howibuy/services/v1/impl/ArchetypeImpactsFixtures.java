@@ -6,7 +6,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
 
-import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
@@ -49,7 +48,6 @@ final class ArchetypeImpactsFixtures {
 			dimensionWeights.put(dimension, dimension == ENVIRONMENT ? 1.0 : 0.0);
 		}
 		return ImmutableWeightProfile.builder()
-				.indicatorWeights(ScientificWeights.profile().getIndicatorWeights())
 				.dimensionWeights(dimensionWeights)
 				.build();
 	}
@@ -68,13 +66,13 @@ final class ArchetypeImpactsFixtures {
 
 	static ArchetypeProductImpacts impacts(
 			ArchetypeProductId id, String name, String agbCode, Branch branch,
-			double environment, double animalWelfare, double social, String nutriScore) {
+			double environment, double animalWelfare, double socioEconomic, String nutriScore) {
 		var values = new EnumMap<SustainabilityIndicator, Double>(SustainabilityIndicator.class);
 		for (var indicator : SustainabilityIndicator.values()) {
 			values.put(indicator, BASE_VALUE * switch (indicator.getDimension()) {
 				case ENVIRONMENT -> environment;
 				case ANIMAL_WELFARE -> animalWelfare;
-				case SOCIAL -> social;
+				case SOCIO_ECONOMIC -> socioEconomic;
 				case HEALTH -> 0.0;
 			});
 		}

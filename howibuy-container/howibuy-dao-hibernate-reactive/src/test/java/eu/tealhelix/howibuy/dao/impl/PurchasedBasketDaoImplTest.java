@@ -114,7 +114,7 @@ public class PurchasedBasketDaoImplTest {
 		assertEquals(4, stored.get("xp_value"));
 		assertEquals(ATTEMPT, stored.get("compass_attempt_id"));
 
-		var products = rows("SELECT purchased_basket_id, product_key, archetype_product_id, overall_score, product_grade, score_environment, score_animal_welfare, score_social, score_health FROM TH_PURCHASED_BASKET_PRODUCT ORDER BY product_key");
+		var products = rows("SELECT purchased_basket_id, product_key, archetype_product_id, overall_score, product_grade, score_environment, score_animal_welfare, score_socio_economic, score_health FROM TH_PURCHASED_BASKET_PRODUCT ORDER BY product_key");
 		assertEquals(2, products.size());
 		var chips = products.get(0);
 		assertEquals(stored.get("id"), chips.get("purchased_basket_id"));
@@ -124,7 +124,7 @@ public class PurchasedBasketDaoImplTest {
 		assertEquals("B", chips.get("product_grade"));
 		assertEquals(0.6, chips.get("score_environment"));
 		assertEquals(0.5, chips.get("score_animal_welfare"));
-		assertEquals(0.75, chips.get("score_social"));
+		assertEquals(0.75, chips.get("score_socio_economic"));
 		assertEquals(0.4, chips.get("score_health"));
 		var milk = products.get(1);
 		assertEquals(stored.get("id"), milk.get("purchased_basket_id"));
@@ -134,7 +134,7 @@ public class PurchasedBasketDaoImplTest {
 		assertEquals("A", milk.get("product_grade"));
 		assertEquals(0.9, milk.get("score_environment"));
 		assertEquals(0.8, milk.get("score_animal_welfare"));
-		assertEquals(0.7, milk.get("score_social"));
+		assertEquals(0.7, milk.get("score_socio_economic"));
 		assertEquals(0.95, milk.get("score_health"));
 	}
 
@@ -219,7 +219,7 @@ public class PurchasedBasketDaoImplTest {
 				.build();
 	}
 
-	private static PurchasedBasketProduct product(String key, UUID archetypeId, double overallScore, ProductGrade grade, double environment, double animalWelfare, double social, double health) {
+	private static PurchasedBasketProduct product(String key, UUID archetypeId, double overallScore, ProductGrade grade, double environment, double animalWelfare, double socioEconomic, double health) {
 		return ImmutablePurchasedBasketProduct.builder()
 				.productKey(new ProductKeyImpl(key))
 				.archetypeProductId(new ArchetypeProductIdImpl(archetypeId.toString()))
@@ -228,7 +228,7 @@ public class PurchasedBasketDaoImplTest {
 				.normalisedScores(Map.of(
 						ScoredSustainabilityDimension.ENVIRONMENT, environment,
 						ScoredSustainabilityDimension.ANIMAL_WELFARE, animalWelfare,
-						ScoredSustainabilityDimension.SOCIAL, social,
+						ScoredSustainabilityDimension.SOCIO_ECONOMIC, socioEconomic,
 						ScoredSustainabilityDimension.HEALTH, health))
 				.build();
 	}

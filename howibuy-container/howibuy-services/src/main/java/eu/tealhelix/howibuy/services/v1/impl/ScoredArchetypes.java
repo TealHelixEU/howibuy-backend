@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.function.ToDoubleFunction;
 
 import eu.tealhelix.howibuy.scoring.v1.Alternatives;
-import eu.tealhelix.howibuy.scoring.v1.CorpusScoring;
 import eu.tealhelix.howibuy.scoring.v1.ProductIndicators;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.scoring.v1.ScoredCorpus;
@@ -64,8 +63,7 @@ public final class ScoredArchetypes {
 	public static ScoredArchetypes of(
 			List<ArchetypeProductImpacts> corpus, List<Substitutability> matrix, SubstitutionSettings settings) {
 		var scientificProfile = ScientificWeights.profile();
-		var scoredCorpus = new CorpusScoring(corpus.stream().map(ScoredArchetypes::toProductIndicators).toList())
-				.scoredWith(scientificProfile);
+		var scoredCorpus = ScoredCorpus.score(corpus.stream().map(ScoredArchetypes::toProductIndicators).toList());
 		var search = new SubstitutionSearch(
 				scoredCorpus, SubstitutabilityMatrix.of(matrix.stream().map(ScoredArchetypes::toSubstitutablePair).toList()),
 				scientificProfile, settings);

@@ -108,4 +108,13 @@
 		</preConditions>
 		<addNotNullConstraint tableName="TH_ARCHETYPE_PRODUCT" columnName="nutri_score_points" constraintName="NL_TH_ARCHETYPE_PRODUCT__NUTRI_SCORE_POINTS" />
 	</changeSet>
+
+	<changeSet id="purchased_basket_product_score_socio_economic" author="nikospara">
+		<renameColumn tableName="TH_PURCHASED_BASKET_PRODUCT" oldColumnName="score_social" newColumnName="score_socio_economic" />
+		<setColumnRemarks tableName="TH_PURCHASED_BASKET_PRODUCT" columnName="score_socio_economic" remarks="The Normalised Score of the Socio-economic dimension" />
+		<rollback>
+			<setColumnRemarks tableName="TH_PURCHASED_BASKET_PRODUCT" columnName="score_socio_economic" remarks="The Normalised Score of the Social dimension" />
+			<renameColumn tableName="TH_PURCHASED_BASKET_PRODUCT" oldColumnName="score_socio_economic" newColumnName="score_social" />
+		</rollback>
+	</changeSet>
 </databaseChangeLog>

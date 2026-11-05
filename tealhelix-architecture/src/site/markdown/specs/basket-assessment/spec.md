@@ -120,8 +120,8 @@ New changelog `changelogs/v1.0.0/20261031_basket_assessment.xml` in `howibuy-dao
   tables are another bounded context).
 - `TH_PURCHASED_BASKET_PRODUCT`, one row per scored product only: basket id (FK), product key, archetype product id
   (no FK), Overall Score, Product Grade, and the four normalised scores as `DOUBLE PRECISION NOT NULL` columns
-  (`score_environment`, `score_animal_welfare`, `score_social`, `score_health`). No FK to `TH_RETAILER_PRODUCT`: the
-  Catalogue Sync deletes its rows.
+  (`score_environment`, `score_animal_welfare`, `score_socio_economic`, `score_health`). No FK to
+  `TH_RETAILER_PRODUCT`: the Catalogue Sync deletes its rows.
 - A `NOTHING_TO_ASSESS` purchase is stored with a null grade, XP 0 and no product rows.
 
 ## Testing Decisions

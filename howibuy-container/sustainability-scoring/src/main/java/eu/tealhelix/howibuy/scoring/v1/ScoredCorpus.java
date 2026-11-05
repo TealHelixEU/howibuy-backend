@@ -9,7 +9,6 @@ import java.util.Optional;
 
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
-import eu.tealhelix.howibuy.v1.types.SustainabilityIndicator;
 
 /**
  * Every archetype product that can be assessed, with all four dimensions normalised against the corpus as a whole.
@@ -23,18 +22,17 @@ public final class ScoredCorpus {
 	private final Map<ArchetypeProductId, ScoredProduct> byProductId;
 
 	/**
-	 * Scores and normalises the whole corpus under the given indicator weights.
+	 * Scores and normalises the whole corpus, weighting the indicators by WP3's scientific weights.
 	 * <p>
 	 * Products with no health score are dropped, but only after normalisation: a product that can never be
 	 * recommended is still part of the range every other product is measured against, as it is in the reference
 	 * implementation.
 	 * <p>
-	 * The dimension weights of a weighting profile are deliberately not a parameter. They belong to
-	 * {@link ScoredProduct#overallScore}, and keeping them out of here is what makes a scored corpus shareable between
-	 * users — see {@link CorpusScoring}.
+	 * Nothing here depends on who is asking: the dimension weights of a weighting profile belong to
+	 * {@link ScoredProduct#overallScore}, so one scored corpus serves every user.
 	 */
-	public static ScoredCorpus score(List<ProductIndicators> corpus, Map<SustainabilityIndicator, Double> indicatorWeights) {
-		var normalised = normaliseEveryDimension(corpus, indicatorWeights);
+	public static ScoredCorpus score(List<ProductIndicators> corpus) {
+		var normalised = normaliseEveryDimension(corpus);
 
 		var scored = new ArrayList<ScoredProduct>(corpus.size());
 		for (var i = 0; i < corpus.size(); i++) {
@@ -77,11 +75,10 @@ public final class ScoredCorpus {
 		return find(productId).orElseThrow(() -> new IllegalArgumentException("Product is not in the scored corpus, id: " + productId.asString()));
 	}
 
-	private static Map<ScoredSustainabilityDimension, double[]> normaliseEveryDimension(
-			List<ProductIndicators> corpus, Map<SustainabilityIndicator, Double> indicatorWeights) {
+	private static Map<ScoredSustainabilityDimension, double[]> normaliseEveryDimension(List<ProductIndicators> corpus) {
 		var singleScores = new EnumMap<ScoredSustainabilityDimension, double[]>(ScoredSustainabilityDimension.class);
 		for (var i = 0; i < corpus.size(); i++) {
-			for (var entry : SingleScoreAggregation.aggregate(corpus.get(i), indicatorWeights).entrySet()) {
+			for (var entry : SingleScoreAggregation.aggregate(corpus.get(i), ScientificWeights.indicatorWeights()).entrySet()) {
 				singleScores.computeIfAbsent(entry.getKey(), dimension -> new double[corpus.size()])[i] = entry.getValue();
 			}
 		}

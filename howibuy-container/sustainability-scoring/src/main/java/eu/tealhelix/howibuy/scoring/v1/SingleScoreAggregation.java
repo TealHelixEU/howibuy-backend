@@ -18,9 +18,8 @@ final class SingleScoreAggregation {
 	 * The single score of every dimension that has indicators, which is all of them except
 	 * {@link ScoredSustainabilityDimension#HEALTH}.
 	 * <p>
-	 * Takes the indicator weights rather than the whole weighting profile: the dimension weights play no part in a
-	 * single score, and saying so in the signature is what lets the scored corpus be cached on the indicator weights
-	 * alone.
+	 * The scored corpus always passes {@link ScientificWeights#indicatorWeights()}. An indicator absent from the given
+	 * weights contributes nothing.
 	 */
 	static Map<ScoredSustainabilityDimension, Double> aggregate(ProductIndicators product, Map<SustainabilityIndicator, Double> indicatorWeights) {
 		var singleScores = new EnumMap<ScoredSustainabilityDimension, Double>(ScoredSustainabilityDimension.class);

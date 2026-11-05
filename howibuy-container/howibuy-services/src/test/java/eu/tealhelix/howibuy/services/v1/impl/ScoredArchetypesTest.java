@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
  * Each product's indicators are set to a per-dimension fraction of one tiny base value — tiny so that no single score
  * comes near an outlier threshold and the plain min–max applies, and a fraction because min–max is scale-free: a
  * product at fraction {@code f} of a dimension whose corpus spans 0 to 1 normalises to exactly {@code 1 - f}. So a
- * product declared at {@code (0.5, 0, 0)} scores 0.5 on environment and 1.0 on animal welfare and social, and its
- * health score comes straight off its Nutri-Score.
+ * product declared at {@code (0.5, 0, 0)} scores 0.5 on environment and 1.0 on animal welfare and socio-economic, and
+ * its health score comes straight off its Nutri-Score.
  * <p>
  * The scientific profile weights the four dimensions equally, making its overall score their mean; the personal
  * profile below puts everything on the environment, making its overall score the environmental score alone.

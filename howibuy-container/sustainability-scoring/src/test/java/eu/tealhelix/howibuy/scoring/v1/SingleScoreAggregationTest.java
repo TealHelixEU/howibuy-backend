@@ -4,7 +4,7 @@ import static eu.tealhelix.howibuy.scoring.v1.ProductIndicatorsTestUtils.product
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.HEALTH;
-import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL;
+import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 import static eu.tealhelix.howibuy.v1.types.SustainabilityIndicator.ANIMAL_WELFARE_INDEX;
 import static eu.tealhelix.howibuy.v1.types.SustainabilityIndicator.ANTIBIOTIC_INDEX;
 import static eu.tealhelix.howibuy.v1.types.SustainabilityIndicator.CHILD_LABOUR;
@@ -47,21 +47,21 @@ class SingleScoreAggregationTest {
 	}
 
 	@Test
-	void weightsSocialIndicatorsWithoutScalingThem() {
+	void weightsSocioEconomicIndicatorsWithoutScalingThem() {
 		var sut = product("1", "Nutriscore_A", Map.of(CHILD_LABOUR, 10.0, CORRUPTION, 20.0));
 		var weights = Map.of(CHILD_LABOUR, 0.25, CORRUPTION, 0.75);
 
-		var singleScore = SingleScoreAggregation.aggregate(sut, weights).get(SOCIAL);
+		var singleScore = SingleScoreAggregation.aggregate(sut, weights).get(SOCIO_ECONOMIC);
 
 		assertThat(singleScore).isEqualTo(17.5, within(TOLERANCE));
 	}
 
 	@Test
-	void countsAnIndicatorTheProfileDoesNotWeightAsContributingNothing() {
+	void countsAnIndicatorWithoutAWeightAsContributingNothing() {
 		var sut = product("1", "Nutriscore_A", Map.of(CHILD_LABOUR, 10.0, CORRUPTION, 20.0));
 		var weights = Map.of(CHILD_LABOUR, 1.0);
 
-		var singleScore = SingleScoreAggregation.aggregate(sut, weights).get(SOCIAL);
+		var singleScore = SingleScoreAggregation.aggregate(sut, weights).get(SOCIO_ECONOMIC);
 
 		assertThat(singleScore).isEqualTo(10.0, within(TOLERANCE));
 	}
@@ -85,7 +85,7 @@ class SingleScoreAggregationTest {
 
 		var singleScores = SingleScoreAggregation.aggregate(sut, Map.of());
 
-		assertThat(singleScores).containsOnlyKeys(ENVIRONMENT, ANIMAL_WELFARE, SOCIAL);
+		assertThat(singleScores).containsOnlyKeys(ENVIRONMENT, ANIMAL_WELFARE, SOCIO_ECONOMIC);
 		assertThat(singleScores).doesNotContainKey(HEALTH);
 	}
 }

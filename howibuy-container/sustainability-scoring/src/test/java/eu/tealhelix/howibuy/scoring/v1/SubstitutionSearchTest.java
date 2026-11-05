@@ -5,7 +5,7 @@ import static eu.tealhelix.howibuy.scoring.v1.ProductIndicatorsTestUtils.idOf;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.HEALTH;
-import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL;
+import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 import static eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel.LARGE;
 import static eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel.MEDIUM;
 import static eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel.SMALL;
@@ -37,8 +37,8 @@ class SubstitutionSearchTest {
 	private static final ArchetypeCategoryId WATER = categoryOf("water");
 	private static final ArchetypeCategoryId CANDY = categoryOf("candy");
 
-	private static final WeightProfile SCIENTIFIC = WeightProfileTestUtils.indicatorsOnly(Map.of());
-	private static final WeightProfile PERSONAL = WeightProfileTestUtils.profile(Map.of(), Map.of(ENVIRONMENT, 1.0));
+	private static final WeightProfile SCIENTIFIC = WeightProfileTestUtils.profile(Map.of(ENVIRONMENT, 0.25, ANIMAL_WELFARE, 0.25, SOCIO_ECONOMIC, 0.25, HEALTH, 0.25));
+	private static final WeightProfile PERSONAL = WeightProfileTestUtils.profile(Map.of(ENVIRONMENT, 1.0));
 
 	/** Soft drinks may substitute for juices readily, water only barely, and candy not at all. */
 	private static final List<SubstitutablePair> MATRIX = List.of(
@@ -200,11 +200,11 @@ class SubstitutionSearchTest {
 		return search.find(reference.productId(), PERSONAL, stocked);
 	}
 
-	private static ScoredProduct scored(String agbCode, ArchetypeCategoryId categoryId, double environment, double animalWelfare, double social, double health) {
+	private static ScoredProduct scored(String agbCode, ArchetypeCategoryId categoryId, double environment, double animalWelfare, double socioEconomic, double health) {
 		var scores = new EnumMap<ScoredSustainabilityDimension, Double>(ScoredSustainabilityDimension.class);
 		scores.put(ENVIRONMENT, environment);
 		scores.put(ANIMAL_WELFARE, animalWelfare);
-		scores.put(SOCIAL, social);
+		scores.put(SOCIO_ECONOMIC, socioEconomic);
 		scores.put(HEALTH, health);
 		return new ScoredProduct(idOf(agbCode), categoryId, agbCode, scores);
 	}

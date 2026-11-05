@@ -6,23 +6,15 @@ import java.util.Map;
 import org.immutables.value.Value;
 
 /**
- * The weights that reduce an archetype product's measurements to a single overall score: one weight per indicator,
- * used to aggregate indicators into the single score of their dimension, and one weight per dimension, used to combine
- * the four normalised scores into the overall score.
+ * The four weights, one per dimension, that combine an archetype product's normalised scores into a single overall
+ * score.
  * <p>
  * Two profiles exist in production — the scientific one, which is WP3's and the same for everyone, and a personal
- * one derived from a user's completed compass attempt. They currently differ only in their dimension weights; the type
- * carries indicator weights as well because WP3's own reference implementation varies them, and reproducing its output
- * exactly requires being able to say so.
+ * one derived from a user's completed compass attempt. The weights of the indicators within a dimension are no part of
+ * a profile: they are WP3's, the same for every user, and belong to the scoring engine.
  */
 @Value.Immutable
 public interface WeightProfile {
-	/**
-	 * The weight of each indicator within the single score of its own dimension. An indicator absent from the map
-	 * contributes nothing.
-	 */
-	Map<SustainabilityIndicator, Double> getIndicatorWeights();
-
 	/**
 	 * The weight of each of the four dimensions in the overall score. All four are required and they must sum to 1.
 	 */

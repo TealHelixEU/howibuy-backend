@@ -3,7 +3,7 @@ package eu.tealhelix.howibuy.scoring.v1;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.HEALTH;
-import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL;
+import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 import static eu.tealhelix.howibuy.v1.types.SustainabilityIndicator.ANIMAL_WELFARE_INDEX;
 import static eu.tealhelix.howibuy.v1.types.SustainabilityIndicator.ANTIBIOTIC_INDEX;
 import static eu.tealhelix.howibuy.v1.types.SustainabilityIndicator.CLIMATE_CHANGE;
@@ -21,18 +21,18 @@ import org.junit.jupiter.api.Test;
 class ScientificWeightsTest {
 	@Test
 	void weightsEveryIndicator() {
-		assertThat(ScientificWeights.profile().getIndicatorWeights()).containsOnlyKeys(SustainabilityIndicator.values());
+		assertThat(ScientificWeights.indicatorWeights()).containsOnlyKeys(SustainabilityIndicator.values());
 	}
 
 	@Test
 	void weighsTheFourDimensionsEqually() {
 		assertThat(ScientificWeights.profile().getDimensionWeights())
-				.containsOnly(entry(ENVIRONMENT, 0.25), entry(ANIMAL_WELFARE, 0.25), entry(SOCIAL, 0.25), entry(HEALTH, 0.25));
+				.containsOnly(entry(ENVIRONMENT, 0.25), entry(ANIMAL_WELFARE, 0.25), entry(SOCIO_ECONOMIC, 0.25), entry(HEALTH, 0.25));
 	}
 
 	@Test
 	void weighsTheTwoAnimalWelfareIndicesEqually() {
-		var weights = ScientificWeights.profile().getIndicatorWeights();
+		var weights = ScientificWeights.indicatorWeights();
 
 		assertThat(weights.get(ANIMAL_WELFARE_INDEX)).isEqualTo(0.5);
 		assertThat(weights.get(ANTIBIOTIC_INDEX)).isEqualTo(0.5);
@@ -40,9 +40,9 @@ class ScientificWeightsTest {
 
 	@Test
 	void weighsTheIndicatorsOfEachDimensionToOne() {
-		for (var dimension : new eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension[] {ENVIRONMENT, ANIMAL_WELFARE, SOCIAL}) {
+		for (var dimension : new eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension[] {ENVIRONMENT, ANIMAL_WELFARE, SOCIO_ECONOMIC}) {
 			var sum = SustainabilityIndicator.of(dimension).stream()
-					.mapToDouble(indicator -> ScientificWeights.profile().getIndicatorWeights().get(indicator))
+					.mapToDouble(indicator -> ScientificWeights.indicatorWeights().get(indicator))
 					.sum();
 			assertThat(sum).describedAs("weights of %s", dimension).isEqualTo(1.0, within(1e-5));
 		}

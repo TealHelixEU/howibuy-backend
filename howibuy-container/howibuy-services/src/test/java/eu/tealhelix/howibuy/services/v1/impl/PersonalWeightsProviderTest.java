@@ -3,7 +3,7 @@ package eu.tealhelix.howibuy.services.v1.impl;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.HEALTH;
-import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL;
+import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 import static eu.tealhelix.sfc.v1.types.ScaleOption.EXTREMELY_IMPORTANT;
 import static eu.tealhelix.sfc.v1.types.ScaleOption.MODERATELY_IMPORTANT;
 import static eu.tealhelix.sfc.v1.types.ScaleOption.NOT_IMPORTANT;
@@ -68,7 +68,7 @@ class PersonalWeightsProviderTest {
 		var weights = sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
 
 		assertEquals(0.500, weights.get(ENVIRONMENT), TOLERANCE, "4 of 8; ecological and environment are one facet under two names");
-		assertEquals(0.250, weights.get(SOCIAL), TOLERANCE, "2 of 8");
+		assertEquals(0.250, weights.get(SOCIO_ECONOMIC), TOLERANCE, "2 of 8");
 		assertEquals(0.125, weights.get(HEALTH), TOLERANCE, "1 of 8");
 		assertEquals(0.125, weights.get(ANIMAL_WELFARE), TOLERANCE, "1 of 8");
 	}
@@ -121,16 +121,6 @@ class PersonalWeightsProviderTest {
 		givenCompleted(withEconomic(SLIGHTLY_IMPORTANT));
 
 		assertEquals(ATTEMPT_ID, sut.forUser(USER).await().atMost(WAIT).compassAttemptId());
-	}
-
-	@Test
-	void keepsTheScientificWeightsWithinEachDimension() {
-		givenCompleted(withEconomic(SLIGHTLY_IMPORTANT));
-
-		var profile = sut.forUser(USER).await().atMost(WAIT).profile();
-
-		assertEquals(ScientificWeights.profile().getIndicatorWeights(), profile.getIndicatorWeights(),
-				"the compass sets how the dimensions weigh against each other, nothing finer");
 	}
 
 	private Map<ScoredSustainabilityDimension, Double> weightsForUniformAnswers(ScaleOption everywhere) {

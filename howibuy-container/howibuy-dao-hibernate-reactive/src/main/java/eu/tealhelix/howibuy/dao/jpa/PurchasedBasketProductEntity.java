@@ -41,8 +41,8 @@ public class PurchasedBasketProductEntity {
 	@Column(name = "score_animal_welfare")
 	private double scoreAnimalWelfare;
 
-	@Column(name = "score_social")
-	private double scoreSocial;
+	@Column(name = "score_socio_economic")
+	private double scoreSocioEconomic;
 
 	@Column(name = "score_health")
 	private double scoreHealth;
@@ -103,12 +103,12 @@ public class PurchasedBasketProductEntity {
 		this.scoreAnimalWelfare = scoreAnimalWelfare;
 	}
 
-	public double getScoreSocial() {
-		return scoreSocial;
+	public double getScoreSocioEconomic() {
+		return scoreSocioEconomic;
 	}
 
-	public void setScoreSocial(double scoreSocial) {
-		this.scoreSocial = scoreSocial;
+	public void setScoreSocioEconomic(double scoreSocioEconomic) {
+		this.scoreSocioEconomic = scoreSocioEconomic;
 	}
 
 	public double getScoreHealth() {

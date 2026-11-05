@@ -3,7 +3,7 @@ package eu.tealhelix.howibuy.dao.impl;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.HEALTH;
-import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL;
+import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -58,7 +58,7 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 		entity.setProductGrade(product.getProductGrade());
 		entity.setScoreEnvironment(product.getNormalisedScores().get(ENVIRONMENT));
 		entity.setScoreAnimalWelfare(product.getNormalisedScores().get(ANIMAL_WELFARE));
-		entity.setScoreSocial(product.getNormalisedScores().get(SOCIAL));
+		entity.setScoreSocioEconomic(product.getNormalisedScores().get(SOCIO_ECONOMIC));
 		entity.setScoreHealth(product.getNormalisedScores().get(HEALTH));
 		return entity;
 	}

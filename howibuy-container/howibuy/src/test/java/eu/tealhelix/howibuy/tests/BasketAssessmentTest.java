@@ -353,7 +353,7 @@ public class BasketAssessmentTest {
 	 * @return The stored products, their scores written as Java writes a {@code double}, not as Postgres does
 	 */
 	private List<String> storedProducts() throws SQLException {
-		return fixtures.rows("SELECT product_key, archetype_product_id, overall_score, product_grade, score_environment, score_animal_welfare, score_social, score_health "
+		return fixtures.rows("SELECT product_key, archetype_product_id, overall_score, product_grade, score_environment, score_animal_welfare, score_socio_economic, score_health "
 						+ "FROM TH_PURCHASED_BASKET_PRODUCT ORDER BY product_key").stream()
 				.map(row -> {
 					var columns = row.split("\\|");
@@ -375,7 +375,7 @@ public class BasketAssessmentTest {
 		return String.join("|", productKey, archetype, String.valueOf(scoredProduct.overallScore(profile)), productGrade,
 				String.valueOf(scores.get(ScoredSustainabilityDimension.ENVIRONMENT)),
 				String.valueOf(scores.get(ScoredSustainabilityDimension.ANIMAL_WELFARE)),
-				String.valueOf(scores.get(ScoredSustainabilityDimension.SOCIAL)),
+				String.valueOf(scores.get(ScoredSustainabilityDimension.SOCIO_ECONOMIC)),
 				String.valueOf(scores.get(ScoredSustainabilityDimension.HEALTH)));
 	}
 

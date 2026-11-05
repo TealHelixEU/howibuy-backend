@@ -2,7 +2,7 @@ package eu.tealhelix.howibuy.v1.types;
 
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ANIMAL_WELFARE;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRONMENT;
-import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIAL;
+import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 
 /**
  * One measured quantity of an archetype product, contributing to the single score of exactly one scored sustainability
- * dimension. The environmental indicators are the sixteen PEF impact categories; the social indicators come from the
- * Social Hotspots Database; animal welfare has two indices.
+ * dimension. The environmental indicators are the sixteen PEF impact categories; the socio-economic indicators come
+ * from the Social Hotspots Database; animal welfare has two indices.
  * <p>
  * {@link ScoredSustainabilityDimension#HEALTH} appears nowhere here: it is read off the product's Nutri-Score
  * rather than measured, so it has no indicators.
@@ -39,20 +39,20 @@ public enum SustainabilityIndicator {
 	ANIMAL_WELFARE_INDEX(ANIMAL_WELFARE),
 	ANTIBIOTIC_INDEX(ANIMAL_WELFARE),
 
-	CHILD_LABOUR(SOCIAL),
-	FORCED_LABOUR(SOCIAL),
-	FAIR_SALARY(SOCIAL),
-	WORKING_TIME(SOCIAL),
-	DISCRIMINATION(SOCIAL),
-	HEALTH_SAFETY_WORKERS(SOCIAL),
-	SOCIAL_BENEFITS_LEGAL_ISSUES(SOCIAL),
-	WORKERS_RIGHTS(SOCIAL),
-	FAIR_COMPETITION(SOCIAL),
-	CORRUPTION(SOCIAL),
-	CONTRIBUTION_ECON_DEV(SOCIAL),
-	ILLITERACY(SOCIAL),
-	HEALTH_SAFETY_SOCIETY(SOCIAL),
-	INDIGENOUS_RIGHTS(SOCIAL);
+	CHILD_LABOUR(SOCIO_ECONOMIC),
+	FORCED_LABOUR(SOCIO_ECONOMIC),
+	FAIR_SALARY(SOCIO_ECONOMIC),
+	WORKING_TIME(SOCIO_ECONOMIC),
+	DISCRIMINATION(SOCIO_ECONOMIC),
+	HEALTH_SAFETY_WORKERS(SOCIO_ECONOMIC),
+	SOCIAL_BENEFITS_LEGAL_ISSUES(SOCIO_ECONOMIC),
+	WORKERS_RIGHTS(SOCIO_ECONOMIC),
+	FAIR_COMPETITION(SOCIO_ECONOMIC),
+	CORRUPTION(SOCIO_ECONOMIC),
+	CONTRIBUTION_ECON_DEV(SOCIO_ECONOMIC),
+	ILLITERACY(SOCIO_ECONOMIC),
+	HEALTH_SAFETY_SOCIETY(SOCIO_ECONOMIC),
+	INDIGENOUS_RIGHTS(SOCIO_ECONOMIC);
 
 	private final ScoredSustainabilityDimension dimension;
 
