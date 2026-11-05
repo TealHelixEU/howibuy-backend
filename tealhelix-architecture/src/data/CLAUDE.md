@@ -40,8 +40,11 @@ Product name,L1 cat,L2 cat,L3 cat,Archetype,Match reliability,Source URL,Comment
 
 ## The archetype source
 
-`TH_WP3-FULL DATABASE-v2026-05-27.csv` (the SAFAD/WP3 database). It lives outside this repository; its path is
-machine-specific, so ask for it or take it from `CLAUDE.local.md` in this directory if one is present.
+`wp3/TH_WP3-FULL DATABASE-v2026-10-27.csv` (the SAFAD/WP3 database), kept with WP3's other inputs in
+[`wp3/`](wp3/README.md).
+
+The ground truth was compiled against WP3's 05-27 version of it. 10-27 has the same taxonomy and the same nutrition,
+which 05-27 rounds to two decimals; every figure in the Comments checks the same against either.
 
 - **Read it as `latin-1`, not `utf-8`** — it has 0xb0 bytes that break a utf-8 decode.
 - Hierarchy: `SAFAD_L1_cat` / `SAFAD_L2_cat` / `SAFAD_L3_cat` / `food_product`. 2451 rows, 20 L1 categories.

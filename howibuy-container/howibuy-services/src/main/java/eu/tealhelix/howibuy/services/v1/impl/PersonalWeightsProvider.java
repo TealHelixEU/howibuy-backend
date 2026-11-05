@@ -1,5 +1,6 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -23,18 +24,22 @@ import io.smallrye.mutiny.Uni;
  * The only place that knows the compass and the scoring engine both exist. Everything downstream sees a
  * {@link WeightProfile} and has no idea a questionnaire was involved.
  * <p>
- * A dimension's weight is the mean of the 1–5 answers given about it, with the four scored dimensions scaled to sum to
- * one. Scaling makes intensity invisible on purpose: someone who answers 5 to everything and someone who answers 3 to
+ * Each answer counts from 0 for not important up to 4 for extremely important, and a dimension of the compass weighs
+ * the mean of the answers given about it. A scored dimension weighs the mean of the compass dimensions it covers, and
+ * the four are scaled to sum to one. WP3's notebook takes the weights from 100 points a respondent splits across the
+ * five dimensions, a question the compass does not ask; WP3 agreed to this in its place.
+ * <p>
+ * Scaling makes intensity invisible on purpose: someone who answers 5 to everything and someone who answers 3 to
  * everything have both said "no dimension above another", and rank every product identically.
  */
 @ApplicationScoped
 public class PersonalWeightsProvider {
 	/**
-	 * The compass's five dimensions against the four an archetype product is scored on. Ecological and environment are
-	 * one facet under two names, and social maps to socio-economic. Economic maps to nothing: the compass asks about it,
-	 * and the answer is elicited and discarded (ADR 0005).
+	 * The compass dimensions each of the four scored ones covers. Ecological and environment are one facet under two
+	 * names, and socio-economic covers social and economic both, as WP3's socio-economic indicators include economic
+	 * ones such as a fair salary (ADR 0005).
 	 */
-	private static final Map<SustainabilityDimension, ScoredSustainabilityDimension> SCORED_DIMENSIONS = scoredDimensions();
+	private static final Map<ScoredSustainabilityDimension, List<SustainabilityDimension>> COVERED_DIMENSIONS = coveredDimensions();
 
 	private final CompassReadService compassReadService;
 
@@ -46,7 +51,7 @@ public class PersonalWeightsProvider {
 	/**
 	 * The user's weighting profile, or the scientific one if they have never completed an attempt — so the
 	 * recommendations a user gets before they have answered anything are still grounded, just not yet theirs. The
-	 * scientific one also stands in when the latest completed attempt leaves a scored dimension unanswered.
+	 * scientific one also stands in when the latest completed attempt leaves a dimension of the compass unanswered.
 	 */
 	public Uni<WeightProfileAndAttemptId> forUser(User user) {
 		return compassReadService.findLatestCompletedAnswers(user)
@@ -59,14 +64,24 @@ public class PersonalWeightsProvider {
 	/**
 	 * The compass moves the four dimension weights and nothing finer, as WP3 confirmed: it has no instrument at the
 	 * resolution of a single PEF impact category or socio-economic indicator.
+	 * <p>
+	 * A user who said every dimension is not important has put none above another, and gets equal weights.
 	 */
 	private static Optional<WeightProfile> derive(Map<SustainabilityDimension, List<ScaleOption>> answersByDimension) {
-		var means = meanAnswerPerScoredDimension(answersByDimension);
-		if (means.size() != ScoredSustainabilityDimension.values().length) return Optional.empty();
+		var importance = new EnumMap<SustainabilityDimension, Double>(SustainabilityDimension.class);
+		for (var dimension : SustainabilityDimension.values()) {
+			List<ScaleOption> answers = answersByDimension.getOrDefault(dimension, List.of());
+			if (answers.isEmpty()) return Optional.empty();
+			importance.put(dimension, answers.stream().mapToInt(PersonalWeightsProvider::importance).average().orElseThrow());
+		}
 
-		var total = means.values().stream().mapToDouble(Double::doubleValue).sum();
+		var scoredImportance = new EnumMap<ScoredSustainabilityDimension, Double>(ScoredSustainabilityDimension.class);
+		COVERED_DIMENSIONS.forEach((scored, covered) ->
+				scoredImportance.put(scored, covered.stream().mapToDouble(importance::get).average().orElseThrow()));
+
+		double total = scoredImportance.values().stream().mapToDouble(Double::doubleValue).sum();
 		var weights = new EnumMap<ScoredSustainabilityDimension, Double>(ScoredSustainabilityDimension.class);
-		means.forEach((dimension, mean) -> weights.put(dimension, mean / total));
+		scoredImportance.forEach((dimension, value) -> weights.put(dimension, total == 0.0 ? 1.0 / scoredImportance.size() : value / total));
 
 		return Optional.of(ImmutableWeightProfile.builder()
 				.dimensionWeights(weights)
@@ -74,27 +89,18 @@ public class PersonalWeightsProvider {
 	}
 
 	/**
-	 * A dimension nobody answered about carries no mean and is simply absent, which is what the caller reads as "there
-	 * is no personal profile to derive here". The total can never be zero, because the lowest thing a user can say
-	 * about a dimension is still a 1.
+	 * How much an answer weighs: not important nothing, and every step up the scale one more.
 	 */
-	private static Map<ScoredSustainabilityDimension, Double> meanAnswerPerScoredDimension(
-			Map<SustainabilityDimension, List<ScaleOption>> answersByDimension) {
-		var means = new EnumMap<ScoredSustainabilityDimension, Double>(ScoredSustainabilityDimension.class);
-		for (var answers : answersByDimension.entrySet()) {
-			var scored = SCORED_DIMENSIONS.get(answers.getKey());
-			if (scored == null || answers.getValue().isEmpty()) continue;
-			means.put(scored, answers.getValue().stream().mapToInt(ScaleOption::getValue).average().orElseThrow());
-		}
-		return means;
+	private static int importance(ScaleOption answer) {
+		return answer.getValue() - ScaleOption.NOT_IMPORTANT.getValue();
 	}
 
-	private static Map<SustainabilityDimension, ScoredSustainabilityDimension> scoredDimensions() {
-		var scored = new EnumMap<SustainabilityDimension, ScoredSustainabilityDimension>(SustainabilityDimension.class);
-		scored.put(SustainabilityDimension.ECOLOGICAL, ScoredSustainabilityDimension.ENVIRONMENT);
-		scored.put(SustainabilityDimension.SOCIAL, ScoredSustainabilityDimension.SOCIO_ECONOMIC);
-		scored.put(SustainabilityDimension.HEALTH, ScoredSustainabilityDimension.HEALTH);
-		scored.put(SustainabilityDimension.ANIMAL_WELFARE, ScoredSustainabilityDimension.ANIMAL_WELFARE);
-		return Map.copyOf(scored);
+	private static Map<ScoredSustainabilityDimension, List<SustainabilityDimension>> coveredDimensions() {
+		var covered = new EnumMap<ScoredSustainabilityDimension, List<SustainabilityDimension>>(ScoredSustainabilityDimension.class);
+		covered.put(ScoredSustainabilityDimension.ENVIRONMENT, List.of(SustainabilityDimension.ECOLOGICAL));
+		covered.put(ScoredSustainabilityDimension.ANIMAL_WELFARE, List.of(SustainabilityDimension.ANIMAL_WELFARE));
+		covered.put(ScoredSustainabilityDimension.SOCIO_ECONOMIC, List.of(SustainabilityDimension.SOCIAL, SustainabilityDimension.ECONOMIC));
+		covered.put(ScoredSustainabilityDimension.HEALTH, List.of(SustainabilityDimension.HEALTH));
+		return Collections.unmodifiableMap(covered);
 	}
 }

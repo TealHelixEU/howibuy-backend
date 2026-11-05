@@ -26,7 +26,6 @@ import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
-import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import eu.tealhelix.sfc.services.v1.CompassReadService;
 import eu.tealhelix.sfc.services.v1.types.CompletedCompassAnswers;
 import eu.tealhelix.sfc.v1.types.ScaleOption;
@@ -34,13 +33,16 @@ import eu.tealhelix.sfc.v1.types.SustainabilityDimension;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * The compass answers below are chosen so the expected weights can be computed by hand: the mean of each dimension's
- * answers, the economic mean discarded, and the four that remain scaled to sum to one.
+ * The compass answers below are chosen so the expected weights can be computed by hand: each answer counts 0 for not
+ * important up to 4 for extremely important, each dimension takes the mean of its answers, social and economic are
+ * averaged into socio-economic, and the four scaled to sum to one.
  */
 @ExtendWith(MockitoExtension.class)
 class PersonalWeightsProviderTest {
@@ -57,32 +59,50 @@ class PersonalWeightsProviderTest {
 	private PersonalWeightsProvider sut;
 
 	@Test
-	void weightsEachDimensionByTheMeanOfItsAnswers() {
-		// means: ecological 4, social 2, health 1, animal welfare 1 — summing to 8.
+	void weightsEachDimensionByTheMeanOfItsAnswersCountedFromZero() {
+		// ecological 3, social 1 and economic 3 so socio-economic 2, health 2, animal welfare 1 — summing to 8.
 		givenCompleted(Map.of(
 				SustainabilityDimension.ECOLOGICAL, List.of(VERY_IMPORTANT, VERY_IMPORTANT),
 				SustainabilityDimension.SOCIAL, List.of(NOT_IMPORTANT, MODERATELY_IMPORTANT),
-				SustainabilityDimension.HEALTH, List.of(NOT_IMPORTANT),
-				SustainabilityDimension.ANIMAL_WELFARE, List.of(NOT_IMPORTANT)));
+				SustainabilityDimension.ECONOMIC, List.of(VERY_IMPORTANT),
+				SustainabilityDimension.HEALTH, List.of(MODERATELY_IMPORTANT),
+				SustainabilityDimension.ANIMAL_WELFARE, List.of(SLIGHTLY_IMPORTANT)));
 
-		var weights = sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
+		Map<ScoredSustainabilityDimension, Double> weights = weightsOfTheUser();
 
-		assertEquals(0.500, weights.get(ENVIRONMENT), TOLERANCE, "4 of 8; ecological and environment are one facet under two names");
-		assertEquals(0.250, weights.get(SOCIO_ECONOMIC), TOLERANCE, "2 of 8");
-		assertEquals(0.125, weights.get(HEALTH), TOLERANCE, "1 of 8");
-		assertEquals(0.125, weights.get(ANIMAL_WELFARE), TOLERANCE, "1 of 8");
+		assertEquals(0.375, weights.get(ENVIRONMENT), TOLERANCE, "3 of 8; ecological and environment are one facet under two names");
+		assertEquals(0.250, weights.get(SOCIO_ECONOMIC), TOLERANCE, "2 of 8, the mean of social's 1 and economic's 3");
+		assertEquals(0.250, weights.get(HEALTH), TOLERANCE, "2 of 8");
+		assertEquals(0.125, weights.get(ANIMAL_WELFARE), TOLERANCE, "1 of 8: slightly important is half of moderately important");
 	}
 
 	@Test
-	void discardsTheEconomicDimensionWhateverTheUserSaidAboutIt() {
-		givenCompleted(withEconomic(EXTREMELY_IMPORTANT));
-		var emphatic = sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
+	void averagesTheSocialAndTheEconomicAnswersIntoSocioEconomic() {
+		givenCompleted(Map.of(
+				SustainabilityDimension.ECOLOGICAL, List.of(MODERATELY_IMPORTANT),
+				SustainabilityDimension.SOCIAL, List.of(NOT_IMPORTANT),
+				SustainabilityDimension.ECONOMIC, List.of(EXTREMELY_IMPORTANT),
+				SustainabilityDimension.HEALTH, List.of(MODERATELY_IMPORTANT),
+				SustainabilityDimension.ANIMAL_WELFARE, List.of(MODERATELY_IMPORTANT)));
 
-		givenCompleted(withEconomic(NOT_IMPORTANT));
-		var indifferent = sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
+		assertEquals(evenWeights(), weightsOfTheUser(), "social's 0 and economic's 4 average to 2, as much as every other dimension");
+	}
 
-		assertEquals(emphatic, indifferent,
-				"the compass asks about the economy, but the product data carries no economic indicator to weight");
+	@Test
+	void weighsNothingADimensionEveryAnswerOfWhichIsNotImportant() {
+		givenCompleted(Map.of(
+				SustainabilityDimension.ECOLOGICAL, List.of(EXTREMELY_IMPORTANT),
+				SustainabilityDimension.SOCIAL, List.of(EXTREMELY_IMPORTANT),
+				SustainabilityDimension.ECONOMIC, List.of(EXTREMELY_IMPORTANT),
+				SustainabilityDimension.HEALTH, List.of(EXTREMELY_IMPORTANT),
+				SustainabilityDimension.ANIMAL_WELFARE, List.of(NOT_IMPORTANT, NOT_IMPORTANT)));
+
+		Map<ScoredSustainabilityDimension, Double> weights = weightsOfTheUser();
+
+		assertEquals(0.0, weights.get(ANIMAL_WELFARE), "not important at all");
+		assertEquals(1.0 / 3.0, weights.get(ENVIRONMENT), TOLERANCE);
+		assertEquals(1.0 / 3.0, weights.get(SOCIO_ECONOMIC), TOLERANCE);
+		assertEquals(1.0 / 3.0, weights.get(HEALTH), TOLERANCE);
 	}
 
 	@Test
@@ -92,40 +112,66 @@ class PersonalWeightsProviderTest {
 	}
 
 	@Test
+	void flattensToEqualWeightsDerivedFromTheAttemptWhenEveryAnswerIsNotImportant() {
+		givenCompleted(uniformAnswers(NOT_IMPORTANT));
+
+		var weights = sut.forUser(USER).await().atMost(WAIT);
+
+		assertEquals(evenWeights(), weights.profile().getDimensionWeights(), "nothing said above anything else, as when every answer is the same");
+		assertEquals(ATTEMPT_ID, weights.compassAttemptId(), "the user did answer, so the weights are theirs");
+	}
+
+	@Test
 	void fallsBackToTheScientificProfileWhenTheUserHasCompletedNoAttempt() {
 		when(compassReadService.findLatestCompletedAnswers(USER)).thenReturn(Uni.createFrom().item(Optional.empty()));
 
 		var weights = sut.forUser(USER).await().atMost(WAIT);
 
 		assertEquals(ScientificWeights.profile().getDimensionWeights(), weights.profile().getDimensionWeights(),
-				"a user who has not taken the compass still gets all three recommendations");
+				"a user who has not taken the compass is still recommended products");
 		assertNull(weights.compassAttemptId(), "no attempt the profile was derived from");
 	}
 
-	@Test
-	void fallsBackToTheScientificProfileWhenADimensionHasNoAnswersAtAll() {
-		givenCompleted(Map.of(
-				SustainabilityDimension.ECOLOGICAL, List.of(VERY_IMPORTANT),
-				SustainabilityDimension.SOCIAL, List.of(VERY_IMPORTANT),
-				SustainabilityDimension.HEALTH, List.of(VERY_IMPORTANT)));
+	@ParameterizedTest
+	@EnumSource(SustainabilityDimension.class)
+	void fallsBackToTheScientificProfileWhenADimensionHasNoAnswersAtAll(SustainabilityDimension unanswered) {
+		var answers = distinctAnswers();
+		answers.remove(unanswered);
+		givenCompleted(answers);
 
 		var weights = sut.forUser(USER).await().atMost(WAIT);
 
 		assertEquals(ScientificWeights.profile().getDimensionWeights(), weights.profile().getDimensionWeights(),
-				"nothing was said about animal welfare, so there is no personal profile to derive");
+				"nothing was said about " + unanswered + ", so there is no personal profile to derive");
 		assertNull(weights.compassAttemptId(), "the attempt exists, but the profile was not derived from it");
 	}
 
 	@Test
+	void fallsBackToTheScientificProfileWhenADimensionHasAnEmptyListOfAnswers() {
+		var answers = distinctAnswers();
+		answers.put(SustainabilityDimension.ECONOMIC, List.of());
+		givenCompleted(answers);
+
+		var weights = sut.forUser(USER).await().atMost(WAIT);
+
+		assertEquals(ScientificWeights.profile().getDimensionWeights(), weights.profile().getDimensionWeights());
+		assertNull(weights.compassAttemptId());
+	}
+
+	@Test
 	void reportsTheAttemptThePersonalProfileWasDerivedFrom() {
-		givenCompleted(withEconomic(SLIGHTLY_IMPORTANT));
+		givenCompleted(distinctAnswers());
 
 		assertEquals(ATTEMPT_ID, sut.forUser(USER).await().atMost(WAIT).compassAttemptId());
 	}
 
-	private Map<ScoredSustainabilityDimension, Double> weightsForUniformAnswers(ScaleOption everywhere) {
-		givenCompleted(withEconomic(everywhere));
+	private Map<ScoredSustainabilityDimension, Double> weightsOfTheUser() {
 		return sut.forUser(USER).await().atMost(WAIT).profile().getDimensionWeights();
+	}
+
+	private Map<ScoredSustainabilityDimension, Double> weightsForUniformAnswers(ScaleOption everywhere) {
+		givenCompleted(uniformAnswers(everywhere));
+		return weightsOfTheUser();
 	}
 
 	private void givenCompleted(Map<SustainabilityDimension, List<ScaleOption>> answers) {
@@ -133,14 +179,25 @@ class PersonalWeightsProviderTest {
 				.thenReturn(Uni.createFrom().item(Optional.of(new CompletedCompassAnswers(ATTEMPT_ID, answers))));
 	}
 
-	/** Every dimension answered the same, so only the economic answer distinguishes one call from another. */
-	private static Map<SustainabilityDimension, List<ScaleOption>> withEconomic(ScaleOption economic) {
+	private static Map<SustainabilityDimension, List<ScaleOption>> uniformAnswers(ScaleOption everywhere) {
 		var answers = new EnumMap<SustainabilityDimension, List<ScaleOption>>(SustainabilityDimension.class);
-		answers.put(SustainabilityDimension.ECOLOGICAL, List.of(SLIGHTLY_IMPORTANT));
-		answers.put(SustainabilityDimension.SOCIAL, List.of(SLIGHTLY_IMPORTANT));
+		for (var dimension : SustainabilityDimension.values()) {
+			answers.put(dimension, List.of(everywhere, everywhere));
+		}
+		return answers;
+	}
+
+	/**
+	 * Answers that set every dimension apart from every other, so that weights derived from any four of them could not
+	 * pass for equal ones.
+	 */
+	private static Map<SustainabilityDimension, List<ScaleOption>> distinctAnswers() {
+		var answers = new EnumMap<SustainabilityDimension, List<ScaleOption>>(SustainabilityDimension.class);
+		answers.put(SustainabilityDimension.ECOLOGICAL, List.of(EXTREMELY_IMPORTANT));
+		answers.put(SustainabilityDimension.SOCIAL, List.of(VERY_IMPORTANT));
+		answers.put(SustainabilityDimension.ECONOMIC, List.of(NOT_IMPORTANT));
 		answers.put(SustainabilityDimension.HEALTH, List.of(SLIGHTLY_IMPORTANT));
-		answers.put(SustainabilityDimension.ANIMAL_WELFARE, List.of(SLIGHTLY_IMPORTANT));
-		answers.put(SustainabilityDimension.ECONOMIC, List.of(economic));
+		answers.put(SustainabilityDimension.ANIMAL_WELFARE, List.of(MODERATELY_IMPORTANT));
 		return answers;
 	}
 
