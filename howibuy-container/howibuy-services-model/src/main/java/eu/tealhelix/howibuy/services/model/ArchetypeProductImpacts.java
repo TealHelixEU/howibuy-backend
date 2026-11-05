@@ -50,4 +50,10 @@ public interface ArchetypeProductImpacts extends HasArchetypeProductId {
 	 * product outside the scheme, which is how the data says a product has no health score and cannot be assessed.
 	 */
 	String getNutriScore();
+
+	/**
+	 * The Nutri-Score points, the number behind the label, lower being healthier; WP3's placeholder 0 for a product
+	 * outside the scheme, which is recognised by its label, never by its points.
+	 */
+	int getNutriScorePoints();
 }

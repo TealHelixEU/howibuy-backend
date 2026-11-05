@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="archetype_product_nutri_score_points" author="nikospara">
+		<addColumn tableName="TH_ARCHETYPE_PRODUCT">
+			<column name="nutri_score_points" type="INTEGER" remarks="The Nutri-Score points behind the label, lower being healthier; WP3's placeholder 0 for a product outside the scheme" />
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="archetype_data_products_v2026-10-27" author="nikospara" context="appdata">
+		<comment>Every value of every product from WP3's database of 2026-10-27, the Nutri-Score points included.</comment>
+		<loadUpdateData tableName="TH_ARCHETYPE_PRODUCT" file="db/archetype/archetype_product_v2026-10-27.csv" relativeToChangelogFile="false" primaryKey="id">
+			<column name="id" type="UUID" />
+			<column name="category_id" type="UUID" />
+			<column name="name" type="STRING" />
+			<column name="agb_code" type="STRING" />
+			<column name="e_climate_change" type="NUMERIC" />
+			<column name="e_ozone_depletion" type="NUMERIC" />
+			<column name="e_ionizing_radiation" type="NUMERIC" />
+			<column name="e_ozone_formation" type="NUMERIC" />
+			<column name="e_particulate_matter" type="NUMERIC" />
+			<column name="e_non_carcinogenic_toxicity" type="NUMERIC" />
+			<column name="e_carcinogenic_toxicity" type="NUMERIC" />
+			<column name="e_land_water_acidification" type="NUMERIC" />
+			<column name="e_freshwater_eutrophication" type="NUMERIC" />
+			<column name="e_marine_eutrophication" type="NUMERIC" />
+			<column name="e_terrestrial_eutrophication" type="NUMERIC" />
+			<column name="e_freshwater_ecotoxicity" type="NUMERIC" />
+			<column name="e_land_use" type="NUMERIC" />
+			<column name="e_water_use" type="NUMERIC" />
+			<column name="e_energy_use" type="NUMERIC" />
+			<column name="e_mineral_use" type="NUMERIC" />
+			<column name="aw_index" type="NUMERIC" />
+			<column name="aw_antibio_index" type="NUMERIC" />
+			<column name="s_child_labour" type="NUMERIC" />
+			<column name="s_forced_labour" type="NUMERIC" />
+			<column name="s_fair_salary" type="NUMERIC" />
+			<column name="s_working_time" type="NUMERIC" />
+			<column name="s_discrimination" type="NUMERIC" />
+			<column name="s_health_safety_workers" type="NUMERIC" />
+			<column name="s_social_benefits_legal_issues" type="NUMERIC" />
+			<column name="s_workers_rights" type="NUMERIC" />
+			<column name="s_fair_competition" type="NUMERIC" />
+			<column name="s_corruption" type="NUMERIC" />
+			<column name="s_contribution_econ_dev" type="NUMERIC" />
+			<column name="s_illiteracy" type="NUMERIC" />
+			<column name="s_health_safety_society" type="NUMERIC" />
+			<column name="s_indigenous_rights" type="NUMERIC" />
+			<column name="nutri_score" type="STRING" />
+			<column name="nutri_score_points" type="NUMERIC" />
+		</loadUpdateData>
+		<rollback>
+			<loadUpdateData tableName="TH_ARCHETYPE_PRODUCT" file="db/archetype/archetype_product.csv" relativeToChangelogFile="false" primaryKey="id">
+				<column name="id" type="UUID" />
+				<column name="category_id" type="UUID" />
+				<column name="name" type="STRING" />
+				<column name="agb_code" type="STRING" />
+				<column name="e_climate_change" type="NUMERIC" />
+				<column name="e_ozone_depletion" type="NUMERIC" />
+				<column name="e_ionizing_radiation" type="NUMERIC" />
+				<column name="e_ozone_formation" type="NUMERIC" />
+				<column name="e_particulate_matter" type="NUMERIC" />
+				<column name="e_non_carcinogenic_toxicity" type="NUMERIC" />
+				<column name="e_carcinogenic_toxicity" type="NUMERIC" />
+				<column name="e_land_water_acidification" type="NUMERIC" />
+				<column name="e_freshwater_eutrophication" type="NUMERIC" />
+				<column name="e_marine_eutrophication" type="NUMERIC" />
+				<column name="e_terrestrial_eutrophication" type="NUMERIC" />
+				<column name="e_freshwater_ecotoxicity" type="NUMERIC" />
+				<column name="e_land_use" type="NUMERIC" />
+				<column name="e_water_use" type="NUMERIC" />
+				<column name="e_energy_use" type="NUMERIC" />
+				<column name="e_mineral_use" type="NUMERIC" />
+				<column name="aw_index" type="NUMERIC" />
+				<column name="aw_antibio_index" type="NUMERIC" />
+				<column name="s_child_labour" type="NUMERIC" />
+				<column name="s_forced_labour" type="NUMERIC" />
+				<column name="s_fair_salary" type="NUMERIC" />
+				<column name="s_working_time" type="NUMERIC" />
+				<column name="s_discrimination" type="NUMERIC" />
+				<column name="s_health_safety_workers" type="NUMERIC" />
+				<column name="s_social_benefits_legal_issues" type="NUMERIC" />
+				<column name="s_workers_rights" type="NUMERIC" />
+				<column name="s_fair_competition" type="NUMERIC" />
+				<column name="s_corruption" type="NUMERIC" />
+				<column name="s_contribution_econ_dev" type="NUMERIC" />
+				<column name="s_illiteracy" type="NUMERIC" />
+				<column name="s_health_safety_society" type="NUMERIC" />
+				<column name="s_indigenous_rights" type="NUMERIC" />
+				<column name="nutri_score" type="STRING" />
+			</loadUpdateData>
+		</rollback>
+	</changeSet>
+
+	<!--
+		Only once the points are loaded: a database first migrated without appdata and then with it runs the original
+		product load, which has no points, after every changeset without a context. Until then the changeset is skipped
+		and tried again on the next update.
+	-->
+	<changeSet id="archetype_product_nutri_score_points_not_null" author="nikospara">
+		<preConditions onFail="CONTINUE">
+			<changeSetExecuted changeLogFile="changelogs/v1.0.0/20261105_sustainability_scoring.xml" id="archetype_data_products_v2026-10-27" author="nikospara" />
+		</preConditions>
+		<addNotNullConstraint tableName="TH_ARCHETYPE_PRODUCT" columnName="nutri_score_points" constraintName="NL_TH_ARCHETYPE_PRODUCT__NUTRI_SCORE_POINTS" />
+	</changeSet>
+</databaseChangeLog>

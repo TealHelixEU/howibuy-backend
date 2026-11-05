@@ -170,6 +170,9 @@ public class ArchetypeProductDaoImplTest {
 						.chain(() -> tx.persistAll(orangeJuice, genericJuice, wholeMilk, genericMilk)))
 				.await().atMost(WAIT);
 		writeImpacts(ORANGE_JUICE);
+		writeNutriScorePoints(ORANGE_JUICE, 1);
+		writeNutriScorePoints(GENERIC_JUICE, -14);
+		writeNutriScorePoints(WHOLE_MILK, 35);
 	}
 
 	/**
@@ -192,6 +195,20 @@ public class ArchetypeProductDaoImplTest {
 
 	private static double valueOfColumn(int index) {
 		return index + 1;
+	}
+
+	/**
+	 * Written with plain JDBC, like the impacts, because the mapping of the column is what the test checks.
+	 */
+	private static void writeNutriScorePoints(ArchetypeProductId productId, int points) {
+		try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+				var statement = connection.prepareStatement("UPDATE TH_ARCHETYPE_PRODUCT SET nutri_score_points = ? WHERE id = ?")) {
+			statement.setInt(1, points);
+			statement.setObject(2, productId.asUuid());
+			statement.executeUpdate();
+		} catch (SQLException e) {
+			throw new IllegalStateException("Could not write the Nutri-Score points, id: " + productId.asString(), e);
+		}
 	}
 
 	@Test
@@ -279,6 +296,16 @@ public class ArchetypeProductDaoImplTest {
 				"a product with no health score is still part of the range the others are normalised against, "
 						+ "so the corpus is loaded whole and thinned later");
 		assertEquals("Nutriscore_B", productOf(corpus, ORANGE_JUICE).getNutriScore());
+	}
+
+	@Test
+	void retrievesTheNutriScorePointsOfEveryProductInTheCorpus(Mutiny.SessionFactory sessionFactory) {
+		var corpus = retrieveCorpus(sessionFactory);
+
+		assertEquals(
+				Map.of(ORANGE_JUICE, 1, GENERIC_JUICE, -14, WHOLE_MILK, 35, GENERIC_MILK, 0),
+				corpus.stream().collect(toMap(ArchetypeProductImpacts::getId, ArchetypeProductImpacts::getNutriScorePoints)),
+				"the points behind the label, negative ones included; a product outside the scheme carries WP3's placeholder 0");
 	}
 
 	@Test

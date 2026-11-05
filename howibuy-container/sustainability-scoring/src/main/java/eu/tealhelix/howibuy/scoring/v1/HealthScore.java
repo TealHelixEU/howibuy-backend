@@ -22,7 +22,7 @@ final class HealthScore {
 
 	/**
 	 * The health score of a product with the given Nutri-Score label, or empty for a product the scheme does not
-	 * cover — alcoholic drinks and infant food, which the dataset labels {@code "0"}. Such a product gets no overall
+	 * cover — infant food, for one, which the dataset labels {@code "0"}. Such a product gets no overall
 	 * score at all, so it is neither assessed nor ever recommended.
 	 */
 	static OptionalDouble forNutriScore(String nutriScore) {

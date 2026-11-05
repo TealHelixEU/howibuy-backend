@@ -2,14 +2,16 @@
 
 // Transforms the WP3 "FULL DATABASE" CSV into the two normalized CSVs that Liquibase loads:
 //   - archetype_category.csv  (id, parent_id, level, name)  -- the SAFAD L1/L2/L3 taxonomy tree
-//   - archetype_product.csv   (id, category_id, name, agb_code, <impact columns>)  -- the leaf archetypes
+//   - archetype_product.csv   (id, category_id, name, agb_code, <impact columns>)  -- the leaf archetypes, under the
+//                             name given with --product-file; one file per WP3 version, each loaded by its own changeset
 //
 // Category and product ids are deterministic UUIDv5, so re-running on a newer source CSV reuses the
 // same ids for unchanged categories/products and any foreign keys to them survive a re-import.
 //
 // Usage:
-//   ./generate-archetype-data.js [-i <source.csv>] [-o <output-dir>]
-// Defaults: source is the sibling R-algorithm database, output is the howibuy-dao-hibernate-reactive resources.
+//   ./generate-archetype-data.js [-i <source.csv>] [-o <output-dir>] [-p <product-file-name>]
+// Defaults: source is the WP3 database in tealhelix-architecture/src/data/wp3, output is the
+// howibuy-dao-hibernate-reactive resources, product file name is archetype_product.csv.
 //
 // This script requires only NodeJS (no external dependencies). The source CSV is read as latin1, matching
 // the R algorithm's read.csv(encoding = "latin1"); the outputs are written as UTF-8.
@@ -22,8 +24,9 @@ const crypto = require('node:crypto');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
-let inputPath = path.resolve(repoRoot, '..', 'R-algorithm', 'R version algorithm', 'TH_WP3-FULL DATABASE-v2026-05-27.csv');
+let inputPath = path.join(repoRoot, 'tealhelix-architecture', 'src', 'data', 'wp3', 'TH_WP3-FULL DATABASE-v2026-10-27.csv');
 let outputDir = path.join(repoRoot, 'howibuy-container', 'howibuy-dao-hibernate-reactive', 'src', 'main', 'resources', 'db', 'archetype');
+let productFileName = 'archetype_product.csv';
 
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
@@ -37,9 +40,13 @@ for (let i = 0; i < argv.length; i++) {
 		case '--output-dir':
 			outputDir = argv[++i];
 			break;
+		case '-p':
+		case '--product-file':
+			productFileName = argv[++i];
+			break;
 		case '-h':
 		case '--help':
-			console.log('Usage: ./generate-archetype-data.js [-i <source.csv>] [-o <output-dir>]');
+			console.log('Usage: ./generate-archetype-data.js [-i <source.csv>] [-o <output-dir>] [-p <product-file-name>]');
 			process.exit(0);
 			break;
 		default:
@@ -50,6 +57,7 @@ for (let i = 0; i < argv.length; i++) {
 
 // The per-product algorithm inputs we persist: source CSV column -> database column.
 // Computed scores (E_scientific_SS, overall_*, ...) are deliberately excluded; the application recomputes them.
+// A column marked integer must hold a whole number, in the source as in the database.
 const IMPACT_COLUMNS = [
 	{ csv: 'E_climate_change', db: 'e_climate_change' },
 	{ csv: 'E_ozon_depletion', db: 'e_ozone_depletion' },
@@ -84,6 +92,7 @@ const IMPACT_COLUMNS = [
 	{ csv: 'S_health_safety_society', db: 's_health_safety_society' },
 	{ csv: 'S_indigenous_rights', db: 's_indigenous_rights' },
 	{ csv: 'H_nutriscore', db: 'nutri_score' },
+	{ csv: 'H_FNS_score', db: 'nutri_score_points', integer: true },
 ];
 
 // Hierarchy and identity columns in the source CSV.
@@ -217,6 +226,9 @@ function main() {
 			if (v == null || v.trim() === '' || v.trim().toUpperCase() === 'NA') {
 				fail(`empty/NA ${col.csv} for agb_code ${JSON.stringify(agbCode)}`);
 			}
+			if (col.integer && !/^-?\d+$/.test(v)) {
+				fail(`${col.csv} is not an integer for agb_code ${JSON.stringify(agbCode)}: ${JSON.stringify(v)}`);
+			}
 			return v;
 		});
 
@@ -238,7 +250,7 @@ function main() {
 
 	fs.mkdirSync(outputDir, { recursive: true });
 	const categoryFile = path.join(outputDir, 'archetype_category.csv');
-	const productFile = path.join(outputDir, 'archetype_product.csv');
+	const productFile = path.join(outputDir, productFileName);
 	fs.writeFileSync(categoryFile, categoryLines.join('\n') + '\n', 'utf8');
 	fs.writeFileSync(productFile, productLines.join('\n') + '\n', 'utf8');
 

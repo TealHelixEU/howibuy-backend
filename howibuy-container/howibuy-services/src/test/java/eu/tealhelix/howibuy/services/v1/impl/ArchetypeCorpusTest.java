@@ -120,6 +120,7 @@ public class ArchetypeCorpusTest {
 				.l3CategoryName("Fruit juices")
 				.indicatorValues(Map.of())
 				.nutriScore("Nutriscore_A")
+				.nutriScorePoints(0)
 				.build();
 	}
 }

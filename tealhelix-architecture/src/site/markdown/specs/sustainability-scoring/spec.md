@@ -91,23 +91,26 @@ own). The API carries a list of Alternatives from step 1, so the Retailers adapt
 
 **The corpus that defines the scale.** The normaliser scores and normalises exactly the products it is given. The
 engine's public entry point passes the Archetype Products that have a Nutri-Score; the products marked `"0"` (47 in
-10-27: alcoholic drinks and infant food) are left out of the anchors, the log offsets, the gate and the pool, as WP3
-decided. The parity test (below) passes all 2,451, because WP3's published scores were computed that way.
+10-27: infant food, three baking ingredients and four foods for weight reduction) are left out of the anchors, the log
+offsets, the gate and the pool, as WP3 decided. The parity test (below) passes all 2,451, because WP3's published
+scores were computed that way.
 
 **Data**
 - `TH_ARCHETYPE_PRODUCT` gains `nutri_score_points INTEGER NOT NULL`, WP3's `H_FNS_score`: the points behind the
   Nutri-Score letter, lower being healthier. Products without a Nutri-Score carry WP3's placeholder 0; they are
   recognised by `nutri_score = '0'`, never by the points.
 - The seed is regenerated from `TH_WP3-FULL DATABASE-v2026-10-27.csv`. Against the current seed (05-27), it carries
-  values at full precision, 40 changed Nutri-Score values, 3 changed Animal Welfare values and the water fix. Archetype
-  ids are UUIDv5 of the AGB code and the 2,451 AGB codes are unchanged, so every id, Classification and Purchased
-  Basket survives.
+  values at full precision, 40 changed Nutri-Score values (the alcoholic drinks, `"0"` in 05-27, are E in 10-27), 3
+  changed Animal Welfare values and the water fix. Archetype ids are UUIDv5 of the AGB code and the 2,451 AGB codes
+  are unchanged, so every id, Classification and Purchased Basket survives.
 - **Existing changesets are never edited**: they have all run in a dev environment. One new changelog,
   `20261105_sustainability_scoring.xml`, holds every change of this work:
   - `addColumn` of `nutri_score_points`, nullable;
   - `loadUpdateData` (context `appdata`, primary key `id`) of a new CSV, `archetype_product_v2026-10-27.csv`, holding
     every column of every product. Its rollback reloads the original `archetype_product.csv` the same way;
-  - `addNotNullConstraint` on `nutri_score_points`;
+  - `addNotNullConstraint` on `nutri_score_points`, preconditioned on the update having run: a database migrated
+    first without `appdata` and then with it loads the original products, which have no points, after every changeset
+    without a context;
   - `renameColumn` of `TH_PURCHASED_BASKET_PRODUCT.score_social` to `score_socio_economic`.
 - `generate-archetype-data.js` gets the 10-27 input, the new column and an option naming the product file it writes,
   so the original `archetype_product.csv` stays byte-identical. The category CSV it regenerates must not change; if

@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static java.util.stream.Collectors.toSet;
 
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -28,8 +30,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * Verifies that the real WP3 dataset (the {@code appdata} Liquibase context) imports correctly: the whole taxonomy
- * is present, a known archetype resolves to its full category path with the expected impacts, and the
- * substitutability matrix agrees with the taxonomy it refers to.
+ * is present, a known archetype resolves to its full category path with the expected impacts, the products hold the
+ * values of WP3's latest database, and the substitutability matrix agrees with the taxonomy it refers to.
  */
 @Testcontainers
 public class ArchetypeDataIntegrityTest {
@@ -67,7 +69,7 @@ public class ArchetypeDataIntegrityTest {
 		var product = findProductByAgbCode(factory, "1019");
 		assertEquals(SAMPLE_PRODUCT_ID, product.getId());
 		assertEquals("Champagne kir (Cocktail of champagne with red fruit liqueur)", product.getName());
-		assertEquals("0", product.getNutriScore());
+		assertEquals("Nutriscore_E", product.getNutriScore());
 		assertEquals(1.56, product.getEnvironmentalImpact().getClimateChange(), 0.0);
 
 		var l3Id = categoryIdOfProduct(factory, SAMPLE_PRODUCT_ID);
@@ -84,6 +86,51 @@ public class ArchetypeDataIntegrityTest {
 		var l1 = findCategory(factory, parentIdOf(factory, l2.getId()));
 		assertEquals((short) 1, l1.getLevel());
 		assertEquals("Alcoholic beverages", l1.getName());
+	}
+
+	/**
+	 * The products were first loaded from WP3's database of 2026-05-27 and then updated from that of 2026-10-27. Each
+	 * sample is a value the update changed: the alcoholic drinks gained a Nutri-Score, the Nutri-Score points came in
+	 * (the waters' among them, the healthiest of all), Animal Welfare values were filled in, and values once rounded to
+	 * two decimals come at full precision.
+	 */
+	@Test
+	void holdsTheValuesOfTheWp3DatabaseOf20261027(Mutiny.SessionFactory sessionFactory) {
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+
+		var kir = findProductByAgbCode(factory, "1019");
+		assertEquals(35, kir.getNutriScorePoints(), "points of the Champagne kir");
+		assertEquals(9.44E-08, kir.getEnvironmentalImpact().getOzoneDepletion(), 0.0, "ozone depletion of the Champagne kir");
+
+		assertEquals(-14, findProductByAgbCode(factory, "18430").getNutriScorePoints(), "points of bottled water");
+		assertEquals(-14, findProductByAgbCode(factory, "18066").getNutriScorePoints(), "points of tap water");
+
+		var rabbitLiver = findProductByAgbCode(factory, "40110");
+		assertEquals(143.5141596, rabbitLiver.getAnimalWelfareImpact().getIndex(), 0.0, "animal welfare index of raw rabbit liver");
+		assertEquals(955.5686911, rabbitLiver.getAnimalWelfareImpact().getAntibioIndex(), 0.0, "antibiotic index of raw rabbit liver");
+	}
+
+	@Test
+	void aProductOutsideTheNutriScoreSchemeHasThePlaceholderPoints(Mutiny.SessionFactory sessionFactory) {
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+
+		var babyBiscuit = findProductByAgbCode(factory, "24689");
+		assertEquals("0", babyBiscuit.getNutriScore(), "the label that says the biscuit for babies is outside the scheme");
+		assertEquals(0, babyBiscuit.getNutriScorePoints(), "WP3's placeholder points");
+	}
+
+	/**
+	 * The constraint waits for the points to be loaded, so it is checked where they have been.
+	 */
+	@Test
+	void requiresTheNutriScorePointsOfEveryProduct() throws SQLException {
+		try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+				var statement = connection.prepareStatement(
+						"SELECT is_nullable FROM information_schema.columns WHERE table_name = 'th_archetype_product' AND column_name = 'nutri_score_points'");
+				var result = statement.executeQuery()) {
+			result.next();
+			assertEquals("NO", result.getString(1), "nutri_score_points is nullable");
+		}
 	}
 
 	@Test

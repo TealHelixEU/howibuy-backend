@@ -88,6 +88,7 @@ final class ArchetypeImpactsFixtures {
 				.l3CategoryName(branch.l3())
 				.indicatorValues(Map.copyOf(values))
 				.nutriScore(nutriScore)
+				.nutriScorePoints(0)
 				.build();
 	}
 

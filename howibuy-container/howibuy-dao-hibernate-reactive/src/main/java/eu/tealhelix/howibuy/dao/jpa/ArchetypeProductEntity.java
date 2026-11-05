@@ -48,6 +48,9 @@ public class ArchetypeProductEntity {
 	@Column(name = "nutri_score")
 	private String nutriScore;
 
+	@Column(name = "nutri_score_points")
+	private int nutriScorePoints;
+
 	public UUID getId() {
 		return id;
 	}
@@ -110,5 +113,13 @@ public class ArchetypeProductEntity {
 
 	public void setNutriScore(String nutriScore) {
 		this.nutriScore = nutriScore;
+	}
+
+	public int getNutriScorePoints() {
+		return nutriScorePoints;
+	}
+
+	public void setNutriScorePoints(int nutriScorePoints) {
+		this.nutriScorePoints = nutriScorePoints;
 	}
 }

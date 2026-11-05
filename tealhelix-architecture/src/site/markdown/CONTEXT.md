@@ -102,8 +102,8 @@ _Avoid_: metric, factor, variable, impact (bare)
 
 **Nutri-Score Points**:
 The number behind an Archetype Product's Nutri-Score letter, lower being healthier, from which its
-Health is derived. Some Archetype Products, such as alcoholic drinks and infant food, have **no
-Nutri-Score**, and so no points: they have no Normalised Scores and no Overall Score, and the
+Health is derived. Some Archetype Products, such as infant food, have **no Nutri-Score**, and so no
+points: they have no Normalised Scores and no Overall Score, and the
 assessment says nothing about them.
 _Avoid_: FNS score, nutrition score, health points, Nutri-Score (bare, for the number — that is the
 letter)

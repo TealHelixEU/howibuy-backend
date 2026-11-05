@@ -85,6 +85,7 @@ public class ArchetypeProductDaoImpl implements ArchetypeProductDao {
 				.l3CategoryName(tuple.get(4, String.class))
 				.indicatorValues(indicatorValues(product))
 				.nutriScore(product.getNutriScore())
+				.nutriScorePoints(product.getNutriScorePoints())
 				.build();
 	}
 

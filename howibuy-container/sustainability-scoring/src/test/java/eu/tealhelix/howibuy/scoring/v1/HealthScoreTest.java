@@ -15,7 +15,7 @@ class HealthScoreTest {
 	}
 
 	/**
-	 * Products outside the Nutri-Score scheme — alcoholic drinks and infant food, in this dataset — are stored with the
+	 * Products outside the Nutri-Score scheme — infant food, for one, in this dataset — are stored with the
 	 * label {@code "0"}. They have no health score, and WP3's method gives them no overall score at all rather than
 	 * scoring them on their remaining three dimensions.
 	 */

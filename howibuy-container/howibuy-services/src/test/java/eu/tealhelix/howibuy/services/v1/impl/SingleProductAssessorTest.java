@@ -190,6 +190,7 @@ public class SingleProductAssessorTest {
 				.l3CategoryName("Orange juice")
 				.indicatorValues(values)
 				.nutriScore(nutriScore)
+				.nutriScorePoints(0)
 				.build();
 	}
 }
