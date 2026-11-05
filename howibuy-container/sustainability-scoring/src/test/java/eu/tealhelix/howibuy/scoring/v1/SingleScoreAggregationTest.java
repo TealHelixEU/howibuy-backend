@@ -77,15 +77,15 @@ class SingleScoreAggregationTest {
 	}
 
 	/**
-	 * Health is read off the Nutri-Score, not aggregated from indicators, so it never has a single score.
+	 * Health has no indicators: its single score is the product's Nutri-Score points.
 	 */
 	@Test
-	void producesNoSingleScoreForHealth() {
-		var sut = product("1", "Nutriscore_A", Map.of(CLIMATE_CHANGE, 2.0));
+	void takesTheNutriScorePointsAsTheSingleScoreOfHealth() {
+		var sut = product("1", "Nutriscore_B", 2, Map.of(CLIMATE_CHANGE, 2.0));
 
 		var singleScores = SingleScoreAggregation.aggregate(sut, Map.of());
 
-		assertThat(singleScores).containsOnlyKeys(ENVIRONMENT, ANIMAL_WELFARE, SOCIO_ECONOMIC);
-		assertThat(singleScores).doesNotContainKey(HEALTH);
+		assertThat(singleScores).containsOnlyKeys(ENVIRONMENT, ANIMAL_WELFARE, SOCIO_ECONOMIC, HEALTH);
+		assertThat(singleScores.get(HEALTH)).isEqualTo(2.0);
 	}
 }

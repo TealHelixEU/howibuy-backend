@@ -29,13 +29,13 @@ import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import org.junit.jupiter.api.Test;
 
 /**
- * The fixture is built so every expected score can be computed by hand.
+ * The fixture is built with {@link ArchetypeImpactsFixtures} so every expected score can be computed by hand.
  * <p>
- * Each product's indicators are set to a per-dimension fraction of one tiny base value — tiny so that no single score
- * comes near an outlier threshold and the plain min–max applies, and a fraction because min–max is scale-free: a
- * product at fraction {@code f} of a dimension whose corpus spans 0 to 1 normalises to exactly {@code 1 - f}. So a
- * product declared at {@code (0.5, 0, 0)} scores 0.5 on environment and 1.0 on animal welfare and socio-economic, and
- * its health score comes straight off its Nutri-Score.
+ * The corpus holds its lowest and its highest impact of every dimension twice, so its scale runs from the one to the
+ * other: an environmental impact of 0, 0.5 or 1 normalises to 1, 0.5 or 0, and Nutri-Score points of 0, 5 or 20 to 1,
+ * 0.75 or 0. Animal welfare and socio-economic are log-transformed first, around the median of their positive impacts,
+ * here 1: an impact of 0, 1 or 3 becomes log 1, log 2 or log 4, and normalises to 1, 0.5 or 0. Spirits, which has no
+ * Nutri-Score, has no part in the scale.
  * <p>
  * The scientific profile weights the four dimensions equally, making its overall score their mean; the personal
  * profile below puts everything on the environment, making its overall score the environmental score alone.
@@ -58,6 +58,7 @@ class ScoredArchetypesTest {
 	private static final ArchetypeProductId WORST = productId("worst");
 	private static final ArchetypeProductId SPIRITS = productId("spirits");
 	private static final ArchetypeProductId CANDY_BAR = productId("candy bar");
+	private static final ArchetypeProductId WORST_CANDY_BAR = productId("worst candy bar");
 	private static final ArchetypeProductId SPRING_WATER = productId("spring water");
 
 	/*
@@ -70,16 +71,18 @@ class ScoredArchetypesTest {
 	 * Worst juice        0.0   0.0   0.0   0.0   0.0         0.0
 	 * Spring water       1.0   1.0   1.0   1.0   1.0         1.0
 	 * Candy bar          0.5   0.5   0.5   1.0   0.625       0.5
+	 * Worst candy bar    0.0   0.0   0.0   0.0   0.0         0.0
 	 * Spirits            —     —     —     —     none        none
 	 */
 	private static final List<ArchetypeProductImpacts> CORPUS = List.of(
-			impacts(REFERENCE, "Reference juice", "100", JUICES, 0.5, 0.5, 0.5, "Nutriscore_B"),
-			impacts(GREENEST, "Greenest juice", "200", JUICES, 0.0, 0.5, 0.5, "Nutriscore_A"),
-			impacts(SOUNDEST, "Soundest juice", "300", JUICES, 0.5, 0.0, 0.0, "Nutriscore_A"),
-			impacts(WORST, "Worst juice", "400", JUICES, 1.0, 1.0, 1.0, "Nutriscore_E"),
-			impacts(SPIRITS, "Spirits", "500", JUICES, 0.5, 0.5, 0.5, "0"),
-			impacts(CANDY_BAR, "Candy bar", "600", CANDY, 0.5, 0.5, 0.5, "Nutriscore_A"),
-			impacts(SPRING_WATER, "Spring water", "700", WATER, 0.0, 0.0, 0.0, "Nutriscore_A"));
+			impacts(REFERENCE, "Reference juice", "100", JUICES, 0.5, 1.0, 1.0, "Nutriscore_B", 5),
+			impacts(GREENEST, "Greenest juice", "200", JUICES, 0.0, 1.0, 1.0, "Nutriscore_A", 0),
+			impacts(SOUNDEST, "Soundest juice", "300", JUICES, 0.5, 0.0, 0.0, "Nutriscore_A", 0),
+			impacts(WORST, "Worst juice", "400", JUICES, 1.0, 3.0, 3.0, "Nutriscore_E", 20),
+			impacts(SPIRITS, "Spirits", "500", JUICES, 0.5, 1.0, 1.0, "0", 0),
+			impacts(CANDY_BAR, "Candy bar", "600", CANDY, 0.5, 1.0, 1.0, "Nutriscore_A", 0),
+			impacts(WORST_CANDY_BAR, "Worst candy bar", "650", CANDY, 1.0, 3.0, 3.0, "Nutriscore_E", 20),
+			impacts(SPRING_WATER, "Spring water", "700", WATER, 0.0, 0.0, 0.0, "Nutriscore_A", 0));
 
 	private static final WeightProfile PERSONAL = personalProfileOnEnvironment();
 	private static final Set<ArchetypeProductId> ALL_STOCKED = CORPUS.stream().map(ArchetypeProductImpacts::getId).collect(Collectors.toSet());

@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
  * dimension. The environmental indicators are the sixteen PEF impact categories; the socio-economic indicators come
  * from the Social Hotspots Database; animal welfare has two indices.
  * <p>
- * {@link ScoredSustainabilityDimension#HEALTH} appears nowhere here: it is read off the product's Nutri-Score
- * rather than measured, so it has no indicators.
+ * {@link ScoredSustainabilityDimension#HEALTH} appears nowhere here: it is derived from the product's Nutri-Score
+ * points rather than measured, so it has no indicators.
  */
 public enum SustainabilityIndicator {
 	CLIMATE_CHANGE(ENVIRONMENT),

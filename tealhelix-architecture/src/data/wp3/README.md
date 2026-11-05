@@ -13,5 +13,6 @@ names, so that each can be traced back to the version WP3 refers to. How each is
   two waters.
 - `CORE_scores_by_profile.csv`: the notebook's scores of every product of the 10-27 database, once per normalisation
   profile, computed with all 2,451 products in the percentile anchors. Its `log_tails` rows are the expected values of
-  the engine's parity test.
+  the engine's parity test; `src/scripts/generate-scoring-parity-fixture.js` joins them with the database into the
+  test's fixture.
 - `TH_Algorithm_Implementation_v2026-05-20.Rmd`: WP3's first method, which the notebook replaces.

@@ -21,6 +21,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { parseCsv, toCsvLine } = require('./csv.js');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
@@ -119,49 +120,6 @@ function uuidv5(namespaceUuid, name) {
 }
 
 const ARCHETYPE_NAMESPACE = uuidv5(URL_NAMESPACE, 'https://tealhelix.eu/ns/archetype');
-
-// Parses RFC 4180 CSV text (quoted fields may contain commas, quotes and newlines) into rows of fields.
-function parseCsv(text) {
-	const rows = [];
-	let field = '';
-	let row = [];
-	let inQuotes = false;
-	for (let i = 0; i < text.length; i++) {
-		const c = text[i];
-		if (inQuotes) {
-			if (c === '"') {
-				if (text[i + 1] === '"') { field += '"'; i++; }
-				else { inQuotes = false; }
-			} else {
-				field += c;
-			}
-		} else if (c === '"') {
-			inQuotes = true;
-		} else if (c === ',') {
-			row.push(field); field = '';
-		} else if (c === '\n') {
-			row.push(field); field = '';
-			rows.push(row); row = [];
-		} else if (c === '\r') {
-			// ignore; handled with the following \n
-		} else {
-			field += c;
-		}
-	}
-	if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
-	return rows;
-}
-
-function csvEscape(value) {
-	if (/[",\n\r]/.test(value)) {
-		return '"' + value.replace(/"/g, '""') + '"';
-	}
-	return value;
-}
-
-function toCsvLine(fields) {
-	return fields.map(csvEscape).join(',');
-}
 
 function fail(message) {
 	console.error(`ERROR: ${message}`);

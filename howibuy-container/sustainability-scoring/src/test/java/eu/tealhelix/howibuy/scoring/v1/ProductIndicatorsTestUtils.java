@@ -28,12 +28,15 @@ final class ProductIndicatorsTestUtils {
 		return UUID.nameUUIDFromBytes(name.getBytes());
 	}
 
+	/**
+	 * A product whose Nutri-Score points are WP3's placeholder 0, for a test that has no use for its health score.
+	 */
 	static ProductIndicators product(String agbCode, String nutriScore, Map<SustainabilityIndicator, Double> values) {
-		return product(agbCode, nutriScore, SOME_CATEGORY, values);
+		return product(agbCode, nutriScore, 0, values);
 	}
 
-	static ProductIndicators product(String agbCode, String nutriScore, ArchetypeCategoryId categoryId, Map<SustainabilityIndicator, Double> values) {
-		return new ProductIndicators(idOf(agbCode), categoryId, agbCode, values, nutriScore);
+	static ProductIndicators product(String agbCode, String nutriScore, int nutriScorePoints, Map<SustainabilityIndicator, Double> values) {
+		return new ProductIndicators(idOf(agbCode), SOME_CATEGORY, agbCode, values, nutriScore, nutriScorePoints);
 	}
 
 	private ProductIndicatorsTestUtils() {

@@ -8,8 +8,9 @@ import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 
 /**
- * An archetype product with each of its four dimensions normalised against the whole corpus, so that the scores are
- * comparable with each other and with every other product's, and higher always means more sustainable.
+ * An archetype product with each of its four dimensions normalised against every archetype product that has a
+ * Nutri-Score, so that the scores are comparable with each other and with every other product's, and higher always
+ * means more sustainable.
  * <p>
  * The overall score is deliberately not a field: it depends on a weighting profile, and every product carries at
  * least two — the scientific one and the user's.

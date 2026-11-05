@@ -20,14 +20,12 @@ import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 /**
  * Archetype products whose scores can be computed by hand.
  * <p>
- * Each product's indicators are set to a per-dimension fraction of one tiny base value — tiny so that no single score
- * comes near an outlier threshold and the plain min–max applies, and a fraction because min–max is scale-free: a
- * product at fraction {@code f} of a dimension whose corpus spans 0 to 1 normalises to exactly {@code 1 - f}. The
- * health score comes straight off the Nutri-Score.
+ * Every indicator of a dimension holds one given impact, so a product's single score of that dimension is the impact
+ * times a constant, which normalisation cannot see: the percentile min–max, and the log transform around the median of
+ * the positive impacts, are both scale-free. A corpus that holds its lowest and its highest impact of a dimension at
+ * least twice puts the 1st and 99th percentiles on them, so that the scale runs exactly from the one to the other.
  */
 final class ArchetypeImpactsFixtures {
-	private static final double BASE_VALUE = 1e-9;
-
 	/**
 	 * A branch of the SAFAD taxonomy: the L2 node substitutability is decided at, plus the whole path a recommendation
 	 * reports. The id is derived from the L2 name, so a failure names a category a reader can find in the test.
@@ -66,10 +64,10 @@ final class ArchetypeImpactsFixtures {
 
 	static ArchetypeProductImpacts impacts(
 			ArchetypeProductId id, String name, String agbCode, Branch branch,
-			double environment, double animalWelfare, double socioEconomic, String nutriScore) {
+			double environment, double animalWelfare, double socioEconomic, String nutriScore, int nutriScorePoints) {
 		var values = new EnumMap<SustainabilityIndicator, Double>(SustainabilityIndicator.class);
 		for (var indicator : SustainabilityIndicator.values()) {
-			values.put(indicator, BASE_VALUE * switch (indicator.getDimension()) {
+			values.put(indicator, switch (indicator.getDimension()) {
 				case ENVIRONMENT -> environment;
 				case ANIMAL_WELFARE -> animalWelfare;
 				case SOCIO_ECONOMIC -> socioEconomic;
@@ -86,7 +84,7 @@ final class ArchetypeImpactsFixtures {
 				.l3CategoryName(branch.l3())
 				.indicatorValues(Map.copyOf(values))
 				.nutriScore(nutriScore)
-				.nutriScorePoints(0)
+				.nutriScorePoints(nutriScorePoints)
 				.build();
 	}
 

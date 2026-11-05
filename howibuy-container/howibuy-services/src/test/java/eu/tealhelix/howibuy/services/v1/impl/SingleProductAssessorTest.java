@@ -78,7 +78,7 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void reportsHowTheProductWasIdentifiedForTheProductKeyWhenItsArchetypeIsIdentified() {
-		mockArchetypeCorpus("Nutriscore_C");
+		mockArchetypeCorpus("Nutriscore_C", 10);
 
 		var outcome = assess(new ProductIdentification.Identified(PICKED_ARCHETYPE, CLASSIFIED));
 
@@ -112,7 +112,7 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void reportsTheBestAlternativeFromTheScoredCorpusForTheIdentifiedArchetype() {
-		mockArchetypeCorpus("Nutriscore_C");
+		mockArchetypeCorpus("Nutriscore_C", 10);
 
 		var outcome = assess(new ProductIdentification.Identified(PICKED_ARCHETYPE, CLASSIFIED));
 
@@ -124,13 +124,13 @@ public class SingleProductAssessorTest {
 		assertEquals("Beverages", alternative.getArchetype().getL1Category(), "the recommended archetype's own taxonomy path");
 		assertEquals("Juices", alternative.getArchetype().getL2Category());
 		assertEquals("Orange juice", alternative.getArchetype().getL3Category());
-		assertEquals(0.875, alternative.getReferenceOverallScore(), 1e-9);
+		assertEquals(0.75, alternative.getReferenceOverallScore(), 1e-9);
 		assertEquals(1.0, alternative.getAlternativeOverallScore(), 1e-9);
 	}
 
 	@Test
 	void reportsTheIdentifiedArchetypeGoodEnoughWhenTheCatalogueDoesNotStockTheBetterOne() {
-		mockArchetypeCorpus("Nutriscore_C");
+		mockArchetypeCorpus("Nutriscore_C", 10);
 
 		var outcome = sut.assessOne(PRODUCT_KEY, new ProductIdentification.Identified(PICKED_ARCHETYPE, CLASSIFIED), ScientificWeights.profile(), Set.of())
 				.await().atMost(WAIT);
@@ -141,7 +141,7 @@ public class SingleProductAssessorTest {
 
 	@Test
 	void reportsNoSuggestionWhenTheIdentifiedArchetypeIsOutsideTheNutriScoreScheme() {
-		mockArchetypeCorpus("0");
+		mockArchetypeCorpus("0", 0);
 
 		var outcome = assess(new ProductIdentification.Identified(PICKED_ARCHETYPE, CLASSIFIED));
 
@@ -161,21 +161,22 @@ public class SingleProductAssessorTest {
 	}
 
 	/**
-	 * A corpus of the two candidate archetypes alone. Their indicator values are all zero, so every dimension has a
-	 * zero range and normalises flat, leaving the Nutri-Score the only thing that tells the two apart: the store brand
-	 * is graded A and the one the product is only C.
+	 * A corpus of the two candidate archetypes alone. Their indicator values are all zero, so every dimension but health
+	 * normalises flat, leaving the Nutri-Score points the only thing that tells the two apart. Two products lie beyond
+	 * the 1st and 99th percentiles of their points, at either end: the store brand, graded A, scores 1 on health, and
+	 * the one the product is, graded C, scores 0.
 	 */
-	private void mockArchetypeCorpus(String pickedProductNutriScore) {
+	private void mockArchetypeCorpus(String pickedProductNutriScore, int pickedProductNutriScorePoints) {
 		var corpus = List.of(
-				impacts(PICKED_ARCHETYPE, "Tropicana", "agb-tropicana", pickedProductNutriScore),
-				impacts(BETTER_ARCHETYPE, "Store brand", "agb-store-brand", "Nutriscore_A"));
+				impacts(PICKED_ARCHETYPE, "Tropicana", "agb-tropicana", pickedProductNutriScore, pickedProductNutriScorePoints),
+				impacts(BETTER_ARCHETYPE, "Store brand", "agb-store-brand", "Nutriscore_A", 0));
 		List<Substitutability> matrix = List.of(ImmutableSubstitutability.builder()
 				.fromCategoryId(L2_JUICES).toCategoryId(L2_JUICES).degree((short) 5).build());
 		when(archetypeCorpus.scoredArchetypes()).thenReturn(Uni.createFrom().item(
 				ScoredArchetypes.of(corpus, matrix, SubstitutionSettings.defaults())));
 	}
 
-	private static ArchetypeProductImpacts impacts(ArchetypeProductId id, String name, String agbCode, String nutriScore) {
+	private static ArchetypeProductImpacts impacts(ArchetypeProductId id, String name, String agbCode, String nutriScore, int nutriScorePoints) {
 		var values = new EnumMap<SustainabilityIndicator, Double>(SustainabilityIndicator.class);
 		for (var indicator : SustainabilityIndicator.values()) {
 			values.put(indicator, 0.0);
@@ -190,7 +191,7 @@ public class SingleProductAssessorTest {
 				.l3CategoryName("Orange juice")
 				.indicatorValues(values)
 				.nutriScore(nutriScore)
-				.nutriScorePoints(0)
+				.nutriScorePoints(nutriScorePoints)
 				.build();
 	}
 }

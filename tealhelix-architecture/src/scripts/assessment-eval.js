@@ -36,7 +36,7 @@
 //   -i, --input <csv>        ground-truth CSV (default: ../data/kritis/test_data_kritis_filled.csv)
 //   -o, --output <csv>       results CSV (default: <input dir>/<input name>-results.csv)
 //       --archetypes <csv>   archetype data providing the Nutri-Score grade per archetype
-//                            (default: the imported howibuy archetype_product.csv)
+//                            (default: the imported howibuy archetype_product_v2026-10-27.csv)
 //       --base <url>         howibuy v1 base URL (default: http://localhost:8180/api/howibuy/v1)
 //   -u, --user <username>    the operator's username (default: bob@krusty-krab.com)
 //   -p, --password <pwd>     the operator's password (or env TH_OPERATOR_PASSWORD)
@@ -65,6 +65,7 @@ const path = require('node:path');
 const readline = require('node:readline');
 const os = require('node:os');
 const { execFileSync } = require('node:child_process');
+const { parseCsv, csvEscape, toCsvLine } = require('./csv.js');
 
 // ---------------------------------------------------------------------------
 // Pure scoring logic (exported for the test).
@@ -219,53 +220,6 @@ async function askAction() {
 }
 
 // ---------------------------------------------------------------------------
-// CSV (RFC 4180) parsing / writing -- same conventions as generate-archetype-data.js.
-// ---------------------------------------------------------------------------
-
-function parseCsv(text) {
-	const rows = [];
-	let field = '';
-	let row = [];
-	let inQuotes = false;
-	for (let i = 0; i < text.length; i++) {
-		const c = text[i];
-		if (inQuotes) {
-			if (c === '"') {
-				if (text[i + 1] === '"') { field += '"'; i++; }
-				else { inQuotes = false; }
-			} else {
-				field += c;
-			}
-		} else if (c === '"') {
-			inQuotes = true;
-		} else if (c === ',') {
-			row.push(field); field = '';
-		} else if (c === '\n') {
-			row.push(field); field = '';
-			rows.push(row); row = [];
-		} else if (c === '\r') {
-			// ignore; handled with the following \n
-		} else {
-			field += c;
-		}
-	}
-	if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
-	return rows;
-}
-
-function csvEscape(value) {
-	const s = value == null ? '' : String(value);
-	if (/[",\n\r]/.test(s)) {
-		return '"' + s.replace(/"/g, '""') + '"';
-	}
-	return s;
-}
-
-function toCsvLine(fields) {
-	return fields.map(csvEscape).join(',');
-}
-
-// ---------------------------------------------------------------------------
 // HTTP + token acquisition.
 // ---------------------------------------------------------------------------
 
@@ -309,7 +263,7 @@ function parseArgs(argv) {
 		input: path.resolve(__dirname, '..', 'data', 'kritis', 'test_data_kritis_filled.csv'),
 		output: null,
 		archetypes: path.resolve(__dirname, '..', '..', '..', 'howibuy-container', 'howibuy-dao-hibernate-reactive',
-			'src', 'main', 'resources', 'db', 'archetype', 'archetype_product.csv'),
+			'src', 'main', 'resources', 'db', 'archetype', 'archetype_product_v2026-10-27.csv'),
 		base: 'http://localhost:8180/api/howibuy/v1',
 		user: 'bob@krusty-krab.com',
 		password: process.env.TH_OPERATOR_PASSWORD,

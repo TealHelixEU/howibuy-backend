@@ -72,13 +72,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * The basket is judged by the real {@code BasketRules} over a real scored corpus, built with
- * {@link ArchetypeImpactsFixtures} so that each Overall Score falls in a known Product Grade. The corpus spans 0 to 1
- * in every dimension, so the normalised scores below are exact:
+ * {@link ArchetypeImpactsFixtures} so that each Overall Score falls in a known Product Grade. Every dimension holds two
+ * impacts, each at two products, so every normalised score is exactly 1 or 0; for animal welfare and socio-economic
+ * too, since the impacts 0 and 1, log-transformed around their median 1, become log 1 and log 2, the two ends of the
+ * scale:
  *
  * <pre>
  *            E     AW    S     H     scientific  environment only
  * Good       1.0   1.0   1.0   1.0   1.0  (A)    1.0  (A)
- * Fair       0.75  0.75  0.75  0.75  0.75 (B)    0.75 (B)
+ * Fair       0.0   1.0   1.0   1.0   0.75 (B)    0.0  (C)
  * Poor       0.0   0.0   0.0   0.0   0.0  (C)    0.0  (C)
  * Green      1.0   0.0   0.0   0.0   0.25 (C)    1.0  (A)
  * Spirits    —     —     —     —     none        none
@@ -106,11 +108,11 @@ class BasketAssessmentServiceImplTest {
 	private static final ArchetypeProductId SPIRITS_ARCHETYPE = productId("spirits");
 	private static final ScoredArchetypes ARCHETYPES = ScoredArchetypes.of(
 			List.of(
-					impacts(GOOD_ARCHETYPE, "Good", "100", DAIRY, 0.0, 0.0, 0.0, "Nutriscore_A"),
-					impacts(FAIR_ARCHETYPE, "Fair", "200", DAIRY, 0.25, 0.25, 0.25, "Nutriscore_B"),
-					impacts(POOR_ARCHETYPE, "Poor", "300", DAIRY, 1.0, 1.0, 1.0, "Nutriscore_E"),
-					impacts(GREEN_ARCHETYPE, "Green", "400", DAIRY, 0.0, 1.0, 1.0, "Nutriscore_E"),
-					impacts(SPIRITS_ARCHETYPE, "Spirits", "500", DAIRY, 0.5, 0.5, 0.5, "0")),
+					impacts(GOOD_ARCHETYPE, "Good", "100", DAIRY, 0.0, 0.0, 0.0, "Nutriscore_A", 0),
+					impacts(FAIR_ARCHETYPE, "Fair", "200", DAIRY, 1.0, 0.0, 0.0, "Nutriscore_A", 0),
+					impacts(POOR_ARCHETYPE, "Poor", "300", DAIRY, 1.0, 1.0, 1.0, "Nutriscore_E", 20),
+					impacts(GREEN_ARCHETYPE, "Green", "400", DAIRY, 0.0, 1.0, 1.0, "Nutriscore_E", 20),
+					impacts(SPIRITS_ARCHETYPE, "Spirits", "500", DAIRY, 0.5, 0.5, 0.5, "0", 0)),
 			List.of(), SubstitutionSettings.defaults());
 
 	private static final ProductKey GOOD = new ProductKeyImpl("good-key");

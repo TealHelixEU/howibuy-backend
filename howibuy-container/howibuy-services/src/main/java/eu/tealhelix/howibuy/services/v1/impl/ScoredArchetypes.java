@@ -145,7 +145,7 @@ public final class ScoredArchetypes {
 	private static ProductIndicators toProductIndicators(ArchetypeProductImpacts product) {
 		return new ProductIndicators(
 				product.getId(), product.getL2CategoryId(), product.getAgbCode(),
-				product.getIndicatorValues(), product.getNutriScore());
+				product.getIndicatorValues(), product.getNutriScore(), product.getNutriScorePoints());
 	}
 
 	private static SubstitutablePair toSubstitutablePair(Substitutability pair) {
