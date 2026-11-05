@@ -29,6 +29,15 @@
 		</Or>
 		<Bug pattern="UNSAFE_HASH_EQUALS"/>
 	</Match>
+	<!--
+		Why? The draw of the Alternatives must be predictable: it is seeded from the user and the Reference Product so that
+		the same user scanning the same product is offered the same Alternatives, through java.util.Random, whose algorithm
+		the JDK specifies (ADR 0007). It is not a secret.
+	-->
+	<Match>
+		<Class name="eu.tealhelix.howibuy.services.v1.impl.SingleProductAssessor"/>
+		<Bug pattern="PREDICTABLE_RANDOM"/>
+	</Match>
 	<!-- Why? The iterator delegates to Jackson's MappingIterator.nextValue(), which throws NoSuchElementException itself -->
 	<Match>
 		<Class name="~eu\.tealhelix\.catalogue\.feeds\.rimi\.RimiFeedReader\$.*"/>
