@@ -35,9 +35,6 @@ class ScoreParityTest {
 	private static final int PRODUCTS_WITHOUT_A_NUTRI_SCORE = 47;
 	private static final String NO_NUTRI_SCORE = "0";
 
-	/** {@code GATE_THRESHOLD} of the notebook: a scientific Overall Score at or above it is good enough. */
-	private static final double GATE = 0.80;
-
 	private static final List<Wp3Product> WP3_PRODUCTS = readFixture();
 
 	@Test
@@ -94,7 +91,7 @@ class ScoreParityTest {
 	}
 
 	private static boolean isGoodEnough(double scientificOverallScore) {
-		return scientificOverallScore >= GATE;
+		return scientificOverallScore >= SubstitutionSearch.GATE;
 	}
 
 	private static List<ProductIndicators> products() {
