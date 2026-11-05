@@ -9,7 +9,6 @@ import jakarta.inject.Inject;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.dao.SubstitutabilityDao;
-import eu.tealhelix.howibuy.scoring.v1.SubstitutionSettings;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +63,6 @@ public class ArchetypeCorpus {
 		return persistenceContextFactory.withoutTransaction(em -> forcm(
 				archetypeProductDao.retrieveAllWithImpacts(em),
 				_ -> substitutabilityDao.retrieveAll(em),
-				(corpus, matrix) -> ScoredArchetypes.of(corpus, matrix, SubstitutionSettings.defaults())));
+				ScoredArchetypes::of));
 	}
 }

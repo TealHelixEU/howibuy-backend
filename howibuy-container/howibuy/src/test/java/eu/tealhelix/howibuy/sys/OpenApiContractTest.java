@@ -5,7 +5,6 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -174,20 +173,32 @@ public class OpenApiContractTest {
 	}
 
 	/**
-	 * An assessment answers with three alternatives, each naming the archetype product it recommends with the SAFAD
-	 * taxonomy path that archetype sits in, the two overall scores that put it there, and the product of the
-	 * Catalogue that stands for it. All of it is what the front-end shows the user, so it belongs to the published
-	 * contract rather than only to the Java type.
+	 * An assessment answers with its Recommendation, the scientific Overall Score of the Reference Product and the
+	 * Alternatives, each naming the archetype product it stands for with the SAFAD taxonomy path that archetype sits in,
+	 * its scientific Overall Score, and the product of the Catalogue that stands for it. All of it is what the front-end
+	 * shows the user, so it belongs to the published contract rather than only to the Java type. This shape is the
+	 * contract's version 0.3.0.
 	 */
 	@Test
-	void describesTheRecommendedAlternativeWithItsArchetypeScoresAndProduct() {
+	void describesTheRecommendationAndItsAlternativesWithTheirArchetypeScoreAndProduct() {
 		given()
 				.accept("application/json")
 				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
+				.body("info.version", equalTo("0.3.0"))
+				.body("components.schemas.ProductAssessmentOutcome.properties.keySet()", equalTo(Set.of(
+						"productKey", "type", "failureReason", "recommendation", "referenceOverallScore", "alternatives", "diagnostics")))
+				.body("components.schemas.ProductAssessmentOutcome.properties.recommendation.'$ref'",
+						equalTo("#/components/schemas/RecommendationType"))
+				.body("components.schemas.RecommendationType.enum",
+						equalTo(List.of("RECOMMENDED", "GOOD_ENOUGH", "NO_ALTERNATIVE", "NO_SCORE")))
+				.body("components.schemas.ProductAssessmentOutcome.properties.referenceOverallScore.type", equalTo("number"))
+				.body("components.schemas.ProductAssessmentOutcome.properties.alternatives.type", equalTo("array"))
+				.body("components.schemas.ProductAssessmentOutcome.properties.alternatives.items.'$ref'",
+						equalTo("#/components/schemas/AlternativeForProduct"))
 				.body("components.schemas.AlternativeForProduct.properties.keySet()",
-						equalTo(Set.of("type", "archetype", "referenceOverallScore", "alternativeOverallScore", "product")))
+						equalTo(Set.of("archetype", "overallScore", "product")))
 				.body("components.schemas.AlternativeForProduct.properties.archetype.'$ref'",
 						equalTo("#/components/schemas/RecommendedArchetype"))
 				.body("components.schemas.RecommendedArchetype.properties.id.'$ref'",
@@ -198,8 +209,7 @@ public class OpenApiContractTest {
 				.body("components.schemas.RecommendedArchetype.properties.l1Category.type", equalTo("string"))
 				.body("components.schemas.RecommendedArchetype.properties.l2Category.type", equalTo("string"))
 				.body("components.schemas.RecommendedArchetype.properties.l3Category.type", equalTo("string"))
-				.body("components.schemas.AlternativeForProduct.properties.referenceOverallScore.type", equalTo("number"))
-				.body("components.schemas.AlternativeForProduct.properties.alternativeOverallScore.type", equalTo("number"))
+				.body("components.schemas.AlternativeForProduct.properties.overallScore.type", equalTo("number"))
 				.body("components.schemas.AlternativeForProduct.properties.product.'$ref'",
 						equalTo("#/components/schemas/ListedProduct"))
 				.body("components.schemas.ListedProduct.properties.productKey.'$ref'",
@@ -209,10 +219,7 @@ public class OpenApiContractTest {
 				.body("components.schemas.ListedProduct.properties.price.type", equalTo("number"))
 				.body("components.schemas.ListedProduct.properties.currency.'$ref'",
 						equalTo("#/components/schemas/Currency"))
-				.body("components.schemas.AlternativeForProduct.properties.type.'$ref'",
-						equalTo("#/components/schemas/AlternativeForProductType"))
-				.body("components.schemas.AlternativeForProductType.enum",
-						hasItems("SUGGESTION", "GOOD_ENOUGH", "NO_SUGGESTION"));
+				.body("components.schemas.AlternativeForProductType", nullValue());
 	}
 
 	/**

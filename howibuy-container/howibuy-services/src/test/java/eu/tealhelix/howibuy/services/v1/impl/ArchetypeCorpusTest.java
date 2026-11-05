@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -23,9 +24,9 @@ import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
-import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
 import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
+import eu.tealhelix.howibuy.v1.types.RecommendationType;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeCategoryIdImpl;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import io.smallrye.mutiny.Uni;
@@ -77,12 +78,12 @@ public class ArchetypeCorpusTest {
 	void answersFromTheScoredCorpusItLoaded() {
 		mockCorpus();
 
-		var recommendations = sut.scoredArchetypes().await().atMost(WAIT)
-				.recommendationsFor(ORANGE_JUICE, ScientificWeights.profile(), Set.of());
+		var recommendation = sut.scoredArchetypes().await().atMost(WAIT)
+				.recommendationFor(ORANGE_JUICE, ScientificWeights.profile(), Set.of(), new Random(0));
 
-		assertEquals(AlternativeForProductType.GOOD_ENOUGH, recommendations.scientific().getType(),
-				"the only product of its category, so it is its own best alternative");
-		assertEquals("Orange juice", recommendations.scientific().getArchetype().getName());
+		assertEquals(RecommendationType.GOOD_ENOUGH, recommendation.type(),
+				"the only product of the corpus, so the whole scale and the best score on every dimension are its own");
+		assertEquals(1.0, recommendation.referenceOverallScore());
 	}
 
 	@Test

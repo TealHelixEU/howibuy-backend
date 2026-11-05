@@ -1,12 +1,14 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
-import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.SUGGESTION;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_OTHER;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_TO_IDENTIFY;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS;
+import static eu.tealhelix.howibuy.v1.types.RecommendationType.GOOD_ENOUGH;
+import static eu.tealhelix.howibuy.v1.types.RecommendationType.RECOMMENDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +19,7 @@ import java.util.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
@@ -28,6 +31,7 @@ import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
+import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.v1.model.AlternativeForProduct;
@@ -38,7 +42,6 @@ import eu.tealhelix.howibuy.v1.model.ImmutableRecommendedArchetype;
 import eu.tealhelix.howibuy.v1.model.ListedProduct;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.RecommendedArchetype;
-import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.IdentificationFailureReason;
 import eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType;
@@ -59,7 +62,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ProductAssessmentServiceImplTest {
 	private static final Duration WAIT = Duration.ofSeconds(300);
 
-	private static final User USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, true, Set.of());
+	private static final UserId USER_ID = new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1");
+	private static final User USER = new UserImpl(USER_ID, null, null, false, true, Set.of());
 	private static final User SERVICE_USER = new UserImpl(new UserIdImpl("2e788895-0503-4777-a7bd-24e5d61db5b1"), null, null, false, false, Set.of());
 	/** Which profile it is does not matter here, only that the assessor is handed the one the provider returned. */
 	private static final WeightProfile PERSONAL = ScientificWeights.profile();
@@ -75,7 +79,6 @@ public class ProductAssessmentServiceImplTest {
 	private static final Set<ArchetypeProductId> STOCKED = Set.of(new ArchetypeProductIdImpl("00000000-0000-0000-0000-0000000000fd"));
 	private static final RecommendedArchetype KEFIR = recommendedArchetype("00000000-0000-0000-0000-0000000000a1", "Kefir");
 	private static final RecommendedArchetype AYRAN = recommendedArchetype("00000000-0000-0000-0000-0000000000a2", "Ayran");
-	private static final RecommendedArchetype YOGHURT = recommendedArchetype("00000000-0000-0000-0000-0000000000a3", "Yoghurt");
 	private static final ListedProduct KEFIR_PRODUCT = listedProduct("kefir-key", "Kefir");
 	private static final ListedProduct AYRAN_PRODUCT = listedProduct("ayran-key", "Ayran");
 
@@ -108,7 +111,7 @@ public class ProductAssessmentServiceImplTest {
 		mockStockedArchetypes();
 		mockListedProducts(Set.of(), Map.of());
 		mockIdentification(List.of(PRODUCT), Map.of(PRODUCT, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
 
 		var outcome = sut.assessSingleProduct(USER, CATALOGUE, PRODUCT, LANGUAGE).await().atMost(WAIT);
 
@@ -132,8 +135,8 @@ public class ProductAssessmentServiceImplTest {
 		mockStockedArchetypes();
 		mockListedProducts(Set.of(), Map.of());
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, UNKNOWN));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, UNKNOWN, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT2, UNKNOWN, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2), LANGUAGE).await().atMost(WAIT);
 
@@ -153,8 +156,8 @@ public class ProductAssessmentServiceImplTest {
 		mockStockedArchetypes();
 		mockListedProducts(Set.of(), Map.of());
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, UNKNOWN));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, UNKNOWN, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT2, UNKNOWN, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2, PRODUCT), LANGUAGE).await().atMost(WAIT);
 
@@ -167,8 +170,8 @@ public class ProductAssessmentServiceImplTest {
 		mockStockedArchetypes();
 		mockListedProducts(Set.of(), Map.of());
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().failure(new RuntimeException("DB down")));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2), LANGUAGE).await().atMost(WAIT);
 
@@ -184,8 +187,8 @@ public class ProductAssessmentServiceImplTest {
 		mockStockedArchetypes();
 		mockListedProducts(Set.of(), Map.of());
 		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
-		when(singleProductAssessor.assessOne(PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, SUCCESS)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT, SUCCESS)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, SUCCESS)));
 
 		sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2), LANGUAGE).await().atMost(WAIT);
 
@@ -195,56 +198,55 @@ public class ProductAssessmentServiceImplTest {
 	}
 
 	@Test
-	void eachSuggestionNamesTheProductOfTheCatalogueThatStandsForItsArchetypeInTheLanguageAskedFor() {
+	void eachAlternativeNamesTheProductOfTheCatalogueThatStandsForItsArchetypeInTheLanguageAskedFor() {
 		mockPersonalWeights();
 		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT), Map.of(PRODUCT, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(
-				assessed(PRODUCT, suggestion(KEFIR), goodEnough(YOGHURT), suggestion(AYRAN))));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(recommending(PRODUCT, KEFIR, AYRAN)));
 		mockListedProducts(Set.of(KEFIR.getId(), AYRAN.getId()), Map.of(KEFIR.getId(), KEFIR_PRODUCT, AYRAN.getId(), AYRAN_PRODUCT));
 
 		var outcome = sut.assessSingleProduct(USER, CATALOGUE, PRODUCT, LANGUAGE).await().atMost(WAIT);
 
-		assertEquals(KEFIR_PRODUCT, outcome.getBestPersonalAlternative().getProduct());
-		assertEquals(KEFIR, outcome.getBestPersonalAlternative().getArchetype(), "the rest of the alternative as ranked");
-		assertNull(outcome.getBestScientificAlternative().getProduct(), "the scanned product is good enough, nothing to buy instead");
-		assertEquals(AYRAN_PRODUCT, outcome.getBestCombinedAlternative().getProduct());
+		assertEquals(RECOMMENDED, outcome.getRecommendation(), "the rest of the outcome as assessed");
+		assertEquals(0.5, outcome.getReferenceOverallScore());
+		assertEquals(List.of(KEFIR_PRODUCT, AYRAN_PRODUCT), outcome.getAlternatives().stream().map(AlternativeForProduct::getProduct).toList());
+		assertEquals(KEFIR, outcome.getAlternatives().getFirst().getArchetype(), "the rest of the Alternative as recommended");
+		assertEquals(0.75, outcome.getAlternatives().getFirst().getOverallScore());
 	}
 
 	/**
-	 * When the last active Listing of a recommended archetype goes between the stocked archetypes being read and the
-	 * Listings being read, the suggestion stays, naming no product.
+	 * When the last active Listing of an Alternative's archetype goes between the stocked archetypes being read and the
+	 * Listings being read, the Alternative stays, naming no product.
 	 */
 	@Test
-	void aSuggestionWhoseArchetypeHasNoListedProductNamesNone() {
+	void anAlternativeWhoseArchetypeHasNoListedProductNamesNone() {
 		mockPersonalWeights();
 		mockStockedArchetypes();
 		mockIdentification(List.of(PRODUCT), Map.of(PRODUCT, IDENTIFIED));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(
-				assessed(PRODUCT, suggestion(KEFIR), suggestion(KEFIR), suggestion(KEFIR))));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(recommending(PRODUCT, KEFIR)));
 		mockListedProducts(Set.of(KEFIR.getId()), Map.of());
 
 		var outcome = sut.assessSingleProduct(USER, CATALOGUE, PRODUCT, LANGUAGE).await().atMost(WAIT);
 
-		assertEquals(SUGGESTION, outcome.getBestPersonalAlternative().getType());
-		assertNull(outcome.getBestPersonalAlternative().getProduct());
+		assertEquals(KEFIR, outcome.getAlternatives().getFirst().getArchetype());
+		assertNull(outcome.getAlternatives().getFirst().getProduct());
 	}
 
 	@Test
-	void aBatchReadsTheListedProductsOfTheSuggestionsOfAllItsProductsAtOnce() {
+	void aBatchReadsTheListedProductsOfTheAlternativesOfAllItsProductsAtOnce() {
 		mockPersonalWeights();
 		mockStockedArchetypes();
-		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, UNKNOWN));
-		when(singleProductAssessor.assessOne(PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(
-				assessed(PRODUCT, suggestion(KEFIR), goodEnough(YOGHURT), suggestion(KEFIR))));
-		when(singleProductAssessor.assessOne(PRODUCT2, UNKNOWN, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(outcome(PRODUCT2, FAILURE_TO_IDENTIFY)));
+		mockIdentification(List.of(PRODUCT, PRODUCT2), Map.of(PRODUCT, IDENTIFIED, PRODUCT2, IDENTIFIED));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(recommending(PRODUCT, KEFIR)));
+		when(singleProductAssessor.assessOne(USER_ID, PRODUCT2, IDENTIFIED, PERSONAL, STOCKED)).thenReturn(Uni.createFrom().item(goodEnough(PRODUCT2)));
 		mockListedProducts(Set.of(KEFIR.getId()), Map.of(KEFIR.getId(), KEFIR_PRODUCT));
 
 		var outcomes = sut.assessMultipleProductsSync(USER, CATALOGUE, List.of(PRODUCT, PRODUCT2, PRODUCT), LANGUAGE).await().atMost(WAIT);
 
-		assertEquals(KEFIR_PRODUCT, outcomes.get(0).getBestPersonalAlternative().getProduct());
-		assertEquals(FAILURE_TO_IDENTIFY, outcomes.get(1).getType());
-		assertEquals(KEFIR_PRODUCT, outcomes.get(2).getBestCombinedAlternative().getProduct());
+		assertEquals(KEFIR_PRODUCT, outcomes.get(0).getAlternatives().getFirst().getProduct());
+		assertEquals(GOOD_ENOUGH, outcomes.get(1).getRecommendation());
+		assertTrue(outcomes.get(1).getAlternatives().isEmpty(), "good enough, nothing to buy instead");
+		assertEquals(KEFIR_PRODUCT, outcomes.get(2).getAlternatives().getFirst().getProduct());
 		verify(catalogueAssortmentService, times(1)).listedProducts(CATALOGUE, Set.of(KEFIR.getId()), LANGUAGE);
 	}
 
@@ -264,30 +266,29 @@ public class ProductAssessmentServiceImplTest {
 		when(referenceProductIdentifier.identify(CATALOGUE, Set.copyOf(productKeys))).thenReturn(Uni.createFrom().item(identifications));
 	}
 
-	private static ProductAssessmentOutcome assessed(ProductKey productKey, AlternativeForProduct personal, AlternativeForProduct scientific, AlternativeForProduct combined) {
+	private static ProductAssessmentOutcome recommending(ProductKey productKey, RecommendedArchetype... archetypes) {
 		return ImmutableProductAssessmentOutcome.builder()
 				.productKey(productKey)
 				.type(SUCCESS)
-				.bestPersonalAlternative(personal)
-				.bestScientificAlternative(scientific)
-				.bestCombinedAlternative(combined)
+				.recommendation(RECOMMENDED)
+				.referenceOverallScore(0.5)
+				.alternatives(Stream.of(archetypes).map(ProductAssessmentServiceImplTest::alternative).toList())
 				.build();
 	}
 
-	private static AlternativeForProduct suggestion(RecommendedArchetype archetype) {
-		return alternative(AlternativeForProductType.SUGGESTION, archetype);
+	private static ProductAssessmentOutcome goodEnough(ProductKey productKey) {
+		return ImmutableProductAssessmentOutcome.builder()
+				.productKey(productKey)
+				.type(SUCCESS)
+				.recommendation(GOOD_ENOUGH)
+				.referenceOverallScore(0.9)
+				.build();
 	}
 
-	private static AlternativeForProduct goodEnough(RecommendedArchetype archetype) {
-		return alternative(AlternativeForProductType.GOOD_ENOUGH, archetype);
-	}
-
-	private static AlternativeForProduct alternative(AlternativeForProductType type, RecommendedArchetype archetype) {
+	private static AlternativeForProduct alternative(RecommendedArchetype archetype) {
 		return ImmutableAlternativeForProduct.builder()
-				.type(type)
 				.archetype(archetype)
-				.referenceOverallScore(0.5)
-				.alternativeOverallScore(0.75)
+				.overallScore(0.75)
 				.build();
 	}
 

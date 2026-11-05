@@ -3,28 +3,26 @@ package eu.tealhelix.howibuy.services.v1.impl;
 import static eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.impacts;
 import static eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.personalProfileOnEnvironment;
 import static eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.productId;
-import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.GOOD_ENOUGH;
-import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.NO_SUGGESTION;
-import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.SUGGESTION;
+import static eu.tealhelix.howibuy.v1.types.RecommendationType.GOOD_ENOUGH;
+import static eu.tealhelix.howibuy.v1.types.RecommendationType.NO_ALTERNATIVE;
+import static eu.tealhelix.howibuy.v1.types.RecommendationType.NO_SCORE;
+import static eu.tealhelix.howibuy.v1.types.RecommendationType.RECOMMENDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Set;
+import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
-import eu.tealhelix.howibuy.scoring.v1.SubstitutionSettings;
 import eu.tealhelix.howibuy.services.model.ArchetypeProductImpacts;
 import eu.tealhelix.howibuy.services.model.ImmutableSubstitutability;
 import eu.tealhelix.howibuy.services.model.Substitutability;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.Branch;
-import eu.tealhelix.howibuy.v1.model.AlternativeForProduct;
-import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
 import eu.tealhelix.howibuy.v1.types.ArchetypeCategoryId;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
-import eu.tealhelix.howibuy.v1.types.SubstitutabilityLevel;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import org.junit.jupiter.api.Test;
 
@@ -87,73 +85,68 @@ class ScoredArchetypesTest {
 	private static final WeightProfile PERSONAL = personalProfileOnEnvironment();
 	private static final Set<ArchetypeProductId> ALL_STOCKED = CORPUS.stream().map(ArchetypeProductImpacts::getId).collect(Collectors.toSet());
 
-	@Test
-	void reportsTheBestAlternativeUnderEachCriterionScoredByThatCriterion() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
+	/** A random source for the answers here, none of which needs a draw: a Pool of one is offered as it is. */
+	private static final RandomGenerator NEVER_CONSULTED = () -> {
+		throw new AssertionError("The random source was consulted, but there was nothing to draw between");
+	};
 
-		assertAlternative(best.personal(), SUGGESTION, GREENEST, "Greenest juice", JUICES, 0.5, 1.0);
-		assertAlternative(best.scientific(), SUGGESTION, SOUNDEST, "Soundest juice", JUICES, 0.5625, 0.875);
-		assertAlternative(best.combined(), SUGGESTION, GREENEST, "Greenest juice", JUICES, 0.525, 0.9);
+	@Test
+	void recommendsTheAlternativeDrawnFromThePoolScoredScientifically() {
+		var recommendation = archetypes().recommendationFor(REFERENCE, PERSONAL, Set.of(GREENEST), NEVER_CONSULTED);
+
+		assertEquals(RECOMMENDED, recommendation.type());
+		assertEquals(0.5625, recommendation.referenceOverallScore(), TOLERANCE, "the reference product's scientific score");
+		assertEquals(1, recommendation.alternatives().size());
+		var alternative = recommendation.alternatives().getFirst();
+		var archetype = alternative.getArchetype();
+		assertEquals(GREENEST, archetype.getId(), "the Alternative, by id");
+		assertEquals("Greenest juice", archetype.getName());
+		assertEquals(JUICES.l1(), archetype.getL1Category(), "the SAFAD path the Alternative sits in");
+		assertEquals(JUICES.l2(), archetype.getL2Category());
+		assertEquals(JUICES.l3(), archetype.getL3Category());
+		assertEquals(0.75, alternative.getOverallScore(), TOLERANCE,
+				"its scientific score, the one sure to beat the reference's, where its personal score is 1.0");
+		assertNull(alternative.getProduct(), "the product of the Catalogue is chosen after the Recommendation");
 	}
 
 	@Test
-	void reportsTheReferenceProductItselfAsGoodEnoughWhenNothingEligibleBeatsIt() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(SOUNDEST, PERSONAL, ALL_STOCKED);
+	void findsAReferenceProductAtOrAboveTheGateGoodEnough() {
+		var recommendation = archetypes().recommendationFor(SOUNDEST, PERSONAL, ALL_STOCKED, NEVER_CONSULTED);
 
-		assertAlternative(best.personal(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.5, 0.5);
-		assertAlternative(best.scientific(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.875, 0.875);
-		assertAlternative(best.combined(), GOOD_ENOUGH, SOUNDEST, "Soundest juice", JUICES, 0.65, 0.65);
+		assertEquals(GOOD_ENOUGH, recommendation.type());
+		assertEquals(0.875, recommendation.referenceOverallScore(), TOLERANCE);
+		assertTrue(recommendation.alternatives().isEmpty());
 	}
 
 	@Test
-	void neverSuggestsAnArchetypeTheCatalogueDoesNotStock() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL, Set.of(SOUNDEST));
+	void findsNoAlternativeWhenNothingSubstitutesForTheReferenceCategory() {
+		var recommendation = archetypes().recommendationFor(CANDY_BAR, PERSONAL, ALL_STOCKED, NEVER_CONSULTED);
 
-		assertAlternative(best.personal(), GOOD_ENOUGH, REFERENCE, "Reference juice", JUICES, 0.5, 0.5);
-		assertAlternative(best.scientific(), SUGGESTION, SOUNDEST, "Soundest juice", JUICES, 0.5625, 0.875);
+		assertEquals(NO_ALTERNATIVE, recommendation.type());
+		assertEquals(0.625, recommendation.referenceOverallScore(), TOLERANCE);
+		assertTrue(recommendation.alternatives().isEmpty());
 	}
 
 	@Test
-	void reportsNoSuggestionForAProductOutsideTheNutriScoreScheme() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(SPIRITS, PERSONAL, ALL_STOCKED);
+	void saysNothingAboutAProductOutsideTheNutriScoreScheme() {
+		var recommendation = archetypes().recommendationFor(SPIRITS, PERSONAL, ALL_STOCKED, NEVER_CONSULTED);
 
-		assertNoSuggestion(best.personal());
-		assertNoSuggestion(best.scientific());
-		assertNoSuggestion(best.combined());
+		assertEquals(NO_SCORE, recommendation.type());
+		assertNull(recommendation.referenceOverallScore(), "Spirits has no health score, so no overall score at all");
+		assertTrue(recommendation.alternatives().isEmpty());
 	}
 
 	@Test
-	void reportsNoSuggestionWhenNothingSubstitutesForTheReferenceCategory() {
-		var best = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(CANDY_BAR, PERSONAL, ALL_STOCKED);
+	void neverOffersAProductOutsideTheNutriScoreScheme() {
+		var recommendation = archetypes().recommendationFor(REFERENCE, PERSONAL, Set.of(SPIRITS), NEVER_CONSULTED);
 
-		assertNoSuggestion(best.personal());
-		assertNoSuggestion(best.scientific());
-		assertNoSuggestion(best.combined());
-	}
-
-	@Test
-	void neverRecommendsAProductThatCannotBeScoredItself() {
-		var best = archetypes(SubstitutabilityLevel.LARGE).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
-
-		assertTrue(
-				List.of(best.personal(), best.scientific(), best.combined()).stream()
-						.noneMatch(alternative -> alternative.getArchetype() != null && SPIRITS.equals(alternative.getArchetype().getId())),
-				"Spirits shares the reference's category and would be eligible, but has no overall score at all");
-	}
-
-	@Test
-	void reachesAMoreDistantCategoryOnlyAtALargerSubstitutabilityLevel() {
-		var atSmall = archetypes(SubstitutabilityLevel.SMALL).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
-		var atLarge = archetypes(SubstitutabilityLevel.LARGE).recommendationsFor(REFERENCE, PERSONAL, ALL_STOCKED);
-
-		assertEquals(SOUNDEST, atSmall.scientific().getArchetype().getId(),
-				"water substitutes for juices at degree 1, below the small level's cut-off");
-		assertAlternative(atLarge.scientific(), SUGGESTION, SPRING_WATER, "Spring water", WATER, 0.5625, 1.0);
+		assertEquals(NO_ALTERNATIVE, recommendation.type(),
+				"Spirits shares the reference's category and is stocked, but has no overall score to be better with");
 	}
 
 	@Test
 	void findsAScoredProductByItsArchetype() {
-		var reference = archetypes(SubstitutabilityLevel.SMALL).find(REFERENCE).orElseThrow();
+		var reference = archetypes().find(REFERENCE).orElseThrow();
 
 		assertEquals(REFERENCE, reference.productId());
 		assertEquals(0.5625, reference.overallScore(ScientificWeights.profile()), TOLERANCE);
@@ -162,33 +155,11 @@ class ScoredArchetypesTest {
 
 	@Test
 	void findsNoScoredProductOutsideTheNutriScoreScheme() {
-		assertTrue(archetypes(SubstitutabilityLevel.SMALL).find(SPIRITS).isEmpty(), "Spirits has no health score, so no overall score at all");
+		assertTrue(archetypes().find(SPIRITS).isEmpty(), "Spirits has no health score, so no overall score at all");
 	}
 
-	private static ScoredArchetypes archetypes(SubstitutabilityLevel level) {
-		return ScoredArchetypes.of(CORPUS, MATRIX, SubstitutionSettings.defaults().at(level));
-	}
-
-	private static void assertAlternative(
-			AlternativeForProduct alternative, AlternativeForProductType type,
-			ArchetypeProductId productId, String name, Branch branch, double referenceScore, double alternativeScore) {
-		assertEquals(type, alternative.getType());
-		var archetype = alternative.getArchetype();
-		assertEquals(productId, archetype.getId(), "the recommended archetype, by id");
-		assertEquals(name, archetype.getName());
-		assertEquals(branch.l1(), archetype.getL1Category(), "the SAFAD path the recommended archetype sits in");
-		assertEquals(branch.l2(), archetype.getL2Category());
-		assertEquals(branch.l3(), archetype.getL3Category());
-		assertNull(alternative.getProduct(), "the product of the Catalogue is chosen after the ranking");
-		assertEquals(referenceScore, alternative.getReferenceOverallScore(), TOLERANCE, "the reference product's own score under this criterion");
-		assertEquals(alternativeScore, alternative.getAlternativeOverallScore(), TOLERANCE, "the recommended product's score under this criterion");
-	}
-
-	private static void assertNoSuggestion(AlternativeForProduct alternative) {
-		assertEquals(NO_SUGGESTION, alternative.getType());
-		assertNull(alternative.getArchetype(), "no archetype is named when none is recommended");
-		assertNull(alternative.getReferenceOverallScore());
-		assertNull(alternative.getAlternativeOverallScore());
+	private static ScoredArchetypes archetypes() {
+		return ScoredArchetypes.of(CORPUS, MATRIX);
 	}
 
 	private static Substitutability substitutability(ArchetypeCategoryId fromCategoryId, ArchetypeCategoryId toCategoryId, short degree) {

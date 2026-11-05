@@ -17,54 +17,54 @@ components:
     ProductAssessmentOutcome:
       description: >-
         What the assessment made of one product: whether the archetype product it is could be identified at all and,
-        if it could, the better-scoring products that could be bought in its place.
+        if it could, whether there is something better to buy in its place, and what.
       properties:
         productKey:
           description: The key the caller sent for the product, echoed so each outcome can be tied back to its product.
         type:
-          description: Whether the assessment succeeded. The alternatives below carry something only when it did.
+          description: >-
+            Whether the assessment succeeded. The recommendation, the score and the alternatives below are carried
+            only when it did.
         failureReason:
           description: Why the product could not be identified, carried only when the type is `FAILURE_TO_IDENTIFY`.
-        bestPersonalAlternative:
+        recommendation:
+          description: Whether there is something better to buy in place of the product, carried only when the type is `SUCCESS`.
+        referenceOverallScore:
           description: >-
-            The best alternative under this user's own weighting of the sustainability dimensions, as their compass
-            records it.
-        bestScientificAlternative:
-          description: The best alternative under the scientific weighting of the dimensions, which is the same for every user.
-        bestCombinedAlternative:
-          description: The best alternative under a blend of the two weightings above.
+            The overall score of the archetype product the product is, between 0 and 1, under the scientific weighting
+            of the sustainability dimensions, which is the same for every user. Missing when the recommendation is
+            `NO_SCORE`.
+        alternatives:
+          description: >-
+            What to buy in place of the product. Non-empty exactly when the recommendation is `RECOMMENDED`, and it
+            then holds one alternative.
         diagnostics:
           description: >-
             How the product was identified, for tracing an assessment rather than for showing to a shopper. Missing
             when the product is unknown.
 
     AlternativeForProduct:
-      description: A product put forward to be bought in place of the one assessed, together with what it would gain.
+      description: A product put forward to be bought in place of the one assessed, together with how much better it is.
       properties:
-        type:
-          description: >-
-            What the alternative amounts to. `NO_SUGGESTION` carries nothing else, and only `SUGGESTION` carries a
-            product.
         archetype:
           description: >-
-            The archetype product being recommended — the same one the assessed product was matched to, when the type
-            is `GOOD_ENOUGH`.
-        referenceOverallScore:
+            The archetype product put forward: one that may stand in for the assessed product's and scores higher,
+            picked at random in favour of a higher overall score under the user's own weighting of the sustainability
+            dimensions, as their compass records it (the scientific one until they complete it). The same user
+            assessing the same product is put forward the same one, as long as their compass and what the Catalogue
+            stocks stay the same.
+        overallScore:
           description: >-
-            The overall score of the archetype the assessed product was matched to, measured under the criterion that
-            chose this alternative — the user's own weights for the personal recommendation, the scientific ones for
-            the scientific recommendation, and the blend of the two for the combined one.
-        alternativeOverallScore:
-          description: >-
-            The overall score of the archetype recommended in its place, measured under that same criterion. The pair
-            is what explains the recommendation, and it never falls below the reference.
+            The overall score of that archetype product under the scientific weighting, always higher than the
+            `referenceOverallScore` of the outcome. The difference is how much better the alternative is. The user's
+            own weighting only leans the pick, without requiring it to score higher, so it is not the measure.
         product:
           description: >-
             The product of the user's Catalogue that stands for the recommended archetype: the cheapest one actively
             listed in it.
 
     RecommendedArchetype:
-      description: The archetype product an alternative recommends, and the SAFAD taxonomy path it sits in.
+      description: The archetype product an alternative puts forward, and the SAFAD taxonomy path it sits in.
       properties:
         id:
           description: The archetype product.
@@ -72,9 +72,9 @@ components:
           description: The name of the archetype product.
         l1Category:
           description: >-
-            The top of the SAFAD taxonomy path the archetype sits in. A suggestion may well come from a different
+            The top of the SAFAD taxonomy path the archetype sits in. An alternative may well come from a different
             branch than the assessed product's own, since substitutability reaches across categories, so the path says
-            what kind of food is being recommended.
+            what kind of food is being put forward.
         l2Category:
           description: The middle of that path.
         l3Category:
@@ -149,11 +149,13 @@ components:
         Who decided a Classification. `MANUAL` — one of us. `EXPERT` — a domain source we trust but do not run.
         `LLM` — the language model of this application.
 
-    AlternativeForProductType:
+    RecommendationType:
       description: >-
-        What an alternative amounts to. `SUGGESTION` — a product that would improve on the one assessed.
-        `GOOD_ENOUGH` — the assessed product is already good enough, so nothing is put forward in its place.
-        `NO_SUGGESTION` — none could be produced.
+        Whether there is something better to buy in place of a product. `RECOMMENDED` — there is, and the
+        alternatives say what. `GOOD_ENOUGH` — the product scores high enough under the scientific weighting that
+        nothing is sought in its place. `NO_ALTERNATIVE` — it does not, but the Catalogue stocks nothing that may stand
+        in for it and scores higher; that does not make it a good choice. `NO_SCORE` — the product has no Nutri-Score,
+        so it has no overall score and nothing is said about it.
 
     BasketAssessmentOutcome:
       description: >-

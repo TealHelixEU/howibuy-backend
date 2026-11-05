@@ -105,6 +105,9 @@ The work is split into three parts with narrow contracts between them:
   policy, starting with the lowest price. When the best archetype is the Reference Product
   itself, the Alternative is `GOOD_ENOUGH` and names no Retailer Product. The scanned product is
   the implied answer, so no Listing is needed, even if it is Inactive.
+  ADR 0007 revises this for the v15 method: the Alternative is drawn from a Pool rather than the
+  best chosen, Good Enough is decided by the Gate alone, a Reference Product that nothing stocked
+  beats has No Alternative, and the response did break a second time (API 0.3.0).
 - Names are per language; characteristics and tags are not. Each Catalogue has a primary
   language, every product it lists must be named in it, and names fall back to it.
 - Being Inactive stops a Listing from being recommended, not from being assessed. A user scanning

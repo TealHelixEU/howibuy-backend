@@ -250,7 +250,8 @@ neither changes a product that the other has read.
 - **Catalogue-aware recommendation.** `SubstitutionSearch.find` takes the set of archetypes stocked in the Catalogue (=
   having at least one active Listing whose product is classified to it), and filters candidates by it *before*
   ranking. The reference archetype always stays a candidate (see `GOOD_ENOUGH`). Query the set per request first, and
-  cache per Catalogue only if measurements say so.
+  cache per Catalogue only if measurements say so. API 0.3.0 replaces the ranking with the Pool of ADR 0007, which the
+  stocked set bounds the same way, and the reference archetype is never in it.
 - **Choosing the product** (`AlternativeProductSelector`, swappable): given the winning archetype, the Catalogue and
   its active Listings of that archetype, pick one. Initial policy: the lowest price, ties broken by retailer product id
   for determinism.
@@ -262,6 +263,9 @@ neither changes a product that the other has read.
   - `NO_SUGGESTION`: nothing.
   - Nested: `type`, `archetype` (`RecommendedArchetype`), the two scores, `product` (`ListedProduct`). The price is a
     JSON number in plain notation without trailing zeros (`2.4900` → `2.49`).
+  - That is API 0.2.0. API 0.3.0 (the sustainability-scoring spec) drops `type` and the reference's score, renames the
+    other score to `overallScore`, and puts the outcome's `recommendation`, `referenceOverallScore` and list of
+    `alternatives` in place of the three Alternatives.
 - Every Classification with an archetype makes it stocked, whatever its state (pending again, reopened, needs review).
   The stocked set costs about 10 ms per request at 30,000 products (measured in issue 15), so it is not cached.
 - The Listings of the winning archetypes of a whole request, a batch included, are read with one query.
@@ -431,7 +435,8 @@ Keycloak is slow.
   / no alternative / recommended / no score) and wants the API to be a *list* of suggestions, "so retailers adapt
   once". The `AlternativeForProduct` redesign (issue 15) ships first and does not wait for v15, which is on hold. To
   keep v15 from breaking retailers a second time, the redesigned response is shaped so that a list of suggestions can
-  be added to it without changing what is already there.
+  be added to it without changing what is already there. In the end v15 did change what was there: API 0.3.0 replaces
+  the three Alternatives, so the Retailers adapt a second time.
 - Build order: schema + `CatalogueId` → HowiBuy storing/cursor endpoints → Ingestion receive/adapter/apply → Catalogue
   Sync → Classification endpoints and the `classify` command → tokens → assessment lookup and catalogue-aware
   recommendation. The old LLM-at-request-time path stays working until the lookup replaces it.

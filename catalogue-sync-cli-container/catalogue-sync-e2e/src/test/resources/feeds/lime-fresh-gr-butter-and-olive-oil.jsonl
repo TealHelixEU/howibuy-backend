@@ -1,0 +1,3 @@
+{"productKey": "e2e-butter", "names": {"el": "Βούτυρο ανάλατο", "en": "Unsalted butter"}, "characteristics": {"fat": "82%"}, "tags": ["dairy"], "price": "3.40", "currency": "EUR"}
+{"productKey": "e2e-olive-oil", "names": {"el": "Εξαιρετικό παρθένο ελαιόλαδο", "en": "Extra virgin olive oil"}, "characteristics": {"volume": "500 ml"}, "tags": ["oil"], "price": "6.80", "currency": "EUR"}
+{"productKey": "e2e-olive-oil-organic", "names": {"el": "Εξαιρετικό παρθένο ελαιόλαδο βιολογικό", "en": "Organic extra virgin olive oil"}, "characteristics": {"volume": "500 ml"}, "tags": ["oil", "organic"], "price": "9.95", "currency": "EUR"}

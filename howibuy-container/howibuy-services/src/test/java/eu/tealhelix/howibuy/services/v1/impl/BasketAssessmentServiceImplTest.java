@@ -48,7 +48,6 @@ import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.PurchasedBasketDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
-import eu.tealhelix.howibuy.scoring.v1.SubstitutionSettings;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasket;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasket;
@@ -113,7 +112,7 @@ class BasketAssessmentServiceImplTest {
 					impacts(POOR_ARCHETYPE, "Poor", "300", DAIRY, 1.0, 1.0, 1.0, "Nutriscore_E", 20),
 					impacts(GREEN_ARCHETYPE, "Green", "400", DAIRY, 0.0, 1.0, 1.0, "Nutriscore_E", 20),
 					impacts(SPIRITS_ARCHETYPE, "Spirits", "500", DAIRY, 0.5, 0.5, 0.5, "0", 0)),
-			List.of(), SubstitutionSettings.defaults());
+			List.of());
 
 	private static final ProductKey GOOD = new ProductKeyImpl("good-key");
 	private static final ProductKey FAIR = new ProductKeyImpl("fair-key");

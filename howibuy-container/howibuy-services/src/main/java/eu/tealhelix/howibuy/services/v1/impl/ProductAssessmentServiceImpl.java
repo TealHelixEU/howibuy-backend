@@ -3,13 +3,11 @@ package eu.tealhelix.howibuy.services.v1.impl;
 import static java.util.stream.Collectors.toSet;
 
 import static eu.tealhelix.common.utils.UniComprehensions.forc;
-import static eu.tealhelix.howibuy.v1.types.AlternativeForProductType.SUGGESTION;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_OTHER;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -17,6 +15,7 @@ import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import eu.tealhelix.howibuy.v1.model.AlternativeForProduct;
 import eu.tealhelix.howibuy.v1.model.ImmutableAlternativeForProduct;
@@ -63,7 +62,7 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 				personalWeightsProvider.forUser(user).map(WeightProfileAndAttemptId::profile),
 				_ -> referenceProductIdentifier.identify(catalogueId, Set.of(productKey)),
 				(_, _) -> catalogueAssortmentService.stockedArchetypes(catalogueId),
-				(personalProfile, identifications, stocked) -> singleProductAssessor.assessOne(productKey, identifications.get(productKey), personalProfile, stocked),
+				(personalProfile, identifications, stocked) -> singleProductAssessor.assessOne(user.getId(), productKey, identifications.get(productKey), personalProfile, stocked),
 				(_, _, _, outcome) -> withListedProducts(catalogueId, language, List.of(outcome)))
 				.map(List::getFirst);
 	}
@@ -79,8 +78,8 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	 * product's outcome by {@link #assessOneIsolated}, so a failure in one product never terminates the batch.
 	 * <p>
 	 * The user's weighting profile, the identifications of the products, the archetypes the Catalogue stocks and the
-	 * products that stand for the recommended archetypes are each read once for the whole batch, so the batch issues the
-	 * same queries whatever its size. The products are read after every product is ranked, so the outcomes are complete
+	 * products that stand for the Alternatives are each read once for the whole batch, so the batch issues the same
+	 * queries whatever its size. The products are read after every product is assessed, so the outcomes are complete
 	 * only once they all are.
 	 */
 	private Uni<List<ProductAssessmentOutcome>> assessBatch(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language) {
@@ -90,24 +89,25 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 				personalWeightsProvider.forUser(user).map(WeightProfileAndAttemptId::profile),
 				_ -> referenceProductIdentifier.identify(catalogueId, Set.copyOf(productKeys)),
 				(_, _) -> catalogueAssortmentService.stockedArchetypes(catalogueId),
-				(personalProfile, identifications, stocked) -> assessProducts(productKeys, identifications, personalProfile, stocked),
+				(personalProfile, identifications, stocked) -> assessProducts(user.getId(), productKeys, identifications, personalProfile, stocked),
 				(_, _, _, outcomes) -> withListedProducts(catalogueId, language, outcomes));
 	}
 
 	private Uni<List<ProductAssessmentOutcome>> assessProducts(
+			UserId userId,
 			List<ProductKey> productKeys,
 			Map<ProductKey, ProductIdentification> identifications,
 			WeightProfile personalProfile,
 			Set<ArchetypeProductId> stocked
 	) {
 		return Multi.createFrom().iterable(productKeys)
-				.onItem().transformToUniAndConcatenate(productKey -> assessOneIsolated(productKey, identifications.get(productKey), personalProfile, stocked))
+				.onItem().transformToUniAndConcatenate(productKey -> assessOneIsolated(userId, productKey, identifications.get(productKey), personalProfile, stocked))
 				.collect().asList();
 	}
 
 	private Uni<ProductAssessmentOutcome> assessOneIsolated(
-			ProductKey productKey, ProductIdentification identification, WeightProfile personalProfile, Set<ArchetypeProductId> stocked) {
-		return singleProductAssessor.assessOne(productKey, identification, personalProfile, stocked)
+			UserId userId, ProductKey productKey, ProductIdentification identification, WeightProfile personalProfile, Set<ArchetypeProductId> stocked) {
+		return singleProductAssessor.assessOne(userId, productKey, identification, personalProfile, stocked)
 				.onFailure().recoverWithItem(failure -> {
 					LOG.error("Unexpected failure assessing product in batch, key: {}", productKey.asString(), failure);
 					return SingleProductAssessor.outcome(productKey, FAILURE_OTHER);
@@ -115,34 +115,24 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	}
 
 	/**
-	 * Names the product of the Catalogue that stands for the archetype of each suggestion, reading those of all the
+	 * Names the product of the Catalogue that stands for the archetype of each Alternative, reading those of all the
 	 * outcomes at once.
 	 */
 	private Uni<List<ProductAssessmentOutcome>> withListedProducts(CatalogueId catalogueId, String language, List<ProductAssessmentOutcome> outcomes) {
-		var suggestedArchetypeIds = outcomes.stream()
-				.flatMap(outcome -> Stream.of(outcome.getBestPersonalAlternative(), outcome.getBestScientificAlternative(), outcome.getBestCombinedAlternative()))
-				.filter(ProductAssessmentServiceImpl::isSuggestion)
+		Set<ArchetypeProductId> alternativeArchetypeIds = outcomes.stream()
+				.flatMap(outcome -> outcome.getAlternatives().stream())
 				.map(alternative -> alternative.getArchetype().getId())
 				.collect(toSet());
-		return catalogueAssortmentService.listedProducts(catalogueId, suggestedArchetypeIds, language)
+		return catalogueAssortmentService.listedProducts(catalogueId, alternativeArchetypeIds, language)
 				.map(products -> outcomes.stream()
 						.<ProductAssessmentOutcome>map(outcome -> ImmutableProductAssessmentOutcome.copyOf(outcome)
-								.withBestPersonalAlternative(withListedProduct(outcome.getBestPersonalAlternative(), products))
-								.withBestScientificAlternative(withListedProduct(outcome.getBestScientificAlternative(), products))
-								.withBestCombinedAlternative(withListedProduct(outcome.getBestCombinedAlternative(), products)))
+								.withAlternatives(outcome.getAlternatives().stream()
+										.map(alternative -> withListedProduct(alternative, products))
+										.toList()))
 						.toList());
 	}
 
-	/**
-	 * @return The alternative naming the product that stands for its archetype, if it is a suggestion; the
-	 *         {@code null} of a product the assessment could not rank stays {@code null}
-	 */
 	private static AlternativeForProduct withListedProduct(AlternativeForProduct alternative, Map<ArchetypeProductId, ListedProduct> products) {
-		if (!isSuggestion(alternative)) return alternative;
 		return ImmutableAlternativeForProduct.copyOf(alternative).withProduct(products.get(alternative.getArchetype().getId()));
-	}
-
-	private static boolean isSuggestion(AlternativeForProduct alternative) {
-		return alternative != null && alternative.getType() == SUGGESTION;
 	}
 }

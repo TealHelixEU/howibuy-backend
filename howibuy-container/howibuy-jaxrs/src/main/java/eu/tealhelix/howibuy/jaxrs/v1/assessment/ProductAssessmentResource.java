@@ -43,14 +43,14 @@ public class ProductAssessmentResource {
 	private static final String BAD_PRODUCT = "The request could not be read, or it lacks the product key or the language.";
 	private static final String BAD_PRODUCTS = "The request could not be read, it lacks the language or a product key, or it has more than " + MAX_PRODUCTS + " products.";
 	private static final String LOOKUP = "The products are looked up by their keys among the products of the Retailer of the Catalogue that the token names, whether or not they are listed in it, and each one is identified by its Classification. ";
-	private static final String ALTERNATIVES = "Each answer names up to three alternatives to the product: the one that fits the user's own weighting of the sustainability dimensions, the one that scores best on the scientific weighting, and the best compromise between the two. The outcome's `type` says whether the product could be assessed at all; the alternatives are filled in only when it could.";
+	private static final String RECOMMENDATION = "Each answer says whether there is something better to buy in place of the product and, when there is, names one alternative: a product of the Catalogue that may stand in for it and scores higher on the scientific weighting of the sustainability dimensions, picked at random in favour of the user's own weighting, and the same one each time the user assesses the same product. The outcome's `type` says whether the product could be assessed at all; the recommendation and the alternatives are filled in only when it could.";
 
 	@Inject
 	ProductAssessmentService productAssessmentService;
 
 	@Operation(
 			summary = "Assess one product",
-			description = "Assesses the product named in the body and answers the alternatives to it. " + LOOKUP + ALTERNATIVES)
+			description = "Assesses the product named in the body and answers whether there is something better to buy in its place. " + LOOKUP + RECOMMENDATION)
 	@APIResponse(responseCode = "200", description = "The product was put through the assessment. A product the assessment could not place is reported by the outcome's `type`, not by an error status.")
 	@APIResponse(responseCode = "400", description = BAD_PRODUCT)
 	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)
@@ -68,7 +68,7 @@ public class ProductAssessmentResource {
 
 	@Operation(
 			summary = "Assess several products, answering when all of them are done",
-			description = "Assesses every product of the request and answers one outcome per product, in the order sent. A product that cannot be assessed takes a failure outcome of its own and does not bring the rest of the batch down. " + LOOKUP + ALTERNATIVES)
+			description = "Assesses every product of the request and answers one outcome per product, in the order sent. A product that cannot be assessed takes a failure outcome of its own and does not bring the rest of the batch down. " + LOOKUP + RECOMMENDATION)
 	@APIResponse(responseCode = "200", description = "Every product of the request was put through the assessment.")
 	@APIResponse(responseCode = "400", description = BAD_PRODUCTS)
 	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)

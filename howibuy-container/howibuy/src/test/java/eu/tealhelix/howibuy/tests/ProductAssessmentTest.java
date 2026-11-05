@@ -20,10 +20,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.sql.DataSource;
 import jakarta.inject.Inject;
 
@@ -37,8 +37,9 @@ import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelper;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeCorpus;
-import eu.tealhelix.howibuy.v1.types.AlternativeForProductType;
+import eu.tealhelix.howibuy.services.v1.impl.ScoredArchetypes;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
+import eu.tealhelix.howibuy.v1.types.RecommendationType;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -57,6 +58,11 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @WithTestResource(value = PostgresTestResource.class, initArgs = @ResourceArg(name = "contexts", value = "appdata"))
 public class ProductAssessmentTest {
+	/**
+	 * The JSON numbers are read back as floats.
+	 */
+	private static final double SCORE_TOLERANCE = 1e-6;
+
 	private static final User SHOPPER = new UserImpl(new UserIdImpl("8b5e2a17-4c9d-4f3e-a1b6-7d0c3e9f2a55"), "shopper", null, false, true, Set.of());
 
 	/**
@@ -99,7 +105,7 @@ public class ProductAssessmentTest {
 				.body("productKey", equalTo("yoghurt"))
 				.body("type", equalTo("SUCCESS"))
 				.body("failureReason", equalTo(null))
-				.body("bestPersonalAlternative.type", notNullValue())
+				.body("recommendation", notNullValue())
 				.body("diagnostics", equalTo(classified("yoghurt", false)));
 	}
 
@@ -112,7 +118,8 @@ public class ProductAssessmentTest {
 				.body("type", equalTo("FAILURE_TO_IDENTIFY"))
 				.body("failureReason", equalTo("UNKNOWN_PRODUCT"))
 				.body("diagnostics", equalTo(null))
-				.body("bestPersonalAlternative", equalTo(null));
+				.body("recommendation", equalTo(null))
+				.body("alternatives", equalTo(List.of()));
 	}
 
 	@Test
@@ -166,29 +173,58 @@ public class ProductAssessmentTest {
 				.body("diagnostics", equalTo(classified("yoghurt", true)));
 	}
 
-	/**
-	 * Nothing else in the Catalogue, the scanned product is the best the user can buy there, whether its own Listing is
-	 * active or not.
-	 */
 	@Test
-	void aProductIsGoodEnoughWhenTheCatalogueStocksNothingBetterEvenWithItsListingInactive() throws SQLException {
-		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
-		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, false));
-		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
+	void aProductScoringAtLeastTheGateIsGoodEnough() throws SQLException {
+		var reference = anArchetypeRecommendedAs(RecommendationType.GOOD_ENOUGH);
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", reference.asString());
+
+		var outcome = assessSingle("shopper", single("yoghurt", "el"), 200)
+				.body("type", equalTo("SUCCESS"))
+				.body("recommendation", equalTo("GOOD_ENOUGH"))
+				.body("alternatives", equalTo(List.of()))
+				.extract().jsonPath();
+
+		assertEquals(scientificOverallScoreOf(reference), outcome.getDouble("referenceOverallScore"), SCORE_TOLERANCE);
+	}
+
+	@Test
+	void aProductWithoutANutriScoreHasNoScore() throws SQLException {
+		var reference = anArchetypeRecommendedAs(RecommendationType.NO_SCORE);
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", reference.asString());
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
 				.body("type", equalTo("SUCCESS"))
-				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
-				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.reference().asString()))
-				.body("bestScientificAlternative.product", equalTo(null));
+				.body("recommendation", equalTo("NO_SCORE"))
+				.body("referenceOverallScore", equalTo(null))
+				.body("alternatives", equalTo(List.of()));
+	}
+
+	/**
+	 * Nothing better in the Catalogue, the scanned product has no Alternative, whether its own Listing is active or not.
+	 */
+	@Test
+	void aProductHasNoAlternativeWhenTheCatalogueStocksNothingBetterEvenWithItsListingInactive() throws SQLException {
+		var archetypes = anArchetypeAndOneOfItsPool();
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, false));
+		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
+
+		var outcome = assessSingle("shopper", single("yoghurt", "el"), 200)
+				.body("type", equalTo("SUCCESS"))
+				.body("recommendation", equalTo("NO_ALTERNATIVE"))
+				.body("alternatives", equalTo(List.of()))
+				.extract().jsonPath();
+
+		assertEquals(scientificOverallScoreOf(archetypes.reference()), outcome.getDouble("referenceOverallScore"), SCORE_TOLERANCE);
 	}
 
 	/**
 	 * The price is written as a plain number without its trailing zeros: 2, rather than 2.0000 or 2E+0.
 	 */
 	@Test
-	void aSuggestionNamesTheCheapestProductOfItsArchetypeActivelyListedInTheCatalogue() throws SQLException {
-		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
+	void anAlternativeNamesTheCheapestProductOfItsArchetypeActivelyListedInTheCatalogue() throws SQLException {
+		var archetypes = anArchetypeAndOneOfItsPool();
 		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
 		fixtures.applyProduct("kefir", 2, "h2", listing(CATALOGUE_GR, true, "2.0000"));
 		fixtures.applyProduct("kefir-organic", 3, "h3", listing(CATALOGUE_GR, true, "3.4900"));
@@ -199,64 +235,69 @@ public class ProductAssessmentTest {
 			fixtures.classify(product.getKey(), product.getValue(), archetypes.better().asString());
 		}
 
-		var body = assessSingle("shopper", single("yoghurt", "el"), 200)
-				.body("bestScientificAlternative.type", equalTo("SUGGESTION"))
-				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.better().asString()))
-				.body("bestScientificAlternative.product.productKey", equalTo("kefir"))
-				.body("bestScientificAlternative.product.name", equalTo("kefir"))
-				.body("bestScientificAlternative.product.language", equalTo("el"))
-				.body("bestScientificAlternative.product.currency", equalTo("EUR"))
-				.extract().asString();
+		var response = assessSingle("shopper", single("yoghurt", "el"), 200)
+				.body("recommendation", equalTo("RECOMMENDED"))
+				.body("alternatives.size()", equalTo(1))
+				.body("alternatives[0].archetype.id", equalTo(archetypes.better().asString()))
+				.body("alternatives[0].product.productKey", equalTo("kefir"))
+				.body("alternatives[0].product.name", equalTo("kefir"))
+				.body("alternatives[0].product.language", equalTo("el"))
+				.body("alternatives[0].product.currency", equalTo("EUR"))
+				.extract();
 
+		var body = response.asString();
 		assertTrue(Pattern.compile("\"price\":2[,}]").matcher(body).find(), "the price as a plain number: " + body);
+		var outcome = response.jsonPath();
+		assertEquals(scientificOverallScoreOf(archetypes.reference()), outcome.getDouble("referenceOverallScore"), SCORE_TOLERANCE);
+		assertEquals(scientificOverallScoreOf(archetypes.better()), outcome.getDouble("alternatives[0].overallScore"), SCORE_TOLERANCE);
 	}
 
 	@Test
-	void aSuggestedProductIsNamedInTheLanguageAskedForElseInTheCataloguesPrimaryLanguage() throws SQLException {
-		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
+	void anAlternativeIsNamedInTheLanguageAskedForElseInTheCataloguesPrimaryLanguage() throws SQLException {
+		var archetypes = anArchetypeAndOneOfItsPool();
 		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
 		fixtures.applyProduct("kefir", 2, "h2", Map.of("el", "Κεφίρ", "en", "Kefir"), listing(CATALOGUE_GR, true));
 		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
 		fixtures.classify("kefir", "h2", archetypes.better().asString());
 
 		assessSingle("shopper", single("yoghurt", "en"), 200)
-				.body("bestScientificAlternative.product.name", equalTo("Kefir"))
-				.body("bestScientificAlternative.product.language", equalTo("en"));
+				.body("alternatives[0].product.name", equalTo("Kefir"))
+				.body("alternatives[0].product.language", equalTo("en"));
 		assessSingle("shopper", single("yoghurt", "de"), 200)
-				.body("bestScientificAlternative.product.name", equalTo("Κεφίρ"))
-				.body("bestScientificAlternative.product.language", equalTo("el"));
+				.body("alternatives[0].product.name", equalTo("Κεφίρ"))
+				.body("alternatives[0].product.language", equalTo("el"));
 	}
 
 	@Test
-	void anArchetypeIsSuggestedOnlyWhileAProductOfItIsActivelyListedInTheCatalogue() throws SQLException {
-		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
+	void anArchetypeIsOfferedOnlyWhileAProductOfItIsActivelyListedInTheCatalogue() throws SQLException {
+		var archetypes = anArchetypeAndOneOfItsPool();
 		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
 		fixtures.applyProduct("kefir", 2, "h2", listing(CATALOGUE_GR, true));
 		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
 		fixtures.classify("kefir", "h2", archetypes.better().asString());
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
-				.body("bestScientificAlternative.type", equalTo("SUGGESTION"))
-				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.better().asString()));
+				.body("recommendation", equalTo("RECOMMENDED"))
+				.body("alternatives[0].archetype.id", equalTo(archetypes.better().asString()));
 
 		fixtures.applyProduct("kefir", 3, "h2", listing(CATALOGUE_GR, false));
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
-				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
-				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.reference().asString()));
+				.body("recommendation", equalTo("NO_ALTERNATIVE"))
+				.body("alternatives", equalTo(List.of()));
 	}
 
 	@Test
-	void anArchetypeListedOnlyInAnotherCatalogueIsNeverSuggested() throws SQLException {
-		var archetypes = anArchetypeAndOneThatWouldRankFirstInItsPlace();
+	void anArchetypeListedOnlyInAnotherCatalogueIsNeverOffered() throws SQLException {
+		var archetypes = anArchetypeAndOneOfItsPool();
 		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
 		fixtures.applyProduct("kefir", 2, "h2", listing(CATALOGUE_CY, true));
 		fixtures.classify("yoghurt", "h1", archetypes.reference().asString());
 		fixtures.classify("kefir", "h2", archetypes.better().asString());
 
 		assessSingle("shopper", single("yoghurt", "el"), 200)
-				.body("bestScientificAlternative.type", equalTo("GOOD_ENOUGH"))
-				.body("bestScientificAlternative.archetype.id", equalTo(archetypes.reference().asString()));
+				.body("recommendation", equalTo("NO_ALTERNATIVE"))
+				.body("alternatives", equalTo(List.of()));
 	}
 
 	@Test
@@ -308,23 +349,46 @@ public class ProductAssessmentTest {
 	}
 
 	/**
-	 * @return An archetype of the seed data and the one the scientific ranking puts first in its place when every
-	 *         archetype is stocked
+	 * @return An archetype of the seed data below the Gate, and an archetype of its Pool when every archetype is
+	 *         stocked: the Alternative whenever a Catalogue stocks it alone of the archetypes of that Pool
 	 */
-	private ArchetypePair anArchetypeAndOneThatWouldRankFirstInItsPlace() throws SQLException {
-		var archetypes = archetypeCorpus.scoredArchetypes().await().atMost(Duration.ofSeconds(60));
-		Set<ArchetypeProductId> all = fixtures.rows("SELECT id::text FROM TH_ARCHETYPE_PRODUCT").stream()
-				.map(ArchetypeProductIdImpl::new)
-				.collect(Collectors.toSet());
+	private ArchetypePair anArchetypeAndOneOfItsPool() throws SQLException {
+		var archetypes = scoredArchetypes();
+		Set<ArchetypeProductId> all = seedArchetypes();
 		return all.stream().sorted(Comparator.comparing(ArchetypeProductId::asString))
-				.flatMap(reference -> {
-					var scientific = archetypes.recommendationsFor(reference, ScientificWeights.profile(), all).scientific();
-					return scientific.getType() == AlternativeForProductType.SUGGESTION
-							? Stream.of(new ArchetypePair(reference, scientific.getArchetype().getId()))
-							: Stream.empty();
-				})
+				.flatMap(reference -> archetypes.recommendationFor(reference, ScientificWeights.profile(), all, new Random(0)).alternatives().stream()
+						.map(alternative -> new ArchetypePair(reference, alternative.getArchetype().getId())))
 				.findFirst()
 				.orElseThrow();
+	}
+
+	/**
+	 * @return An archetype of the seed data whose Recommendation is the given one when every archetype is stocked
+	 */
+	private ArchetypeProductId anArchetypeRecommendedAs(RecommendationType recommendation) throws SQLException {
+		var archetypes = scoredArchetypes();
+		Set<ArchetypeProductId> all = seedArchetypes();
+		return all.stream().sorted(Comparator.comparing(ArchetypeProductId::asString))
+				.filter(reference -> archetypes.recommendationFor(reference, ScientificWeights.profile(), all, new Random(0)).type() == recommendation)
+				.findFirst()
+				.orElseThrow();
+	}
+
+	/**
+	 * The shopper has no compass attempt, so their Weighting Profile is the scientific one.
+	 */
+	private double scientificOverallScoreOf(ArchetypeProductId archetype) {
+		return scoredArchetypes().find(archetype).orElseThrow().overallScore(ScientificWeights.profile());
+	}
+
+	private ScoredArchetypes scoredArchetypes() {
+		return archetypeCorpus.scoredArchetypes().await().atMost(Duration.ofSeconds(60));
+	}
+
+	private Set<ArchetypeProductId> seedArchetypes() throws SQLException {
+		return fixtures.rows("SELECT id::text FROM TH_ARCHETYPE_PRODUCT").stream()
+				.map(ArchetypeProductIdImpl::new)
+				.collect(Collectors.toSet());
 	}
 
 	/**
