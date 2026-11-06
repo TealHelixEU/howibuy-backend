@@ -2,7 +2,7 @@
 
 The files WP3 (KU Leuven) provided for the sustainability scoring and recommendation, kept as received and under WP3's
 names, so that each can be traced back to the version WP3 refers to. How each is used is in the spec
-`tealhelix-architecture/src/site/markdown/specs/sustainability-scoring/spec.md`.
+`tealhelix-architecture/src/site/markdown/specs/002-sustainability-scoring/spec.md`.
 
 - `TH_WP3-FULL DATABASE-v2026-10-27.csv`: the archetype database, the SAFAD taxonomy and one row per Archetype Product
   with its indicators and Nutri-Score. Latin-1. Input of `src/scripts/generate-archetype-data.js`.

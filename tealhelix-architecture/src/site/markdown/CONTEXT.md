@@ -183,33 +183,45 @@ product.
 
 **Basket**:
 The set of distinct products a user is about to buy or has bought in one go, named by the Retailer's product keys.
-How many of each product is not part of it.
+How many of each product is not part of it. Only the products that have an Overall Score count towards how the Basket
+is judged and what it earns.
 _Avoid_: cart, order, shopping list
 
 **Purchased Basket**:
-A Basket the Retailer has registered as actually bought. Only a Purchased Basket is kept and earns XP.
+A Basket the Retailer has registered as actually bought. Only a Purchased Basket is kept, earns XP and Badges, and
+moves the Streak.
 _Avoid_: order, transaction, receipt
 
-**Product Grade**:
-A, B or C, given to a product of a Basket from its Overall Score under the Weighting Profile in force for the user:
-the personal one if they have completed the compass, otherwise the scientific one. A product without an Overall Score
-has no grade and does not count towards the Basket.
-_Avoid_: rating, label, score (for the letter)
-
-**Basket Grade**:
-A, B or C, given to a Basket as a whole by rules over the Product Grades of its products. Not the same thing as a
-Product Grade, even though the letters coincide: one says how good a product is, the other how good a mix is. A Basket
-none of whose products has an Overall Score receives no Basket Grade.
-_Avoid_: basket score, basket rating
+**Basket Match**:
+How well a Basket matches the user's own priorities: Excellent, Good or Needs improvement, from the average of its
+products' personal Overall Scores. It is the only judgement of a Basket made on the personal Overall Score; how
+sustainable the Basket is, for XP, the Streak and the Problematic Products, is decided on the scientific one. A Basket
+none of whose products has an Overall Score has no Basket Match.
+_Avoid_: basket grade, basket score, basket rating
 
 **Problematic Product**:
-A product of a Basket graded below A. Problematic Products are reported worst Overall Score first.
+A product of a Basket whose scientific Overall Score is 0.8 or less. Problematic Products are reported lowest
+scientific Overall Score first.
 _Avoid_: bad product, issue
 
 **XP (Experience Points)**:
-The points a user earns for the Purchased Baskets they buy, by rules over the Product Grades of each Basket. A user
-has a running total of XP.
+The points a user earns for the Purchased Baskets they buy, on the scientific Overall Scores of each Basket's
+products: for every product above 0.8, and a bonus for the Basket as a whole when it has enough products with an
+Overall Score and their average is high enough. A user has a running total of XP.
 _Avoid_: points (bare), score, credits
+
+**Streak**:
+The number of a user's Purchased Baskets in a row, in the order they were registered rather than bought, each with a
+product whose scientific Overall Score is above 0.8. A Purchased Basket whose products with an Overall Score are all at
+0.8 or less resets it to 0; one with no product that has an Overall Score leaves it as it is.
+_Avoid_: run, combo, chain
+
+**Badge**:
+An award a user earns once and keeps, identified by a code. Each level of a series is a Badge of its own, such as
+Environmental Hero Level 1. What awards a Badge is a rule kept apart from it, which may change without taking an
+earned Badge away. Today every Badge is awarded for a number of purchased products whose Normalised Score of one
+Scored Sustainability Dimension is above 0.8, each product counting once per Purchased Basket.
+_Avoid_: achievement, trophy, medal, reward
 
 ## Retailer Catalogue
 
