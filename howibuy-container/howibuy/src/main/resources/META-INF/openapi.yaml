@@ -205,6 +205,23 @@ components:
             What the basket does to the user's streak once purchased, on the overall scores of its products under the
             scientific weighting: `EXTEND` when one of them is above 0.8, `RESET` when none is, `NONE` when there was
             nothing to assess. Once the basket is purchased, the effect has been applied to the streak.
+        earnedBadges:
+          description: >-
+            The badges this basket earns, in the order of `Badge`: a badge is earned when the products the user has
+            purchased above 0.8 on the normalised score of its sustainability dimension, together with this basket's,
+            reach its number, and the user does not hold it yet. Before the purchase, the badges the basket would earn;
+            once it is purchased, the badges it earned, which the user holds from then on. Empty when the basket earns
+            none and when there was nothing to assess.
+
+    EarnedBadge:
+      description: A badge a basket earns, with its name for the user.
+      properties:
+        badge:
+          description: The badge.
+        label:
+          description: >-
+            The name of the badge put in words for the user, in the language asked for, or in English when it has no
+            translation there.
 
     BasketAssessmentOutcomeType:
       description: >-
@@ -222,6 +239,12 @@ components:
       description: >-
         What a basket does to the user's streak once purchased: `EXTEND` adds one to it, `RESET` sets it to 0, `NONE`
         leaves it as it is.
+
+    Badge:
+      description: >-
+        An award a user earns once and keeps. Each level of a series is a badge of its own, e.g. `ENVIRONMENTAL_HERO_1`
+        to `ENVIRONMENTAL_HERO_3`. What a user is shown is the label delivered with it, not these names; the retailer
+        may draw an icon of its own for each. More badges may be added.
 
     ArchetypeProductId:
       description: >-

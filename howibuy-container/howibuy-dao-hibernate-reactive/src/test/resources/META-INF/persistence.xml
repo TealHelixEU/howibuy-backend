@@ -23,6 +23,7 @@
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerProductEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.RetailerProductNameEntity</class>
+		<class>eu.tealhelix.howibuy.dao.jpa.UserBadgeEntity</class>
 		<class>eu.tealhelix.howibuy.dao.jpa.UserProfileEntity</class>
 
 		<properties>

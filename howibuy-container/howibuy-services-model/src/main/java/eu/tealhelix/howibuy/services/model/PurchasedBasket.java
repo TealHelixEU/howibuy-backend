@@ -8,13 +8,14 @@ import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.common.v1.types.UserId;
+import eu.tealhelix.howibuy.v1.types.Badge;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import org.immutables.value.Value;
 
 /**
- * A Basket the Retailer registered as bought, as it is kept for the statistics: its verdict and the scores of its
- * scored products.
+ * A Basket the Retailer registered as bought, as it is kept for the statistics: its verdict, the scores of its scored
+ * products and the badges it earned.
  */
 @Value.Immutable
 public interface PurchasedBasket {
@@ -58,4 +59,10 @@ public interface PurchasedBasket {
 	 * The products of the basket that have an Overall Score, none when there was nothing to assess.
 	 */
 	List<PurchasedBasketProduct> getProducts();
+
+	/**
+	 * The badges the basket earned, which the user holds from now on, earned when the purchase was recorded; none when it
+	 * earned none.
+	 */
+	List<Badge> getEarnedBadges();
 }

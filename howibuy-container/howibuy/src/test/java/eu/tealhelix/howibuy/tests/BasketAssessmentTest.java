@@ -41,6 +41,7 @@ import eu.tealhelix.howibuy.jaxrs.authentication.jwt.Authentication;
 import eu.tealhelix.howibuy.jaxrs.authentication.jwt.TokenHelper;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.services.v1.ai.ProductAssessmentAiFacade;
+import eu.tealhelix.howibuy.services.v1.basket.BadgeRules;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeCorpus;
 import eu.tealhelix.howibuy.services.v1.impl.PersonalWeightsProvider;
@@ -63,8 +64,8 @@ import org.junit.jupiter.api.Test;
  * from the seed data by what the rules make of their Overall Scores, and the expected Basket Match is worked out from
  * those scores with the rules, so the expectations hold whatever the seed scores are. Nothing is stored before the
  * purchase, so the user's XP total and Streak are answered as they stand; the Retailer registers the purchase with its
- * own token, naming the user by the correlation id, and the basket is stored, its XP added and its effect applied to
- * the Streak.
+ * own token, naming the user by the correlation id, and the basket is stored with the badges it earns, its XP added and
+ * its effect applied to the Streak.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresTestResource.class, initArgs = @ResourceArg(name = "contexts", value = "appdata"))
@@ -82,6 +83,8 @@ public class BasketAssessmentTest {
 			"retailer", new Authentication(RETAILER, null)));
 
 	private static final BasketRules RULES = new BasketRules();
+	private static final BadgeRules BADGE_RULES = new BadgeRules();
+	private static final String EARLIER_BASKET_ID = "6b1d9e3a-4f27-4c85-a0e6-d3c8b5f2a917";
 	private static final Map<BasketMatch, String> MATCH_LABELS = Map.of(
 			BasketMatch.EXCELLENT, "Excellent match",
 			BasketMatch.GOOD, "Good match",
@@ -106,6 +109,7 @@ public class BasketAssessmentTest {
 		fixtures.reset();
 		deleteTheShoppersCompass();
 		try (var c = dataSource.getConnection(); var s = c.createStatement()) {
+			s.execute("DELETE FROM TH_USER_BADGE");
 			s.execute("DELETE FROM TH_PURCHASED_BASKET_PRODUCT");
 			s.execute("DELETE FROM TH_PURCHASED_BASKET");
 			s.execute("INSERT INTO TH_USER_PROFILE (id) VALUES ('" + SHOPPER_ID + "') ON CONFLICT (id) DO NOTHING");
@@ -146,7 +150,8 @@ public class BasketAssessmentTest {
 				.body("xpValue", equalTo(10))
 				.body("totalXp", equalTo(TOTAL_XP))
 				.body("streakEffect", equalTo("EXTEND"))
-				.body("streak", equalTo(STREAK));
+				.body("streak", equalTo(STREAK))
+				.body("earnedBadges", equalTo(List.of()));
 	}
 
 	@Test
@@ -171,7 +176,8 @@ public class BasketAssessmentTest {
 					.body("xpValue", equalTo(0))
 					.body("totalXp", equalTo(TOTAL_XP))
 					.body("streakEffect", equalTo("NONE"))
-					.body("streak", equalTo(STREAK));
+					.body("streak", equalTo(STREAK))
+					.body("earnedBadges", equalTo(List.of()));
 		}
 	}
 
@@ -243,7 +249,8 @@ public class BasketAssessmentTest {
 				.body("xpValue", equalTo(10))
 				.body("totalXp", equalTo(TOTAL_XP + 10))
 				.body("streakEffect", equalTo("EXTEND"))
-				.body("streak", equalTo(STREAK + 1));
+				.body("streak", equalTo(STREAK + 1))
+				.body("earnedBadges", equalTo(List.of()));
 
 		var serverTime = OffsetDateTime.parse(purchasedAt).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 		assertEquals(
@@ -310,6 +317,32 @@ public class BasketAssessmentTest {
 		assertEquals(1, streak(SHOPPER_ID));
 	}
 
+	/**
+	 * The user has bought 49 products above 0.8 on the environment, one short of Environmental Hero Level 1, so a basket
+	 * with one more earns it: the assessment before the purchase says it would, the purchase that it did, and the next
+	 * basket earns it no more.
+	 */
+	@Test
+	void theBasketThatReachesTheNumberOfABadgeEarnsIt() throws SQLException {
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", anArchetypeAboveTheBadgeThresholdOnTheEnvironment());
+		theShopperHasBoughtProductsAbove08OnTheEnvironment(49);
+		var environmentalHero1 = List.of(Map.of("badge", "ENVIRONMENTAL_HERO_1", "label", "Environmental Hero Level 1"));
+
+		assess("shopper", request("en", "yoghurt"), 200).body("earnedBadges", equalTo(environmentalHero1));
+		assertEquals(List.of(), fixtures.rows("SELECT badge FROM TH_USER_BADGE"), "nothing is stored before the purchase");
+
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, "2026-10-30T10:15:30+05:00", "yoghurt"), 200).body("earnedBadges", equalTo(environmentalHero1));
+		var basketIdAndRecordedAt = fixtures.rows("SELECT id, recorded_at FROM TH_PURCHASED_BASKET WHERE id <> '" + EARLIER_BASKET_ID + "'").getFirst();
+		assertEquals(List.of(SHOPPER_ID + "|ENVIRONMENTAL_HERO_1|" + basketIdAndRecordedAt),
+				fixtures.rows("SELECT user_profile_id, badge, purchased_basket_id, earned_at FROM TH_USER_BADGE"),
+				"earned by the basket, when the purchase was recorded, not when it was made");
+
+		assess("shopper", request("en", "yoghurt"), 200).body("earnedBadges", equalTo(List.of()));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200).body("earnedBadges", equalTo(List.of()));
+		assertEquals(List.of("1"), fixtures.rows("SELECT count(*) FROM TH_USER_BADGE"), "a badge is earned once");
+	}
+
 	@Test
 	void aPurchaseWithNothingToAssessIsStoredWithoutProducts() throws SQLException {
 		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null), 200)
@@ -318,7 +351,8 @@ public class BasketAssessmentTest {
 				.body("xpValue", equalTo(0))
 				.body("totalXp", equalTo(TOTAL_XP))
 				.body("streakEffect", equalTo("NONE"))
-				.body("streak", equalTo(STREAK));
+				.body("streak", equalTo(STREAK))
+				.body("earnedBadges", equalTo(List.of()));
 
 		assertEquals(List.of("NOTHING_TO_ASSESS|null|0"), fixtures.rows("SELECT outcome_type, basket_match, xp_value FROM TH_PURCHASED_BASKET"));
 		assertEquals(List.of(), storedProducts());
@@ -394,6 +428,19 @@ public class BasketAssessmentTest {
 		assertEquals(STREAK, streak(SHOPPER_ID));
 	}
 
+	/**
+	 * Stores an earlier basket of the shopper, with as many products above 0.8 on the environment alone.
+	 */
+	private void theShopperHasBoughtProductsAbove08OnTheEnvironment(int products) throws SQLException {
+		try (var c = dataSource.getConnection(); var s = c.createStatement()) {
+			s.execute("INSERT INTO TH_PURCHASED_BASKET (id, user_profile_id, retailer_id, catalogue_id, purchased_at, recorded_at, outcome_type, basket_match, xp_value) "
+					+ "VALUES ('" + EARLIER_BASKET_ID + "', '" + SHOPPER_ID + "', '" + RETAILER_ID + "', '" + CATALOGUE_GR + "', now(), now(), 'ASSESSED', 'GOOD', 0)");
+			s.execute("INSERT INTO TH_PURCHASED_BASKET_PRODUCT (purchased_basket_id, product_key, archetype_product_id, personal_overall_score, scientific_overall_score, "
+					+ "score_environment, score_animal_welfare, score_socio_economic, score_health) "
+					+ "SELECT '" + EARLIER_BASKET_ID + "', 'earlier-' || n, '" + UUID.randomUUID() + "', 0.5, 0.5, 0.9, 0.1, 0.1, 0.1 FROM generate_series(1, " + products + ") n");
+		}
+	}
+
 	private int xpTotal(String userId) throws SQLException {
 		return Integer.parseInt(fixtures.rows("SELECT xp_total FROM TH_USER_PROFILE WHERE id = '" + userId + "'").getFirst());
 	}
@@ -456,6 +503,13 @@ public class BasketAssessmentTest {
 	private String anArchetypeThatEarnsXp() throws SQLException {
 		return anArchetype(archetype -> overallScore(archetype, ScientificWeights.profile()).filter(score -> !RULES.isProblematic(score)).isPresent(),
 				"earns XP");
+	}
+
+	private String anArchetypeAboveTheBadgeThresholdOnTheEnvironment() throws SQLException {
+		return anArchetype(archetype -> scoredArchetypes().find(new ArchetypeProductIdImpl(archetype))
+						.filter(product -> product.normalisedScores().get(ScoredSustainabilityDimension.ENVIRONMENT) > BADGE_RULES.normalisedScoreThreshold())
+						.isPresent(),
+				"is above the threshold of the badges on the environment");
 	}
 
 	private String aProblematicArchetype() throws SQLException {

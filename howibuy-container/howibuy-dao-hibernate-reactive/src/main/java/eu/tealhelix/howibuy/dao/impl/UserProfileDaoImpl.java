@@ -1,5 +1,7 @@
 package eu.tealhelix.howibuy.dao.impl;
 
+import static jakarta.persistence.LockModeType.PESSIMISTIC_WRITE;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -104,6 +106,13 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	@Override
 	public Uni<Void> resetStreak(ReactivePersistenceTxContext tx, UserId userId) {
 		return updateColumn(tx, userId, UserProfileEntity_.streak, (cb, _) -> cb.literal(0));
+	}
+
+	@Override
+	public Uni<Void> lock(ReactivePersistenceTxContext tx, UserId userId) {
+		return tx.find(UserProfileEntity.class, userId.asUuid(), PESSIMISTIC_WRITE)
+				.onItem().ifNull().failWith(() -> new NotFoundException(userId))
+				.replaceWithVoid();
 	}
 
 	/**

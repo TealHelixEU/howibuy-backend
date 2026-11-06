@@ -222,6 +222,21 @@ public class UserProfileDaoImplTest {
 		resetSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
 	}
 
+	@Test
+	@Order(9)
+	void testLocksTheProfileOfAUserAndFailsForAnUnknownOne(Mutiny.SessionFactory sessionFactory) {
+		var sut = new UserProfileDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+
+		var lockSubscriber = UniAssertSubscriber.<Void>create();
+		factory.withTransaction(tx -> sut.lock(tx, new UserIdImpl(USER_ID.toString()))).subscribe().withSubscriber(lockSubscriber);
+		lockSubscriber.awaitItem(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		var unknownSubscriber = UniAssertSubscriber.<Void>create();
+		factory.withTransaction(tx -> sut.lock(tx, new UserIdImpl(UNKNOWN_USER_ID.toString()))).subscribe().withSubscriber(unknownSubscriber);
+		unknownSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
+	}
+
 	private static XpAndStreak xpAndStreakOf(ReactivePersistenceContextFactory factory, UserProfileDaoImpl sut, UserId userId) {
 		return factory.withoutTransaction(em -> sut.requireXpAndStreak(em, userId)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}

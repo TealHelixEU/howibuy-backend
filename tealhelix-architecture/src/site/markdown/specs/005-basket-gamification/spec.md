@@ -175,8 +175,8 @@ New changelog `changelogs/v1.0.0/20261105_basket_gamification.xml` in `howibuy-d
 - `TH_PURCHASED_BASKET` (issue 03): `basket_grade` dropped; new `basket_match VARCHAR(20)`, nullable.
 - `TH_USER_PROFILE` (issue 04): new `streak`, see Streak.
 - `TH_USER_BADGE` (issue 05): `user_profile_id` (FK to `TH_USER_PROFILE`), `badge VARCHAR(50)`, `purchased_basket_id`
-  (FK to `TH_PURCHASED_BASKET`, the basket that earned it, which also tells when); primary key (`user_profile_id`,
-  `badge`). Stored by `PurchasedBasketDao.store` with the basket, in the same `persistAll`; `PurchasedBasket` gains the
+  (FK to `TH_PURCHASED_BASKET`, the basket whose purchase awarded it), `earned_at TIMESTAMP` (the basket's
+  `recorded_at`, a time of the badge's own); primary key (`user_profile_id`, `badge`). Stored by `PurchasedBasketDao.store` with the basket, in the same `persistAll`; `PurchasedBasket` gains the
   earned badges.
 - Two reads for the badges, on `PurchasedBasketDao`: the number of the user's stored products above a Normalised Score,
   per dimension, in one query; and the badges the user holds.

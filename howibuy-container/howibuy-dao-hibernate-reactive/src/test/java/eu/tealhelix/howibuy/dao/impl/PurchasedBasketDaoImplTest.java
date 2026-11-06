@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -32,6 +33,7 @@ import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasket;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.XpAndStreak;
+import eu.tealhelix.howibuy.v1.types.Badge;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
@@ -46,8 +48,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * A Purchased Basket is stored with the products that have an Overall Score, and the user's XP total grows in the same
- * transaction.
+ * A Purchased Basket is stored with the products that have an Overall Score and the badges it earned, and the user's XP
+ * total grows in the same transaction. The stored products are counted per dimension, and the stored badges read back,
+ * for the badges a basket earns.
  * <p>
  * The stored rows are read back with JDBC: the test is about the mapping of the rows, which reading them through the
  * same mapping could not check.
@@ -59,6 +62,7 @@ public class PurchasedBasketDaoImplTest {
 	private static final UUID RETAILER = UUID.fromString("4a7c1e93-2b5d-4f80-9c36-e1d2a8b07f45");
 	private static final String CATALOGUE = "test-lt";
 	private static final UUID USER = UUID.fromString("c3e85f1a-7d24-4b96-a0f3-58b9e6d21c07");
+	private static final UUID OTHER_USER = UUID.fromString("5f0a2c97-3e1b-4d68-8a4f-b7c2e9d01e38");
 	private static final UUID ATTEMPT = UUID.fromString("0e6d9b42-1f87-4c3a-b5e0-7a29c4f8d613");
 	private static final UUID MILK = UUID.fromString("7b2f4e18-9c63-4a05-8d71-e4a0b3c95f26");
 	private static final UUID CHIPS = UUID.fromString("7b2f4e18-9c63-4a05-8d71-e4a0b3c95f27");
@@ -82,13 +86,15 @@ public class PurchasedBasketDaoImplTest {
 	static void setUp(Mutiny.SessionFactory sessionFactory) {
 		var user = new UserProfileEntity();
 		user.setId(USER);
-		sessionFactory.withTransaction(session -> session.persistAll(retailer(RETAILER, "Test Retailer"), catalogue(CATALOGUE, RETAILER, "LT", "lt"), user))
+		var otherUser = new UserProfileEntity();
+		otherUser.setId(OTHER_USER);
+		sessionFactory.withTransaction(session -> session.persistAll(retailer(RETAILER, "Test Retailer"), catalogue(CATALOGUE, RETAILER, "LT", "lt"), user, otherUser))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 	}
 
 	@BeforeEach
 	void deleteBaskets() throws SQLException {
-		execute("DELETE FROM TH_PURCHASED_BASKET_PRODUCT", "DELETE FROM TH_PURCHASED_BASKET");
+		execute("DELETE FROM TH_USER_BADGE", "DELETE FROM TH_PURCHASED_BASKET_PRODUCT", "DELETE FROM TH_PURCHASED_BASKET");
 	}
 
 	@Test
@@ -200,8 +206,97 @@ public class PurchasedBasketDaoImplTest {
 		assertEquals(1, rows("SELECT id FROM TH_PURCHASED_BASKET").size());
 	}
 
+	@Test
+	void storesTheBadgesTheBasketEarnedWithIt(Mutiny.SessionFactory sessionFactory) throws SQLException {
+		var sut = new PurchasedBasketDaoImpl();
+		var basket = ImmutablePurchasedBasket.copyOf(basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.EXCELLENT, 10, null, List.of(product("milk-1", MILK, 0.85, 0.83, 0.9, 0.8, 0.7, 0.95))))
+				.withEarnedBadges(Badge.ENVIRONMENTAL_HERO_1, Badge.HEALTH_HERO_1);
+
+		new ReactivePersistenceContextFactoryImpl(sessionFactory).withTransaction(tx -> sut.store(tx, basket))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		var basketId = rows("SELECT id FROM TH_PURCHASED_BASKET").getFirst().get("id");
+		var badges = rows("SELECT user_profile_id, badge, purchased_basket_id, earned_at FROM TH_USER_BADGE ORDER BY badge");
+		assertEquals(List.of(
+						Map.of("user_profile_id", USER, "badge", "ENVIRONMENTAL_HERO_1", "purchased_basket_id", basketId, "earned_at", RECORDED_AT),
+						Map.of("user_profile_id", USER, "badge", "HEALTH_HERO_1", "purchased_basket_id", basketId, "earned_at", RECORDED_AT)),
+				badges, "earned when the purchase was recorded, not when it was made");
+	}
+
+	@Test
+	void findsTheBadgesTheUserHolds(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var earlier = ImmutablePurchasedBasket.copyOf(basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.EXCELLENT, 10, null, List.of()))
+				.withEarnedBadges(Badge.ENVIRONMENTAL_HERO_1);
+		var later = ImmutablePurchasedBasket.copyOf(earlier).withEarnedBadges(Badge.HEALTH_HERO_1);
+		var others = ImmutablePurchasedBasket.copyOf(earlier).withUserId(otherUserId()).withEarnedBadges(Badge.ANIMAL_WELFARE_HERO_1);
+		factory.withTransaction(tx -> sut.store(tx, earlier).chain(() -> sut.store(tx, later)).chain(() -> sut.store(tx, others)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		Set<Badge> held = factory.withoutTransaction(em -> sut.findBadges(em, userId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(Set.of(Badge.ENVIRONMENTAL_HERO_1, Badge.HEALTH_HERO_1), held, "the badges of every basket of the user, and only of the user");
+	}
+
+	@Test
+	void findsNoBadgeForAUserWhoHoldsNone(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+
+		Set<Badge> held = new ReactivePersistenceContextFactoryImpl(sessionFactory).withoutTransaction(em -> sut.findBadges(em, userId()))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(Set.of(), held);
+	}
+
+	/**
+	 * Every product of every basket of the user counts once per basket, when its Normalised Score of the dimension is
+	 * strictly above the score; the products of another user's baskets do not count.
+	 */
+	@Test
+	void countsTheUsersStoredProductsAboveAScorePerDimension(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var milk = product("milk-1", MILK, 0.5, 0.5, 0.9, 0.81, 0.8, 0.1);
+		var chips = product("chips-2", CHIPS, 0.5, 0.5, 0.8001, 0.8, 0.95, 0.85);
+		var first = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.GOOD, 0, null, List.of(milk, chips));
+		var second = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.GOOD, 0, null, List.of(milk));
+		var others = ImmutablePurchasedBasket.copyOf(basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.EXCELLENT, 0, null,
+				List.of(product("milk-1", MILK, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9)))).withUserId(otherUserId());
+		factory.withTransaction(tx -> sut.store(tx, first).chain(() -> sut.store(tx, second)).chain(() -> sut.store(tx, others)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		Map<ScoredSustainabilityDimension, Long> counts = factory.withoutTransaction(em -> sut.retrieveProductCountsAbove(em, userId(), 0.8))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(Map.of(
+				ScoredSustainabilityDimension.ENVIRONMENT, 3L,
+				ScoredSustainabilityDimension.ANIMAL_WELFARE, 2L,
+				ScoredSustainabilityDimension.SOCIO_ECONOMIC, 1L,
+				ScoredSustainabilityDimension.HEALTH, 1L), counts);
+	}
+
+	@Test
+	void countsNoProductForAUserWithoutStoredBaskets(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+
+		Map<ScoredSustainabilityDimension, Long> counts = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.retrieveProductCountsAbove(em, userId(), 0.8))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(Map.of(
+				ScoredSustainabilityDimension.ENVIRONMENT, 0L,
+				ScoredSustainabilityDimension.ANIMAL_WELFARE, 0L,
+				ScoredSustainabilityDimension.SOCIO_ECONOMIC, 0L,
+				ScoredSustainabilityDimension.HEALTH, 0L), counts);
+	}
+
 	private static UserId userId() {
 		return new UserIdImpl(USER.toString());
+	}
+
+	private static UserId otherUserId() {
+		return new UserIdImpl(OTHER_USER.toString());
 	}
 
 	private static PurchasedBasket basket(BasketAssessmentOutcomeType type, BasketMatch match, int xpValue, UUID attemptId, List<PurchasedBasketProduct> products) {

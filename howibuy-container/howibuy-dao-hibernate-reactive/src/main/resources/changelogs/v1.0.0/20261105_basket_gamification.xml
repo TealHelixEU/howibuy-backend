@@ -60,4 +60,23 @@
 			</column>
 		</addColumn>
 	</changeSet>
+
+	<changeSet id="user_badge" author="nikospara">
+		<createTable tableName="TH_USER_BADGE" remarks="A Badge a user has earned, kept whatever the rule that awarded it becomes">
+			<column name="user_profile_id" type="UUID" remarks="The user who earned the badge; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_USER_BADGE__USER_PROFILE_ID" primaryKey="true" primaryKeyName="PK_TH_USER_BADGE" />
+			</column>
+			<column name="badge" type="VARCHAR(50)" remarks="The code of the badge, the name of its constant in the Badge enum; part of the primary key">
+				<constraints nullable="false" notNullConstraintName="NL_TH_USER_BADGE__BADGE" primaryKey="true" primaryKeyName="PK_TH_USER_BADGE" />
+			</column>
+			<column name="purchased_basket_id" type="UUID" remarks="The Purchased Basket whose purchase awarded the badge">
+				<constraints nullable="false" notNullConstraintName="NL_TH_USER_BADGE__PURCHASED_BASKET_ID" />
+			</column>
+			<column name="earned_at" type="TIMESTAMP" remarks="When the user earned the badge">
+				<constraints nullable="false" notNullConstraintName="NL_TH_USER_BADGE__EARNED_AT" />
+			</column>
+		</createTable>
+		<addForeignKeyConstraint baseTableName="TH_USER_BADGE" baseColumnNames="user_profile_id" constraintName="FK_USER_BADGE__USER_PROFILE_ID" referencedTableName="TH_USER_PROFILE" referencedColumnNames="id" />
+		<addForeignKeyConstraint baseTableName="TH_USER_BADGE" baseColumnNames="purchased_basket_id" constraintName="FK_USER_BADGE__PURCHASED_BASKET_ID" referencedTableName="TH_PURCHASED_BASKET" referencedColumnNames="id" />
+	</changeSet>
 </databaseChangeLog>

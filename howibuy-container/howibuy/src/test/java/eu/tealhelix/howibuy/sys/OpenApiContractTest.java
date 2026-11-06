@@ -241,11 +241,15 @@ public class OpenApiContractTest {
 		assertEquals("#/components/schemas/BasketAssessmentOutcome",
 				at(assess, "responses", "200", "content", "application/json", "schema", "$ref"));
 		var outcome = at(schemas(document), "BasketAssessmentOutcome", "properties");
-		assertEquals(Set.of("type", "basketMatch", "basketMatchLabel", "intervention", "problematicProductKeys", "totalXp", "xpValue", "streak", "streakEffect"),
+		assertEquals(Set.of("type", "basketMatch", "basketMatchLabel", "intervention", "problematicProductKeys", "totalXp", "xpValue", "streak", "streakEffect", "earnedBadges"),
 				((Map<?, ?>) outcome).keySet());
+		assertEquals("#/components/schemas/EarnedBadge", at(outcome, "earnedBadges", "items", "$ref"));
+		assertEquals(Set.of("badge", "label"), ((Map<?, ?>) at(schemas(document), "EarnedBadge", "properties")).keySet());
 		assertEquals(List.of("ASSESSED", "NOTHING_TO_ASSESS"), at(schemas(document), "BasketAssessmentOutcomeType", "enum"));
 		assertEquals(List.of("EXCELLENT", "GOOD", "NEEDS_IMPROVEMENT"), at(schemas(document), "BasketMatch", "enum"));
 		assertEquals(List.of("EXTEND", "RESET", "NONE"), at(schemas(document), "StreakEffect", "enum"));
+		assertEquals(List.of("ENVIRONMENTAL_HERO_1", "ENVIRONMENTAL_HERO_2", "ENVIRONMENTAL_HERO_3", "ANIMAL_WELFARE_HERO_1", "ANIMAL_WELFARE_HERO_2", "ANIMAL_WELFARE_HERO_3",
+				"SOCIO_ECONOMIC_HERO_1", "SOCIO_ECONOMIC_HERO_2", "SOCIO_ECONOMIC_HERO_3", "HEALTH_HERO_1", "HEALTH_HERO_2", "HEALTH_HERO_3"), at(schemas(document), "Badge", "enum"));
 		assertNull(at(schemas(document), "BasketGrade"));
 		for (var status : List.of("400", "401", "403")) {
 			assertNotNull(at(assess, "responses", status, "description"), "a refused basket is documented, status: " + status);

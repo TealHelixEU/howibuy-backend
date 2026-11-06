@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import eu.tealhelix.catalogue.v1.types.ProductKey;
@@ -136,14 +137,15 @@ public class BasketRulesTest {
 	}
 
 	/**
-	 * One product per pair of space-separated Overall Scores, keyed by its position.
+	 * One product per pair of space-separated Overall Scores, keyed by its position. The basket rules do not read the
+	 * Normalised Scores, so the products have none.
 	 */
 	private static List<ScoredBasketProduct> products(String scientificScores, String personalScores) {
 		var scientific = scientificScores.trim().split(" +");
 		var personal = personalScores.trim().split(" +");
 		assertEquals(scientific.length, personal.length, "a personal score for every scientific one");
 		return IntStream.range(0, scientific.length)
-				.mapToObj(position -> new ScoredBasketProduct(key(position), Double.parseDouble(scientific[position]), Double.parseDouble(personal[position])))
+				.mapToObj(position -> new ScoredBasketProduct(key(position), Double.parseDouble(scientific[position]), Double.parseDouble(personal[position]), Map.of()))
 				.toList();
 	}
 

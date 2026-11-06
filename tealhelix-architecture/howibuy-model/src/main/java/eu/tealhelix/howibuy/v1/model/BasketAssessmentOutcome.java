@@ -74,4 +74,12 @@ public interface BasketAssessmentOutcome {
 	 * applied to the {@link #getStreak() user's Streak}.
 	 */
 	StreakEffect getStreakEffect();
+
+	/**
+	 * The badges this basket earns, judged on the Normalised Scores of its products: a badge is earned when the user's
+	 * purchased products above 0.8 in its dimension, together with this basket's, reach its number, and the user does
+	 * not hold it yet. In the order of {@link eu.tealhelix.howibuy.v1.types.Badge}; empty when the basket earns none and
+	 * when there was nothing to assess. If already purchased, the badges have already been given to the user.
+	 */
+	List<EarnedBadge> getEarnedBadges();
 }

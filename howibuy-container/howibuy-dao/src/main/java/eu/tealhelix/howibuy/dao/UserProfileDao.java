@@ -76,6 +76,16 @@ public interface UserProfileDao {
 	Uni<Void> resetStreak(ReactivePersistenceTxContext tx, UserId userId);
 
 	/**
+	 * Lock the user's profile until the transaction ends, so that another transaction locking it waits for this one.
+	 *
+	 * @param tx     The transaction
+	 * @param userId The user
+	 * @return A {@code Uni} completing when the profile is locked; a failure with {@code NotFoundException} if there is no
+	 *         such user
+	 */
+	Uni<Void> lock(ReactivePersistenceTxContext tx, UserId userId);
+
+	/**
 	 * Create a simple, regular (non-system, non-service) user model holding information only about the user id, to be
 	 * used in the impersonation from retailer scenario.
 	 *

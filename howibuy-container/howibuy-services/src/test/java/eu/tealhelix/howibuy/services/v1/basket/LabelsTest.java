@@ -9,6 +9,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import eu.tealhelix.howibuy.v1.types.Badge;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import org.jboss.logmanager.LogContext;
 import org.junit.jupiter.api.AfterEach;
@@ -67,6 +68,15 @@ public class LabelsTest {
 		var sut = new Labels<BasketMatch>(Labels.class.getPackageName() + ".BasketMatchLabels");
 
 		assertFalse(sut.labelOf(basketMatch, "en").isBlank());
+		assertEquals(List.of(), logged);
+	}
+
+	@ParameterizedTest
+	@EnumSource(Badge.class)
+	void everyBadgeHasAnEnglishLabel(Badge badge) {
+		var sut = new Labels<Badge>(Labels.class.getPackageName() + ".BadgeLabels");
+
+		assertFalse(sut.labelOf(badge, "en").isBlank());
 		assertEquals(List.of(), logged);
 	}
 

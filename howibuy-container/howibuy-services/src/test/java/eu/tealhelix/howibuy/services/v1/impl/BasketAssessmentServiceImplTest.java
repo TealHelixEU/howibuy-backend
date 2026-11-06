@@ -18,6 +18,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
@@ -58,9 +59,13 @@ import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.Branch;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
+import eu.tealhelix.howibuy.v1.model.EarnedBadge;
+import eu.tealhelix.howibuy.v1.model.ImmutableEarnedBadge;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
+import eu.tealhelix.howibuy.v1.types.Badge;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.IdentificationFailureReason;
+import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.StreakEffect;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
@@ -104,6 +109,7 @@ class BasketAssessmentServiceImplTest {
 	private static final RetailerId RETAILER = new GenericRetailerId("8d1e5b4a-7c2f-4e93-a6b0-3f9d2c1e7a54");
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 31, 12, 0);
 	private static final LocalDateTime EARLIER = NOW.minusHours(2);
+	private static final Map<ScoredSustainabilityDimension, Long> NOTHING_COUNTED = counts(0, 0, 0, 0);
 
 	private static final Branch DAIRY = new Branch("Dairy", "Milk", "Cow milk");
 	private static final ArchetypeProductId GOOD_ARCHETYPE = productId("good");
@@ -184,7 +190,7 @@ class BasketAssessmentServiceImplTest {
 	void judgesTheBasketByTheOverallScoresOfItsProducts() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, FAIR, POOR));
-		givenXpAndStreak();
+		givenTheUsersStanding();
 
 		var outcome = assess(List.of(FAIR, GOOD, POOR));
 
@@ -203,7 +209,7 @@ class BasketAssessmentServiceImplTest {
 	void leavesOutTheProductsThatHaveNoOverallScore() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, UNKNOWN, UNCLASSIFIED, NO_ARCHETYPE, SPIRITS));
-		givenXpAndStreak();
+		givenTheUsersStanding();
 
 		var outcome = assess(List.of(GOOD, UNKNOWN, UNCLASSIFIED, NO_ARCHETYPE, SPIRITS));
 
@@ -217,7 +223,7 @@ class BasketAssessmentServiceImplTest {
 	void countsARepeatedProductOnce() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, FAIR));
-		givenXpAndStreak();
+		givenTheUsersStanding();
 
 		var outcome = assess(List.of(GOOD, FAIR, GOOD, FAIR, GOOD));
 
@@ -229,7 +235,7 @@ class BasketAssessmentServiceImplTest {
 	void matchesTheBasketUnderTheUsersPersonalWeightsAndJudgesTheRestUnderTheScientificOnes() {
 		givenWeights(personalProfileOnEnvironment());
 		givenIdentifications(Set.of(GREEN));
-		givenXpAndStreak();
+		givenTheUsersStanding();
 
 		var outcome = assess(List.of(GREEN));
 
@@ -243,7 +249,7 @@ class BasketAssessmentServiceImplTest {
 	void hasNothingToAssessWhenNoProductHasAnOverallScore() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(UNKNOWN, SPIRITS));
-		givenXpAndStreak();
+		givenTheUsersStanding();
 
 		assertNothingToAssess(assess(List.of(UNKNOWN, SPIRITS)));
 	}
@@ -252,9 +258,26 @@ class BasketAssessmentServiceImplTest {
 	void hasNothingToAssessInAnEmptyBasket() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of());
-		givenXpAndStreak();
+		givenTheUsersStanding();
 
 		assertNothingToAssess(assess(List.of()));
+	}
+
+	/**
+	 * The good and the green products are above 0.8 on the environment, the good one alone on the other dimensions.
+	 */
+	@Test
+	void reportsTheBadgesTheBasketWouldEarnWithoutStoringThem() {
+		givenWeights(ScientificWeights.profile());
+		givenIdentifications(Set.of(GOOD, GREEN));
+		givenTheUsersStanding(counts(48, 49, 49, 0), Set.of(Badge.ANIMAL_WELFARE_HERO_1));
+
+		var outcome = assess(List.of(GOOD, GREEN));
+
+		assertEquals(List.of(earned(Badge.ENVIRONMENTAL_HERO_1, "Environmental Hero Level 1"), earned(Badge.SOCIO_ECONOMIC_HERO_1, "Socio-economic Hero Level 1")),
+				outcome.getEarnedBadges(), "not the badge of animal welfare, which the user holds");
+		verify(purchasedBasketDao, never()).store(any(), any());
+		verify(userProfileDao, never()).lock(any(), any());
 	}
 
 	@Test
@@ -314,6 +337,37 @@ class BasketAssessmentServiceImplTest {
 	}
 
 	@Test
+	void storesTheBadgesThePurchaseEarnsWithTheBasket() {
+		givenWeights(ScientificWeights.profile());
+		givenIdentifications(Set.of(GOOD));
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1, counts(49, 0, 0, 199), Set.of(Badge.HEALTH_HERO_1, Badge.HEALTH_HERO_2));
+
+		var outcome = purchase(null, List.of(GOOD));
+
+		assertEquals(List.of(earned(Badge.ENVIRONMENTAL_HERO_1, "Environmental Hero Level 1"), earned(Badge.HEALTH_HERO_3, "Health Hero Level 3")), outcome.getEarnedBadges());
+		assertEquals(List.of(Badge.ENVIRONMENTAL_HERO_1, Badge.HEALTH_HERO_3), storedBasket.getValue().getEarnedBadges());
+	}
+
+	/**
+	 * Earning a badge reads what the user has towards it and then stores the basket, so another purchase of the same
+	 * user must not come in between: the profile is locked first.
+	 */
+	@Test
+	void locksTheUsersProfileBeforeReadingWhatTheyHaveTowardsTheBadges() {
+		givenWeights(ScientificWeights.profile());
+		givenIdentifications(Set.of(GOOD));
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
+
+		purchase(null, List.of(GOOD));
+
+		var order = inOrder(userProfileDao, purchasedBasketDao);
+		order.verify(userProfileDao).lock(any(), eq(USER.getId()));
+		order.verify(purchasedBasketDao).retrieveProductCountsAbove(any(), eq(USER.getId()), eq(0.8));
+		order.verify(purchasedBasketDao).findBadges(any(), eq(USER.getId()));
+		order.verify(purchasedBasketDao).store(any(), any());
+	}
+
+	@Test
 	void resetsTheStreakWithAPurchaseWithoutAProductAbove08() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(FAIR, POOR));
@@ -346,6 +400,7 @@ class BasketAssessmentServiceImplTest {
 		assertEquals(0, basket.getXpValue());
 		assertNull(basket.getCompassAttemptId(), "the scientific profile was in force");
 		assertEquals(List.of(), basket.getProducts());
+		assertEquals(List.of(), basket.getEarnedBadges());
 	}
 
 	@Test
@@ -400,6 +455,7 @@ class BasketAssessmentServiceImplTest {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
 		when(dateTimeService.getNow()).thenReturn(NOW);
+		when(userProfileDao.lock(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
 		when(catalogueDao.findRetailers(any(), eq(Set.of(CATALOGUE)))).thenReturn(Uni.createFrom().item(Map.of()));
 
 		var failure = sut.assessPurchasedBasket(USER, CATALOGUE, null, List.of(GOOD), LANGUAGE)
@@ -408,7 +464,9 @@ class BasketAssessmentServiceImplTest {
 				.await().atMost(WAIT);
 
 		assertInstanceOf(NotFoundException.class, failure);
-		verifyNoInteractions(purchasedBasketDao, userProfileDao);
+		verifyNoInteractions(purchasedBasketDao);
+		verify(userProfileDao).lock(any(), eq(USER.getId()));
+		verifyNoMoreInteractions(userProfileDao);
 	}
 
 	private BasketAssessmentOutcome purchase(OffsetDateTime purchasedAt, List<ProductKey> productKeys) {
@@ -434,11 +492,20 @@ class BasketAssessmentServiceImplTest {
 	}
 
 	/**
-	 * The user's profile takes the change of the Streak the effect calls for, none for {@code NONE}, and reads back the XP
-	 * and the Streak the basket leaves them with.
+	 * The user has nothing towards a badge.
 	 */
 	private void givenThePurchaseIsStored(int xpValue, StreakEffect streakEffect, int streakAfter) {
+		givenThePurchaseIsStored(xpValue, streakEffect, streakAfter, NOTHING_COUNTED, Set.of());
+	}
+
+	/**
+	 * The user's profile is locked, what the user has towards the badges is read, and the profile takes the change of the
+	 * Streak the effect calls for, none for {@code NONE}, and reads back the XP and the Streak the basket leaves them with.
+	 */
+	private void givenThePurchaseIsStored(int xpValue, StreakEffect streakEffect, int streakAfter, Map<ScoredSustainabilityDimension, Long> storedCounts, Set<Badge> held) {
 		when(dateTimeService.getNow()).thenReturn(NOW);
+		when(userProfileDao.lock(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
+		givenTheBadgeStanding(storedCounts, held);
 		when(catalogueDao.findRetailers(any(), eq(Set.of(CATALOGUE)))).thenReturn(Uni.createFrom().item(Map.of(CATALOGUE, RETAILER)));
 		when(purchasedBasketDao.store(any(), storedBasket.capture())).thenReturn(Uni.createFrom().voidItem());
 		when(userProfileDao.addXp(any(), eq(USER.getId()), eq(xpValue))).thenReturn(Uni.createFrom().voidItem());
@@ -467,6 +534,7 @@ class BasketAssessmentServiceImplTest {
 		assertEquals(TOTAL_XP, outcome.getTotalXp());
 		assertEquals(StreakEffect.NONE, outcome.getStreakEffect());
 		assertEquals(STREAK, outcome.getStreak());
+		assertEquals(List.of(), outcome.getEarnedBadges());
 	}
 
 	private void givenWeights(WeightProfile profile) {
@@ -483,8 +551,39 @@ class BasketAssessmentServiceImplTest {
 		when(archetypeCorpus.scoredArchetypes()).thenReturn(Uni.createFrom().item(ARCHETYPES));
 	}
 
-	private void givenXpAndStreak() {
+	/**
+	 * The user's XP total and Streak, and nothing towards a badge.
+	 */
+	private void givenTheUsersStanding() {
+		givenTheUsersStanding(NOTHING_COUNTED, Set.of());
+	}
+
+	/**
+	 * The user's XP total and Streak, and what they have towards the badges.
+	 */
+	private void givenTheUsersStanding(Map<ScoredSustainabilityDimension, Long> storedCounts, Set<Badge> held) {
 		when(userProfileDao.requireXpAndStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(xpAndStreak(TOTAL_XP, STREAK)));
+		givenTheBadgeStanding(storedCounts, held);
+	}
+
+	/**
+	 * The user's stored products above 0.8 per dimension, and the badges they hold.
+	 */
+	private void givenTheBadgeStanding(Map<ScoredSustainabilityDimension, Long> storedCounts, Set<Badge> held) {
+		when(purchasedBasketDao.retrieveProductCountsAbove(any(), eq(USER.getId()), eq(0.8))).thenReturn(Uni.createFrom().item(storedCounts));
+		when(purchasedBasketDao.findBadges(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(held));
+	}
+
+	private static Map<ScoredSustainabilityDimension, Long> counts(long environment, long animalWelfare, long socioEconomic, long health) {
+		return Map.of(
+				ScoredSustainabilityDimension.ENVIRONMENT, environment,
+				ScoredSustainabilityDimension.ANIMAL_WELFARE, animalWelfare,
+				ScoredSustainabilityDimension.SOCIO_ECONOMIC, socioEconomic,
+				ScoredSustainabilityDimension.HEALTH, health);
+	}
+
+	private static EarnedBadge earned(Badge badge, String label) {
+		return ImmutableEarnedBadge.builder().badge(badge).label(label).build();
 	}
 
 	private static XpAndStreak xpAndStreak(int xpTotal, int streak) {

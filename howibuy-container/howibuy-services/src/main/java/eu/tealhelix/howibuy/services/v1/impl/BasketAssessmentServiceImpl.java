@@ -1,5 +1,6 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
+import static eu.tealhelix.common.utils.UniComprehensions.forc;
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 import static eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType.ASSESSED;
 import static eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType.NOTHING_TO_ASSESS;
@@ -40,14 +41,19 @@ import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import eu.tealhelix.howibuy.services.v1.BasketAssessmentService;
+import eu.tealhelix.howibuy.services.v1.basket.BadgeRules;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules;
 import eu.tealhelix.howibuy.services.v1.basket.Labels;
 import eu.tealhelix.howibuy.services.v1.basket.types.BasketVerdict;
 import eu.tealhelix.howibuy.services.v1.basket.types.ScoredBasketProduct;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
+import eu.tealhelix.howibuy.v1.model.EarnedBadge;
 import eu.tealhelix.howibuy.v1.model.ImmutableBasketAssessmentOutcome;
+import eu.tealhelix.howibuy.v1.model.ImmutableEarnedBadge;
+import eu.tealhelix.howibuy.v1.types.Badge;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
+import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.StreakEffect;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
@@ -72,7 +78,9 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private final PurchasedBasketDao purchasedBasketDao;
 	private final DateTimeService dateTimeService;
 	private final BasketRules basketRules = new BasketRules();
+	private final BadgeRules badgeRules = new BadgeRules();
 	private final Labels<BasketMatch> basketMatchLabels = new Labels<>(Labels.class.getPackageName() + ".BasketMatchLabels");
+	private final Labels<Badge> badgeLabels = new Labels<>(Labels.class.getPackageName() + ".BadgeLabels");
 
 	/**
 	 * A product of the basket that has an Overall Score.
@@ -84,7 +92,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	 */
 	private record ScoredBasketLine(ProductKey productKey, ScoredProduct scoredProduct, double personalOverallScore, double scientificOverallScore) {
 		ScoredBasketProduct toBasketProduct() {
-			return new ScoredBasketProduct(productKey, scientificOverallScore, personalOverallScore);
+			return new ScoredBasketProduct(productKey, scientificOverallScore, personalOverallScore, scoredProduct.normalisedScores());
 		}
 
 		PurchasedBasketProduct toPurchasedBasketProduct() {
@@ -106,7 +114,15 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	 */
 	private record ScoredBasket(List<ScoredBasketLine> lines, @Nullable UUID compassAttemptId) {
 		BasketVerdict judge(BasketRules basketRules) {
-			return basketRules.judge(lines.stream().map(ScoredBasketLine::toBasketProduct).toList());
+			return basketRules.judge(basketProducts());
+		}
+
+		List<Badge> earnedBadges(BadgeRules badgeRules, Map<ScoredSustainabilityDimension, Long> storedCounts, Set<Badge> held) {
+			return badgeRules.earnedBadges(storedCounts, held, basketProducts());
+		}
+
+		private List<ScoredBasketProduct> basketProducts() {
+			return lines.stream().map(ScoredBasketLine::toBasketProduct).toList();
 		}
 	}
 
@@ -138,10 +154,12 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		authorization.requirePerson(user);
 		LOG.info("Assess basket before purchase, user: {}, catalogue: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(), language,
 				productKeys.stream().map(ProductKey::asString).toList());
-		return forcm(
+		return forc(
 				scoreBasket(user, catalogueId, productKeys),
-				_ -> persistenceContextFactory.withoutTransaction(em -> userProfileDao.requireXpAndStreak(em, user.getId())),
-				(scoredBasket, xpAndStreak) -> outcome(scoredBasket.judge(basketRules), language, xpAndStreak));
+				scoredBasket -> persistenceContextFactory.withoutTransaction(em -> forcm(
+						earnedBadges(em, user.getId(), scoredBasket),
+						_ -> userProfileDao.requireXpAndStreak(em, user.getId()),
+						(earnedBadges, xpAndStreak) -> outcome(scoredBasket.judge(basketRules), earnedBadges, language, xpAndStreak))));
 	}
 
 	@Override
@@ -153,9 +171,11 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		LOG.info("Assess purchased basket, user: {}, catalogue: {}, purchasedAt: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(),
 				purchaseTime, language, productKeys.stream().map(ProductKey::asString).toList());
 		return persistenceContextFactory.withTransaction(tx -> forcm(
-				scoreBasket(user, catalogueId, productKeys),
-				_ -> requireRetailerOf(tx, catalogueId),
-				(scoredBasket, retailerId) -> {
+				userProfileDao.lock(tx, user.getId()),
+				_ -> scoreBasket(user, catalogueId, productKeys),
+				(_, _) -> requireRetailerOf(tx, catalogueId),
+				(_, scoredBasket, _) -> earnedBadges(tx, user.getId(), scoredBasket),
+				(_, scoredBasket, retailerId, earnedBadges) -> {
 					BasketVerdict verdict = scoredBasket.judge(basketRules);
 					var purchasedBasket = ImmutablePurchasedBasket.builder()
 									.userId(user.getId())
@@ -168,13 +188,14 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 									.xpValue(verdict.xpValue())
 									.compassAttemptId(scoredBasket.compassAttemptId())
 									.products(scoredBasket.lines().stream().map(ScoredBasketLine::toPurchasedBasketProduct).toList())
+									.earnedBadges(earnedBadges)
 									.build();
 					return purchasedBasketDao.store(tx, purchasedBasket).replaceWith(verdict);
 				},
-				(_, _, verdict) -> userProfileDao.addXp(tx, user.getId(), verdict.xpValue()),
-				(_, _, verdict, _) -> applyStreakEffect(tx, user.getId(), verdict.streakEffect()),
-				(_, _, _, _, _) -> userProfileDao.requireXpAndStreak(tx, user.getId()),
-				(_, _, verdict, _, _, xpAndStreak) -> outcome(verdict, language, xpAndStreak)
+				(_, _, _, _, verdict) -> userProfileDao.addXp(tx, user.getId(), verdict.xpValue()),
+				(_, _, _, _, verdict, _) -> applyStreakEffect(tx, user.getId(), verdict.streakEffect()),
+				(_, _, _, _, _, _, _) -> userProfileDao.requireXpAndStreak(tx, user.getId()),
+				(_, _, _, earnedBadges, verdict, _, _, xpAndStreak) -> outcome(verdict, earnedBadges, language, xpAndStreak)
 		));
 	}
 
@@ -196,6 +217,17 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private Uni<RetailerId> requireRetailerOf(ReactivePersistenceContext em, CatalogueId catalogueId) {
 		return catalogueDao.findRetailers(em, Set.of(catalogueId))
 				.map(retailers -> Optional.ofNullable(retailers.get(catalogueId)).orElseThrow(() -> new NotFoundException(catalogueId)));
+	}
+
+	/**
+	 * The badges the basket earns, from what the user has towards them as stored. Both the assessment before the purchase
+	 * and the purchase compute them so, before anything of the basket is stored.
+	 */
+	private Uni<List<Badge>> earnedBadges(ReactivePersistenceContext em, UserId userId, ScoredBasket scoredBasket) {
+		return forcm(
+				purchasedBasketDao.retrieveProductCountsAbove(em, userId, badgeRules.normalisedScoreThreshold()),
+				_ -> purchasedBasketDao.findBadges(em, userId),
+				(storedCounts, held) -> scoredBasket.earnedBadges(badgeRules, storedCounts, held));
 	}
 
 	/**
@@ -243,7 +275,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		};
 	}
 
-	private BasketAssessmentOutcome outcome(BasketVerdict verdict, String language, XpAndStreak xpAndStreak) {
+	private BasketAssessmentOutcome outcome(BasketVerdict verdict, List<Badge> earnedBadges, String language, XpAndStreak xpAndStreak) {
 		var basketMatch = verdict.basketMatch();
 		return ImmutableBasketAssessmentOutcome.builder()
 				.type(typeOf(verdict))
@@ -254,7 +286,12 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 				.totalXp(xpAndStreak.getXpTotal())
 				.streakEffect(verdict.streakEffect())
 				.streak(xpAndStreak.getStreak())
+				.earnedBadges(earnedBadges.stream().map(badge -> earnedBadge(badge, language)).toList())
 				.build();
+	}
+
+	private EarnedBadge earnedBadge(Badge badge, String language) {
+		return ImmutableEarnedBadge.builder().badge(badge).label(badgeLabels.labelOf(badge, language)).build();
 	}
 
 	private static BasketAssessmentOutcomeType typeOf(BasketVerdict verdict) {
