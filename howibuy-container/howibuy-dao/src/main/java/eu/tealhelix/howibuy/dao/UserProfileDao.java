@@ -6,6 +6,7 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import io.smallrye.mutiny.Uni;
@@ -32,7 +33,7 @@ public interface UserProfileDao {
 
 	Uni<Optional<User>> findByIdmId(ReactivePersistenceContext em, String userIdFromIdm, String name);
 
-	Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name);
+	Uni<User> requireById(ReactivePersistenceContext em, HasUserId userId, String name);
 
 	/**
 	 * @param em     The persistence context
@@ -40,7 +41,7 @@ public interface UserProfileDao {
 	 * @return The XP the user has earned in total and their Streak; a failure with {@code NotFoundException} if there is
 	 *         no such user
 	 */
-	Uni<XpAndStreak> requireXpAndStreak(ReactivePersistenceContext em, UserId userId);
+	Uni<XpAndStreak> requireXpAndStreak(ReactivePersistenceContext em, HasUserId userId);
 
 	/**
 	 * Add to the XP the user has earned in total, in one update of the database, so that additions made at the same time
@@ -52,7 +53,7 @@ public interface UserProfileDao {
 	 * @return A {@code Uni} completing when the XP has been added; a failure with {@code NotFoundException} if there is
 	 *         no such user
 	 */
-	Uni<Void> addXp(ReactivePersistenceTxContext tx, UserId userId, int xp);
+	Uni<Void> addXp(ReactivePersistenceTxContext tx, HasUserId userId, int xp);
 
 	/**
 	 * Increase the user's Streak by one, in one update of the database, so that increases made at the same time are all
@@ -63,7 +64,7 @@ public interface UserProfileDao {
 	 * @return A {@code Uni} completing when the Streak has been increased; a failure with {@code NotFoundException} if
 	 *         there is no such user
 	 */
-	Uni<Void> increaseStreak(ReactivePersistenceTxContext tx, UserId userId);
+	Uni<Void> increaseStreak(ReactivePersistenceTxContext tx, HasUserId userId);
 
 	/**
 	 * Set the user's Streak to 0.
@@ -73,7 +74,7 @@ public interface UserProfileDao {
 	 * @return A {@code Uni} completing when the Streak has been reset; a failure with {@code NotFoundException} if there
 	 *         is no such user
 	 */
-	Uni<Void> resetStreak(ReactivePersistenceTxContext tx, UserId userId);
+	Uni<Void> resetStreak(ReactivePersistenceTxContext tx, HasUserId userId);
 
 	/**
 	 * Lock the user's profile until the transaction ends, so that another transaction locking it waits for this one.
@@ -83,7 +84,7 @@ public interface UserProfileDao {
 	 * @return A {@code Uni} completing when the profile is locked; a failure with {@code NotFoundException} if there is no
 	 *         such user
 	 */
-	Uni<Void> lock(ReactivePersistenceTxContext tx, UserId userId);
+	Uni<Void> lock(ReactivePersistenceTxContext tx, HasUserId userId);
 
 	/**
 	 * Create a simple, regular (non-system, non-service) user model holding information only about the user id, to be

@@ -5,7 +5,7 @@ import java.util.Set;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
-import eu.tealhelix.common.v1.types.UserId;
+import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.howibuy.services.model.PurchasedBasket;
 import eu.tealhelix.howibuy.v1.types.Badge;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
@@ -31,12 +31,12 @@ public interface PurchasedBasketDao {
 	 * @param normalisedScore The score a product's Normalised Score of a dimension must be above to count in that dimension
 	 * @return The number of products above the score, for every dimension; 0 for a user without stored products
 	 */
-	Uni<Map<ScoredSustainabilityDimension, Long>> retrieveProductCountsAbove(ReactivePersistenceContext em, UserId userId, double normalisedScore);
+	Uni<Map<ScoredSustainabilityDimension, Long>> retrieveProductCountsAbove(ReactivePersistenceContext em, HasUserId userId, double normalisedScore);
 
 	/**
 	 * @param em     The persistence context
 	 * @param userId The user
 	 * @return The badges the user holds, none for a user who holds none
 	 */
-	Uni<Set<Badge>> findBadges(ReactivePersistenceContext em, UserId userId);
+	Uni<Set<Badge>> findBadges(ReactivePersistenceContext em, HasUserId userId);
 }

@@ -29,8 +29,8 @@ import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.common.v1.model.User;
+import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.common.v1.types.RetailerId;
-import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.PurchasedBasketDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
@@ -157,8 +157,8 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		return forc(
 				scoreBasket(user, catalogueId, productKeys),
 				scoredBasket -> persistenceContextFactory.withoutTransaction(em -> forcm(
-						earnedBadges(em, user.getId(), scoredBasket),
-						_ -> userProfileDao.requireXpAndStreak(em, user.getId()),
+						earnedBadges(em, user, scoredBasket),
+						_ -> userProfileDao.requireXpAndStreak(em, user),
 						(earnedBadges, xpAndStreak) -> outcome(scoredBasket.judge(basketRules), earnedBadges, language, xpAndStreak))));
 	}
 
@@ -171,10 +171,10 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		LOG.info("Assess purchased basket, user: {}, catalogue: {}, purchasedAt: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(),
 				purchaseTime, language, productKeys.stream().map(ProductKey::asString).toList());
 		return persistenceContextFactory.withTransaction(tx -> forcm(
-				userProfileDao.lock(tx, user.getId()),
+				userProfileDao.lock(tx, user),
 				_ -> scoreBasket(user, catalogueId, productKeys),
 				(_, _) -> requireRetailerOf(tx, catalogueId),
-				(_, scoredBasket, _) -> earnedBadges(tx, user.getId(), scoredBasket),
+				(_, scoredBasket, _) -> earnedBadges(tx, user, scoredBasket),
 				(_, scoredBasket, retailerId, earnedBadges) -> {
 					BasketVerdict verdict = scoredBasket.judge(basketRules);
 					var purchasedBasket = ImmutablePurchasedBasket.builder()
@@ -192,9 +192,9 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 									.build();
 					return purchasedBasketDao.store(tx, purchasedBasket).replaceWith(verdict);
 				},
-				(_, _, _, _, verdict) -> userProfileDao.addXp(tx, user.getId(), verdict.xpValue()),
-				(_, _, _, _, verdict, _) -> applyStreakEffect(tx, user.getId(), verdict.streakEffect()),
-				(_, _, _, _, _, _, _) -> userProfileDao.requireXpAndStreak(tx, user.getId()),
+				(_, _, _, _, verdict) -> userProfileDao.addXp(tx, user, verdict.xpValue()),
+				(_, _, _, _, verdict, _) -> applyStreakEffect(tx, user, verdict.streakEffect()),
+				(_, _, _, _, _, _, _) -> userProfileDao.requireXpAndStreak(tx, user),
 				(_, _, _, earnedBadges, verdict, _, _, xpAndStreak) -> outcome(verdict, earnedBadges, language, xpAndStreak)
 		));
 	}
@@ -223,7 +223,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	 * The badges the basket earns, from what the user has towards them as stored. Both the assessment before the purchase
 	 * and the purchase compute them so, before anything of the basket is stored.
 	 */
-	private Uni<List<Badge>> earnedBadges(ReactivePersistenceContext em, UserId userId, ScoredBasket scoredBasket) {
+	private Uni<List<Badge>> earnedBadges(ReactivePersistenceContext em, HasUserId userId, ScoredBasket scoredBasket) {
 		return forcm(
 				purchasedBasketDao.retrieveProductCountsAbove(em, userId, badgeRules.normalisedScoreThreshold()),
 				_ -> purchasedBasketDao.findBadges(em, userId),
@@ -234,7 +234,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	 * Apply a purchased basket's effect to the user's Streak: {@code EXTEND} increases it by one, {@code RESET} sets it
 	 * to 0, {@code NONE} leaves it as it is.
 	 */
-	private Uni<Void> applyStreakEffect(ReactivePersistenceTxContext tx, UserId userId, StreakEffect streakEffect) {
+	private Uni<Void> applyStreakEffect(ReactivePersistenceTxContext tx, HasUserId userId, StreakEffect streakEffect) {
 		return switch (streakEffect) {
 			case EXTEND -> userProfileDao.increaseStreak(tx, userId);
 			case RESET -> userProfileDao.resetStreak(tx, userId);

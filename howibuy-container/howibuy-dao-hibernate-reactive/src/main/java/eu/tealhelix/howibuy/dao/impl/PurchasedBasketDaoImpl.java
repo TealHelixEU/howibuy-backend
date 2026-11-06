@@ -17,7 +17,7 @@ import jakarta.persistence.metamodel.SingularAttribute;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
-import eu.tealhelix.common.v1.types.UserId;
+import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.howibuy.dao.PurchasedBasketDao;
 import eu.tealhelix.howibuy.dao.jpa.PurchasedBasketEntity;
 import eu.tealhelix.howibuy.dao.jpa.PurchasedBasketEntity_;
@@ -58,7 +58,7 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 	 * sub-query, since the entities are not associated.
 	 */
 	@Override
-	public Uni<Map<ScoredSustainabilityDimension, Long>> retrieveProductCountsAbove(ReactivePersistenceContext em, UserId userId, double normalisedScore) {
+	public Uni<Map<ScoredSustainabilityDimension, Long>> retrieveProductCountsAbove(ReactivePersistenceContext em, HasUserId userId, double normalisedScore) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createTupleQuery();
 		var product = q.from(PurchasedBasketProductEntity.class);
@@ -67,7 +67,7 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 		scoreColumns().forEach((dimension, column) -> counts.put(dimension, cb.count(cb.<UUID>selectCase().when(cb.gt(product.get(column), normalisedScore), basketId))));
 		var basketsOfTheUser = q.subquery(UUID.class);
 		var basket = basketsOfTheUser.from(PurchasedBasketEntity.class);
-		basketsOfTheUser.select(basket.get(PurchasedBasketEntity_.id)).where(cb.equal(basket.get(PurchasedBasketEntity_.userProfileId), userId.asUuid()));
+		basketsOfTheUser.select(basket.get(PurchasedBasketEntity_.id)).where(cb.equal(basket.get(PurchasedBasketEntity_.userProfileId), userId.getId().asUuid()));
 		q.select(cb.tuple(counts.values().toArray(Selection<?>[]::new)));
 		q.where(basketId.in(basketsOfTheUser));
 		return em.createQuery(q).getSingleResult().map(row -> {
@@ -78,12 +78,12 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 	}
 
 	@Override
-	public Uni<Set<Badge>> findBadges(ReactivePersistenceContext em, UserId userId) {
+	public Uni<Set<Badge>> findBadges(ReactivePersistenceContext em, HasUserId userId) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createQuery(Badge.class);
 		var userBadge = q.from(UserBadgeEntity.class);
 		q.select(userBadge.get(UserBadgeEntity_.badge));
-		q.where(cb.equal(userBadge.get(UserBadgeEntity_.userProfileId), userId.asUuid()));
+		q.where(cb.equal(userBadge.get(UserBadgeEntity_.userProfileId), userId.getId().asUuid()));
 		return em.createQuery(q).getResultList().map(Set::copyOf);
 	}
 

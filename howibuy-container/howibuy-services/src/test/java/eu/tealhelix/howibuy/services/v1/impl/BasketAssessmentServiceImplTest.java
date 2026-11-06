@@ -1,5 +1,6 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
+import static eu.tealhelix.common.v1.types.UserIdTestUtils.matchesHasUserId;
 import static eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.impacts;
 import static eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.personalProfileOnEnvironment;
 import static eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.productId;
@@ -331,9 +332,9 @@ class BasketAssessmentServiceImplTest {
 		assertEquals(STREAK + 1, outcome.getStreak(), "the Streak includes this basket");
 		var order = inOrder(purchasedBasketDao, userProfileDao);
 		order.verify(purchasedBasketDao).store(any(), any());
-		order.verify(userProfileDao).addXp(any(), eq(USER.getId()), eq(10));
-		order.verify(userProfileDao).increaseStreak(any(), eq(USER.getId()));
-		order.verify(userProfileDao).requireXpAndStreak(any(), eq(USER.getId()));
+		order.verify(userProfileDao).addXp(any(), matchesHasUserId(USER), eq(10));
+		order.verify(userProfileDao).increaseStreak(any(), matchesHasUserId(USER));
+		order.verify(userProfileDao).requireXpAndStreak(any(), matchesHasUserId(USER));
 	}
 
 	@Test
@@ -361,9 +362,9 @@ class BasketAssessmentServiceImplTest {
 		purchase(null, List.of(GOOD));
 
 		var order = inOrder(userProfileDao, purchasedBasketDao);
-		order.verify(userProfileDao).lock(any(), eq(USER.getId()));
-		order.verify(purchasedBasketDao).retrieveProductCountsAbove(any(), eq(USER.getId()), eq(0.8));
-		order.verify(purchasedBasketDao).findBadges(any(), eq(USER.getId()));
+		order.verify(userProfileDao).lock(any(), matchesHasUserId(USER));
+		order.verify(purchasedBasketDao).retrieveProductCountsAbove(any(), matchesHasUserId(USER), eq(0.8));
+		order.verify(purchasedBasketDao).findBadges(any(), matchesHasUserId(USER));
 		order.verify(purchasedBasketDao).store(any(), any());
 	}
 
@@ -377,7 +378,7 @@ class BasketAssessmentServiceImplTest {
 
 		assertEquals(StreakEffect.RESET, outcome.getStreakEffect());
 		assertEquals(0, outcome.getStreak());
-		verify(userProfileDao).resetStreak(any(), eq(USER.getId()));
+		verify(userProfileDao).resetStreak(any(), matchesHasUserId(USER));
 	}
 
 	@Test
@@ -455,7 +456,7 @@ class BasketAssessmentServiceImplTest {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
 		when(dateTimeService.getNow()).thenReturn(NOW);
-		when(userProfileDao.lock(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
+		when(userProfileDao.lock(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().voidItem());
 		when(catalogueDao.findRetailers(any(), eq(Set.of(CATALOGUE)))).thenReturn(Uni.createFrom().item(Map.of()));
 
 		var failure = sut.assessPurchasedBasket(USER, CATALOGUE, null, List.of(GOOD), LANGUAGE)
@@ -465,7 +466,7 @@ class BasketAssessmentServiceImplTest {
 
 		assertInstanceOf(NotFoundException.class, failure);
 		verifyNoInteractions(purchasedBasketDao);
-		verify(userProfileDao).lock(any(), eq(USER.getId()));
+		verify(userProfileDao).lock(any(), matchesHasUserId(USER));
 		verifyNoMoreInteractions(userProfileDao);
 	}
 
@@ -504,17 +505,17 @@ class BasketAssessmentServiceImplTest {
 	 */
 	private void givenThePurchaseIsStored(int xpValue, StreakEffect streakEffect, int streakAfter, Map<ScoredSustainabilityDimension, Long> storedCounts, Set<Badge> held) {
 		when(dateTimeService.getNow()).thenReturn(NOW);
-		when(userProfileDao.lock(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
+		when(userProfileDao.lock(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().voidItem());
 		givenTheBadgeStanding(storedCounts, held);
 		when(catalogueDao.findRetailers(any(), eq(Set.of(CATALOGUE)))).thenReturn(Uni.createFrom().item(Map.of(CATALOGUE, RETAILER)));
 		when(purchasedBasketDao.store(any(), storedBasket.capture())).thenReturn(Uni.createFrom().voidItem());
-		when(userProfileDao.addXp(any(), eq(USER.getId()), eq(xpValue))).thenReturn(Uni.createFrom().voidItem());
+		when(userProfileDao.addXp(any(), matchesHasUserId(USER), eq(xpValue))).thenReturn(Uni.createFrom().voidItem());
 		switch (streakEffect) {
-			case EXTEND -> when(userProfileDao.increaseStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
-			case RESET -> when(userProfileDao.resetStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
+			case EXTEND -> when(userProfileDao.increaseStreak(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().voidItem());
+			case RESET -> when(userProfileDao.resetStreak(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().voidItem());
 			case NONE -> { }
 		}
-		when(userProfileDao.requireXpAndStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(xpAndStreak(TOTAL_XP + xpValue, streakAfter)));
+		when(userProfileDao.requireXpAndStreak(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().item(xpAndStreak(TOTAL_XP + xpValue, streakAfter)));
 	}
 
 	private void givenScientificWeightsWithoutAnAttempt() {
@@ -562,7 +563,7 @@ class BasketAssessmentServiceImplTest {
 	 * The user's XP total and Streak, and what they have towards the badges.
 	 */
 	private void givenTheUsersStanding(Map<ScoredSustainabilityDimension, Long> storedCounts, Set<Badge> held) {
-		when(userProfileDao.requireXpAndStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(xpAndStreak(TOTAL_XP, STREAK)));
+		when(userProfileDao.requireXpAndStreak(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().item(xpAndStreak(TOTAL_XP, STREAK)));
 		givenTheBadgeStanding(storedCounts, held);
 	}
 
@@ -570,8 +571,8 @@ class BasketAssessmentServiceImplTest {
 	 * The user's stored products above 0.8 per dimension, and the badges they hold.
 	 */
 	private void givenTheBadgeStanding(Map<ScoredSustainabilityDimension, Long> storedCounts, Set<Badge> held) {
-		when(purchasedBasketDao.retrieveProductCountsAbove(any(), eq(USER.getId()), eq(0.8))).thenReturn(Uni.createFrom().item(storedCounts));
-		when(purchasedBasketDao.findBadges(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(held));
+		when(purchasedBasketDao.retrieveProductCountsAbove(any(), matchesHasUserId(USER), eq(0.8))).thenReturn(Uni.createFrom().item(storedCounts));
+		when(purchasedBasketDao.findBadges(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().item(held));
 	}
 
 	private static Map<ScoredSustainabilityDimension, Long> counts(long environment, long animalWelfare, long socioEconomic, long health) {

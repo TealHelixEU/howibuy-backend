@@ -20,6 +20,7 @@ import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
+import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
@@ -68,10 +69,10 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	}
 
 	@Override
-	public Uni<User> requireById(ReactivePersistenceContext em, UserId userId, String name) {
+	public Uni<User> requireById(ReactivePersistenceContext em, HasUserId userId, String name) {
 		Objects.requireNonNull(userId);
-		return em.find(UserProfileEntity.class, userId.asUuid())
-				.onItem().ifNull().failWith(() -> new NotFoundException(userId))
+		return em.find(UserProfileEntity.class, userId.getId().asUuid())
+				.onItem().ifNull().failWith(() -> new NotFoundException(userId.getId()))
 				.map(profile -> toUser(profile, name));
 	}
 
@@ -79,39 +80,39 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	 * Reads the columns themselves rather than the entity, which the session may hold from before an update.
 	 */
 	@Override
-	public Uni<XpAndStreak> requireXpAndStreak(ReactivePersistenceContext em, UserId userId) {
+	public Uni<XpAndStreak> requireXpAndStreak(ReactivePersistenceContext em, HasUserId userId) {
 		var cb = em.getCriteriaBuilder();
 		var q = cb.createTupleQuery();
 		var profile = q.from(UserProfileEntity.class);
 		var xpTotal = profile.get(UserProfileEntity_.xpTotal);
 		var streak = profile.get(UserProfileEntity_.streak);
 		q.select(cb.tuple(xpTotal, streak));
-		q.where(cb.equal(profile.get(UserProfileEntity_.id), userId.asUuid()));
+		q.where(cb.equal(profile.get(UserProfileEntity_.id), userId.getId().asUuid()));
 		return em.createQuery(q).getSingleOptionalResult()
 				.map(row -> row
 						.map(tuple -> (XpAndStreak) ImmutableXpAndStreak.builder().xpTotal(tuple.get(xpTotal)).streak(tuple.get(streak)).build())
-						.orElseThrow(() -> new NotFoundException(userId)));
+						.orElseThrow(() -> new NotFoundException(userId.getId())));
 	}
 
 	@Override
-	public Uni<Void> addXp(ReactivePersistenceTxContext tx, UserId userId, int xp) {
+	public Uni<Void> addXp(ReactivePersistenceTxContext tx, HasUserId userId, int xp) {
 		return updateColumn(tx, userId, UserProfileEntity_.xpTotal, (cb, xpTotal) -> cb.sum(xpTotal, xp));
 	}
 
 	@Override
-	public Uni<Void> increaseStreak(ReactivePersistenceTxContext tx, UserId userId) {
+	public Uni<Void> increaseStreak(ReactivePersistenceTxContext tx, HasUserId userId) {
 		return updateColumn(tx, userId, UserProfileEntity_.streak, (cb, streak) -> cb.sum(streak, 1));
 	}
 
 	@Override
-	public Uni<Void> resetStreak(ReactivePersistenceTxContext tx, UserId userId) {
+	public Uni<Void> resetStreak(ReactivePersistenceTxContext tx, HasUserId userId) {
 		return updateColumn(tx, userId, UserProfileEntity_.streak, (cb, _) -> cb.literal(0));
 	}
 
 	@Override
-	public Uni<Void> lock(ReactivePersistenceTxContext tx, UserId userId) {
-		return tx.find(UserProfileEntity.class, userId.asUuid(), PESSIMISTIC_WRITE)
-				.onItem().ifNull().failWith(() -> new NotFoundException(userId))
+	public Uni<Void> lock(ReactivePersistenceTxContext tx, HasUserId userId) {
+		return tx.find(UserProfileEntity.class, userId.getId().asUuid(), PESSIMISTIC_WRITE)
+				.onItem().ifNull().failWith(() -> new NotFoundException(userId.getId()))
 				.replaceWithVoid();
 	}
 
@@ -124,7 +125,7 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	 */
 	private static Uni<Void> updateColumn(
 			ReactivePersistenceTxContext tx,
-			UserId userId,
+			HasUserId userId,
 			SingularAttribute<UserProfileEntity, Integer> column,
 			BiFunction<CriteriaBuilder, Expression<Integer>, Expression<Integer>> newValue
 	) {
@@ -132,9 +133,9 @@ public class UserProfileDaoImpl implements UserProfileDao {
 		var u = cb.createCriteriaUpdate(UserProfileEntity.class);
 		var profile = u.from(UserProfileEntity.class);
 		u.set(profile.get(column), newValue.apply(cb, profile.get(column)));
-		u.where(cb.equal(profile.get(UserProfileEntity_.id), userId.asUuid()));
+		u.where(cb.equal(profile.get(UserProfileEntity_.id), userId.getId().asUuid()));
 		return tx.createUpdate(u).execute().invoke(updated -> {
-			if (updated == 0) throw new NotFoundException(userId);
+			if (updated == 0) throw new NotFoundException(userId.getId());
 		}).replaceWithVoid();
 	}
 
