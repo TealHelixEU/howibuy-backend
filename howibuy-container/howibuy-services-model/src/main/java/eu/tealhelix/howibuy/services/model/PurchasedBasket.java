@@ -9,7 +9,7 @@ import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import org.immutables.value.Value;
 
 /**
@@ -37,10 +37,10 @@ public interface PurchasedBasket {
 	BasketAssessmentOutcomeType getType();
 
 	/**
-	 * The Basket Grade, {@code null} when there was nothing to assess.
+	 * The Basket Match, {@code null} when there was nothing to assess.
 	 */
 	@Nullable
-	BasketGrade getBasketGrade();
+	BasketMatch getBasketMatch();
 
 	/**
 	 * The XP the basket earned, 0 when there was nothing to assess.

@@ -1,101 +1,117 @@
 package eu.tealhelix.howibuy.services.v1.basket;
 
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.function.ToDoubleFunction;
 
 import eu.tealhelix.catalogue.v1.types.ProductKey;
-import eu.tealhelix.common.types.Nullable;
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
-import eu.tealhelix.howibuy.v1.types.ProductGrade;
+import eu.tealhelix.howibuy.services.v1.basket.types.BasketVerdict;
+import eu.tealhelix.howibuy.services.v1.basket.types.ScoredBasketProduct;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 
 /**
- * The rules that judge a basket from the Overall Scores of its scored products: the {@link ProductGrade} of each, the
- * {@link BasketGrade}, the XP the basket earns and its Problematic Products.
+ * The rules that judge a basket from the two Overall Scores of each of its scored products: the scientific one decides
+ * the XP the basket earns and its Problematic Products, the personal one its {@link BasketMatch}.
  * <p>
- * The Basket Grade and XP rules are stubs until the real rules are specified: the Basket Grade is the worst Product
- * Grade, and every product earns XP by its grade alone.
+ * The rules and their numbers are WP5.3's, from {@code TH WP5.3 GAMIFICATION FORMULAS.xlsx}. Every comparison is strict:
+ * a score exactly at a threshold is not above it. The thresholds of the averages are kept apart from each other and
+ * from the one of a product, even where their values coincide, since WP5.3 may set each on its own.
  */
 public final class BasketRules {
 	/**
-	 * The lowest Overall Score of a product graded {@link ProductGrade#A}.
+	 * The scientific Overall Score above which a product earns XP; a product at or below it is a Problematic Product.
 	 */
-	static final double GRADE_A_MIN_SCORE = 0.8;
+	private static final double PROBLEMATIC_PRODUCT_THRESHOLD = 0.8;
 	/**
-	 * The lowest Overall Score of a product graded {@link ProductGrade#B}.
+	 * The XP of every product that is not a Problematic Product.
 	 */
-	static final double GRADE_B_MIN_SCORE = 0.6;
-
+	private static final int PRODUCT_XP = 10;
 	/**
-	 * A product of a basket that has an Overall Score under the Weighting Profile in force.
+	 * The fewest scored products of a basket that earns a bonus.
 	 */
-	public record ScoredBasketProduct(ProductKey productKey, double overallScore) {
-	}
-
+	private static final int BONUS_MIN_PRODUCTS = 5;
 	/**
-	 * What the rules say about a basket.
-	 *
-	 * @param productGrades          the grade of every scored product
-	 * @param basketGrade            the grade of the basket, {@code null} when it has no scored product
-	 * @param xpValue                the XP the basket earns
-	 * @param problematicProductKeys the products graded below {@link ProductGrade#A}, lowest Overall Score first
+	 * The average scientific Overall Score above which a basket earns the {@link #HIGH_BONUS_XP}.
 	 */
-	public record BasketVerdict(
-			Map<ProductKey, ProductGrade> productGrades,
-			@Nullable BasketGrade basketGrade,
-			int xpValue,
-			List<ProductKey> problematicProductKeys) {
-	}
-
-	public ProductGrade gradeOf(double overallScore) {
-		if (overallScore >= GRADE_A_MIN_SCORE) {
-			return ProductGrade.A;
-		} else if (overallScore >= GRADE_B_MIN_SCORE) {
-			return ProductGrade.B;
-		} else {
-			return ProductGrade.C;
-		}
-	}
+	private static final double HIGH_BONUS_THRESHOLD = 0.8;
+	private static final int HIGH_BONUS_XP = 150;
+	/**
+	 * The average scientific Overall Score above which a basket that does not earn the {@link #HIGH_BONUS_XP} earns the
+	 * {@link #LOW_BONUS_XP}.
+	 */
+	private static final double LOW_BONUS_THRESHOLD = 0.6;
+	private static final int LOW_BONUS_XP = 50;
+	/**
+	 * The average personal Overall Score above which a basket is an {@link BasketMatch#EXCELLENT} match.
+	 */
+	private static final double EXCELLENT_MATCH_THRESHOLD = 0.8;
+	/**
+	 * The average personal Overall Score above which a basket that is not an excellent match is a
+	 * {@link BasketMatch#GOOD} one.
+	 */
+	private static final double GOOD_MATCH_THRESHOLD = 0.6;
 
 	/**
 	 * Judge a basket of distinct products.
 	 */
 	public BasketVerdict judge(List<ScoredBasketProduct> products) {
-		var productGrades = new LinkedHashMap<ProductKey, ProductGrade>();
-		products.forEach(product -> productGrades.put(product.productKey(), gradeOf(product.overallScore())));
-		var problematicProductKeys = products.stream()
-				.filter(product -> productGrades.get(product.productKey()) != ProductGrade.A)
-				.sorted(Comparator.comparingDouble(ScoredBasketProduct::overallScore))
-				.map(ScoredBasketProduct::productKey)
-				.toList();
-		return new BasketVerdict(
-				productGrades,
-				basketGradeOf(productGrades.values()),
-				productGrades.values().stream().mapToInt(BasketRules::xpOf).sum(),
-				problematicProductKeys);
+		if (products.isEmpty()) {
+			return new BasketVerdict(null, 0, List.of());
+		} else {
+			return new BasketVerdict(
+					matchOf(average(products, ScoredBasketProduct::personalOverallScore)),
+					productXp(products) + bonusXp(products),
+					problematicProductKeys(products));
+		}
 	}
 
 	/**
-	 * The worst of the grades, {@code null} for none.
+	 * Whether a product of this scientific Overall Score is a Problematic Product.
 	 */
-	private static @Nullable BasketGrade basketGradeOf(Collection<ProductGrade> productGrades) {
-		return productGrades.stream()
-				.max(Comparator.naturalOrder())
-				.map(worst -> switch (worst) {
-					case A -> BasketGrade.A;
-					case B -> BasketGrade.B;
-					case C -> BasketGrade.C;
-				})
-				.orElse(null);
+	public boolean isProblematic(double scientificOverallScore) {
+		return scientificOverallScore <= PROBLEMATIC_PRODUCT_THRESHOLD;
 	}
 
-	private static int xpOf(ProductGrade productGrade) {
-		return switch (productGrade) {
-			case A -> 3;
-			case B -> 1;
-			case C -> 0;
-		};
+	/**
+	 * The Basket Match of a basket of this average personal Overall Score.
+	 */
+	public BasketMatch matchOf(double averagePersonalOverallScore) {
+		if (averagePersonalOverallScore > EXCELLENT_MATCH_THRESHOLD) {
+			return BasketMatch.EXCELLENT;
+		} else if (averagePersonalOverallScore > GOOD_MATCH_THRESHOLD) {
+			return BasketMatch.GOOD;
+		} else {
+			return BasketMatch.NEEDS_IMPROVEMENT;
+		}
+	}
+
+	private int productXp(List<ScoredBasketProduct> products) {
+		return PRODUCT_XP * (int) products.stream().filter(product -> !isProblematic(product.scientificOverallScore())).count();
+	}
+
+	private static int bonusXp(List<ScoredBasketProduct> products) {
+		if (products.size() < BONUS_MIN_PRODUCTS) {
+			return 0;
+		}
+		var averageScientificOverallScore = average(products, ScoredBasketProduct::scientificOverallScore);
+		if (averageScientificOverallScore > HIGH_BONUS_THRESHOLD) {
+			return HIGH_BONUS_XP;
+		} else if (averageScientificOverallScore > LOW_BONUS_THRESHOLD) {
+			return LOW_BONUS_XP;
+		} else {
+			return 0;
+		}
+	}
+
+	private List<ProductKey> problematicProductKeys(List<ScoredBasketProduct> products) {
+		return products.stream()
+				.filter(product -> isProblematic(product.scientificOverallScore()))
+				.sorted(Comparator.comparingDouble(ScoredBasketProduct::scientificOverallScore))
+				.map(ScoredBasketProduct::productKey)
+				.toList();
+	}
+
+	private static double average(List<ScoredBasketProduct> products, ToDoubleFunction<ScoredBasketProduct> overallScore) {
+		return products.stream().mapToDouble(overallScore).average().orElseThrow();
 	}
 }

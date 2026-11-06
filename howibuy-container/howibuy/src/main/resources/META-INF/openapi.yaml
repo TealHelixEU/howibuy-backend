@@ -165,39 +165,47 @@ components:
 
     BasketAssessmentOutcome:
       description: >-
-        What the assessment made of a basket as a whole: its grade, the products that pull it down and the experience
-        points it earns. Only the products that can be judged count; nothing is answered per product.
+        What the assessment made of a basket as a whole: how well it matches the user's own priorities, the products
+        that keep it from being sustainable and the experience points it earns. Only the products that can be judged
+        count; nothing is answered per product.
       properties:
         type:
-          description: Whether any product of the basket could be judged. The grade and its label are carried only when one could.
-        basketGrade:
-          description: The grade of the basket. Missing when there was nothing to assess.
-        basketGradeLabel:
+          description: Whether any product of the basket could be judged. The match and its label are carried only when one could.
+        basketMatch:
           description: >-
-            The grade put in words for the user, in the language asked for, or in English when it has no translation
+            How well the basket matches the user's own priorities, judged on the overall scores of its products under
+            the user's own weighting of the sustainability dimensions, as their compass records it (the scientific one
+            until they complete it): an average above 0.8 is `EXCELLENT`, above 0.6 `GOOD`, otherwise
+            `NEEDS_IMPROVEMENT`. Missing when there was nothing to assess.
+        basketMatchLabel:
+          description: >-
+            The match put in words for the user, in the language asked for, or in English when it has no translation
             there. Missing when there was nothing to assess.
         intervention:
           description: A message to the user about the basket, in the language asked for. Missing when there is none.
         problematicProductKeys:
           description: >-
-            The keys of the products graded below the best grade, lowest score first. Empty when there was nothing to
-            assess.
+            The keys of the products whose overall score under the scientific weighting is 0.8 or less, lowest score
+            first. Empty when there was nothing to assess.
         totalXp:
           description: The experience points the user has earned so far, from the baskets they purchased.
         xpValue:
-          description: The experience points this basket earns. 0 when there was nothing to assess.
+          description: >-
+            The experience points this basket earns, on the overall scores of its products under the scientific
+            weighting, the same for every user: 10 for every product above 0.8, and a bonus when at least 5 of its
+            products can be judged, 150 when their average is above 0.8, otherwise 50 when it is above 0.6. 0 when there
+            was nothing to assess.
 
     BasketAssessmentOutcomeType:
       description: >-
         Whether a basket could be judged. `ASSESSED` — at least one of its products has an overall score, so the basket
-        has a grade. `NOTHING_TO_ASSESS` — none has, e.g. the basket is empty or holds only products that are unknown,
-        not classified, match no archetype or have no Nutri-Score; the basket has no grade and earns nothing.
+        has a match. `NOTHING_TO_ASSESS` — none has, e.g. the basket is empty or holds only products that are unknown,
+        not classified, match no archetype or have no Nutri-Score; the basket has no match and earns nothing.
 
-    BasketGrade:
+    BasketMatch:
       description: >-
-        The grade of a basket, from the sustainability of the products in it. `A` — the basket is good enough, and no
-        meaningful suggestion can be made. `B` — it has some issues. `C` — it has many, and the user is strongly
-        advised to improve it.
+        How well a basket matches the user's own priorities: `EXCELLENT`, `GOOD` or `NEEDS_IMPROVEMENT`, the last
+        advising the user to improve it. What a user is shown is the label delivered with it, not these names.
 
     ArchetypeProductId:
       description: >-

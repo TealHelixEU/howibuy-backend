@@ -29,7 +29,7 @@ public interface BasketAssessmentService {
 	 * @param purchasedAt When the user bought it; {@code null} for the time of this call. It may run ahead of the clock of
 	 *                    this application by a few minutes at most
 	 * @param productKeys The products of the basket
-	 * @param language    The language of the Basket Grade label
+	 * @param language    The language of the Basket Match label
 	 * @return The outcome, whose total XP includes this basket; a failure with {@code BadInputValueException} for a
 	 *         purchase time in the future
 	 */

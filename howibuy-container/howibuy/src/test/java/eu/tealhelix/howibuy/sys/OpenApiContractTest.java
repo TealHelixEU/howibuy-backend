@@ -186,7 +186,6 @@ public class OpenApiContractTest {
 				.when().get("/api/howibuy/v1/openapi")
 				.then()
 				.statusCode(200)
-				.body("info.version", equalTo("0.3.0"))
 				.body("components.schemas.ProductAssessmentOutcome.properties.keySet()", equalTo(Set.of(
 						"productKey", "type", "failureReason", "recommendation", "referenceOverallScore", "alternatives", "diagnostics")))
 				.body("components.schemas.ProductAssessmentOutcome.properties.recommendation.'$ref'",
@@ -224,14 +223,16 @@ public class OpenApiContractTest {
 	}
 
 	/**
-	 * A basket is assessed by the keys of its products and the language of the grade's label, the Catalogue coming from
-	 * the token. The outcome says whether there was anything to assess, and grades the basket as a whole: no product is
-	 * answered on its own.
+	 * A basket is assessed by the keys of its products and the language of the Basket Match's label, the Catalogue
+	 * coming from the token. The outcome says whether there was anything to assess, and judges the basket as a whole: no
+	 * product is answered on its own. This shape is the contract's version 0.4.0.
 	 */
 	@Test
 	void documentsTheBasketAssessment() {
 		var document = openApiDocument();
 		var assess = operation(document, "post", "/api/howibuy/v1/assessment/basket");
+
+		assertEquals("0.4.0", document.getString("info.version"));
 
 		assertEquals("#/components/schemas/BasketAssessmentRequest",
 				at(assess, "requestBody", "content", "application/json", "schema", "$ref"),
@@ -240,9 +241,10 @@ public class OpenApiContractTest {
 		assertEquals("#/components/schemas/BasketAssessmentOutcome",
 				at(assess, "responses", "200", "content", "application/json", "schema", "$ref"));
 		var outcome = at(schemas(document), "BasketAssessmentOutcome", "properties");
-		assertEquals(Set.of("type", "basketGrade", "basketGradeLabel", "intervention", "problematicProductKeys", "totalXp", "xpValue"), ((Map<?, ?>) outcome).keySet());
+		assertEquals(Set.of("type", "basketMatch", "basketMatchLabel", "intervention", "problematicProductKeys", "totalXp", "xpValue"), ((Map<?, ?>) outcome).keySet());
 		assertEquals(List.of("ASSESSED", "NOTHING_TO_ASSESS"), at(schemas(document), "BasketAssessmentOutcomeType", "enum"));
-		assertEquals(List.of("A", "B", "C"), at(schemas(document), "BasketGrade", "enum"));
+		assertEquals(List.of("EXCELLENT", "GOOD", "NEEDS_IMPROVEMENT"), at(schemas(document), "BasketMatch", "enum"));
+		assertNull(at(schemas(document), "BasketGrade"));
 		for (var status : List.of("400", "401", "403")) {
 			assertNotNull(at(assess, "responses", status, "description"), "a refused basket is documented, status: " + status);
 		}

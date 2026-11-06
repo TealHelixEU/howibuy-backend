@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="purchased_basket_product_personal_overall_score" author="nikospara">
+		<renameColumn tableName="TH_PURCHASED_BASKET_PRODUCT" oldColumnName="overall_score" newColumnName="personal_overall_score" />
+		<setColumnRemarks tableName="TH_PURCHASED_BASKET_PRODUCT" columnName="personal_overall_score" remarks="The Overall Score under the Weighting Profile in force for the user, which the Basket Match is judged on" />
+		<rollback>
+			<setColumnRemarks tableName="TH_PURCHASED_BASKET_PRODUCT" columnName="personal_overall_score" remarks="The Overall Score under the Weighting Profile in force" />
+			<renameColumn tableName="TH_PURCHASED_BASKET_PRODUCT" oldColumnName="personal_overall_score" newColumnName="overall_score" />
+		</rollback>
+	</changeSet>
+
+	<!--
+		No default: the baskets stored under the stub rules are deleted by hand before this runs, and a database that still
+		holds some fails here rather than keep a score that was never computed.
+	-->
+	<changeSet id="purchased_basket_product_scientific_overall_score" author="nikospara">
+		<addColumn tableName="TH_PURCHASED_BASKET_PRODUCT">
+			<column name="scientific_overall_score" type="DOUBLE PRECISION" remarks="The Overall Score under the scientific Weighting Profile, which the XP and the Problematic Products are judged on">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__SCIENTIFIC_OVERALL_SCORE" />
+			</column>
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="purchased_basket_product_drop_product_grade" author="nikospara">
+		<dropColumn tableName="TH_PURCHASED_BASKET_PRODUCT" columnName="product_grade" />
+		<rollback>
+			<addColumn tableName="TH_PURCHASED_BASKET_PRODUCT">
+				<column name="product_grade" type="VARCHAR(1)" remarks="The Product Grade, A, B or C">
+					<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET_PRODUCT__PRODUCT_GRADE" />
+				</column>
+			</addColumn>
+		</rollback>
+	</changeSet>
+
+	<changeSet id="purchased_basket_drop_basket_grade" author="nikospara">
+		<dropColumn tableName="TH_PURCHASED_BASKET" columnName="basket_grade" />
+		<rollback>
+			<addColumn tableName="TH_PURCHASED_BASKET">
+				<column name="basket_grade" type="VARCHAR(1)" remarks="The Basket Grade, A, B or C; null when there was nothing to assess" />
+			</addColumn>
+		</rollback>
+	</changeSet>
+
+	<changeSet id="purchased_basket_basket_match" author="nikospara">
+		<addColumn tableName="TH_PURCHASED_BASKET">
+			<column name="basket_match" type="VARCHAR(20)" remarks="The Basket Match, EXCELLENT, GOOD or NEEDS_IMPROVEMENT; null when there was nothing to assess" />
+		</addColumn>
+	</changeSet>
+</databaseChangeLog>

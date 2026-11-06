@@ -32,8 +32,7 @@ import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasket;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
-import eu.tealhelix.howibuy.v1.types.ProductGrade;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.impl.ArchetypeProductIdImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -94,14 +93,14 @@ public class PurchasedBasketDaoImplTest {
 	@Test
 	void storesTheBasketWithItsProducts(Mutiny.SessionFactory sessionFactory) throws SQLException {
 		var sut = new PurchasedBasketDaoImpl();
-		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketGrade.B, 4, ATTEMPT, List.of(
-				product("milk-1", MILK, 0.85, ProductGrade.A, 0.9, 0.8, 0.7, 0.95),
-				product("chips-2", CHIPS, 0.65, ProductGrade.B, 0.6, 0.5, 0.75, 0.4)));
+		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.GOOD, 10, ATTEMPT, List.of(
+				product("milk-1", MILK, 0.85, 0.83, 0.9, 0.8, 0.7, 0.95),
+				product("chips-2", CHIPS, 0.65, 0.55, 0.6, 0.5, 0.75, 0.4)));
 
 		new ReactivePersistenceContextFactoryImpl(sessionFactory).withTransaction(tx -> sut.store(tx, basket))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		var baskets = rows("SELECT id, user_profile_id, retailer_id, catalogue_id, purchased_at, recorded_at, outcome_type, basket_grade, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET");
+		var baskets = rows("SELECT id, user_profile_id, retailer_id, catalogue_id, purchased_at, recorded_at, outcome_type, basket_match, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET");
 		assertEquals(1, baskets.size());
 		var stored = baskets.getFirst();
 		assertEquals(USER, stored.get("user_profile_id"));
@@ -110,18 +109,18 @@ public class PurchasedBasketDaoImplTest {
 		assertEquals(PURCHASED_AT, stored.get("purchased_at"));
 		assertEquals(RECORDED_AT, stored.get("recorded_at"));
 		assertEquals("ASSESSED", stored.get("outcome_type"));
-		assertEquals("B", stored.get("basket_grade"));
-		assertEquals(4, stored.get("xp_value"));
+		assertEquals("GOOD", stored.get("basket_match"));
+		assertEquals(10, stored.get("xp_value"));
 		assertEquals(ATTEMPT, stored.get("compass_attempt_id"));
 
-		var products = rows("SELECT purchased_basket_id, product_key, archetype_product_id, overall_score, product_grade, score_environment, score_animal_welfare, score_socio_economic, score_health FROM TH_PURCHASED_BASKET_PRODUCT ORDER BY product_key");
+		var products = rows("SELECT purchased_basket_id, product_key, archetype_product_id, personal_overall_score, scientific_overall_score, score_environment, score_animal_welfare, score_socio_economic, score_health FROM TH_PURCHASED_BASKET_PRODUCT ORDER BY product_key");
 		assertEquals(2, products.size());
 		var chips = products.get(0);
 		assertEquals(stored.get("id"), chips.get("purchased_basket_id"));
 		assertEquals("chips-2", chips.get("product_key"));
 		assertEquals(CHIPS, chips.get("archetype_product_id"));
-		assertEquals(0.65, chips.get("overall_score"));
-		assertEquals("B", chips.get("product_grade"));
+		assertEquals(0.65, chips.get("personal_overall_score"));
+		assertEquals(0.55, chips.get("scientific_overall_score"));
 		assertEquals(0.6, chips.get("score_environment"));
 		assertEquals(0.5, chips.get("score_animal_welfare"));
 		assertEquals(0.75, chips.get("score_socio_economic"));
@@ -130,8 +129,8 @@ public class PurchasedBasketDaoImplTest {
 		assertEquals(stored.get("id"), milk.get("purchased_basket_id"));
 		assertEquals("milk-1", milk.get("product_key"));
 		assertEquals(MILK, milk.get("archetype_product_id"));
-		assertEquals(0.85, milk.get("overall_score"));
-		assertEquals("A", milk.get("product_grade"));
+		assertEquals(0.85, milk.get("personal_overall_score"));
+		assertEquals(0.83, milk.get("scientific_overall_score"));
 		assertEquals(0.9, milk.get("score_environment"));
 		assertEquals(0.8, milk.get("score_animal_welfare"));
 		assertEquals(0.7, milk.get("score_socio_economic"));
@@ -146,11 +145,11 @@ public class PurchasedBasketDaoImplTest {
 		new ReactivePersistenceContextFactoryImpl(sessionFactory).withTransaction(tx -> sut.store(tx, basket))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		var baskets = rows("SELECT outcome_type, basket_grade, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET");
+		var baskets = rows("SELECT outcome_type, basket_match, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET");
 		assertEquals(1, baskets.size());
 		var stored = baskets.getFirst();
 		assertEquals("NOTHING_TO_ASSESS", stored.get("outcome_type"));
-		assertNull(stored.get("basket_grade"));
+		assertNull(stored.get("basket_match"));
 		assertEquals(0, stored.get("xp_value"));
 		assertNull(stored.get("compass_attempt_id"));
 		assertEquals(0, rows("SELECT product_key FROM TH_PURCHASED_BASKET_PRODUCT").size());
@@ -159,7 +158,7 @@ public class PurchasedBasketDaoImplTest {
 	@Test
 	void storesEveryBasketItIsGiven(Mutiny.SessionFactory sessionFactory) throws SQLException {
 		var sut = new PurchasedBasketDaoImpl();
-		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketGrade.A, 3, null, List.of(product("milk-1", MILK, 0.85, ProductGrade.A, 0.9, 0.8, 0.7, 0.95)));
+		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.EXCELLENT, 10, null, List.of(product("milk-1", MILK, 0.85, 0.83, 0.9, 0.8, 0.7, 0.95)));
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
 
 		factory.withTransaction(tx -> sut.store(tx, basket)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
@@ -173,9 +172,9 @@ public class PurchasedBasketDaoImplTest {
 	void storesABasketAsLargeAsTheLargestAllowed(Mutiny.SessionFactory sessionFactory) throws SQLException {
 		var sut = new PurchasedBasketDaoImpl();
 		var products = IntStream.range(0, 400)
-				.mapToObj(i -> product("product-" + i, MILK, 0.85, ProductGrade.A, 0.9, 0.8, 0.7, 0.95))
+				.mapToObj(i -> product("product-" + i, MILK, 0.85, 0.83, 0.9, 0.8, 0.7, 0.95))
 				.toList();
-		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketGrade.A, 1200, ATTEMPT, products);
+		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.EXCELLENT, 4150, ATTEMPT, products);
 
 		new ReactivePersistenceContextFactoryImpl(sessionFactory).withTransaction(tx -> sut.store(tx, basket))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
@@ -187,7 +186,7 @@ public class PurchasedBasketDaoImplTest {
 	void storesTheBasketAndAddsItsXpInOneTransaction(Mutiny.SessionFactory sessionFactory) throws SQLException {
 		var sut = new PurchasedBasketDaoImpl();
 		var userProfileDao = new UserProfileDaoImpl();
-		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketGrade.A, 3, null, List.of(product("milk-1", MILK, 0.85, ProductGrade.A, 0.9, 0.8, 0.7, 0.95)));
+		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.EXCELLENT, 10, null, List.of(product("milk-1", MILK, 0.85, 0.83, 0.9, 0.8, 0.7, 0.95)));
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
 		Integer totalBefore = factory.withoutTransaction(em -> userProfileDao.requireXpTotal(em, userId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
@@ -196,7 +195,7 @@ public class PurchasedBasketDaoImplTest {
 						.chain(() -> userProfileDao.requireXpTotal(tx, userId())))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		assertEquals(totalBefore + 3, totalAfter);
+		assertEquals(totalBefore + 10, totalAfter);
 		assertEquals(1, rows("SELECT id FROM TH_PURCHASED_BASKET").size());
 	}
 
@@ -204,7 +203,7 @@ public class PurchasedBasketDaoImplTest {
 		return new UserIdImpl(USER.toString());
 	}
 
-	private static PurchasedBasket basket(BasketAssessmentOutcomeType type, BasketGrade grade, int xpValue, UUID attemptId, List<PurchasedBasketProduct> products) {
+	private static PurchasedBasket basket(BasketAssessmentOutcomeType type, BasketMatch match, int xpValue, UUID attemptId, List<PurchasedBasketProduct> products) {
 		return ImmutablePurchasedBasket.builder()
 				.userId(userId())
 				.retailerId(new GenericRetailerId(RETAILER.toString()))
@@ -212,19 +211,19 @@ public class PurchasedBasketDaoImplTest {
 				.purchasedAt(PURCHASED_AT)
 				.recordedAt(RECORDED_AT)
 				.type(type)
-				.basketGrade(grade)
+				.basketMatch(match)
 				.xpValue(xpValue)
 				.compassAttemptId(attemptId)
 				.products(products)
 				.build();
 	}
 
-	private static PurchasedBasketProduct product(String key, UUID archetypeId, double overallScore, ProductGrade grade, double environment, double animalWelfare, double socioEconomic, double health) {
+	private static PurchasedBasketProduct product(String key, UUID archetypeId, double personalOverallScore, double scientificOverallScore, double environment, double animalWelfare, double socioEconomic, double health) {
 		return ImmutablePurchasedBasketProduct.builder()
 				.productKey(new ProductKeyImpl(key))
 				.archetypeProductId(new ArchetypeProductIdImpl(archetypeId.toString()))
-				.overallScore(overallScore)
-				.productGrade(grade)
+				.personalOverallScore(personalOverallScore)
+				.scientificOverallScore(scientificOverallScore)
 				.normalisedScores(Map.of(
 						ScoredSustainabilityDimension.ENVIRONMENT, environment,
 						ScoredSustainabilityDimension.ANIMAL_WELFARE, animalWelfare,

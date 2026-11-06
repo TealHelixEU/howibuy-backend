@@ -2,6 +2,9 @@
 
 Status: ready-for-agent
 
+The rules and the outcome below are superseded by `../005-basket-gamification/spec.md` (API 0.4.0): the Basket Match
+replaces the Basket Grade, the Product Grade is gone, and the XP follows WP5.3's rules.
+
 Domain vocabulary follows the project glossary (`tealhelix-architecture/src/site/markdown/CONTEXT.md`, sections
 "Product Sustainability Assessment" and "Basket Assessment").
 

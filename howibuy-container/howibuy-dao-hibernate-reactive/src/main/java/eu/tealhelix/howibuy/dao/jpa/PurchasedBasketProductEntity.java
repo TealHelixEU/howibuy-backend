@@ -1,17 +1,13 @@
 package eu.tealhelix.howibuy.dao.jpa;
 
-import static jakarta.persistence.EnumType.STRING;
-
 import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 import eu.tealhelix.howibuy.dao.jpa.values.PurchasedBasketProductPK;
-import eu.tealhelix.howibuy.v1.types.ProductGrade;
 
 @Entity
 @Table(name = "TH_PURCHASED_BASKET_PRODUCT")
@@ -28,12 +24,11 @@ public class PurchasedBasketProductEntity {
 	@Column(name = "archetype_product_id")
 	private UUID archetypeProductId;
 
-	@Column(name = "overall_score")
-	private double overallScore;
+	@Column(name = "personal_overall_score")
+	private double personalOverallScore;
 
-	@Column(name = "product_grade")
-	@Enumerated(STRING)
-	private ProductGrade productGrade;
+	@Column(name = "scientific_overall_score")
+	private double scientificOverallScore;
 
 	@Column(name = "score_environment")
 	private double scoreEnvironment;
@@ -71,20 +66,20 @@ public class PurchasedBasketProductEntity {
 		this.archetypeProductId = archetypeProductId;
 	}
 
-	public double getOverallScore() {
-		return overallScore;
+	public double getPersonalOverallScore() {
+		return personalOverallScore;
 	}
 
-	public void setOverallScore(double overallScore) {
-		this.overallScore = overallScore;
+	public void setPersonalOverallScore(double personalOverallScore) {
+		this.personalOverallScore = personalOverallScore;
 	}
 
-	public ProductGrade getProductGrade() {
-		return productGrade;
+	public double getScientificOverallScore() {
+		return scientificOverallScore;
 	}
 
-	public void setProductGrade(ProductGrade productGrade) {
-		this.productGrade = productGrade;
+	public void setScientificOverallScore(double scientificOverallScore) {
+		this.scientificOverallScore = scientificOverallScore;
 	}
 
 	public double getScoreEnvironment() {

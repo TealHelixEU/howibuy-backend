@@ -55,9 +55,8 @@ import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.Branch;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.IdentificationFailureReason;
-import eu.tealhelix.howibuy.v1.types.ProductGrade;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,19 +70,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * The basket is judged by the real {@code BasketRules} over a real scored corpus, built with
- * {@link ArchetypeImpactsFixtures} so that each Overall Score falls in a known Product Grade. Every dimension holds two
- * impacts, each at two products, so every normalised score is exactly 1 or 0; for animal welfare and socio-economic
- * too, since the impacts 0 and 1, log-transformed around their median 1, become log 1 and log 2, the two ends of the
- * scale:
+ * {@link ArchetypeImpactsFixtures} so that each Overall Score is known exactly. Every dimension holds two impacts, each
+ * at two products, so every normalised score is exactly 1 or 0; for animal welfare and socio-economic too, since the
+ * impacts 0 and 1, log-transformed around their median 1, become log 1 and log 2, the two ends of the scale:
  *
  * <pre>
  *            E     AW    S     H     scientific  environment only
- * Good       1.0   1.0   1.0   1.0   1.0  (A)    1.0  (A)
- * Fair       0.0   1.0   1.0   1.0   0.75 (B)    0.0  (C)
- * Poor       0.0   0.0   0.0   0.0   0.0  (C)    0.0  (C)
- * Green      1.0   0.0   0.0   0.0   0.25 (C)    1.0  (A)
+ * Good       1.0   1.0   1.0   1.0   1.0         1.0
+ * Fair       0.0   1.0   1.0   1.0   0.75        0.0
+ * Poor       0.0   0.0   0.0   0.0   0.0         0.0
+ * Green      1.0   0.0   0.0   0.0   0.25        1.0
  * Spirits    —     —     —     —     none        none
  * </pre>
+ *
+ * Only Good is above 0.8 on the scientific Overall Score.
  */
 @ExtendWith(MockitoExtension.class)
 class BasketAssessmentServiceImplTest {
@@ -183,10 +183,10 @@ class BasketAssessmentServiceImplTest {
 		var outcome = assess(List.of(FAIR, GOOD, POOR));
 
 		assertEquals(ASSESSED, outcome.getType());
-		assertEquals(BasketGrade.C, outcome.getBasketGrade(), "the worst Product Grade of the basket");
-		assertEquals("Basket to improve", outcome.getBasketGradeLabel());
-		assertEquals(3 + 1, outcome.getXpValue(), "an A and a B");
-		assertEquals(List.of(POOR, FAIR), outcome.getProblematicProductKeys(), "below A, lowest Overall Score first");
+		assertEquals(BasketMatch.NEEDS_IMPROVEMENT, outcome.getBasketMatch(), "an average of 0.58");
+		assertEquals("Needs improvement", outcome.getBasketMatchLabel());
+		assertEquals(10, outcome.getXpValue(), "the good product alone is above 0.8, and three products are too few for a bonus");
+		assertEquals(List.of(POOR, FAIR), outcome.getProblematicProductKeys(), "at 0.8 or below, lowest Overall Score first");
 		assertEquals(TOTAL_XP, outcome.getTotalXp(), "the user's total as it stands: nothing is stored before the purchase");
 		assertNull(outcome.getIntervention());
 	}
@@ -200,32 +200,34 @@ class BasketAssessmentServiceImplTest {
 		var outcome = assess(List.of(GOOD, UNKNOWN, UNCLASSIFIED, NO_ARCHETYPE, SPIRITS));
 
 		assertEquals(ASSESSED, outcome.getType());
-		assertEquals(BasketGrade.A, outcome.getBasketGrade(), "only the good product counts");
-		assertEquals(3, outcome.getXpValue());
+		assertEquals(BasketMatch.EXCELLENT, outcome.getBasketMatch(), "only the good product counts");
+		assertEquals(10, outcome.getXpValue());
 		assertEquals(List.of(), outcome.getProblematicProductKeys(), "a product that cannot be judged does not count against the user");
 	}
 
 	@Test
 	void countsARepeatedProductOnce() {
 		givenWeights(ScientificWeights.profile());
-		givenIdentifications(Set.of(FAIR));
+		givenIdentifications(Set.of(GOOD, FAIR));
 		givenTotalXp();
 
-		var outcome = assess(List.of(FAIR, FAIR, FAIR));
+		var outcome = assess(List.of(GOOD, FAIR, GOOD, FAIR, GOOD));
 
-		assertEquals(1, outcome.getXpValue(), "one B");
+		assertEquals(10, outcome.getXpValue(), "one product above 0.8, and two products are too few for a bonus");
 		assertEquals(List.of(FAIR), outcome.getProblematicProductKeys());
 	}
 
 	@Test
-	void gradesUnderTheUsersPersonalWeights() {
+	void matchesTheBasketUnderTheUsersPersonalWeightsAndJudgesTheRestUnderTheScientificOnes() {
 		givenWeights(personalProfileOnEnvironment());
 		givenIdentifications(Set.of(GREEN));
 		givenTotalXp();
 
 		var outcome = assess(List.of(GREEN));
 
-		assertEquals(BasketGrade.A, outcome.getBasketGrade(), "a C under the scientific weights, an A for a user who cares only about the environment");
+		assertEquals(BasketMatch.EXCELLENT, outcome.getBasketMatch(), "1.0 for a user who cares only about the environment");
+		assertEquals(0, outcome.getXpValue(), "0.25 under the scientific weights");
+		assertEquals(List.of(GREEN), outcome.getProblematicProductKeys());
 	}
 
 	@Test
@@ -253,15 +255,16 @@ class BasketAssessmentServiceImplTest {
 
 	@Test
 	void storesThePurchasedBasketWithItsScoredProducts() {
-		givenWeights(ScientificWeights.profile());
+		var personal = personalProfileOnEnvironment();
+		givenWeights(personal);
 		givenIdentifications(Set.of(GOOD, FAIR, POOR, UNKNOWN));
-		givenThePurchaseIsStored(4);
+		givenThePurchaseIsStored(10);
 
 		var outcome = purchase(atServerZone(EARLIER), List.of(FAIR, GOOD, POOR, UNKNOWN));
 
 		assertEquals(ASSESSED, outcome.getType());
-		assertEquals(BasketGrade.C, outcome.getBasketGrade());
-		assertEquals(4, outcome.getXpValue());
+		assertEquals(BasketMatch.NEEDS_IMPROVEMENT, outcome.getBasketMatch());
+		assertEquals(10, outcome.getXpValue());
 		assertEquals(List.of(POOR, FAIR), outcome.getProblematicProductKeys());
 		assertEquals(
 				ImmutablePurchasedBasket.builder()
@@ -271,13 +274,13 @@ class BasketAssessmentServiceImplTest {
 						.purchasedAt(EARLIER)
 						.recordedAt(NOW)
 						.type(ASSESSED)
-						.basketGrade(BasketGrade.C)
-						.xpValue(4)
+						.basketMatch(BasketMatch.NEEDS_IMPROVEMENT)
+						.xpValue(10)
 						.compassAttemptId(ATTEMPT_ID)
 						.products(List.of(
-								product(FAIR, FAIR_ARCHETYPE, ProductGrade.B),
-								product(GOOD, GOOD_ARCHETYPE, ProductGrade.A),
-								product(POOR, POOR_ARCHETYPE, ProductGrade.C)))
+								product(FAIR, FAIR_ARCHETYPE, personal),
+								product(GOOD, GOOD_ARCHETYPE, personal),
+								product(POOR, POOR_ARCHETYPE, personal)))
 						.build(),
 				storedBasket.getValue(),
 				"the scored products in the order sent, the unknown one left out");
@@ -287,14 +290,14 @@ class BasketAssessmentServiceImplTest {
 	void addsTheXpOfTheBasketToTheUsersTotalBeforeReadingIt() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, FAIR));
-		givenThePurchaseIsStored(4);
+		givenThePurchaseIsStored(10);
 
 		var outcome = purchase(null, List.of(GOOD, FAIR));
 
-		assertEquals(TOTAL_XP + 4, outcome.getTotalXp(), "the total includes this basket");
+		assertEquals(TOTAL_XP + 10, outcome.getTotalXp(), "the total includes this basket");
 		var order = inOrder(purchasedBasketDao, userProfileDao);
 		order.verify(purchasedBasketDao).store(any(), any());
-		order.verify(userProfileDao).addXp(any(), eq(USER.getId()), eq(4));
+		order.verify(userProfileDao).addXp(any(), eq(USER.getId()), eq(10));
 		order.verify(userProfileDao).requireXpTotal(any(), eq(USER.getId()));
 	}
 
@@ -310,7 +313,7 @@ class BasketAssessmentServiceImplTest {
 		assertEquals(TOTAL_XP, outcome.getTotalXp());
 		var basket = storedBasket.getValue();
 		assertEquals(NOTHING_TO_ASSESS, basket.getType());
-		assertNull(basket.getBasketGrade());
+		assertNull(basket.getBasketMatch());
 		assertEquals(0, basket.getXpValue());
 		assertNull(basket.getCompassAttemptId(), "the scientific profile was in force");
 		assertEquals(List.of(), basket.getProducts());
@@ -320,7 +323,7 @@ class BasketAssessmentServiceImplTest {
 	void takesThePurchaseTimeToBeTheTimeOfTheRequestWhenNotGiven() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
-		givenThePurchaseIsStored(3);
+		givenThePurchaseIsStored(10);
 
 		purchase(null, List.of(GOOD));
 
@@ -332,7 +335,7 @@ class BasketAssessmentServiceImplTest {
 	void keepsThePurchaseTimeInTheTimeZoneOfTheServer() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
-		givenThePurchaseIsStored(3);
+		givenThePurchaseIsStored(10);
 		var elsewhere = atServerZone(EARLIER).withOffsetSameInstant(ZoneOffset.ofHours(-7));
 
 		purchase(elsewhere, List.of(GOOD));
@@ -344,7 +347,7 @@ class BasketAssessmentServiceImplTest {
 	void acceptsAPurchaseTimeAheadOfTheServerClockByLessThanTheSkewAllowed() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
-		givenThePurchaseIsStored(3);
+		givenThePurchaseIsStored(10);
 		var ahead = NOW.plus(BasketAssessmentServiceImpl.MAX_CLOCK_SKEW);
 
 		purchase(atServerZone(ahead), List.of(GOOD));
@@ -390,13 +393,13 @@ class BasketAssessmentServiceImplTest {
 	/**
 	 * The scores the product is stored with are its archetype's, in the corpus the basket was scored with.
 	 */
-	private static PurchasedBasketProduct product(ProductKey productKey, ArchetypeProductId archetypeProductId, ProductGrade productGrade) {
+	private static PurchasedBasketProduct product(ProductKey productKey, ArchetypeProductId archetypeProductId, WeightProfile personal) {
 		var scoredProduct = ARCHETYPES.find(archetypeProductId).orElseThrow();
 		return ImmutablePurchasedBasketProduct.builder()
 				.productKey(productKey)
 				.archetypeProductId(archetypeProductId)
-				.overallScore(scoredProduct.overallScore(ScientificWeights.profile()))
-				.productGrade(productGrade)
+				.personalOverallScore(scoredProduct.overallScore(personal))
+				.scientificOverallScore(scoredProduct.overallScore(ScientificWeights.profile()))
 				.normalisedScores(scoredProduct.normalisedScores())
 				.build();
 	}
@@ -419,8 +422,8 @@ class BasketAssessmentServiceImplTest {
 
 	private static void assertNothingToAssess(BasketAssessmentOutcome outcome) {
 		assertEquals(NOTHING_TO_ASSESS, outcome.getType());
-		assertNull(outcome.getBasketGrade());
-		assertNull(outcome.getBasketGradeLabel());
+		assertNull(outcome.getBasketMatch());
+		assertNull(outcome.getBasketMatchLabel());
 		assertEquals(0, outcome.getXpValue());
 		assertEquals(List.of(), outcome.getProblematicProductKeys());
 		assertEquals(TOTAL_XP, outcome.getTotalXp());

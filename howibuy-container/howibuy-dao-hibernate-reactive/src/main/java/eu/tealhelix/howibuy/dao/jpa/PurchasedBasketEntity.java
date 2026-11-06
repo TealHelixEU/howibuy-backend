@@ -11,7 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 
 @Entity
 @Table(name = "TH_PURCHASED_BASKET")
@@ -39,9 +39,9 @@ public class PurchasedBasketEntity {
 	@Enumerated(STRING)
 	private BasketAssessmentOutcomeType outcomeType;
 
-	@Column(name = "basket_grade")
+	@Column(name = "basket_match")
 	@Enumerated(STRING)
-	private BasketGrade basketGrade;
+	private BasketMatch basketMatch;
 
 	@Column(name = "xp_value")
 	private int xpValue;
@@ -105,12 +105,12 @@ public class PurchasedBasketEntity {
 		this.outcomeType = outcomeType;
 	}
 
-	public BasketGrade getBasketGrade() {
-		return basketGrade;
+	public BasketMatch getBasketMatch() {
+		return basketMatch;
 	}
 
-	public void setBasketGrade(BasketGrade basketGrade) {
-		this.basketGrade = basketGrade;
+	public void setBasketMatch(BasketMatch basketMatch) {
+		this.basketMatch = basketMatch;
 	}
 
 	public int getXpValue() {

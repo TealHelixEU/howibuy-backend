@@ -31,20 +31,20 @@ import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.PurchasedBasketDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
+import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.scoring.v1.ScoredProduct;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasket;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.v1.BasketAssessmentService;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules;
-import eu.tealhelix.howibuy.services.v1.basket.BasketRules.BasketVerdict;
-import eu.tealhelix.howibuy.services.v1.basket.BasketRules.ScoredBasketProduct;
 import eu.tealhelix.howibuy.services.v1.basket.Labels;
+import eu.tealhelix.howibuy.services.v1.basket.types.BasketVerdict;
+import eu.tealhelix.howibuy.services.v1.basket.types.ScoredBasketProduct;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableBasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
-import eu.tealhelix.howibuy.v1.types.ProductGrade;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
@@ -68,26 +68,27 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private final PurchasedBasketDao purchasedBasketDao;
 	private final DateTimeService dateTimeService;
 	private final BasketRules basketRules = new BasketRules();
-	private final Labels<BasketGrade> basketGradeLabels = new Labels<>(Labels.class.getPackageName() + ".BasketGradeLabels");
+	private final Labels<BasketMatch> basketMatchLabels = new Labels<>(Labels.class.getPackageName() + ".BasketMatchLabels");
 
 	/**
-	 * A product of the basket that has an Overall Score under the Weighting Profile in force.
+	 * A product of the basket that has an Overall Score.
 	 *
-	 * @param productKey    the retailer's key of the product
-	 * @param scoredProduct the archetype the product was identified as, with its normalised scores
-	 * @param overallScore  the Overall Score of the archetype under the Weighting Profile in force
+	 * @param productKey             the retailer's key of the product
+	 * @param scoredProduct          the archetype the product was identified as, with its normalised scores
+	 * @param personalOverallScore   the Overall Score of the archetype under the Weighting Profile in force for the user
+	 * @param scientificOverallScore the Overall Score of the archetype under the scientific Weighting Profile
 	 */
-	private record ScoredBasketLine(ProductKey productKey, ScoredProduct scoredProduct, double overallScore) {
+	private record ScoredBasketLine(ProductKey productKey, ScoredProduct scoredProduct, double personalOverallScore, double scientificOverallScore) {
 		ScoredBasketProduct toBasketProduct() {
-			return new ScoredBasketProduct(productKey, overallScore);
+			return new ScoredBasketProduct(productKey, scientificOverallScore, personalOverallScore);
 		}
 
-		PurchasedBasketProduct toPurchasedBasketProduct(ProductGrade productGrade) {
+		PurchasedBasketProduct toPurchasedBasketProduct() {
 			return ImmutablePurchasedBasketProduct.builder()
 					.productKey(productKey)
 					.archetypeProductId(scoredProduct.productId())
-					.overallScore(overallScore)
-					.productGrade(productGrade)
+					.personalOverallScore(personalOverallScore)
+					.scientificOverallScore(scientificOverallScore)
 					.normalisedScores(scoredProduct.normalisedScores())
 					.build();
 		}
@@ -159,12 +160,10 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 									.purchasedAt(purchaseTime)
 									.recordedAt(recordedAt)
 									.type(typeOf(verdict))
-									.basketGrade(verdict.basketGrade())
+									.basketMatch(verdict.basketMatch())
 									.xpValue(verdict.xpValue())
 									.compassAttemptId(scoredBasket.compassAttemptId())
-									.products(scoredBasket.lines().stream()
-											.map(line -> line.toPurchasedBasketProduct(verdict.productGrades().get(line.productKey())))
-											.toList())
+									.products(scoredBasket.lines().stream().map(ScoredBasketLine::toPurchasedBasketProduct).toList())
 									.build();
 					return purchasedBasketDao.store(tx, purchasedBasket).replaceWith(verdict);
 				},
@@ -221,17 +220,18 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 			ProductKey productKey, ProductIdentification identification, ScoredArchetypes archetypes, WeightProfile profile) {
 		return switch (identification) {
 			case ProductIdentification.Identified identified -> archetypes.find(identified.archetypeProductId())
-					.map(scoredProduct -> new ScoredBasketLine(productKey, scoredProduct, scoredProduct.overallScore(profile)));
+					.map(scoredProduct -> new ScoredBasketLine(
+							productKey, scoredProduct, scoredProduct.overallScore(profile), scoredProduct.overallScore(ScientificWeights.profile())));
 			case ProductIdentification.NotIdentified _ -> Optional.empty();
 		};
 	}
 
 	private BasketAssessmentOutcome outcome(BasketVerdict verdict, String language, int totalXp) {
-		var basketGrade = verdict.basketGrade();
+		var basketMatch = verdict.basketMatch();
 		return ImmutableBasketAssessmentOutcome.builder()
 				.type(typeOf(verdict))
-				.basketGrade(basketGrade)
-				.basketGradeLabel(basketGrade == null ? null : basketGradeLabels.labelOf(basketGrade, language))
+				.basketMatch(basketMatch)
+				.basketMatchLabel(basketMatch == null ? null : basketMatchLabels.labelOf(basketMatch, language))
 				.problematicProductKeys(verdict.problematicProductKeys())
 				.xpValue(verdict.xpValue())
 				.totalXp(totalXp)
@@ -239,6 +239,6 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	}
 
 	private static BasketAssessmentOutcomeType typeOf(BasketVerdict verdict) {
-		return verdict.basketGrade() == null ? NOTHING_TO_ASSESS : ASSESSED;
+		return verdict.basketMatch() == null ? NOTHING_TO_ASSESS : ASSESSED;
 	}
 }

@@ -4,14 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
-import eu.tealhelix.howibuy.services.v1.basket.BasketRules.ScoredBasketProduct;
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
-import eu.tealhelix.howibuy.v1.types.ProductGrade;
+import eu.tealhelix.howibuy.services.v1.basket.types.ScoredBasketProduct;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -19,74 +17,111 @@ import org.junit.jupiter.params.provider.CsvSource;
 public class BasketRulesTest {
 	private final BasketRules sut = new BasketRules();
 
+	/**
+	 * 10 XP for every product above 0.8 on the scientific Overall Score; a bonus for a basket of 5 products or more on
+	 * their average: 150 above 0.8, otherwise 50 above 0.6.
+	 */
 	@ParameterizedTest
 	@CsvSource({
-			"1.0,    A",
-			"0.8,    A",
-			"0.7999, B",
-			"0.6,    B",
-			"0.5999, C",
-			"0.0,    C",
+			"0.9,                          10",
+			"0.9 0.85 1.0,                 30",
+			"0.8,                          0",
+			"0.8001,                       10",
+			"0.9 0.5 0.1,                  10",
+			"0.9 0.9 0.9 0.9,              40",
+			"0.9 0.9 0.9 0.9 0.9,          200",
+			"0.9 0.9 0.9 0.9 0.9 0.9,      210",
+			"0.8 0.8 0.8 0.8 0.8,          50",
+			"0.8 0.8 0.8 0.8 0.81,         160",
+			"0.7 0.7 0.7 0.7 0.7,          50",
+			"0.6 0.6 0.6 0.6 0.61,         50",
+			"0.6 0.6 0.6 0.6 0.6,          0",
+			"0.1 0.1 0.1 0.1 0.9,          10",
 	})
-	void gradesAProductByItsOverallScore(double overallScore, ProductGrade expected) {
-		assertEquals(expected, sut.gradeOf(overallScore));
-	}
+	void countsTheXpOnTheScientificOverallScores(String scientificScores, int xpValue) {
+		var verdict = sut.judge(products(scientificScores, scientificScores));
 
-	@ParameterizedTest
-	@CsvSource({
-			"0.9,          A, 3",
-			"0.9 0.8,      A, 6",
-			"0.9 0.7,      B, 4",
-			"0.7 0.6,      B, 2",
-			"0.9 0.7 0.1,  C, 4",
-			"0.5,          C, 0",
-	})
-	void gradesTheBasketByItsWorstProductAndCountsTheXp(String overallScores, BasketGrade basketGrade, int xpValue) {
-		var verdict = sut.judge(products(overallScores));
-
-		assertEquals(basketGrade, verdict.basketGrade());
 		assertEquals(xpValue, verdict.xpValue());
 	}
 
+	/**
+	 * WP5.3's own example: four of the ten products are above 0.8, and the average, 0.7096, earns the bonus of 50.
+	 */
 	@Test
-	void reportsTheGradeOfEveryProduct() {
-		var verdict = sut.judge(products("0.9 0.7 0.1"));
+	void countsTheXpOfTheSpreadsheetsExample() {
+		var scores = "0.979980707166845 0.273794244601 0.749770266076726 0.909381114899094 0.62459833995715 "
+				+ "0.658515573444208 0.771485302265451 0.99 0.148262799383649 0.99";
 
-		assertEquals(Map.of(key(0), ProductGrade.A, key(1), ProductGrade.B, key(2), ProductGrade.C),
-				verdict.productGrades());
+		var verdict = sut.judge(products(scores, scores));
+
+		assertEquals(4 * 10 + 50, verdict.xpValue());
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"1.0,              EXCELLENT",
+			"0.8001,           EXCELLENT",
+			"0.8,              GOOD",
+			"0.7,              GOOD",
+			"0.6001,           GOOD",
+			"0.6,              NEEDS_IMPROVEMENT",
+			"0.0,              NEEDS_IMPROVEMENT",
+			"1.0 0.7,          EXCELLENT",
+			"0.9 0.5,          GOOD",
+			"0.9 0.1,          NEEDS_IMPROVEMENT",
+			"0.9 0.9 0.9 0.9 0.1 0.1, GOOD",
+	})
+	void matchesTheBasketOnTheAveragePersonalOverallScore(String personalScores, BasketMatch basketMatch) {
+		var verdict = sut.judge(products(personalScores, personalScores));
+
+		assertEquals(basketMatch, verdict.basketMatch());
 	}
 
 	@Test
-	void reportsTheProductsBelowALowestOverallScoreFirst() {
-		var verdict = sut.judge(products("0.7 0.9 0.1 0.65 0.85 0.3"));
+	void judgesTheMatchOnThePersonalOverallScoresAndTheRestOnTheScientificOnes() {
+		var sustainableButNotForTheUser = sut.judge(products("0.9 0.9", "0.1 0.1"));
+		var forTheUserButNotSustainable = sut.judge(products("0.1 0.1", "0.9 0.9"));
 
-		assertEquals(List.of(key(2), key(5), key(3), key(0)), verdict.problematicProductKeys());
+		assertEquals(BasketMatch.NEEDS_IMPROVEMENT, sustainableButNotForTheUser.basketMatch());
+		assertEquals(20, sustainableButNotForTheUser.xpValue());
+		assertEquals(List.of(), sustainableButNotForTheUser.problematicProductKeys());
+		assertEquals(BasketMatch.EXCELLENT, forTheUserButNotSustainable.basketMatch());
+		assertEquals(0, forTheUserButNotSustainable.xpValue());
+		assertEquals(List.of(key(0), key(1)), forTheUserButNotSustainable.problematicProductKeys());
 	}
 
 	@Test
-	void keepsTheOrderOfTheBasketForProblematicProductsOfEqualOverallScore() {
-		var verdict = sut.judge(products("0.7 0.5 0.7"));
+	void reportsTheProductsAtOrBelow08LowestScientificOverallScoreFirst() {
+		var verdict = sut.judge(products("0.7 0.9 0.1 0.8 0.85 0.3", "0.1 0.2 0.9 0.3 0.4 0.5"));
+
+		assertEquals(List.of(key(2), key(5), key(0), key(3)), verdict.problematicProductKeys());
+	}
+
+	@Test
+	void keepsTheOrderOfTheBasketForProblematicProductsOfEqualScientificOverallScore() {
+		var verdict = sut.judge(products("0.7 0.5 0.7", "0.7 0.5 0.7"));
 
 		assertEquals(List.of(key(1), key(0), key(2)), verdict.problematicProductKeys());
 	}
 
 	@Test
-	void judgesAnEmptyBasketWithoutAGrade() {
+	void judgesAnEmptyBasketWithoutAMatch() {
 		var verdict = sut.judge(List.of());
 
-		assertNull(verdict.basketGrade());
+		assertNull(verdict.basketMatch());
 		assertEquals(0, verdict.xpValue());
-		assertEquals(Map.of(), verdict.productGrades());
 		assertEquals(List.of(), verdict.problematicProductKeys());
 	}
 
 	/**
-	 * One product per space-separated Overall Score, keyed by its position.
+	 * One product per pair of space-separated Overall Scores, keyed by its position.
 	 */
-	private static List<ScoredBasketProduct> products(String overallScores) {
-		var scores = overallScores.trim().split(" +");
-		return IntStream.range(0, scores.length)
-				.mapToObj(position -> new ScoredBasketProduct(key(position), Double.parseDouble(scores[position])))
+	private static List<ScoredBasketProduct> products(String scientificScores, String personalScores) {
+		var scientific = scientificScores.trim().split(" +");
+		var personal = personalScores.trim().split(" +");
+		assertEquals(scientific.length, personal.length, "a personal score for every scientific one");
+		return IntStream.range(0, scientific.length)
+				.mapToObj(position -> new ScoredBasketProduct(key(position), Double.parseDouble(scientific[position]), Double.parseDouble(personal[position])))
 				.toList();
 	}
 

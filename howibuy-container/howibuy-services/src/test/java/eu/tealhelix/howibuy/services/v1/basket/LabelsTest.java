@@ -9,7 +9,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import eu.tealhelix.howibuy.v1.types.BasketGrade;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import org.jboss.logmanager.LogContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,11 +62,11 @@ public class LabelsTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(BasketGrade.class)
-	void everyBasketGradeHasAnEnglishLabel(BasketGrade grade) {
-		var sut = new Labels<BasketGrade>(Labels.class.getPackageName() + ".BasketGradeLabels");
+	@EnumSource(BasketMatch.class)
+	void everyBasketMatchHasAnEnglishLabel(BasketMatch basketMatch) {
+		var sut = new Labels<BasketMatch>(Labels.class.getPackageName() + ".BasketMatchLabels");
 
-		assertFalse(sut.labelOf(grade, "en").isBlank());
+		assertFalse(sut.labelOf(basketMatch, "en").isBlank());
 		assertEquals(List.of(), logged);
 	}
 

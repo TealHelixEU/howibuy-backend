@@ -43,7 +43,7 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 		entity.setPurchasedAt(basket.getPurchasedAt());
 		entity.setRecordedAt(basket.getRecordedAt());
 		entity.setOutcomeType(basket.getType());
-		entity.setBasketGrade(basket.getBasketGrade());
+		entity.setBasketMatch(basket.getBasketMatch());
 		entity.setXpValue(basket.getXpValue());
 		entity.setCompassAttemptId(basket.getCompassAttemptId());
 		return entity;
@@ -54,8 +54,8 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 		entity.setPurchasedBasketId(basketId);
 		entity.setProductKey(product.getProductKey().asString());
 		entity.setArchetypeProductId(product.getArchetypeProductId().asUuid());
-		entity.setOverallScore(product.getOverallScore());
-		entity.setProductGrade(product.getProductGrade());
+		entity.setPersonalOverallScore(product.getPersonalOverallScore());
+		entity.setScientificOverallScore(product.getScientificOverallScore());
 		entity.setScoreEnvironment(product.getNormalisedScores().get(ENVIRONMENT));
 		entity.setScoreAnimalWelfare(product.getNormalisedScores().get(ANIMAL_WELFARE));
 		entity.setScoreSocioEconomic(product.getNormalisedScores().get(SOCIO_ECONOMIC));
