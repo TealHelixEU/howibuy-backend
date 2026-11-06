@@ -166,8 +166,8 @@ components:
     BasketAssessmentOutcome:
       description: >-
         What the assessment made of a basket as a whole: how well it matches the user's own priorities, the products
-        that keep it from being sustainable and the experience points it earns. Only the products that can be judged
-        count; nothing is answered per product.
+        that keep it from being sustainable, the experience points it earns and what it does to the user's streak. Only
+        the products that can be judged count; nothing is answered per product.
       properties:
         type:
           description: Whether any product of the basket could be judged. The match and its label are carried only when one could.
@@ -195,17 +195,33 @@ components:
             weighting, the same for every user: 10 for every product above 0.8, and a bonus when at least 5 of its
             products can be judged, 150 when their average is above 0.8, otherwise 50 when it is above 0.6. 0 when there
             was nothing to assess.
+        streak:
+          description: >-
+            The user's streak: how many of the baskets they purchased in a row, in the order they were registered, each
+            had a product above 0.8 on the scientific weighting. Once the basket is purchased, it includes the basket's
+            effect.
+        streakEffect:
+          description: >-
+            What the basket does to the user's streak once purchased, on the overall scores of its products under the
+            scientific weighting: `EXTEND` when one of them is above 0.8, `RESET` when none is, `NONE` when there was
+            nothing to assess. Once the basket is purchased, the effect has been applied to the streak.
 
     BasketAssessmentOutcomeType:
       description: >-
         Whether a basket could be judged. `ASSESSED` — at least one of its products has an overall score, so the basket
         has a match. `NOTHING_TO_ASSESS` — none has, e.g. the basket is empty or holds only products that are unknown,
-        not classified, match no archetype or have no Nutri-Score; the basket has no match and earns nothing.
+        not classified, match no archetype or have no Nutri-Score; the basket has no match, earns nothing and leaves the
+        streak as it is.
 
     BasketMatch:
       description: >-
         How well a basket matches the user's own priorities: `EXCELLENT`, `GOOD` or `NEEDS_IMPROVEMENT`, the last
         advising the user to improve it. What a user is shown is the label delivered with it, not these names.
+
+    StreakEffect:
+      description: >-
+        What a basket does to the user's streak once purchased: `EXTEND` adds one to it, `RESET` sets it to 0, `NONE`
+        leaves it as it is.
 
     ArchetypeProductId:
       description: >-

@@ -8,10 +8,12 @@ import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.howibuy.services.v1.basket.types.BasketVerdict;
 import eu.tealhelix.howibuy.services.v1.basket.types.ScoredBasketProduct;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
+import eu.tealhelix.howibuy.v1.types.StreakEffect;
 
 /**
  * The rules that judge a basket from the two Overall Scores of each of its scored products: the scientific one decides
- * the XP the basket earns and its Problematic Products, the personal one its {@link BasketMatch}.
+ * the XP the basket earns, its Problematic Products and its {@link StreakEffect}, the personal one its
+ * {@link BasketMatch}.
  * <p>
  * The rules and their numbers are WP5.3's, from {@code TH WP5.3 GAMIFICATION FORMULAS.xlsx}. Every comparison is strict:
  * a score exactly at a threshold is not above it. The thresholds of the averages are kept apart from each other and
@@ -19,7 +21,8 @@ import eu.tealhelix.howibuy.v1.types.BasketMatch;
  */
 public final class BasketRules {
 	/**
-	 * The scientific Overall Score above which a product earns XP; a product at or below it is a Problematic Product.
+	 * The scientific Overall Score above which a product earns XP and extends the Streak; a product at or below it is a
+	 * Problematic Product.
 	 */
 	private static final double PROBLEMATIC_PRODUCT_THRESHOLD = 0.8;
 	/**
@@ -56,12 +59,13 @@ public final class BasketRules {
 	 */
 	public BasketVerdict judge(List<ScoredBasketProduct> products) {
 		if (products.isEmpty()) {
-			return new BasketVerdict(null, 0, List.of());
+			return new BasketVerdict(null, 0, List.of(), StreakEffect.NONE);
 		} else {
 			return new BasketVerdict(
 					matchOf(average(products, ScoredBasketProduct::personalOverallScore)),
 					productXp(products) + bonusXp(products),
-					problematicProductKeys(products));
+					problematicProductKeys(products),
+					streakEffect(products));
 		}
 	}
 
@@ -100,6 +104,14 @@ public final class BasketRules {
 			return LOW_BONUS_XP;
 		} else {
 			return 0;
+		}
+	}
+
+	private StreakEffect streakEffect(List<ScoredBasketProduct> products) {
+		if (products.stream().anyMatch(product -> !isProblematic(product.scientificOverallScore()))) {
+			return StreakEffect.EXTEND;
+		} else {
+			return StreakEffect.RESET;
 		}
 	}
 

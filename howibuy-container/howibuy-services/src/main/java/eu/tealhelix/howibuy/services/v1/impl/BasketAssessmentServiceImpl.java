@@ -21,6 +21,7 @@ import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.types.Nullable;
@@ -28,6 +29,7 @@ import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.RetailerId;
+import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.dao.CatalogueDao;
 import eu.tealhelix.howibuy.dao.PurchasedBasketDao;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
@@ -36,6 +38,7 @@ import eu.tealhelix.howibuy.scoring.v1.ScoredProduct;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasket;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
+import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import eu.tealhelix.howibuy.services.v1.BasketAssessmentService;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules;
 import eu.tealhelix.howibuy.services.v1.basket.Labels;
@@ -45,6 +48,7 @@ import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableBasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
+import eu.tealhelix.howibuy.v1.types.StreakEffect;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
@@ -136,8 +140,8 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 				productKeys.stream().map(ProductKey::asString).toList());
 		return forcm(
 				scoreBasket(user, catalogueId, productKeys),
-				_ -> persistenceContextFactory.withoutTransaction(em -> userProfileDao.requireXpTotal(em, user.getId())),
-				(scoredBasket, totalXp) -> outcome(scoredBasket.judge(basketRules), language, totalXp));
+				_ -> persistenceContextFactory.withoutTransaction(em -> userProfileDao.requireXpAndStreak(em, user.getId())),
+				(scoredBasket, xpAndStreak) -> outcome(scoredBasket.judge(basketRules), language, xpAndStreak));
 	}
 
 	@Override
@@ -167,9 +171,10 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 									.build();
 					return purchasedBasketDao.store(tx, purchasedBasket).replaceWith(verdict);
 				},
-				verdict -> userProfileDao.addXp(tx, user.getId(), verdict.xpValue()),
-				_ -> userProfileDao.requireXpTotal(tx, user.getId()),
-				(_, _, verdict, _, totalXp) -> outcome(verdict, language, totalXp)
+				(_, _, verdict) -> userProfileDao.addXp(tx, user.getId(), verdict.xpValue()),
+				(_, _, verdict, _) -> applyStreakEffect(tx, user.getId(), verdict.streakEffect()),
+				(_, _, _, _, _) -> userProfileDao.requireXpAndStreak(tx, user.getId()),
+				(_, _, verdict, _, _, xpAndStreak) -> outcome(verdict, language, xpAndStreak)
 		));
 	}
 
@@ -191,6 +196,18 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private Uni<RetailerId> requireRetailerOf(ReactivePersistenceContext em, CatalogueId catalogueId) {
 		return catalogueDao.findRetailers(em, Set.of(catalogueId))
 				.map(retailers -> Optional.ofNullable(retailers.get(catalogueId)).orElseThrow(() -> new NotFoundException(catalogueId)));
+	}
+
+	/**
+	 * Apply a purchased basket's effect to the user's Streak: {@code EXTEND} increases it by one, {@code RESET} sets it
+	 * to 0, {@code NONE} leaves it as it is.
+	 */
+	private Uni<Void> applyStreakEffect(ReactivePersistenceTxContext tx, UserId userId, StreakEffect streakEffect) {
+		return switch (streakEffect) {
+			case EXTEND -> userProfileDao.increaseStreak(tx, userId);
+			case RESET -> userProfileDao.resetStreak(tx, userId);
+			case NONE -> Uni.createFrom().voidItem();
+		};
 	}
 
 	/**
@@ -226,7 +243,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		};
 	}
 
-	private BasketAssessmentOutcome outcome(BasketVerdict verdict, String language, int totalXp) {
+	private BasketAssessmentOutcome outcome(BasketVerdict verdict, String language, XpAndStreak xpAndStreak) {
 		var basketMatch = verdict.basketMatch();
 		return ImmutableBasketAssessmentOutcome.builder()
 				.type(typeOf(verdict))
@@ -234,7 +251,9 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 				.basketMatchLabel(basketMatch == null ? null : basketMatchLabels.labelOf(basketMatch, language))
 				.problematicProductKeys(verdict.problematicProductKeys())
 				.xpValue(verdict.xpValue())
-				.totalXp(totalXp)
+				.totalXp(xpAndStreak.getXpTotal())
+				.streakEffect(verdict.streakEffect())
+				.streak(xpAndStreak.getStreak())
 				.build();
 	}
 

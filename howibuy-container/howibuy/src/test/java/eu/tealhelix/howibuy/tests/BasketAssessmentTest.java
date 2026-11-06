@@ -62,8 +62,9 @@ import org.junit.jupiter.api.Test;
  * database, with the products brought in and classified as in {@link ProductAssessmentTest}. The archetypes are picked
  * from the seed data by what the rules make of their Overall Scores, and the expected Basket Match is worked out from
  * those scores with the rules, so the expectations hold whatever the seed scores are. Nothing is stored before the
- * purchase, so the user's XP total is answered as it stands; the Retailer registers the purchase with its own token,
- * naming the user by the correlation id, and the basket is stored and its XP added.
+ * purchase, so the user's XP total and Streak are answered as they stand; the Retailer registers the purchase with its
+ * own token, naming the user by the correlation id, and the basket is stored, its XP added and its effect applied to
+ * the Streak.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresTestResource.class, initArgs = @ResourceArg(name = "contexts", value = "appdata"))
@@ -71,6 +72,7 @@ public class BasketAssessmentTest {
 	private static final String SHOPPER_ID = "c4a7e1d2-5b3f-4e8a-9d6c-2f1b8a7e3c66";
 	private static final User SHOPPER = new UserImpl(new UserIdImpl(SHOPPER_ID), "basket-shopper", null, false, true, Set.of());
 	private static final int TOTAL_XP = 12;
+	private static final int STREAK = 3;
 	private static final String SHOPPER_CORRELATION_ID = "basket-shopper";
 	private static final User RETAILER = new UserImpl(new UserIdImpl(RETAILER_ID), "test-retailer", null, false, false, Set.of(Role.RETAILER));
 
@@ -107,7 +109,7 @@ public class BasketAssessmentTest {
 			s.execute("DELETE FROM TH_PURCHASED_BASKET_PRODUCT");
 			s.execute("DELETE FROM TH_PURCHASED_BASKET");
 			s.execute("INSERT INTO TH_USER_PROFILE (id) VALUES ('" + SHOPPER_ID + "') ON CONFLICT (id) DO NOTHING");
-			s.execute("UPDATE TH_USER_PROFILE SET xp_total = " + TOTAL_XP + " WHERE id = '" + SHOPPER_ID + "'");
+			s.execute("UPDATE TH_USER_PROFILE SET xp_total = " + TOTAL_XP + ", streak = " + STREAK + " WHERE id = '" + SHOPPER_ID + "'");
 			s.execute("INSERT INTO TH_CORREL_ID (retailer_id, correlation_id, user_id) VALUES ('" + RETAILER_ID + "', '" + SHOPPER_CORRELATION_ID + "', '" + SHOPPER_ID + "') ON CONFLICT DO NOTHING");
 			s.execute("INSERT INTO TH_CONSENT (user_id, retailer_id, state) VALUES ('" + SHOPPER_ID + "', '" + RETAILER_ID + "', 'GRANTED') ON CONFLICT DO NOTHING");
 		}
@@ -142,7 +144,9 @@ public class BasketAssessmentTest {
 				.body("intervention", equalTo(null))
 				.body("problematicProductKeys", equalTo(List.of("feta")))
 				.body("xpValue", equalTo(10))
-				.body("totalXp", equalTo(TOTAL_XP));
+				.body("totalXp", equalTo(TOTAL_XP))
+				.body("streakEffect", equalTo("EXTEND"))
+				.body("streak", equalTo(STREAK));
 	}
 
 	@Test
@@ -165,7 +169,9 @@ public class BasketAssessmentTest {
 					.body("basketMatchLabel", equalTo(null))
 					.body("problematicProductKeys", equalTo(List.of()))
 					.body("xpValue", equalTo(0))
-					.body("totalXp", equalTo(TOTAL_XP));
+					.body("totalXp", equalTo(TOTAL_XP))
+					.body("streakEffect", equalTo("NONE"))
+					.body("streak", equalTo(STREAK));
 		}
 	}
 
@@ -235,7 +241,9 @@ public class BasketAssessmentTest {
 				.body("basketMatchLabel", equalTo(MATCH_LABELS.get(match)))
 				.body("problematicProductKeys", equalTo(List.of("feta")))
 				.body("xpValue", equalTo(10))
-				.body("totalXp", equalTo(TOTAL_XP + 10));
+				.body("totalXp", equalTo(TOTAL_XP + 10))
+				.body("streakEffect", equalTo("EXTEND"))
+				.body("streak", equalTo(STREAK + 1));
 
 		var serverTime = OffsetDateTime.parse(purchasedAt).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 		assertEquals(
@@ -244,6 +252,7 @@ public class BasketAssessmentTest {
 				"bought at the time the Retailer states, under the scientific weights");
 		assertEquals(List.of(storedProduct("feta", feta, scientific), storedProduct("yoghurt", yoghurt, scientific)), storedProducts());
 		assertEquals(TOTAL_XP + 10, xpTotal(SHOPPER_ID));
+		assertEquals(STREAK + 1, streak(SHOPPER_ID));
 	}
 
 	@Test
@@ -275,17 +284,46 @@ public class BasketAssessmentTest {
 				"every call is another purchase");
 	}
 
+	/**
+	 * Each purchase with a product above 0.8 on the scientific Overall Score extends the Streak, in the order the
+	 * purchases are registered; one whose products are all at 0.8 or less resets it, and one with nothing to assess
+	 * leaves it as it is.
+	 */
+	@Test
+	void successivePurchasesMoveTheStreak() throws SQLException {
+		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
+		fixtures.applyProduct("feta", 2, "h2", listing(CATALOGUE_GR, true));
+		fixtures.classify("yoghurt", "h1", anArchetypeThatEarnsXp());
+		fixtures.classify("feta", "h2", aProblematicArchetype());
+
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt", "feta"), 200)
+				.body("streakEffect", equalTo("EXTEND")).body("streak", equalTo(STREAK + 1));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200)
+				.body("streakEffect", equalTo("EXTEND")).body("streak", equalTo(STREAK + 2));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "unknown"), 200)
+				.body("streakEffect", equalTo("NONE")).body("streak", equalTo(STREAK + 2));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "feta"), 200)
+				.body("streakEffect", equalTo("RESET")).body("streak", equalTo(0));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200)
+				.body("streakEffect", equalTo("EXTEND")).body("streak", equalTo(1));
+
+		assertEquals(1, streak(SHOPPER_ID));
+	}
+
 	@Test
 	void aPurchaseWithNothingToAssessIsStoredWithoutProducts() throws SQLException {
 		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null), 200)
 				.body("type", equalTo("NOTHING_TO_ASSESS"))
 				.body("basketMatch", equalTo(null))
 				.body("xpValue", equalTo(0))
-				.body("totalXp", equalTo(TOTAL_XP));
+				.body("totalXp", equalTo(TOTAL_XP))
+				.body("streakEffect", equalTo("NONE"))
+				.body("streak", equalTo(STREAK));
 
 		assertEquals(List.of("NOTHING_TO_ASSESS|null|0"), fixtures.rows("SELECT outcome_type, basket_match, xp_value FROM TH_PURCHASED_BASKET"));
 		assertEquals(List.of(), storedProducts());
 		assertEquals(TOTAL_XP, xpTotal(SHOPPER_ID));
+		assertEquals(STREAK, streak(SHOPPER_ID));
 	}
 
 	@Test
@@ -294,11 +332,12 @@ public class BasketAssessmentTest {
 		fixtures.classify("yoghurt", "h1", anArchetypeThatEarnsXp());
 		var correlationId = UUID.randomUUID().toString();
 
-		purchase("retailer", purchaseRequest(correlationId, null, "yoghurt"), 200).body("totalXp", equalTo(10));
+		purchase("retailer", purchaseRequest(correlationId, null, "yoghurt"), 200).body("totalXp", equalTo(10)).body("streak", equalTo(1));
 
 		var userId = fixtures.rows("SELECT user_id FROM TH_CORREL_ID WHERE retailer_id = '" + RETAILER_ID + "' AND correlation_id = '" + correlationId + "'").getFirst();
 		assertEquals(List.of(userId), fixtures.rows("SELECT user_profile_id FROM TH_PURCHASED_BASKET"));
 		assertEquals(10, xpTotal(userId));
+		assertEquals(1, streak(userId));
 	}
 
 	@Test
@@ -352,10 +391,15 @@ public class BasketAssessmentTest {
 	private void assertNothingPurchased() throws SQLException {
 		assertEquals(List.of(), fixtures.rows("SELECT id FROM TH_PURCHASED_BASKET"));
 		assertEquals(TOTAL_XP, xpTotal(SHOPPER_ID));
+		assertEquals(STREAK, streak(SHOPPER_ID));
 	}
 
 	private int xpTotal(String userId) throws SQLException {
 		return Integer.parseInt(fixtures.rows("SELECT xp_total FROM TH_USER_PROFILE WHERE id = '" + userId + "'").getFirst());
+	}
+
+	private int streak(String userId) throws SQLException {
+		return Integer.parseInt(fixtures.rows("SELECT streak FROM TH_USER_PROFILE WHERE id = '" + userId + "'").getFirst());
 	}
 
 	/**

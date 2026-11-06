@@ -8,15 +8,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 import eu.tealhelix.common.dao.EntityAlreadyExistsException;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.entity.NotFoundException;
+import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
+import eu.tealhelix.howibuy.services.model.XpAndStreak;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.MethodOrderer;
@@ -167,29 +173,65 @@ public class UserProfileDaoImplTest {
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
 		var user = factory.withTransaction(sut::createAutoUser).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		Integer initialTotal = factory.withoutTransaction(em -> sut.requireXpTotal(em, user.getId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
-		assertEquals(0, initialTotal);
+		assertEquals(0, xpAndStreakOf(factory, sut, user.getId()).getXpTotal());
 
 		factory.withTransaction(tx -> sut.addXp(tx, user.getId(), 3)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 		factory.withTransaction(tx -> sut.addXp(tx, user.getId(), 4)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		Integer finalTotal = factory.withoutTransaction(em -> sut.requireXpTotal(em, user.getId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
-		assertEquals(7, finalTotal);
+		var xpAndStreak = xpAndStreakOf(factory, sut, user.getId());
+		assertEquals(7, xpAndStreak.getXpTotal());
+		assertEquals(0, xpAndStreak.getStreak());
 	}
 
 	@Test
 	@Order(7)
-	void testXpTotalOfAnUnknownUserIsNotFound(Mutiny.SessionFactory sessionFactory) {
+	void testStreakStartsAtZeroIncreasesByOneAndResets(Mutiny.SessionFactory sessionFactory) {
+		var sut = new UserProfileDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var user = factory.withTransaction(sut::createAutoUser).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(0, xpAndStreakOf(factory, sut, user.getId()).getStreak());
+		assertEquals(1, streakAfter(factory, sut, user.getId(), sut::increaseStreak));
+		assertEquals(2, streakAfter(factory, sut, user.getId(), sut::increaseStreak));
+		assertEquals(0, streakAfter(factory, sut, user.getId(), sut::resetStreak));
+		assertEquals(1, streakAfter(factory, sut, user.getId(), sut::increaseStreak));
+		assertEquals(0, xpAndStreakOf(factory, sut, user.getId()).getXpTotal());
+	}
+
+	@Test
+	@Order(8)
+	void testXpAndStreakOfAnUnknownUserAreNotFound(Mutiny.SessionFactory sessionFactory) {
 		var sut = new UserProfileDaoImpl();
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
 		var userId = new UserIdImpl(UNKNOWN_USER_ID.toString());
 
 		var requireSubscriber = UniAssertSubscriber.create();
-		factory.withoutTransaction(em -> sut.requireXpTotal(em, userId)).subscribe().withSubscriber(requireSubscriber);
+		factory.withoutTransaction(em -> sut.requireXpAndStreak(em, userId)).subscribe().withSubscriber(requireSubscriber);
 		requireSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
 
 		var addSubscriber = UniAssertSubscriber.create();
 		factory.withTransaction(tx -> sut.addXp(tx, userId, 3)).subscribe().withSubscriber(addSubscriber);
 		addSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
+
+		var increaseSubscriber = UniAssertSubscriber.create();
+		factory.withTransaction(tx -> sut.increaseStreak(tx, userId)).subscribe().withSubscriber(increaseSubscriber);
+		increaseSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
+
+		var resetSubscriber = UniAssertSubscriber.create();
+		factory.withTransaction(tx -> sut.resetStreak(tx, userId)).subscribe().withSubscriber(resetSubscriber);
+		resetSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
+	}
+
+	private static XpAndStreak xpAndStreakOf(ReactivePersistenceContextFactory factory, UserProfileDaoImpl sut, UserId userId) {
+		return factory.withoutTransaction(em -> sut.requireXpAndStreak(em, userId)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+	}
+
+	/**
+	 * The user's Streak once changed in a transaction of its own.
+	 */
+	private static int streakAfter(
+			ReactivePersistenceContextFactory factory, UserProfileDaoImpl sut, UserId userId, BiFunction<ReactivePersistenceTxContext, UserId, Uni<Void>> change) {
+		factory.withTransaction(tx -> change.apply(tx, userId)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		return xpAndStreakOf(factory, sut, userId).getStreak();
 	}
 }

@@ -7,6 +7,7 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.UserId;
+import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import io.smallrye.mutiny.Uni;
 
 public interface UserProfileDao {
@@ -36,9 +37,10 @@ public interface UserProfileDao {
 	/**
 	 * @param em     The persistence context
 	 * @param userId The user
-	 * @return The XP the user has earned in total; a failure with {@code NotFoundException} if there is no such user
+	 * @return The XP the user has earned in total and their Streak; a failure with {@code NotFoundException} if there is
+	 *         no such user
 	 */
-	Uni<Integer> requireXpTotal(ReactivePersistenceContext em, UserId userId);
+	Uni<XpAndStreak> requireXpAndStreak(ReactivePersistenceContext em, UserId userId);
 
 	/**
 	 * Add to the XP the user has earned in total, in one update of the database, so that additions made at the same time
@@ -51,6 +53,27 @@ public interface UserProfileDao {
 	 *         no such user
 	 */
 	Uni<Void> addXp(ReactivePersistenceTxContext tx, UserId userId, int xp);
+
+	/**
+	 * Increase the user's Streak by one, in one update of the database, so that increases made at the same time are all
+	 * counted.
+	 *
+	 * @param tx     The transaction
+	 * @param userId The user
+	 * @return A {@code Uni} completing when the Streak has been increased; a failure with {@code NotFoundException} if
+	 *         there is no such user
+	 */
+	Uni<Void> increaseStreak(ReactivePersistenceTxContext tx, UserId userId);
+
+	/**
+	 * Set the user's Streak to 0.
+	 *
+	 * @param tx     The transaction
+	 * @param userId The user
+	 * @return A {@code Uni} completing when the Streak has been reset; a failure with {@code NotFoundException} if there
+	 *         is no such user
+	 */
+	Uni<Void> resetStreak(ReactivePersistenceTxContext tx, UserId userId);
 
 	/**
 	 * Create a simple, regular (non-system, non-service) user model holding information only about the user id, to be

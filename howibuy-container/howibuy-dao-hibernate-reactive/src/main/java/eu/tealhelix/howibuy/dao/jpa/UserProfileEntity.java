@@ -29,6 +29,13 @@ public class UserProfileEntity {
 	@Column(name = "xp_total", insertable = false, updatable = false)
 	private int xpTotal;
 
+	/**
+	 * Changed only by an update in the database, which adds one to it or resets it, so that baskets registered at the
+	 * same time all count; an insert leaves it to the default of the column.
+	 */
+	@Column(name = "streak", insertable = false, updatable = false)
+	private int streak;
+
 	public UUID getId() {
 		return id;
 	}
@@ -63,5 +70,9 @@ public class UserProfileEntity {
 
 	public int getXpTotal() {
 		return xpTotal;
+	}
+
+	public int getStreak() {
+		return streak;
 	}
 }

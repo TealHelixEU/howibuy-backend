@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -50,13 +52,16 @@ import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.scoring.v1.ScientificWeights;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasket;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
+import eu.tealhelix.howibuy.services.model.ImmutableXpAndStreak;
 import eu.tealhelix.howibuy.services.model.PurchasedBasket;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
+import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import eu.tealhelix.howibuy.services.v1.impl.ArchetypeImpactsFixtures.Branch;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.types.ArchetypeProductId;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.IdentificationFailureReason;
+import eu.tealhelix.howibuy.v1.types.StreakEffect;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,6 +99,7 @@ class BasketAssessmentServiceImplTest {
 	private static final CatalogueId CATALOGUE = new CatalogueIdImpl("test-gr");
 	private static final String LANGUAGE = "en";
 	private static final int TOTAL_XP = 17;
+	private static final int STREAK = 4;
 	private static final UUID ATTEMPT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 	private static final RetailerId RETAILER = new GenericRetailerId("8d1e5b4a-7c2f-4e93-a6b0-3f9d2c1e7a54");
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 31, 12, 0);
@@ -178,7 +184,7 @@ class BasketAssessmentServiceImplTest {
 	void judgesTheBasketByTheOverallScoresOfItsProducts() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, FAIR, POOR));
-		givenTotalXp();
+		givenXpAndStreak();
 
 		var outcome = assess(List.of(FAIR, GOOD, POOR));
 
@@ -188,6 +194,8 @@ class BasketAssessmentServiceImplTest {
 		assertEquals(10, outcome.getXpValue(), "the good product alone is above 0.8, and three products are too few for a bonus");
 		assertEquals(List.of(POOR, FAIR), outcome.getProblematicProductKeys(), "at 0.8 or below, lowest Overall Score first");
 		assertEquals(TOTAL_XP, outcome.getTotalXp(), "the user's total as it stands: nothing is stored before the purchase");
+		assertEquals(StreakEffect.EXTEND, outcome.getStreakEffect(), "the good product is above 0.8");
+		assertEquals(STREAK, outcome.getStreak(), "the user's Streak as it stands");
 		assertNull(outcome.getIntervention());
 	}
 
@@ -195,7 +203,7 @@ class BasketAssessmentServiceImplTest {
 	void leavesOutTheProductsThatHaveNoOverallScore() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, UNKNOWN, UNCLASSIFIED, NO_ARCHETYPE, SPIRITS));
-		givenTotalXp();
+		givenXpAndStreak();
 
 		var outcome = assess(List.of(GOOD, UNKNOWN, UNCLASSIFIED, NO_ARCHETYPE, SPIRITS));
 
@@ -209,7 +217,7 @@ class BasketAssessmentServiceImplTest {
 	void countsARepeatedProductOnce() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, FAIR));
-		givenTotalXp();
+		givenXpAndStreak();
 
 		var outcome = assess(List.of(GOOD, FAIR, GOOD, FAIR, GOOD));
 
@@ -221,20 +229,21 @@ class BasketAssessmentServiceImplTest {
 	void matchesTheBasketUnderTheUsersPersonalWeightsAndJudgesTheRestUnderTheScientificOnes() {
 		givenWeights(personalProfileOnEnvironment());
 		givenIdentifications(Set.of(GREEN));
-		givenTotalXp();
+		givenXpAndStreak();
 
 		var outcome = assess(List.of(GREEN));
 
 		assertEquals(BasketMatch.EXCELLENT, outcome.getBasketMatch(), "1.0 for a user who cares only about the environment");
 		assertEquals(0, outcome.getXpValue(), "0.25 under the scientific weights");
 		assertEquals(List.of(GREEN), outcome.getProblematicProductKeys());
+		assertEquals(StreakEffect.RESET, outcome.getStreakEffect());
 	}
 
 	@Test
 	void hasNothingToAssessWhenNoProductHasAnOverallScore() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(UNKNOWN, SPIRITS));
-		givenTotalXp();
+		givenXpAndStreak();
 
 		assertNothingToAssess(assess(List.of(UNKNOWN, SPIRITS)));
 	}
@@ -243,7 +252,7 @@ class BasketAssessmentServiceImplTest {
 	void hasNothingToAssessInAnEmptyBasket() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of());
-		givenTotalXp();
+		givenXpAndStreak();
 
 		assertNothingToAssess(assess(List.of()));
 	}
@@ -258,7 +267,7 @@ class BasketAssessmentServiceImplTest {
 		var personal = personalProfileOnEnvironment();
 		givenWeights(personal);
 		givenIdentifications(Set.of(GOOD, FAIR, POOR, UNKNOWN));
-		givenThePurchaseIsStored(10);
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 
 		var outcome = purchase(atServerZone(EARLIER), List.of(FAIR, GOOD, POOR, UNKNOWN));
 
@@ -287,30 +296,50 @@ class BasketAssessmentServiceImplTest {
 	}
 
 	@Test
-	void addsTheXpOfTheBasketToTheUsersTotalBeforeReadingIt() {
+	void addsTheXpAndIncreasesTheStreakBeforeReadingThem() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD, FAIR));
-		givenThePurchaseIsStored(10);
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 
 		var outcome = purchase(null, List.of(GOOD, FAIR));
 
 		assertEquals(TOTAL_XP + 10, outcome.getTotalXp(), "the total includes this basket");
+		assertEquals(StreakEffect.EXTEND, outcome.getStreakEffect());
+		assertEquals(STREAK + 1, outcome.getStreak(), "the Streak includes this basket");
 		var order = inOrder(purchasedBasketDao, userProfileDao);
 		order.verify(purchasedBasketDao).store(any(), any());
 		order.verify(userProfileDao).addXp(any(), eq(USER.getId()), eq(10));
-		order.verify(userProfileDao).requireXpTotal(any(), eq(USER.getId()));
+		order.verify(userProfileDao).increaseStreak(any(), eq(USER.getId()));
+		order.verify(userProfileDao).requireXpAndStreak(any(), eq(USER.getId()));
+	}
+
+	@Test
+	void resetsTheStreakWithAPurchaseWithoutAProductAbove08() {
+		givenWeights(ScientificWeights.profile());
+		givenIdentifications(Set.of(FAIR, POOR));
+		givenThePurchaseIsStored(0, StreakEffect.RESET, 0);
+
+		var outcome = purchase(null, List.of(FAIR, POOR));
+
+		assertEquals(StreakEffect.RESET, outcome.getStreakEffect());
+		assertEquals(0, outcome.getStreak());
+		verify(userProfileDao).resetStreak(any(), eq(USER.getId()));
 	}
 
 	@Test
 	void storesAPurchaseWithNothingToAssessWithoutProducts() {
 		givenScientificWeightsWithoutAnAttempt();
 		givenIdentifications(Set.of());
-		givenThePurchaseIsStored(0);
+		givenThePurchaseIsStored(0, StreakEffect.NONE, STREAK);
 
 		var outcome = purchase(null, List.of());
 
 		assertEquals(NOTHING_TO_ASSESS, outcome.getType());
 		assertEquals(TOTAL_XP, outcome.getTotalXp());
+		assertEquals(StreakEffect.NONE, outcome.getStreakEffect());
+		assertEquals(STREAK, outcome.getStreak(), "the Streak as it stood");
+		verify(userProfileDao, never()).increaseStreak(any(), any());
+		verify(userProfileDao, never()).resetStreak(any(), any());
 		var basket = storedBasket.getValue();
 		assertEquals(NOTHING_TO_ASSESS, basket.getType());
 		assertNull(basket.getBasketMatch());
@@ -323,7 +352,7 @@ class BasketAssessmentServiceImplTest {
 	void takesThePurchaseTimeToBeTheTimeOfTheRequestWhenNotGiven() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
-		givenThePurchaseIsStored(10);
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 
 		purchase(null, List.of(GOOD));
 
@@ -335,7 +364,7 @@ class BasketAssessmentServiceImplTest {
 	void keepsThePurchaseTimeInTheTimeZoneOfTheServer() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
-		givenThePurchaseIsStored(10);
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 		var elsewhere = atServerZone(EARLIER).withOffsetSameInstant(ZoneOffset.ofHours(-7));
 
 		purchase(elsewhere, List.of(GOOD));
@@ -347,7 +376,7 @@ class BasketAssessmentServiceImplTest {
 	void acceptsAPurchaseTimeAheadOfTheServerClockByLessThanTheSkewAllowed() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
-		givenThePurchaseIsStored(10);
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 		var ahead = NOW.plus(BasketAssessmentServiceImpl.MAX_CLOCK_SKEW);
 
 		purchase(atServerZone(ahead), List.of(GOOD));
@@ -404,12 +433,21 @@ class BasketAssessmentServiceImplTest {
 				.build();
 	}
 
-	private void givenThePurchaseIsStored(int xpValue) {
+	/**
+	 * The user's profile takes the change of the Streak the effect calls for, none for {@code NONE}, and reads back the XP
+	 * and the Streak the basket leaves them with.
+	 */
+	private void givenThePurchaseIsStored(int xpValue, StreakEffect streakEffect, int streakAfter) {
 		when(dateTimeService.getNow()).thenReturn(NOW);
 		when(catalogueDao.findRetailers(any(), eq(Set.of(CATALOGUE)))).thenReturn(Uni.createFrom().item(Map.of(CATALOGUE, RETAILER)));
 		when(purchasedBasketDao.store(any(), storedBasket.capture())).thenReturn(Uni.createFrom().voidItem());
 		when(userProfileDao.addXp(any(), eq(USER.getId()), eq(xpValue))).thenReturn(Uni.createFrom().voidItem());
-		when(userProfileDao.requireXpTotal(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(TOTAL_XP + xpValue));
+		switch (streakEffect) {
+			case EXTEND -> when(userProfileDao.increaseStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
+			case RESET -> when(userProfileDao.resetStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().voidItem());
+			case NONE -> { }
+		}
+		when(userProfileDao.requireXpAndStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(xpAndStreak(TOTAL_XP + xpValue, streakAfter)));
 	}
 
 	private void givenScientificWeightsWithoutAnAttempt() {
@@ -427,6 +465,8 @@ class BasketAssessmentServiceImplTest {
 		assertEquals(0, outcome.getXpValue());
 		assertEquals(List.of(), outcome.getProblematicProductKeys());
 		assertEquals(TOTAL_XP, outcome.getTotalXp());
+		assertEquals(StreakEffect.NONE, outcome.getStreakEffect());
+		assertEquals(STREAK, outcome.getStreak());
 	}
 
 	private void givenWeights(WeightProfile profile) {
@@ -443,8 +483,12 @@ class BasketAssessmentServiceImplTest {
 		when(archetypeCorpus.scoredArchetypes()).thenReturn(Uni.createFrom().item(ARCHETYPES));
 	}
 
-	private void givenTotalXp() {
-		when(userProfileDao.requireXpTotal(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(TOTAL_XP));
+	private void givenXpAndStreak() {
+		when(userProfileDao.requireXpAndStreak(any(), eq(USER.getId()))).thenReturn(Uni.createFrom().item(xpAndStreak(TOTAL_XP, STREAK)));
+	}
+
+	private static XpAndStreak xpAndStreak(int xpTotal, int streak) {
+		return ImmutableXpAndStreak.builder().xpTotal(xpTotal).streak(streak).build();
 	}
 
 	private static ProductIdentification identified(ArchetypeProductId archetypeProductId) {

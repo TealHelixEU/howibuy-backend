@@ -10,6 +10,7 @@ import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.howibuy.services.v1.basket.types.ScoredBasketProduct;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
+import eu.tealhelix.howibuy.v1.types.StreakEffect;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -77,6 +78,24 @@ public class BasketRulesTest {
 		assertEquals(basketMatch, verdict.basketMatch());
 	}
 
+	/**
+	 * A basket with a product above 0.8 on the scientific Overall Score extends the Streak; one whose products are all at
+	 * 0.8 or less resets it.
+	 */
+	@ParameterizedTest
+	@CsvSource({
+			"0.9,              EXTEND",
+			"0.8001,           EXTEND",
+			"0.1 0.2 0.9,      EXTEND",
+			"0.8,              RESET",
+			"0.1 0.5 0.8,      RESET",
+	})
+	void movesTheStreakOnTheScientificOverallScores(String scientificScores, StreakEffect streakEffect) {
+		var verdict = sut.judge(products(scientificScores, scientificScores));
+
+		assertEquals(streakEffect, verdict.streakEffect());
+	}
+
 	@Test
 	void judgesTheMatchOnThePersonalOverallScoresAndTheRestOnTheScientificOnes() {
 		var sustainableButNotForTheUser = sut.judge(products("0.9 0.9", "0.1 0.1"));
@@ -85,9 +104,11 @@ public class BasketRulesTest {
 		assertEquals(BasketMatch.NEEDS_IMPROVEMENT, sustainableButNotForTheUser.basketMatch());
 		assertEquals(20, sustainableButNotForTheUser.xpValue());
 		assertEquals(List.of(), sustainableButNotForTheUser.problematicProductKeys());
+		assertEquals(StreakEffect.EXTEND, sustainableButNotForTheUser.streakEffect());
 		assertEquals(BasketMatch.EXCELLENT, forTheUserButNotSustainable.basketMatch());
 		assertEquals(0, forTheUserButNotSustainable.xpValue());
 		assertEquals(List.of(key(0), key(1)), forTheUserButNotSustainable.problematicProductKeys());
+		assertEquals(StreakEffect.RESET, forTheUserButNotSustainable.streakEffect());
 	}
 
 	@Test
@@ -111,6 +132,7 @@ public class BasketRulesTest {
 		assertNull(verdict.basketMatch());
 		assertEquals(0, verdict.xpValue());
 		assertEquals(List.of(), verdict.problematicProductKeys());
+		assertEquals(StreakEffect.NONE, verdict.streakEffect());
 	}
 
 	/**

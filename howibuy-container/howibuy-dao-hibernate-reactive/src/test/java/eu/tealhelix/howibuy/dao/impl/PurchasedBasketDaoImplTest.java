@@ -31,6 +31,7 @@ import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasket;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasket;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
+import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
@@ -188,14 +189,14 @@ public class PurchasedBasketDaoImplTest {
 		var userProfileDao = new UserProfileDaoImpl();
 		var basket = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.EXCELLENT, 10, null, List.of(product("milk-1", MILK, 0.85, 0.83, 0.9, 0.8, 0.7, 0.95)));
 		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
-		Integer totalBefore = factory.withoutTransaction(em -> userProfileDao.requireXpTotal(em, userId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		XpAndStreak before = factory.withoutTransaction(em -> userProfileDao.requireXpAndStreak(em, userId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		Integer totalAfter = factory.withTransaction(tx -> sut.store(tx, basket)
+		XpAndStreak after = factory.withTransaction(tx -> sut.store(tx, basket)
 						.chain(() -> userProfileDao.addXp(tx, userId(), basket.getXpValue()))
-						.chain(() -> userProfileDao.requireXpTotal(tx, userId())))
+						.chain(() -> userProfileDao.requireXpAndStreak(tx, userId())))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		assertEquals(totalBefore + 10, totalAfter);
+		assertEquals(before.getXpTotal() + 10, after.getXpTotal());
 		assertEquals(1, rows("SELECT id FROM TH_PURCHASED_BASKET").size());
 	}
 

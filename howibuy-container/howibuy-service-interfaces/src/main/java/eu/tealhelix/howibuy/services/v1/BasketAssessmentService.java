@@ -20,9 +20,10 @@ public interface BasketAssessmentService {
 	Uni<BasketAssessmentOutcome> assessBasketPrePurchase(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language);
 
 	/**
-	 * Assess the basket a user has bought, store it with the scores of its products and add the XP it earns to the
-	 * user's total. There is no idempotency: every call is another purchase, so the caller must make it exactly once per
-	 * purchase; a repeated call stores the basket again and adds its XP again.
+	 * Assess the basket a user has bought, store it with the scores of its products, add the XP it earns to the user's
+	 * total and apply its effect to the user's Streak. There is no idempotency: every call is another purchase, so the
+	 * caller must make it exactly once per purchase; a repeated call stores the basket again, adds its XP again and
+	 * applies its effect to the Streak again.
 	 *
 	 * @param user        The user who bought the basket
 	 * @param catalogueId The Catalogue the user bought it from
@@ -30,8 +31,8 @@ public interface BasketAssessmentService {
 	 *                    this application by a few minutes at most
 	 * @param productKeys The products of the basket
 	 * @param language    The language of the Basket Match label
-	 * @return The outcome, whose total XP includes this basket; a failure with {@code BadInputValueException} for a
-	 *         purchase time in the future
+	 * @return The outcome, whose total XP and Streak include this basket; a failure with
+	 *         {@code BadInputValueException} for a purchase time in the future
 	 */
 	Uni<BasketAssessmentOutcome> assessPurchasedBasket(
 			User user, CatalogueId catalogueId, @Nullable OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language);

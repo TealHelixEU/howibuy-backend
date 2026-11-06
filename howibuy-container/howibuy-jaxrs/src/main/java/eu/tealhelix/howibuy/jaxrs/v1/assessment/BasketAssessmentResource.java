@@ -50,10 +50,10 @@ public class BasketAssessmentResource {
 
 	@Operation(
 			summary = "Assess a basket before the purchase",
-			description = "Judges the basket named in the body as a whole: how well it matches the user's own priorities, the products that keep it from being sustainable, lowest score first, and the experience points the basket would earn. "
+			description = "Judges the basket named in the body as a whole: how well it matches the user's own priorities, the products that keep it from being sustainable, lowest score first, the experience points the basket would earn and what it would do to the user's streak. "
 					+ "The products are looked up by their keys among the products of the Retailer of the Catalogue that the token names, and each one is identified by its Classification. "
 					+ "A product sent more than once counts once. A product that cannot be judged (unknown, not classified, matching no archetype, or with no Nutri-Score) is left out and does not count against the user. "
-					+ "Nothing is stored: the user's experience points total is answered as it stands. "
+					+ "Nothing is stored: the user's experience points total and streak are answered as they stand. "
 					+ "The outcome's `type` says whether any product of the basket could be judged; the match and its label are filled in only when one could.")
 	@APIResponse(responseCode = "200", description = "The basket was put through the assessment. A basket with no product that can be judged is reported by the outcome's `type`, not by an error status.")
 	@APIResponse(responseCode = "400", description = BAD_BASKET)
@@ -75,10 +75,10 @@ public class BasketAssessmentResource {
 	 */
 	@Operation(
 			summary = "Register a purchased basket",
-			description = "Assesses the basket a user bought, as the basket before the purchase is assessed, stores it with the scores of its products and adds the experience points it earns to the user's total, which the answer includes. "
+			description = "Assesses the basket a user bought, as the basket before the purchase is assessed, stores it with the scores of its products, adds the experience points it earns to the user's total and applies its effect to the user's streak; the answer includes both. "
 					+ "The Retailer calls it from its backend, with its own token, and names the user by its correlation id; one this application has not seen before brings the user into being, consented to the Retailer. "
-					+ "**Call it exactly once per purchase:** there is no idempotency, so a repeated call stores the basket again and adds its experience points again. "
-					+ "A basket with no product that can be judged is stored too, earning nothing.")
+					+ "**Call it exactly once per purchase:** there is no idempotency, so a repeated call stores the basket again, adds its experience points again and applies its effect to the streak again. "
+					+ "A basket with no product that can be judged is stored too, earning nothing and leaving the streak as it is.")
 	@APIResponse(responseCode = "200", description = "The purchase was registered. A basket with no product that can be judged is reported by the outcome's `type`, not by an error status.")
 	@APIResponse(responseCode = "400", description = BAD_PURCHASE)
 	@APIResponse(responseCode = "401", description = UNAUTHENTICATED)

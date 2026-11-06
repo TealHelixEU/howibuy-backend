@@ -241,9 +241,11 @@ public class OpenApiContractTest {
 		assertEquals("#/components/schemas/BasketAssessmentOutcome",
 				at(assess, "responses", "200", "content", "application/json", "schema", "$ref"));
 		var outcome = at(schemas(document), "BasketAssessmentOutcome", "properties");
-		assertEquals(Set.of("type", "basketMatch", "basketMatchLabel", "intervention", "problematicProductKeys", "totalXp", "xpValue"), ((Map<?, ?>) outcome).keySet());
+		assertEquals(Set.of("type", "basketMatch", "basketMatchLabel", "intervention", "problematicProductKeys", "totalXp", "xpValue", "streak", "streakEffect"),
+				((Map<?, ?>) outcome).keySet());
 		assertEquals(List.of("ASSESSED", "NOTHING_TO_ASSESS"), at(schemas(document), "BasketAssessmentOutcomeType", "enum"));
 		assertEquals(List.of("EXCELLENT", "GOOD", "NEEDS_IMPROVEMENT"), at(schemas(document), "BasketMatch", "enum"));
+		assertEquals(List.of("EXTEND", "RESET", "NONE"), at(schemas(document), "StreakEffect", "enum"));
 		assertNull(at(schemas(document), "BasketGrade"));
 		for (var status : List.of("400", "401", "403")) {
 			assertNotNull(at(assess, "responses", status, "description"), "a refused basket is documented, status: " + status);

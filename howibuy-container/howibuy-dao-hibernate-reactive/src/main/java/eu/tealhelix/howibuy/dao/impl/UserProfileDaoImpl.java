@@ -4,8 +4,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.metamodel.SingularAttribute;
 
 import eu.tealhelix.common.dao.EntityAlreadyExistsException;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
@@ -19,6 +23,8 @@ import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity_;
+import eu.tealhelix.howibuy.services.model.ImmutableXpAndStreak;
+import eu.tealhelix.howibuy.services.model.XpAndStreak;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.exception.ConstraintViolationException;
 
@@ -68,25 +74,55 @@ public class UserProfileDaoImpl implements UserProfileDao {
 	}
 
 	/**
-	 * Reads the column itself rather than the entity, which the session may hold from before an addition.
+	 * Reads the columns themselves rather than the entity, which the session may hold from before an update.
 	 */
 	@Override
-	public Uni<Integer> requireXpTotal(ReactivePersistenceContext em, UserId userId) {
+	public Uni<XpAndStreak> requireXpAndStreak(ReactivePersistenceContext em, UserId userId) {
 		var cb = em.getCriteriaBuilder();
-		var q = cb.createQuery(Integer.class);
+		var q = cb.createTupleQuery();
 		var profile = q.from(UserProfileEntity.class);
-		q.select(profile.get(UserProfileEntity_.xpTotal));
+		var xpTotal = profile.get(UserProfileEntity_.xpTotal);
+		var streak = profile.get(UserProfileEntity_.streak);
+		q.select(cb.tuple(xpTotal, streak));
 		q.where(cb.equal(profile.get(UserProfileEntity_.id), userId.asUuid()));
 		return em.createQuery(q).getSingleOptionalResult()
-				.map(xpTotal -> xpTotal.orElseThrow(() -> new NotFoundException(userId)));
+				.map(row -> row
+						.map(tuple -> (XpAndStreak) ImmutableXpAndStreak.builder().xpTotal(tuple.get(xpTotal)).streak(tuple.get(streak)).build())
+						.orElseThrow(() -> new NotFoundException(userId)));
 	}
 
 	@Override
 	public Uni<Void> addXp(ReactivePersistenceTxContext tx, UserId userId, int xp) {
+		return updateColumn(tx, userId, UserProfileEntity_.xpTotal, (cb, xpTotal) -> cb.sum(xpTotal, xp));
+	}
+
+	@Override
+	public Uni<Void> increaseStreak(ReactivePersistenceTxContext tx, UserId userId) {
+		return updateColumn(tx, userId, UserProfileEntity_.streak, (cb, streak) -> cb.sum(streak, 1));
+	}
+
+	@Override
+	public Uni<Void> resetStreak(ReactivePersistenceTxContext tx, UserId userId) {
+		return updateColumn(tx, userId, UserProfileEntity_.streak, (cb, _) -> cb.literal(0));
+	}
+
+	/**
+	 * Set a column of the user's profile to a value computed from it, in one update of the database.
+	 *
+	 * @param newValue The new value of the column, from the criteria builder and the column's current value
+	 * @return A {@code Uni} completing when the column has been set; a failure with {@code NotFoundException} if there is
+	 *         no such user
+	 */
+	private static Uni<Void> updateColumn(
+			ReactivePersistenceTxContext tx,
+			UserId userId,
+			SingularAttribute<UserProfileEntity, Integer> column,
+			BiFunction<CriteriaBuilder, Expression<Integer>, Expression<Integer>> newValue
+	) {
 		var cb = tx.getCriteriaBuilder();
 		var u = cb.createCriteriaUpdate(UserProfileEntity.class);
 		var profile = u.from(UserProfileEntity.class);
-		u.set(profile.get(UserProfileEntity_.xpTotal), cb.sum(profile.get(UserProfileEntity_.xpTotal), xp));
+		u.set(profile.get(column), newValue.apply(cb, profile.get(column)));
 		u.where(cb.equal(profile.get(UserProfileEntity_.id), userId.asUuid()));
 		return tx.createUpdate(u).execute().invoke(updated -> {
 			if (updated == 0) throw new NotFoundException(userId);

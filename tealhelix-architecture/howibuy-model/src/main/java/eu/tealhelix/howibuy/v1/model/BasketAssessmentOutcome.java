@@ -6,6 +6,7 @@ import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
 import eu.tealhelix.howibuy.v1.types.BasketMatch;
+import eu.tealhelix.howibuy.v1.types.StreakEffect;
 import org.immutables.value.Value;
 
 /**
@@ -59,4 +60,18 @@ public interface BasketAssessmentOutcome {
 	 * to the {@link #getTotalXp() user's total XP}.
 	 */
 	int getXpValue();
+
+	/**
+	 * The user's Streak. If this outcome is for a basket that has already been purchased, the Streak includes the
+	 * {@link #getStreakEffect() effect of the basket}.
+	 */
+	int getStreak();
+
+	/**
+	 * What the basket does to the user's Streak once purchased, judged on the scientific Overall Scores of its products:
+	 * {@link StreakEffect#EXTEND} when one of them is above 0.8, {@link StreakEffect#RESET} when none is,
+	 * {@link StreakEffect#NONE} when there was nothing to assess. If already purchased, the effect has already been
+	 * applied to the {@link #getStreak() user's Streak}.
+	 */
+	StreakEffect getStreakEffect();
 }

@@ -52,4 +52,12 @@
 			<column name="basket_match" type="VARCHAR(20)" remarks="The Basket Match, EXCELLENT, GOOD or NEEDS_IMPROVEMENT; null when there was nothing to assess" />
 		</addColumn>
 	</changeSet>
+
+	<changeSet id="user_profile_streak" author="nikospara">
+		<addColumn tableName="TH_USER_PROFILE">
+			<column name="streak" type="INT" defaultValueNumeric="0" remarks="The number of the user's Purchased Baskets in a row, in the order they were registered, each with a product above 0.8 on the scientific Overall Score">
+				<constraints nullable="false" notNullConstraintName="NL_TH_USER_PROFILE__STREAK" />
+			</column>
+		</addColumn>
+	</changeSet>
 </databaseChangeLog>
