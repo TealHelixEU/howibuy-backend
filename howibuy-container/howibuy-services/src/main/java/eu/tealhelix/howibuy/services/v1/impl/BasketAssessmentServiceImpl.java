@@ -1,6 +1,5 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
-import static eu.tealhelix.common.utils.UniComprehensions.forc;
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 import static eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType.ASSESSED;
 import static eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType.NOTHING_TO_ASSESS;
@@ -37,13 +36,14 @@ import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasket;
 import eu.tealhelix.howibuy.services.model.ImmutablePurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.model.PurchasedBasketProduct;
 import eu.tealhelix.howibuy.services.v1.BasketAssessmentService;
-import eu.tealhelix.howibuy.services.v1.basket.BasketGradeLabels;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules.BasketVerdict;
 import eu.tealhelix.howibuy.services.v1.basket.BasketRules.ScoredBasketProduct;
+import eu.tealhelix.howibuy.services.v1.basket.Labels;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableBasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
+import eu.tealhelix.howibuy.v1.types.BasketGrade;
 import eu.tealhelix.howibuy.v1.types.ProductGrade;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
 import io.smallrye.mutiny.Uni;
@@ -68,7 +68,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private final PurchasedBasketDao purchasedBasketDao;
 	private final DateTimeService dateTimeService;
 	private final BasketRules basketRules = new BasketRules();
-	private final BasketGradeLabels basketGradeLabels = new BasketGradeLabels();
+	private final Labels<BasketGrade> basketGradeLabels = new Labels<>(Labels.class.getPackageName() + ".BasketGradeLabels");
 
 	/**
 	 * A product of the basket that has an Overall Score under the Weighting Profile in force.

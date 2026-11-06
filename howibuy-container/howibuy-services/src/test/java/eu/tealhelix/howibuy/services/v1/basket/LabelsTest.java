@@ -17,11 +17,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class BasketGradeLabelsTest {
+public class LabelsTest {
 	/**
-	 * A test bundle: English, and a Greek translation of {@link BasketGrade#A} only.
+	 * A test bundle of {@link Grade}: English, and a Greek translation of {@link Grade#A} only.
 	 */
-	private static final String INCOMPLETE_BUNDLE = BasketGradeLabels.class.getPackageName() + ".IncompleteBasketGradeLabels";
+	private static final String INCOMPLETE_BUNDLE = Labels.class.getPackageName() + ".IncompleteLabels";
+
+	/**
+	 * The enum labelled by the test bundle.
+	 */
+	private enum Grade {
+		A, B, C
+	}
 
 	private final List<LogRecord> logged = new ArrayList<>();
 
@@ -42,22 +49,22 @@ public class BasketGradeLabelsTest {
 
 	@BeforeEach
 	void setUp() {
-		var logger = LogContext.getLogContext().getLogger(BasketGradeLabels.class.getName());
+		var logger = LogContext.getLogContext().getLogger(Labels.class.getName());
 		logger.addHandler(logHandler);
 		logger.setUseParentHandlers(false);
 	}
 
 	@AfterEach
 	void tearDown() {
-		var logger = LogContext.getLogContext().getLogger(BasketGradeLabels.class.getName());
+		var logger = LogContext.getLogContext().getLogger(Labels.class.getName());
 		logger.removeHandler(logHandler);
 		logger.setUseParentHandlers(true);
 	}
 
 	@ParameterizedTest
 	@EnumSource(BasketGrade.class)
-	void everyGradeHasAnEnglishLabel(BasketGrade grade) {
-		var sut = new BasketGradeLabels();
+	void everyBasketGradeHasAnEnglishLabel(BasketGrade grade) {
+		var sut = new Labels<BasketGrade>(Labels.class.getPackageName() + ".BasketGradeLabels");
 
 		assertFalse(sut.labelOf(grade, "en").isBlank());
 		assertEquals(List.of(), logged);
@@ -65,28 +72,28 @@ public class BasketGradeLabelsTest {
 
 	@Test
 	void answersTheTranslation() {
-		var sut = new BasketGradeLabels(INCOMPLETE_BUNDLE);
+		var sut = new Labels<Grade>(INCOMPLETE_BUNDLE);
 
-		assertEquals("Καλό καλάθι", sut.labelOf(BasketGrade.A, "el"));
+		assertEquals("Καλό καλάθι", sut.labelOf(Grade.A, "el"));
 		assertEquals(List.of(), logged);
 	}
 
 	@Test
 	void fallsBackToEnglishForAMissingTranslationWithAWarning() {
-		var sut = new BasketGradeLabels(INCOMPLETE_BUNDLE);
+		var sut = new Labels<Grade>(INCOMPLETE_BUNDLE);
 
-		assertEquals("Fair basket", sut.labelOf(BasketGrade.B, "el"));
+		assertEquals("Fair basket", sut.labelOf(Grade.B, "el"));
 		assertEquals(1, logged.size());
 		assertEquals(Level.WARNING, logged.getFirst().getLevel());
-		assertEquals("Basket Grade label not translated, falling back to English, language and grade: el B",
+		assertEquals("Label not translated, falling back to English, bundle, language and key: " + INCOMPLETE_BUNDLE + " el B",
 				logged.getFirst().getMessage().replace("{}", "%s").formatted(logged.getFirst().getParameters()));
 	}
 
 	@Test
 	void fallsBackToEnglishForAnUnsupportedLanguageSilently() {
-		var sut = new BasketGradeLabels(INCOMPLETE_BUNDLE);
+		var sut = new Labels<Grade>(INCOMPLETE_BUNDLE);
 
-		assertEquals("Fair basket", sut.labelOf(BasketGrade.B, "fr"));
+		assertEquals("Fair basket", sut.labelOf(Grade.B, "fr"));
 		assertEquals(List.of(), logged);
 	}
 }
