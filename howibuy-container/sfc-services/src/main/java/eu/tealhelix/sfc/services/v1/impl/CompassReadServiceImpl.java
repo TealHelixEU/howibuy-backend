@@ -2,6 +2,7 @@ package eu.tealhelix.sfc.services.v1.impl;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
+import static eu.tealhelix.common.utils.UniComprehensions.forc;
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 
 import java.time.LocalDateTime;
@@ -144,15 +145,28 @@ public class CompassReadServiceImpl implements CompassReadService {
 	}
 
 	/**
-	 * The user's current attempt reduced to what the overview needs: its status, the questions it counts as answered and
-	 * start-a-new-attempt eligibility. The in-progress attempt if there is one (with its actual answers); otherwise the
+	 * The user's current attempt reduced to what the overview needs: its status, the questions it counts as answered,
+	 * whether the user has ever completed an attempt and start-a-new-attempt eligibility. The in-progress attempt if there
+	 * is one (with its actual answers, and the latest completion telling a retake from a first attempt); otherwise the
 	 * latest completed attempt (which, being complete, counts every question as answered, and whose stability window
 	 * decides eligibility); otherwise no attempt at all.
 	 */
 	private Uni<AttemptState> attemptState(ReactivePersistenceContext em, UUID userId) {
-		return attemptDao.findInProgressId(em, userId).flatMap(inProgress -> inProgress
-				.map(attemptId -> answerDao.retrieveByAttempt(em, attemptId).map(answers -> AttemptState.inProgress(answers.keySet())))
-				.orElseGet(() -> attemptDao.findLatestCompletedAt(em, userId).map(this::stateFromLatestCompletion)));
+		return forc(
+				attemptDao.findInProgressId(em, userId),
+				_ -> attemptDao.findLatestCompletedAt(em, userId),
+				(inProgressAttemptUuid, completedAt) -> makeAttemptStateFromAttemptAndCompletion(em, inProgressAttemptUuid, completedAt)
+		);
+	}
+
+	private Uni<AttemptState> makeAttemptStateFromAttemptAndCompletion(
+			ReactivePersistenceContext em,
+			Optional<UUID> inProgressAttemptUuid,
+			Optional<LocalDateTime> completedAt
+	) {
+		return inProgressAttemptUuid
+				.map(attemptId -> answerDao.retrieveByAttempt(em, attemptId).map(answers -> AttemptState.inProgress(answers.keySet(), completedAt.isPresent())))
+				.orElseGet(() -> Uni.createFrom().item(stateFromLatestCompletion(completedAt)));
 	}
 
 	private AttemptState stateFromLatestCompletion(Optional<LocalDateTime> completedAt) {
@@ -175,6 +189,7 @@ public class CompassReadServiceImpl implements CompassReadService {
 				categoryOverviews,
 				scaleOptionLabels.forLanguage(language),
 				state.status(),
+				state.hasCompletedAttempt(),
 				state.eligibleToStartNewAttempt(),
 				state.eligibleAt());
 	}
@@ -282,26 +297,28 @@ public class CompassReadServiceImpl implements CompassReadService {
 	/**
 	 * The overview's view of the user's current attempt: its {@link #status} (empty when none has ever been started),
 	 * which questions it counts as {@link #answeredIds answered} — or {@link #coversAll every} question, for a completed
-	 * attempt — and whether a new attempt may be started now ({@link #eligibleToStartNewAttempt}), with {@link #eligibleAt
-	 * when} a re-take becomes possible, set only when the current attempt is a completed one.
+	 * attempt — whether the user {@link #hasCompletedAttempt has ever completed one}, and whether a new attempt may be
+	 * started now ({@link #eligibleToStartNewAttempt}), with {@link #eligibleAt when} a re-take becomes possible, set only
+	 * when the current attempt is a completed one.
 	 */
 	private record AttemptState(
 			Optional<AttemptStatus> status,
 			Set<QuestionId> answeredIds,
 			boolean coversAll,
+			boolean hasCompletedAttempt,
 			boolean eligibleToStartNewAttempt,
 			Optional<LocalDateTime> eligibleAt
 	) {
 		static AttemptState none() {
-			return new AttemptState(Optional.empty(), Set.of(), false, true, Optional.empty());
+			return new AttemptState(Optional.empty(), Set.of(), false, false, true, Optional.empty());
 		}
 
-		static AttemptState inProgress(Set<QuestionId> answeredIds) {
-			return new AttemptState(Optional.of(AttemptStatus.IN_PROGRESS), answeredIds, false, false, Optional.empty());
+		static AttemptState inProgress(Set<QuestionId> answeredIds, boolean hasCompletedAttempt) {
+			return new AttemptState(Optional.of(AttemptStatus.IN_PROGRESS), answeredIds, false, hasCompletedAttempt, false, Optional.empty());
 		}
 
 		static AttemptState completed(LocalDateTime windowEnds, boolean eligible) {
-			return new AttemptState(Optional.of(AttemptStatus.COMPLETED), Set.of(), true, eligible, Optional.of(windowEnds));
+			return new AttemptState(Optional.of(AttemptStatus.COMPLETED), Set.of(), true, true, eligible, Optional.of(windowEnds));
 		}
 	}
 }

@@ -40,9 +40,10 @@ import org.junit.jupiter.api.Test;
  * The compass overview against a real (Postgres-only) database seeded from {@code appdata}, with time controlled through
  * a stubbed {@link DateTimeService}. It reports, measured against the user's current attempt: the five categories with
  * overall and per-category progress (answered/total and percentage) and estimated completion time, the localized scale
- * labels, the attempt status, and whether a fresh attempt may be started. A fresh user sees zero progress and full
- * totals; answering advances the counts; a completed attempt reads as fully answered and locked until its stability
- * window elapses, after which the overview reports the user eligible again.
+ * labels, the attempt status, whether an attempt has ever been completed, and whether a fresh attempt may be started. A
+ * fresh user sees zero progress and full totals; answering advances the counts; a completed attempt reads as fully
+ * answered and locked until its stability window elapses, after which the overview reports the user eligible again; a
+ * retake in progress counts its own answers and still reports the completed attempt.
  * <p>
  * The assembly branches in isolation (status/eligibility/percentage) are covered by {@code CompassReadServiceImplTest};
  * completion and the window over real time by {@code CompassCompletionTest}; the happy path end-to-end with a real token
@@ -96,6 +97,7 @@ public class CompassOverviewTest {
 		var overview = overview("en");
 
 		assertNull(overview.get("attemptStatus"), "no attempt has been started");
+		assertFalse((boolean) overview.get("hasCompletedAttempt"), "no attempt has been completed");
 		assertTrue((boolean) overview.get("eligibleToStartNewAttempt"), "a user with no attempt may start one");
 		assertNull(overview.get("eligibleAt"), "there is no completed attempt to wait on");
 
@@ -120,6 +122,7 @@ public class CompassOverviewTest {
 		var overview = overview("en");
 
 		assertEquals("IN_PROGRESS", overview.get("attemptStatus"));
+		assertFalse((boolean) overview.get("hasCompletedAttempt"), "the first attempt is still in progress");
 		assertFalse((boolean) overview.get("eligibleToStartNewAttempt"), "an attempt is already in progress");
 		assertProgress(overview.get("overallProgress"), 5, TOTAL_QUESTIONS, 12);
 
@@ -139,6 +142,7 @@ public class CompassOverviewTest {
 		assertProgress(overview.get("overallProgress"), TOTAL_QUESTIONS, TOTAL_QUESTIONS, 100);
 		categoriesByDimension(overview).forEach((dimension, line) ->
 				assertProgress(line.get("progress"), QUESTIONS_PER_DIMENSION.get(dimension), QUESTIONS_PER_DIMENSION.get(dimension), 100));
+		assertTrue((boolean) overview.get("hasCompletedAttempt"));
 		assertFalse((boolean) overview.get("eligibleToStartNewAttempt"), "still inside the stability window");
 		assertEquals(COMPLETED_AT.plus(stabilityWindow), LocalDateTime.parse((String) overview.get("eligibleAt")), "told when a re-take becomes possible");
 	}
@@ -152,7 +156,23 @@ public class CompassOverviewTest {
 
 		assertEquals("COMPLETED", overview.get("attemptStatus"), "the completed attempt remains the record");
 		assertProgress(overview.get("overallProgress"), TOTAL_QUESTIONS, TOTAL_QUESTIONS, 100);
+		assertTrue((boolean) overview.get("hasCompletedAttempt"));
 		assertTrue((boolean) overview.get("eligibleToStartNewAttempt"), "the stability window has elapsed");
+	}
+
+	@Test
+	void aRetakeInProgressCountsItsOwnAnswersAndReportsTheCompletedAttempt() throws SQLException {
+		completeEveryQuestion();
+		clock.set(COMPLETED_AT.plus(stabilityWindow).plusDays(1));
+		answerAll(allQuestionIds().subList(0, 1));
+
+		var overview = overview("en");
+
+		assertEquals("IN_PROGRESS", overview.get("attemptStatus"), "answering after the window started a retake");
+		assertTrue((boolean) overview.get("hasCompletedAttempt"), "the earlier attempt was completed");
+		assertFalse((boolean) overview.get("eligibleToStartNewAttempt"), "an attempt is already in progress");
+		assertNull(overview.get("eligibleAt"), "no stability window to wait on while an attempt is in progress");
+		assertProgress(overview.get("overallProgress"), 1, TOTAL_QUESTIONS, 2);
 	}
 
 	@Test

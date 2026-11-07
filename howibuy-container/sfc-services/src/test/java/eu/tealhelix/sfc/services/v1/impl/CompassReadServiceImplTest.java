@@ -362,6 +362,7 @@ public class CompassReadServiceImplTest {
 		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
 
 		assertEquals(Optional.empty(), overview.attemptStatus(), "no attempt has been started");
+		assertFalse(overview.hasCompletedAttempt(), "no attempt has been completed");
 		assertTrue(overview.eligibleToStartNewAttempt(), "a user with no attempt may start one");
 		assertEquals(Optional.empty(), overview.eligibleAt(), "there is no completed attempt to wait on");
 		assertEquals(new Progress(0, 5, 0), overview.overallProgress());
@@ -378,6 +379,7 @@ public class CompassReadServiceImplTest {
 	@Test
 	void findOverviewForAnInProgressAttemptCountsTheAnswersPerCategory() {
 		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(attemptDao.findLatestCompletedAt(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.empty()));
 		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
 				Q1.getId(), ScaleOption.VERY_IMPORTANT,
 				Q4.getId(), ScaleOption.NOT_IMPORTANT)));
@@ -387,12 +389,30 @@ public class CompassReadServiceImplTest {
 		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
 
 		assertEquals(Optional.of(AttemptStatus.IN_PROGRESS), overview.attemptStatus());
+		assertFalse(overview.hasCompletedAttempt(), "the first attempt is still in progress");
 		assertFalse(overview.eligibleToStartNewAttempt(), "an attempt is already in progress");
 		assertEquals(Optional.empty(), overview.eligibleAt());
 		assertEquals(new Progress(2, 5, 40), overview.overallProgress());
 		assertEquals(new Progress(1, 3, 33), overview.categories().get(0).progress(), "one of three answered in the first category");
 		assertEquals(new Progress(1, 2, 50), overview.categories().get(1).progress(), "one of two answered in the second category");
-		verify(attemptDao, never()).findLatestCompletedAt(any(), any());
+	}
+
+	@Test
+	void findOverviewForARetakeInProgressCountsItsOwnAnswersAndReportsTheCompletedAttempt() {
+		when(attemptDao.findInProgressId(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(ATTEMPT_ID)));
+		when(attemptDao.findLatestCompletedAt(any(), eq(USER_UUID))).thenReturn(Uni.createFrom().item(Optional.of(PRIOR_COMPLETION)));
+		when(answerDao.retrieveByAttempt(any(), eq(ATTEMPT_ID))).thenReturn(Uni.createFrom().item(Map.of(
+				Q1.getId(), ScaleOption.VERY_IMPORTANT)));
+		when(categoryDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_CATEGORIES));
+		when(questionDao.retrieveByLanguage(any(), eq("en"))).thenReturn(Uni.createFrom().item(OVERVIEW_QUESTIONS));
+
+		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
+
+		assertEquals(Optional.of(AttemptStatus.IN_PROGRESS), overview.attemptStatus());
+		assertTrue(overview.hasCompletedAttempt(), "an earlier attempt was completed");
+		assertFalse(overview.eligibleToStartNewAttempt(), "an attempt is already in progress");
+		assertEquals(Optional.empty(), overview.eligibleAt(), "no stability window to wait on while an attempt is in progress");
+		assertEquals(new Progress(1, 5, 20), overview.overallProgress(), "the retake's own answers, not the completed attempt's");
 	}
 
 	@Test
@@ -409,6 +429,7 @@ public class CompassReadServiceImplTest {
 		assertEquals(new Progress(5, 5, 100), overview.overallProgress(), "a completed attempt reads as fully answered");
 		assertEquals(new Progress(3, 3, 100), overview.categories().get(0).progress());
 		assertEquals(new Progress(2, 2, 100), overview.categories().get(1).progress());
+		assertTrue(overview.hasCompletedAttempt());
 		assertFalse(overview.eligibleToStartNewAttempt(), "still inside the stability window");
 		assertEquals(Optional.of(WINDOW_ENDS), overview.eligibleAt(), "told when a re-take becomes possible");
 		verifyNoInteractions(answerDao);
@@ -425,6 +446,7 @@ public class CompassReadServiceImplTest {
 		var overview = sut.retrieveOverview(USER, "en").await().atMost(WAIT);
 
 		assertEquals(Optional.of(AttemptStatus.COMPLETED), overview.attemptStatus());
+		assertTrue(overview.hasCompletedAttempt());
 		assertTrue(overview.eligibleToStartNewAttempt(), "the stability window has elapsed");
 		assertEquals(Optional.of(WINDOW_ENDS), overview.eligibleAt());
 		verifyNoInteractions(answerDao);

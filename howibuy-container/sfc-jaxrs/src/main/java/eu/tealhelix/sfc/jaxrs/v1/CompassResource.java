@@ -56,7 +56,7 @@ public class CompassResource {
 
 	@Operation(
 			summary = "Where the user stands in the compass",
-			description = "One snapshot of the whole compass: overall progress and the estimated time still to spend, the same per category, the localized labels of the answer scale, and the state of the current attempt — including, once one has been completed, the moment its stability window ends and a fresh attempt may be started.")
+			description = "One snapshot of the whole compass: overall progress and the estimated time still to spend, the same per category, the localized labels of the answer scale, and the state of the current attempt — whether an attempt has ever been completed and, while a completed attempt is the current one, the moment its stability window ends and a fresh attempt may be started.")
 	@APIResponse(responseCode = "200", description = "Progress, estimates, scale labels and attempt state, localized.")
 	@GET
 	@Path("overview")

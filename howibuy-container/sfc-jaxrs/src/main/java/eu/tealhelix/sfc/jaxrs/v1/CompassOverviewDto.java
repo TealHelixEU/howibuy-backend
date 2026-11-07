@@ -13,8 +13,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * A single snapshot of where the user stands: overall progress and estimated completion time, the same per category,
  * the five localized scale labels, and the current attempt's state. {@code attemptStatus} is {@code null} when the user
- * has never started an attempt; {@code eligibleAt} is {@code null} until they have a completed attempt, after which it is
- * the moment its stability window ends (so the client can tell the user when a re-take becomes possible).
+ * has never started an attempt; {@code hasCompletedAttempt} tells whether they have ever completed one, true also while a
+ * later one is in progress; {@code eligibleAt} is the moment the stability window of their completed attempt ends (so
+ * the client can tell the user when a re-take becomes possible), and {@code null} when they have never completed an
+ * attempt and while an attempt is in progress.
  */
 @Schema(description = "A single snapshot of where the user stands in the compass, localized for the requested language.")
 public record CompassOverviewDto(
@@ -28,9 +30,11 @@ public record CompassOverviewDto(
 		Map<ScaleOption, String> scaleLabels,
 		@Schema(description = "The state of the user's current attempt, or null when they have never started one.")
 		AttemptStatus attemptStatus,
+		@Schema(description = "Whether the user has ever completed an attempt; true also while a later attempt is in progress.")
+		boolean hasCompletedAttempt,
 		@Schema(description = "Whether the user may start a fresh attempt right now.")
 		boolean eligibleToStartNewAttempt,
-		@Schema(description = "When a completed attempt's stability window ends, the earliest a fresh attempt may start. Null until the user has completed an attempt.")
+		@Schema(description = "When a completed attempt's stability window ends, the earliest a fresh attempt may start. Null when the user has never completed an attempt, and while an attempt is in progress.")
 		LocalDateTime eligibleAt
 ) {
 	static CompassOverviewDto from(CompassOverview overview) {
@@ -40,6 +44,7 @@ public record CompassOverviewDto(
 				overview.categories().stream().map(CategoryOverviewDto::from).toList(),
 				overview.scaleLabels(),
 				overview.attemptStatus().orElse(null),
+				overview.hasCompletedAttempt(),
 				overview.eligibleToStartNewAttempt(),
 				overview.eligibleAt().orElse(null));
 	}

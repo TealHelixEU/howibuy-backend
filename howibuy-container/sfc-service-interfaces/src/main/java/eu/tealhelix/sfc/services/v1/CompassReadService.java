@@ -60,9 +60,10 @@ public interface CompassReadService {
 
 	/**
 	 * A single overview of where the user stands, localized for {@code language}: every category with overall and
-	 * per-category progress and estimated completion time, the five localized scale labels, the current attempt's status
-	 * and whether a new attempt may be started now. Progress is measured against the user's current attempt — the one in
-	 * progress, or their latest completed one (which, being complete, reads as fully answered), or none.
+	 * per-category progress and estimated completion time, the five localized scale labels, the current attempt's status,
+	 * whether the user has ever completed an attempt and whether a new attempt may be started now. Progress is measured
+	 * against the user's current attempt — the one in progress, or their latest completed one (which, being complete,
+	 * reads as fully answered), or none.
 	 */
 	Uni<CompassOverview> retrieveOverview(User user, String language);
 

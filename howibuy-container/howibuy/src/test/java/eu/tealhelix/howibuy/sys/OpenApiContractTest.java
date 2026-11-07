@@ -49,7 +49,8 @@ public class OpenApiContractTest {
 				.then()
 				.statusCode(200)
 				.body(containsString("sfc/overview"))
-				.body("components.schemas.CompassOverviewDto", notNullValue());
+				.body("components.schemas.CompassOverviewDto", notNullValue())
+				.body("components.schemas.CompassOverviewDto.properties.hasCompletedAttempt.type", equalTo("boolean"));
 	}
 
 	/**

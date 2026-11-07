@@ -13,11 +13,12 @@ import eu.tealhelix.sfc.v1.types.ScaleOption;
  * {@link Progress} and estimated completion time, the same broken down per {@link CategoryOverview category}, the five
  * localized {@link ScaleOption} labels, and the attempt's state.
  * <p>
- * {@link #attemptStatus()} is empty when the user has never started an attempt. {@link #eligibleToStartNewAttempt()} is
- * true only when they may begin a fresh attempt right now — they have none in progress and either never completed one or
- * its stability window has elapsed. {@link #eligibleAt()} is the moment that stability window ends, so the user can be
- * told when a re-take becomes possible; it is present when their current attempt is a completed one and absent while an
- * attempt is in progress.
+ * {@link #attemptStatus()} is empty when the user has never started an attempt. {@link #hasCompletedAttempt()} is true
+ * once the user has completed an attempt, also while a later one is in progress, so a retake can be told from a first
+ * attempt. {@link #eligibleToStartNewAttempt()} is true only when they may begin a fresh attempt right now — they have
+ * none in progress and either never completed one or its stability window has elapsed. {@link #eligibleAt()} is the
+ * moment that stability window ends, so the user can be told when a re-take becomes possible; it is present when their
+ * current attempt is a completed one and absent while an attempt is in progress.
  */
 public record CompassOverview(
 		Progress overallProgress,
@@ -25,6 +26,7 @@ public record CompassOverview(
 		List<CategoryOverview> categories,
 		Map<ScaleOption, String> scaleLabels,
 		Optional<AttemptStatus> attemptStatus,
+		boolean hasCompletedAttempt,
 		boolean eligibleToStartNewAttempt,
 		Optional<LocalDateTime> eligibleAt
 ) {
