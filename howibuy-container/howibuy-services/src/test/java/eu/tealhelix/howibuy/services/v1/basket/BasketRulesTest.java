@@ -47,6 +47,15 @@ public class BasketRulesTest {
 	}
 
 	/**
+	 * The XP of a product, which the explanations of XP quote, is what every product above 0.8 earns.
+	 */
+	@Test
+	void tellsTheXpOfAProductAbove08() {
+		assertEquals(10, sut.xpPerProduct());
+		assertEquals(sut.xpPerProduct(), sut.judge(products("0.9", "0.9")).xpValue());
+	}
+
+	/**
 	 * WP5.3's own example: four of the ten products are above 0.8, and the average, 0.7096, earns the bonus of 50.
 	 */
 	@Test

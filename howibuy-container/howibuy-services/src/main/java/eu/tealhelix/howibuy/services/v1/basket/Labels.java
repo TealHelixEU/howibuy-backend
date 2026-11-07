@@ -4,13 +4,16 @@ import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
+import eu.tealhelix.howibuy.v1.types.Badge;
+import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The labels of the constants of an enum, shown to the user, in a {@code .properties} resource bundle keyed by the
  * constant names. The bundle files sit in this package, one bundle per enum ({@code <Enum>Labels[_xx].properties}); the
- * root bundle holds English. The business people supply the wording.
+ * root bundle holds English. The business people supply the wording. Each bundle is read through one constant of this
+ * class, shared by everything that shows its labels.
  * <p>
  * English stands in for a language with no bundle of its own, and for a constant a bundle does not translate, which is
  * logged as a warning.
@@ -27,12 +30,21 @@ public final class Labels<E extends Enum<E>> {
 	private static final ResourceBundle.Control CONTROL =
 			ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES);
 
+	/**
+	 * The labels of the Basket Matches.
+	 */
+	public static final Labels<BasketMatch> BASKET_MATCHES = new Labels<>(Labels.class.getPackageName() + ".BasketMatchLabels");
+	/**
+	 * The labels of the Badges.
+	 */
+	public static final Labels<Badge> BADGES = new Labels<>(Labels.class.getPackageName() + ".BadgeLabels");
+
 	private final String bundleBaseName;
 
 	/**
 	 * @param bundleBaseName the fully qualified base name of the bundle, as {@link ResourceBundle#getBundle} takes it
 	 */
-	public Labels(String bundleBaseName) {
+	Labels(String bundleBaseName) {
 		this.bundleBaseName = bundleBaseName;
 	}
 

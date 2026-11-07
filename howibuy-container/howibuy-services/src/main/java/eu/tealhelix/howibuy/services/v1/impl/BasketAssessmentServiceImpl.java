@@ -52,7 +52,6 @@ import eu.tealhelix.howibuy.v1.model.ImmutableBasketAssessmentOutcome;
 import eu.tealhelix.howibuy.v1.model.ImmutableEarnedBadge;
 import eu.tealhelix.howibuy.v1.types.Badge;
 import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
-import eu.tealhelix.howibuy.v1.types.BasketMatch;
 import eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension;
 import eu.tealhelix.howibuy.v1.types.StreakEffect;
 import eu.tealhelix.howibuy.v1.types.WeightProfile;
@@ -79,8 +78,6 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	private final DateTimeService dateTimeService;
 	private final BasketRules basketRules = new BasketRules();
 	private final BadgeRules badgeRules = new BadgeRules();
-	private final Labels<BasketMatch> basketMatchLabels = new Labels<>(Labels.class.getPackageName() + ".BasketMatchLabels");
-	private final Labels<Badge> badgeLabels = new Labels<>(Labels.class.getPackageName() + ".BadgeLabels");
 
 	/**
 	 * A product of the basket that has an Overall Score.
@@ -278,7 +275,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 		return ImmutableBasketAssessmentOutcome.builder()
 				.type(typeOf(verdict))
 				.basketMatch(basketMatch)
-				.basketMatchLabel(basketMatch == null ? null : basketMatchLabels.labelOf(basketMatch, language))
+				.basketMatchLabel(basketMatch == null ? null : Labels.BASKET_MATCHES.labelOf(basketMatch, language))
 				.problematicProductKeys(verdict.problematicProductKeys())
 				.xpValue(verdict.xpValue())
 				.totalXp(xpAndStreak.getXpTotal())
@@ -289,7 +286,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	}
 
 	private EarnedBadge earnedBadge(Badge badge, String language) {
-		return ImmutableEarnedBadge.builder().badge(badge).label(badgeLabels.labelOf(badge, language)).build();
+		return ImmutableEarnedBadge.builder().badge(badge).label(Labels.BADGES.labelOf(badge, language)).build();
 	}
 
 	private static BasketAssessmentOutcomeType typeOf(BasketVerdict verdict) {

@@ -70,6 +70,29 @@ public class BadgeRulesTest {
 		assertEquals(List.of(), sut.earnedBadges(counts(storedCounts), Set.of(), List.of()));
 	}
 
+	/**
+	 * Each badge is awarded for products above the threshold in the dimension of its series, 50, 100 and 200 for its
+	 * levels 1, 2 and 3.
+	 */
+	@ParameterizedTest
+	@CsvSource({
+			"ENVIRONMENTAL_HERO_1,  ENVIRONMENT,    50",
+			"ENVIRONMENTAL_HERO_2,  ENVIRONMENT,    100",
+			"ENVIRONMENTAL_HERO_3,  ENVIRONMENT,    200",
+			"ANIMAL_WELFARE_HERO_1, ANIMAL_WELFARE, 50",
+			"ANIMAL_WELFARE_HERO_2, ANIMAL_WELFARE, 100",
+			"ANIMAL_WELFARE_HERO_3, ANIMAL_WELFARE, 200",
+			"SOCIO_ECONOMIC_HERO_1, SOCIO_ECONOMIC, 50",
+			"SOCIO_ECONOMIC_HERO_2, SOCIO_ECONOMIC, 100",
+			"SOCIO_ECONOMIC_HERO_3, SOCIO_ECONOMIC, 200",
+			"HEALTH_HERO_1,         HEALTH,         50",
+			"HEALTH_HERO_2,         HEALTH,         100",
+			"HEALTH_HERO_3,         HEALTH,         200",
+	})
+	void requiresOfEachBadgeTheProductsOfItsDimension(Badge badge, ScoredSustainabilityDimension dimension, int products) {
+		assertEquals(new BadgeRules.Requirement(dimension, products), sut.requirementOf(badge));
+	}
+
 	private static Map<ScoredSustainabilityDimension, Long> counts(String counts) {
 		var values = counts.trim().split(" +");
 		var result = new EnumMap<ScoredSustainabilityDimension, Long>(ScoredSustainabilityDimension.class);

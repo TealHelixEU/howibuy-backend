@@ -65,18 +65,14 @@ public class LabelsTest {
 	@ParameterizedTest
 	@EnumSource(BasketMatch.class)
 	void everyBasketMatchHasAnEnglishLabel(BasketMatch basketMatch) {
-		var sut = new Labels<BasketMatch>(Labels.class.getPackageName() + ".BasketMatchLabels");
-
-		assertFalse(sut.labelOf(basketMatch, "en").isBlank());
+		assertFalse(Labels.BASKET_MATCHES.labelOf(basketMatch, "en").isBlank());
 		assertEquals(List.of(), logged);
 	}
 
 	@ParameterizedTest
 	@EnumSource(Badge.class)
 	void everyBadgeHasAnEnglishLabel(Badge badge) {
-		var sut = new Labels<Badge>(Labels.class.getPackageName() + ".BadgeLabels");
-
-		assertFalse(sut.labelOf(badge, "en").isBlank());
+		assertFalse(Labels.BADGES.labelOf(badge, "en").isBlank());
 		assertEquals(List.of(), logged);
 	}
 

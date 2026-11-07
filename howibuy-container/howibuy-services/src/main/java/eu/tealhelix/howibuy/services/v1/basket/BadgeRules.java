@@ -37,7 +37,7 @@ public final class BadgeRules {
 	 * @param dimension the dimension whose Normalised Score a product must be above the threshold on
 	 * @param products  the number of such products the user must have purchased
 	 */
-	private record Requirement(ScoredSustainabilityDimension dimension, int products) {
+	public record Requirement(ScoredSustainabilityDimension dimension, int products) {
 	}
 
 	/**
@@ -80,7 +80,10 @@ public final class BadgeRules {
 		return products.stream().filter(product -> product.normalisedScores().get(dimension) > NORMALISED_SCORE_THRESHOLD).count();
 	}
 
-	private static Requirement requirementOf(Badge badge) {
+	/**
+	 * What awards a badge.
+	 */
+	public Requirement requirementOf(Badge badge) {
 		return switch (badge) {
 			case ENVIRONMENTAL_HERO_1 -> new Requirement(ENVIRONMENT, LEVEL_1_PRODUCTS);
 			case ENVIRONMENTAL_HERO_2 -> new Requirement(ENVIRONMENT, LEVEL_2_PRODUCTS);

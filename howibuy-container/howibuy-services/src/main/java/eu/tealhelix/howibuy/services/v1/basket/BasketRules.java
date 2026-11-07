@@ -70,6 +70,13 @@ public final class BasketRules {
 	}
 
 	/**
+	 * The XP of every product that is not a Problematic Product.
+	 */
+	public int xpPerProduct() {
+		return PRODUCT_XP;
+	}
+
+	/**
 	 * Whether a product of this scientific Overall Score is a Problematic Product.
 	 */
 	public boolean isProblematic(double scientificOverallScore) {
