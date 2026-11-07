@@ -1,12 +1,15 @@
 package eu.tealhelix.howibuy.dao.impl;
 
 import static eu.tealhelix.common.test.testcontainers.DockerImageNames.POSTGRES_IMAGE;
+import static eu.tealhelix.howibuy.dao.impl.TestEntities.catalogue;
+import static eu.tealhelix.howibuy.dao.impl.TestEntities.retailer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
@@ -20,8 +23,11 @@ import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
+import eu.tealhelix.howibuy.dao.jpa.PurchasedBasketEntity;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.howibuy.services.model.XpAndStreak;
+import eu.tealhelix.howibuy.services.model.XpStanding;
+import eu.tealhelix.howibuy.v1.types.BasketAssessmentOutcomeType;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -46,6 +52,8 @@ public class UserProfileDaoImplTest {
 	private static final String IDM_ID_OF_NEW_USER = "IDM ID OF NEW USER";
 	private static final String EMAIL_OF_NEW_USER = "sandy@treedome.com";
 	private static final UUID UNKNOWN_USER_ID = UUID.fromString("9d4b8f2e-6a13-4c57-b0e9-3f8a2d61c7a4");
+	private static final UUID RETAILER_ID = UUID.fromString("6c1f8a42-9e37-4b05-a2d8-3f7e0b91c654");
+	private static final String CATALOGUE_ID = "test-lt";
 
 	@Container
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE);
@@ -235,6 +243,74 @@ public class UserProfileDaoImplTest {
 		var unknownSubscriber = UniAssertSubscriber.<Void>create();
 		factory.withTransaction(tx -> sut.lock(tx, new UserIdImpl(UNKNOWN_USER_ID.toString()))).subscribe().withSubscriber(unknownSubscriber);
 		unknownSubscriber.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).assertFailedWith(NotFoundException.class);
+	}
+
+	/**
+	 * The other users with at least one Purchased Basket count once each, however many baskets they have; of them, those
+	 * with a lower XP total are behind the user, and one with the same XP total is not. A user without a basket counts
+	 * in neither, however low their XP total.
+	 */
+	@Test
+	@Order(10)
+	void testXpStandingAmongTheOtherUsersWithABasket(Mutiny.SessionFactory sessionFactory) {
+		var sut = new UserProfileDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var user = profile();
+		var lower = profile();
+		var same = profile();
+		var higher = profile();
+		var withoutBasket = profile();
+		sessionFactory.withTransaction(session -> session.persistAll(
+						retailer(RETAILER_ID, "Test Retailer"), catalogue(CATALOGUE_ID, RETAILER_ID, "LT", "lt"),
+						user, lower, same, higher, withoutBasket,
+						basketOf(user), basketOf(lower), basketOf(lower), basketOf(same), basketOf(higher)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		factory.withTransaction(tx -> sut.addXp(tx, idOf(user), 50)
+						.chain(() -> sut.addXp(tx, idOf(lower), 30))
+						.chain(() -> sut.addXp(tx, idOf(same), 50))
+						.chain(() -> sut.addXp(tx, idOf(higher), 70))
+						.chain(() -> sut.addXp(tx, idOf(withoutBasket), 10)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		XpStanding standing = factory.withoutTransaction(em -> sut.retrieveXpStanding(em, idOf(user))).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(3, standing.getOtherShoppers(), "lower, same and higher, the user and the user without a basket left out");
+		assertEquals(1, standing.getBehind(), "lower");
+	}
+
+	@Test
+	@Order(11)
+	void testXpStandingOfAnUnknownUserIsNoneOfEither(Mutiny.SessionFactory sessionFactory) {
+		var sut = new UserProfileDaoImpl();
+
+		XpStanding standing = new ReactivePersistenceContextFactoryImpl(sessionFactory)
+				.withoutTransaction(em -> sut.retrieveXpStanding(em, new UserIdImpl(UNKNOWN_USER_ID.toString())))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(0, standing.getOtherShoppers());
+		assertEquals(0, standing.getBehind());
+	}
+
+	private static UserProfileEntity profile() {
+		var profile = new UserProfileEntity();
+		profile.setId(UUID.randomUUID());
+		return profile;
+	}
+
+	private static UserId idOf(UserProfileEntity profile) {
+		return new UserIdImpl(profile.getId().toString());
+	}
+
+	private static PurchasedBasketEntity basketOf(UserProfileEntity profile) {
+		var basket = new PurchasedBasketEntity();
+		basket.setId(UUID.randomUUID());
+		basket.setUserProfileId(profile.getId());
+		basket.setRetailerId(RETAILER_ID);
+		basket.setCatalogueId(CATALOGUE_ID);
+		basket.setPurchasedAt(LocalDateTime.of(2026, 10, 31, 9, 15, 30));
+		basket.setRecordedAt(LocalDateTime.of(2026, 10, 31, 9, 20, 45));
+		basket.setOutcomeType(BasketAssessmentOutcomeType.NOTHING_TO_ASSESS);
+		return basket;
 	}
 
 	private static XpAndStreak xpAndStreakOf(ReactivePersistenceContextFactory factory, UserProfileDaoImpl sut, UserId userId) {

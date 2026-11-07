@@ -24,10 +24,14 @@ import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.common.v1.types.impl.UserIdImpl;
 import eu.tealhelix.howibuy.dao.UserProfileDao;
+import eu.tealhelix.howibuy.dao.jpa.PurchasedBasketEntity;
+import eu.tealhelix.howibuy.dao.jpa.PurchasedBasketEntity_;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity;
 import eu.tealhelix.howibuy.dao.jpa.UserProfileEntity_;
 import eu.tealhelix.howibuy.services.model.ImmutableXpAndStreak;
+import eu.tealhelix.howibuy.services.model.ImmutableXpStanding;
 import eu.tealhelix.howibuy.services.model.XpAndStreak;
+import eu.tealhelix.howibuy.services.model.XpStanding;
 import io.smallrye.mutiny.Uni;
 import org.hibernate.exception.ConstraintViolationException;
 
@@ -92,6 +96,34 @@ public class UserProfileDaoImpl implements UserProfileDao {
 				.map(row -> row
 						.map(tuple -> (XpAndStreak) ImmutableXpAndStreak.builder().xpTotal(tuple.get(xpTotal)).streak(tuple.get(streak)).build())
 						.orElseThrow(() -> new NotFoundException(userId.getId())));
+	}
+
+	/**
+	 * The user and the other users are two roots over the profiles. The other users who have a basket are picked by a
+	 * sub-query of the users of the baskets, so each counts once, however many baskets they have. One behind counts
+	 * through a {@code CASE} without an {@code ELSE}, as the products above a score in {@link PurchasedBasketDaoImpl}: their
+	 * id when their XP total is lower, otherwise {@code NULL}, which {@code COUNT} skips. Without the user, the user's root
+	 * has no row, and nothing is counted.
+	 */
+	@Override
+	public Uni<XpStanding> retrieveXpStanding(ReactivePersistenceContext em, HasUserId userId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createTupleQuery();
+		var user = q.from(UserProfileEntity.class);
+		var other = q.from(UserProfileEntity.class);
+		var otherId = other.get(UserProfileEntity_.id);
+		var shoppers = q.subquery(UUID.class);
+		var basket = shoppers.from(PurchasedBasketEntity.class);
+		shoppers.select(basket.get(PurchasedBasketEntity_.userProfileId));
+		var otherShoppers = cb.count(otherId);
+		var behind = cb.count(cb.<UUID>selectCase().when(cb.lt(other.get(UserProfileEntity_.xpTotal), user.get(UserProfileEntity_.xpTotal)), otherId));
+		q.select(cb.tuple(otherShoppers, behind));
+		q.where(
+				cb.equal(user.get(UserProfileEntity_.id), userId.getId().asUuid()),
+				cb.notEqual(otherId, userId.getId().asUuid()),
+				otherId.in(shoppers));
+		return em.createQuery(q).getSingleResult()
+				.map(row -> (XpStanding) ImmutableXpStanding.builder().otherShoppers(row.get(otherShoppers)).behind(row.get(behind)).build());
 	}
 
 	@Override

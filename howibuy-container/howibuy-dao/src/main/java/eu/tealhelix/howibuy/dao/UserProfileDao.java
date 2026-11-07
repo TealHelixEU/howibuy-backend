@@ -9,6 +9,7 @@ import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.services.model.XpAndStreak;
+import eu.tealhelix.howibuy.services.model.XpStanding;
 import io.smallrye.mutiny.Uni;
 
 public interface UserProfileDao {
@@ -42,6 +43,14 @@ public interface UserProfileDao {
 	 *         no such user
 	 */
 	Uni<XpAndStreak> requireXpAndStreak(ReactivePersistenceContext em, HasUserId userId);
+
+	/**
+	 * @param em     The persistence context
+	 * @param userId The user
+	 * @return How many other users have at least one Purchased Basket, and how many of them have a lower XP total than
+	 *         the user; none of either if there is no such user
+	 */
+	Uni<XpStanding> retrieveXpStanding(ReactivePersistenceContext em, HasUserId userId);
 
 	/**
 	 * Add to the XP the user has earned in total, in one update of the database, so that additions made at the same time

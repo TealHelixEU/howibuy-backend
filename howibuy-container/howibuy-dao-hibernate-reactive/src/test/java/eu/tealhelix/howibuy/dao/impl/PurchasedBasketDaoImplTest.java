@@ -12,17 +12,20 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
+import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.hibernate.ReactivePersistenceContextFactoryImpl;
 import eu.tealhelix.common.test.jpa.HibernateReactiveExtension;
 import eu.tealhelix.common.test.liquibase.LiquibaseExtension;
@@ -52,7 +55,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 /**
  * A Purchased Basket is stored with the products that have an Overall Score and the badges it earned, and the user's XP
  * total grows in the same transaction. The stored products are counted per dimension, and the stored badges read back,
- * for the badges a basket earns.
+ * for the badges a basket earns. For the dashboard, the products of a month are averaged per dimension and the baskets
+ * counted.
  * <p>
  * The stored rows are read back with JDBC: the test is about the mapping of the rows, which reading them through the
  * same mapping could not check.
@@ -294,6 +298,83 @@ public class PurchasedBasketDaoImplTest {
 				ScoredSustainabilityDimension.HEALTH, 0L), counts);
 	}
 
+	/**
+	 * The month runs by the time at the shop, whatever its offset: its first second, which in UTC falls in the month
+	 * before, counts, and so does its last, which in UTC falls in the month after; the last second of the month before
+	 * and the first of the month after do not. Every product counts once per basket, a basket with nothing to assess
+	 * changes nothing, and another user's basket does not count.
+	 */
+	@Test
+	void averagesTheNormalisedScoresOfTheProductsTheUserBoughtInAMonth(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var milk = product("milk-1", MILK, 0.5, 0.5, 0.9, 0.8, 0.7, 0.95);
+		var chips = product("chips-2", CHIPS, 0.5, 0.5, 0.6, 0.5, 0.75, 0.4);
+		var outside = product("chips-2", CHIPS, 0.5, 0.5, 0.1, 0.1, 0.1, 0.1);
+		store(factory, sut,
+				boughtAt(LocalDateTime.of(2026, 10, 1, 0, 0, 0), ZoneOffset.ofHours(5), milk, chips),
+				boughtAt(LocalDateTime.of(2026, 10, 31, 23, 59, 59), ZoneOffset.ofHours(-5), milk),
+				basket(BasketAssessmentOutcomeType.NOTHING_TO_ASSESS, null, 0, null, List.of()),
+				boughtAt(LocalDateTime.of(2026, 9, 30, 23, 59, 59), ZoneOffset.UTC, outside),
+				boughtAt(LocalDateTime.of(2026, 11, 1, 0, 0, 0), ZoneOffset.UTC, outside),
+				ImmutablePurchasedBasket.copyOf(boughtAt(LocalDateTime.of(2026, 10, 15, 12, 0, 0), ZoneOffset.UTC, outside)).withUserId(otherUserId()));
+
+		Map<ScoredSustainabilityDimension, Double> averages = factory.withoutTransaction(em -> sut.retrieveAverageNormalisedScores(em, userId(), YearMonth.of(2026, 10)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS))
+				.orElseThrow();
+
+		assertEquals(Set.of(ScoredSustainabilityDimension.values()), averages.keySet());
+		assertEquals((0.9 + 0.6 + 0.9) / 3, averages.get(ScoredSustainabilityDimension.ENVIRONMENT), 1e-9);
+		assertEquals((0.8 + 0.5 + 0.8) / 3, averages.get(ScoredSustainabilityDimension.ANIMAL_WELFARE), 1e-9);
+		assertEquals((0.7 + 0.75 + 0.7) / 3, averages.get(ScoredSustainabilityDimension.SOCIO_ECONOMIC), 1e-9);
+		assertEquals((0.95 + 0.4 + 0.95) / 3, averages.get(ScoredSustainabilityDimension.HEALTH), 1e-9);
+	}
+
+	@Test
+	void findsNoAveragesForAMonthWithoutAScoredProduct(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		store(factory, sut,
+				basket(BasketAssessmentOutcomeType.NOTHING_TO_ASSESS, null, 0, null, List.of()),
+				boughtAt(LocalDateTime.of(2026, 9, 30, 23, 59, 59), ZoneOffset.UTC, product("milk-1", MILK, 0.5, 0.5, 0.9, 0.8, 0.7, 0.95)));
+
+		Optional<Map<ScoredSustainabilityDimension, Double>> averages = factory.withoutTransaction(em -> sut.retrieveAverageNormalisedScores(em, userId(), YearMonth.of(2026, 10)))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(Optional.empty(), averages);
+	}
+
+	@Test
+	void countsTheUsersBasketsThoseWithNothingToAssessIncluded(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+		var factory = new ReactivePersistenceContextFactoryImpl(sessionFactory);
+		var assessed = basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.GOOD, 10, null, List.of(product("milk-1", MILK, 0.85, 0.83, 0.9, 0.8, 0.7, 0.95)));
+		store(factory, sut,
+				assessed,
+				basket(BasketAssessmentOutcomeType.NOTHING_TO_ASSESS, null, 0, null, List.of()),
+				ImmutablePurchasedBasket.copyOf(assessed).withUserId(otherUserId()));
+
+		long count = factory.withoutTransaction(em -> sut.countBaskets(em, userId())).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(2, count);
+	}
+
+	@Test
+	void countsNoBasketForAUserWithoutBaskets(Mutiny.SessionFactory sessionFactory) {
+		var sut = new PurchasedBasketDaoImpl();
+
+		long count = new ReactivePersistenceContextFactoryImpl(sessionFactory).withoutTransaction(em -> sut.countBaskets(em, userId()))
+				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+
+		assertEquals(0, count);
+	}
+
+	private static void store(ReactivePersistenceContextFactory factory, PurchasedBasketDaoImpl sut, PurchasedBasket... baskets) {
+		for (var basket : baskets) {
+			factory.withTransaction(tx -> sut.store(tx, basket)).await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
+		}
+	}
+
 	private static UserId userId() {
 		return new UserIdImpl(USER.toString());
 	}
@@ -315,6 +396,14 @@ public class PurchasedBasketDaoImplTest {
 				.compassAttemptId(attemptId)
 				.products(products)
 				.build();
+	}
+
+	/**
+	 * An assessed basket of the user, bought at a time at the shop with an offset from UTC.
+	 */
+	private static PurchasedBasket boughtAt(LocalDateTime timeAtTheShop, ZoneOffset offset, PurchasedBasketProduct... products) {
+		return ImmutablePurchasedBasket.copyOf(basket(BasketAssessmentOutcomeType.ASSESSED, BasketMatch.GOOD, 0, null, List.of(products)))
+				.withPurchasedAt(OffsetDateTime.of(timeAtTheShop, offset));
 	}
 
 	private static PurchasedBasketProduct product(String key, UUID archetypeId, double personalOverallScore, double scientificOverallScore, double environment, double animalWelfare, double socioEconomic, double health) {

@@ -5,12 +5,15 @@ import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.ENVIRO
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.HEALTH;
 import static eu.tealhelix.howibuy.v1.types.ScoredSustainabilityDimension.SOCIO_ECONOMIC;
 
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Selection;
 import jakarta.persistence.metamodel.SingularAttribute;
@@ -70,11 +73,7 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 		basketsOfTheUser.select(basket.get(PurchasedBasketEntity_.id)).where(cb.equal(basket.get(PurchasedBasketEntity_.userProfileId), userId.getId().asUuid()));
 		q.select(cb.tuple(counts.values().toArray(Selection<?>[]::new)));
 		q.where(basketId.in(basketsOfTheUser));
-		return em.createQuery(q).getSingleResult().map(row -> {
-			var result = new EnumMap<ScoredSustainabilityDimension, Long>(ScoredSustainabilityDimension.class);
-			counts.forEach((dimension, count) -> result.put(dimension, row.get(count)));
-			return result;
-		});
+		return em.createQuery(q).getSingleResult().map(row -> perDimension(row, counts));
 	}
 
 	@Override
@@ -85,6 +84,51 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 		q.select(userBadge.get(UserBadgeEntity_.badge));
 		q.where(cb.equal(userBadge.get(UserBadgeEntity_.userProfileId), userId.getId().asUuid()));
 		return em.createQuery(q).getResultList().map(Set::copyOf);
+	}
+
+	/**
+	 * The baskets of the month are picked by a sub-query, by {@code purchased_at}, the time at the shop. Without a scored
+	 * product the averages are {@code NULL}; a stored product has every score.
+	 */
+	@Override
+	public Uni<Optional<Map<ScoredSustainabilityDimension, Double>>> retrieveAverageNormalisedScores(ReactivePersistenceContext em, HasUserId userId, YearMonth month) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createTupleQuery();
+		var product = q.from(PurchasedBasketProductEntity.class);
+		var averages = new EnumMap<ScoredSustainabilityDimension, Expression<Double>>(ScoredSustainabilityDimension.class);
+		scoreColumns().forEach((dimension, column) -> averages.put(dimension, cb.avg(product.get(column))));
+		var basketsOfTheMonth = q.subquery(UUID.class);
+		var basket = basketsOfTheMonth.from(PurchasedBasketEntity.class);
+		var purchasedAt = basket.get(PurchasedBasketEntity_.purchasedAt);
+		basketsOfTheMonth.select(basket.get(PurchasedBasketEntity_.id)).where(
+				cb.equal(basket.get(PurchasedBasketEntity_.userProfileId), userId.getId().asUuid()),
+				cb.greaterThanOrEqualTo(purchasedAt, month.atDay(1).atStartOfDay()),
+				cb.lessThan(purchasedAt, month.plusMonths(1).atDay(1).atStartOfDay()));
+		q.select(cb.tuple(averages.values().toArray(Selection<?>[]::new)));
+		q.where(product.get(PurchasedBasketProductEntity_.purchasedBasketId).in(basketsOfTheMonth));
+		return em.createQuery(q).getSingleResult().map(row -> {
+			var result = perDimension(row, averages);
+			return result.containsValue(null) ? Optional.empty() : Optional.of(result);
+		});
+	}
+
+	@Override
+	public Uni<Long> countBaskets(ReactivePersistenceContext em, HasUserId userId) {
+		var cb = em.getCriteriaBuilder();
+		var q = cb.createQuery(Long.class);
+		var basket = q.from(PurchasedBasketEntity.class);
+		q.select(cb.count(basket));
+		q.where(cb.equal(basket.get(PurchasedBasketEntity_.userProfileId), userId.getId().asUuid()));
+		return em.createQuery(q).getSingleResult();
+	}
+
+	/**
+	 * The value of every dimension in a row, read from the expression selected for it.
+	 */
+	private static <T> Map<ScoredSustainabilityDimension, T> perDimension(Tuple row, Map<ScoredSustainabilityDimension, Expression<T>> selected) {
+		var result = new EnumMap<ScoredSustainabilityDimension, T>(ScoredSustainabilityDimension.class);
+		selected.forEach((dimension, expression) -> result.put(dimension, row.get(expression)));
+		return result;
 	}
 
 	/**

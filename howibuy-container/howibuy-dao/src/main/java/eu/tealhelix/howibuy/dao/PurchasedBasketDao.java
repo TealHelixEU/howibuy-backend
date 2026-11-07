@@ -1,6 +1,8 @@
 package eu.tealhelix.howibuy.dao;
 
+import java.time.YearMonth;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceContext;
@@ -39,4 +41,23 @@ public interface PurchasedBasketDao {
 	 * @return The badges the user holds, none for a user who holds none
 	 */
 	Uni<Set<Badge>> findBadges(ReactivePersistenceContext em, HasUserId userId);
+
+	/**
+	 * Average the Normalised Scores of the products the user bought in a month, for every dimension. The month runs by
+	 * the time at the shop, from its first day at 00:00, inclusive, to the first day of the next month at 00:00,
+	 * exclusive. Every product of every Purchased Basket counts once per basket.
+	 *
+	 * @param em     The persistence context
+	 * @param userId The user
+	 * @param month  The month
+	 * @return The average Normalised Score of every dimension; empty when the user bought no scored product in the month
+	 */
+	Uni<Optional<Map<ScoredSustainabilityDimension, Double>>> retrieveAverageNormalisedScores(ReactivePersistenceContext em, HasUserId userId, YearMonth month);
+
+	/**
+	 * @param em     The persistence context
+	 * @param userId The user
+	 * @return How many Purchased Baskets the user has, those with nothing to assess included
+	 */
+	Uni<Long> countBaskets(ReactivePersistenceContext em, HasUserId userId);
 }
