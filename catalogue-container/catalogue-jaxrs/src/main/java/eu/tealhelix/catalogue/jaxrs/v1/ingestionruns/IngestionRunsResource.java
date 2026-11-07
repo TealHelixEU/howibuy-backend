@@ -93,7 +93,7 @@ public class IngestionRunsResource {
 		var user = CurrentUser.of(securityContext);
 		return forcm(
 				Uni.createFrom().item(() -> runId(id)),
-				runId -> ingestionRunService.findRejects(user, runId, offset != null ? offset : 0, required("limit", limit)),
+				runId -> ingestionRunService.findRejects(user, runId, offset, limit),
 				rejects -> rejects.stream().map(IngestionRunsResource::toDto).toList()
 		);
 	}
@@ -183,7 +183,7 @@ public class IngestionRunsResource {
 	}
 
 	private static IngestionRunId runId(String id) {
-		return new IngestionRunIdImpl(uuid("id", id));
+		return new IngestionRunIdImpl(required("id", uuid("id", id)));
 	}
 
 	/**

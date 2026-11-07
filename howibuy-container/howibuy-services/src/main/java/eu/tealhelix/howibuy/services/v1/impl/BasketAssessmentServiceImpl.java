@@ -28,6 +28,7 @@ import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.HasUserId;
 import eu.tealhelix.common.v1.types.RetailerId;
@@ -149,6 +150,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	@Override
 	public Uni<BasketAssessmentOutcome> assessBasketPrePurchase(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language) {
 		authorization.requirePerson(user);
+		AssessmentInputs.requireLanguageAndProductKeys(language, productKeys);
 		LOG.info("Assess basket before purchase, user: {}, catalogue: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(), language,
 				productKeys.stream().map(ProductKey::asString).toList());
 		return forc(
@@ -163,6 +165,9 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	public Uni<BasketAssessmentOutcome> assessPurchasedBasket(
 			User user, CatalogueId catalogueId, OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language) {
 		authorization.requirePerson(user);
+		AssessmentInputs.requireLanguageAndProductKeys(language, productKeys);
+		RequiredInputMissingException.throwIfRequiredInputMissing("catalogueId", catalogueId);
+		RequiredInputMissingException.throwIfRequiredInputMissing("purchasedAt", purchasedAt);
 		var recordedAt = dateTimeService.getNow();
 		requireNotInTheFuture(purchasedAt, recordedAt);
 		LOG.info("Assess purchased basket, user: {}, catalogue: {}, purchasedAt: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(),

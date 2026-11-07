@@ -5,6 +5,8 @@ import static eu.tealhelix.catalogue.jaxrs.v1.CatalogueOpenApiTagNames.FEEDS_DES
 import static eu.tealhelix.common.utils.UniComprehensions.forcm;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
+import static eu.tealhelix.common.web.RequestValuesHelper.nullable;
+import static eu.tealhelix.common.web.RequestValuesHelper.required;
 import static eu.tealhelix.common.web.RequestValuesHelper.uuid;
 
 import java.io.InputStream;
@@ -32,7 +34,6 @@ import eu.tealhelix.catalogue.v1.types.FeedType;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.FeedIdImpl;
 import eu.tealhelix.common.types.validation.BadInputValueException;
-import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.web.exceptionmap.SingleMessageResponse;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -132,7 +133,7 @@ public class FeedsResource {
 	) {
 		var user = CurrentUser.of(securityContext);
 		return forcm(
-				Uni.createFrom().item(() -> new FeedIdImpl(uuid("id", id))),
+				Uni.createFrom().item(() -> new FeedIdImpl(required("id", uuid("id", id)))),
 				feedId -> feedService.find(user, feedId),
 				FeedsResource::toDto
 		);
@@ -143,14 +144,18 @@ public class FeedsResource {
 		return Response.accepted(toDto(received)).location(feedUrl).build();
 	}
 
+	/**
+	 * @return The type named, or {@code null} when the name is missing
+	 */
 	private static FeedType feedType(String type) {
-		RequiredInputMissingException.throwIfRequiredInputMissing("type", type);
-		try {
-			return FeedType.valueOf(type);
-		} catch (IllegalArgumentException e) {
-			String allowedValues = Stream.of(FeedType.values()).map(Enum::name).collect(Collectors.joining(", "));
-			throw BadInputValueException.fromInputNameAndHint("type", "It must be one of " + allowedValues);
-		}
+		return nullable(type, name -> {
+			try {
+				return FeedType.valueOf(name);
+			} catch (IllegalArgumentException e) {
+				String allowedValues = Stream.of(FeedType.values()).map(Enum::name).collect(Collectors.joining(", "));
+				throw BadInputValueException.fromInputNameAndHint("type", "It must be one of " + allowedValues);
+			}
+		});
 	}
 
 	private static FeedDto toDto(FeedWithRuns received) {

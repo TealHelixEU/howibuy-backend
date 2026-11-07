@@ -4,13 +4,12 @@ import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
 import static eu.tealhelix.common.utils.UniComprehensions.forc;
+import static eu.tealhelix.common.web.RequestValuesHelper.nullable;
 import static eu.tealhelix.common.web.RequestValuesHelper.required;
-import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.howibuy.jaxrs.authentication.RequestCatalogue.requireCatalogue;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.BASKET_ASSESSMENT;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.BASKET_ASSESSMENT_DESC;
-
-import java.util.List;
+import static eu.tealhelix.howibuy.services.v1.ProductAssessmentService.MAX_PRODUCTS;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -21,7 +20,6 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
-import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.howibuy.services.v1.BasketAssessmentService;
 import eu.tealhelix.howibuy.services.v1.UserImpersonationService;
@@ -37,10 +35,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @SecurityRequirement(name = BEARER_AUTH)
 public class BasketAssessmentResource {
 	private static final String FORBIDDEN = "The token is not one of the token exchange, so it names no Catalogue to look the products up in; or a service account presented it, while an assessment belongs to an end-user, whose weighting it is made against.";
-	private static final String BAD_BASKET = "The request could not be read, it lacks the language or a product key, or it has more than " + ProductAssessmentResource.MAX_PRODUCTS + " products.";
+	private static final String BAD_BASKET = "The request could not be read, it lacks the language or a product key, or it has more than " + MAX_PRODUCTS + " products.";
 
 	private static final String PURCHASE_FORBIDDEN = "The caller is not an active retailer of this application, the Catalogue named is not an active Catalogue of the retailer, or the user named has not consented to it.";
-	private static final String BAD_PURCHASE = "The request could not be read, it lacks the Catalogue id, the purchase time, the language or a product key, its correlation id is missing or longer than 100 characters, its purchase time has no offset or is in the future, or it has more than " + ProductAssessmentResource.MAX_PRODUCTS + " products.";
+	private static final String BAD_PURCHASE = "The request could not be read, it lacks the Catalogue id, the purchase time, the language or a product key, its correlation id is missing or longer than 100 characters, its purchase time has no offset or is in the future, or it has more than " + MAX_PRODUCTS + " products.";
 
 	@Inject
 	BasketAssessmentService basketAssessmentService;
@@ -65,8 +63,8 @@ public class BasketAssessmentResource {
 	public Uni<BasketAssessmentOutcome> assessBasketPrePurchase(@Context ContainerRequestContext crc, BasketAssessmentRequest request) {
 		var user = currentUser(crc);
 		var catalogueId = requireCatalogue(crc);
-		return Uni.createFrom().item(() -> productKeys(request))
-				.flatMap(productKeys -> basketAssessmentService.assessBasketPrePurchase(user, catalogueId, productKeys, request.language()));
+		return Uni.createFrom().item(() -> required("body", request))
+				.flatMap(body -> basketAssessmentService.assessBasketPrePurchase(user, catalogueId, AssessmentRequests.productKeys(body.productKeys()), body.language()));
 	}
 
 	/**
@@ -89,22 +87,12 @@ public class BasketAssessmentResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<BasketAssessmentOutcome> assessPurchasedBasket(@Context ContainerRequestContext crc, PurchasedBasketAssessmentRequest request) {
 		var retailer = currentUser(crc);
-		return Uni.createFrom().item(() -> productKeys(request))
-				.flatMap(productKeys -> {
-					var catalogueId = new CatalogueIdImpl(requiredText("catalogueId", request.catalogueId()));
-					var purchasedAt = required("purchasedAt", request.purchasedAt());
+		return Uni.createFrom().item(() -> required("body", request))
+				.flatMap(body -> {
+					var catalogueId = nullable(body.catalogueId(), CatalogueIdImpl::new);
 					return forc(
-							userImpersonationService.impersonateUserAsRetailer(retailer, request.correlationId(), catalogueId),
-							user -> basketAssessmentService.assessPurchasedBasket(user, catalogueId, purchasedAt, productKeys, request.language()));
+							userImpersonationService.impersonateUserAsRetailer(retailer, body.correlationId(), catalogueId),
+							user -> basketAssessmentService.assessPurchasedBasket(user, catalogueId, body.purchasedAt(), AssessmentRequests.productKeys(body.productKeys()), body.language()));
 				});
-	}
-
-	/**
-	 * @return The keys of the products of a request that carries a language and at most
-	 *         {@link ProductAssessmentResource#MAX_PRODUCTS} of them
-	 */
-	private static List<ProductKey> productKeys(BasketRequest request) {
-		required("body", request);
-		return AssessmentRequests.productKeys(request.language(), request.productKeys());
 	}
 }

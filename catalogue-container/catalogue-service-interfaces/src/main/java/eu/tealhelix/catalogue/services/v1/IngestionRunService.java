@@ -5,7 +5,6 @@ import java.util.List;
 import eu.tealhelix.catalogue.v1.model.IngestionReject;
 import eu.tealhelix.catalogue.v1.model.IngestionRun;
 import eu.tealhelix.catalogue.v1.types.HasIngestionRunId;
-import eu.tealhelix.catalogue.v1.types.IngestionRunId;
 import eu.tealhelix.common.v1.model.User;
 import io.smallrye.mutiny.Uni;
 
@@ -15,7 +14,7 @@ import io.smallrye.mutiny.Uni;
  */
 public interface IngestionRunService {
 	/**
-	 * The most rejects that {@link #findRejects(User, IngestionRunId, int, int)} reads at once.
+	 * The most rejects that {@link #findRejects(User, HasIngestionRunId, Integer, Integer)} reads at once.
 	 */
 	int MAX_REJECTS_PER_PAGE = 1000;
 
@@ -36,15 +35,16 @@ public interface IngestionRunService {
 	 *
 	 * @param caller The caller
 	 * @param runId  The run
-	 * @param offset How many rejects to skip, not negative
+	 * @param offset How many rejects to skip, not negative; 0 if {@code null}
 	 * @param limit  How many rejects to read at most, from 1 to {@link #MAX_REJECTS_PER_PAGE}
 	 * @return The rejects of the page, empty past the last one
-	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException If the caller is not authenticated
-	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException    If the caller may not read the run
-	 * @throws eu.tealhelix.common.types.entity.NotFoundException                If the run does not exist
-	 * @throws eu.tealhelix.common.types.validation.BadInputValueException       If the offset or the limit is out of range
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException  If the caller is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException     If the caller may not read the run
+	 * @throws eu.tealhelix.common.types.entity.NotFoundException                 If the run does not exist
+	 * @throws eu.tealhelix.common.types.validation.RequiredInputMissingException If the limit is missing
+	 * @throws eu.tealhelix.common.types.validation.BadInputValueException        If the offset or the limit is out of range
 	 */
-	Uni<List<IngestionReject>> findRejects(User caller, HasIngestionRunId runId, int offset, int limit);
+	Uni<List<IngestionReject>> findRejects(User caller, HasIngestionRunId runId, Integer offset, Integer limit);
 
 	/**
 	 * Confirm a {@link eu.tealhelix.catalogue.v1.types.IngestionRunStatus#HELD HELD} Snapshot: take the active Listings of

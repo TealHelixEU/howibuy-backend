@@ -3,6 +3,7 @@ package eu.tealhelix.howibuy.jaxrs.v1.cataloguechanges;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+import static eu.tealhelix.common.web.RequestValuesHelper.built;
 import static eu.tealhelix.common.web.RequestValuesHelper.required;
 import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.common.web.RequestValuesHelper.uuid;
@@ -84,38 +85,36 @@ public class CatalogueChangesResource {
 	private static ProductChangePage toPage(CatalogueChangesRequest request) {
 		if (request == null) throw RequiredInputMissingException.fromRequiredInputName("body");
 		return new ProductChangePage(
-				required("fromSequence", request.fromSequence()),
-				required("toSequence", request.toSequence()),
-				required("products", request.products()).stream().map(CatalogueChangesResource::toProductChange).toList()
+				request.fromSequence(),
+				request.toSequence(),
+				request.products() != null ? request.products().stream().map(CatalogueChangesResource::toProductChange).toList() : null
 		);
 	}
 
 	private static ProductChange toProductChange(ProductChangeDto dto) {
 		var builder = ImmutableProductChange.builder()
-				.retailerId(new GenericRetailerId(uuid("retailerId", dto.retailerId())))
+				.retailerId(new GenericRetailerId(required("retailerId", uuid("retailerId", dto.retailerId()))))
 				.productKey(new ProductKeyImpl(requiredText("productKey", dto.productKey())))
 				.changeSequence(required("changeSequence", dto.changeSequence()))
 				.isRemoved(dto.removed());
-		if (dto.removed()) {
-			return builder.build();
-		} else {
-			return builder
+		if (!dto.removed()) {
+			builder
 					.inputHash(requiredText("inputHash", dto.inputHash()))
 					.names(required("names", dto.names()))
 					.characteristics(orEmpty(dto.characteristics()))
 					.tags(orEmpty(dto.tags()))
-					.listings(required("listings", dto.listings()).stream().map(CatalogueChangesResource::toListing).toList())
-					.build();
+					.listings(required("listings", dto.listings()).stream().map(CatalogueChangesResource::toListing).toList());
 		}
+		return built("products", builder::build);
 	}
 
 	private static Listing toListing(ListingDto dto) {
-		return ImmutableListing.builder()
+		var builder = ImmutableListing.builder()
 				.catalogueId(new CatalogueIdImpl(requiredText("catalogueId", dto.catalogueId())))
 				.price(required("price", dto.price()))
 				.currency(currency(requiredText("currency", dto.currency())))
-				.isActive(dto.active())
-				.build();
+				.isActive(dto.active());
+		return built("listings", builder::build);
 	}
 
 	private static Currency currency(String code) {

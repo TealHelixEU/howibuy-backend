@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "A basket a user bought, as the Retailer registers it: the user, named the way the Retailer knows them, the Catalogue they bought it from and its products.")
@@ -17,7 +18,7 @@ public record PurchasedBasketAssessmentRequest(
 		OffsetDateTime purchasedAt,
 		@Schema(description = "ISO 639-1 code of the language to answer in.")
 		String language,
-		@Schema(description = "The retailer's keys of the products in the basket, at most " + ProductAssessmentResource.MAX_PRODUCTS + ".")
+		@Schema(description = "The retailer's keys of the products in the basket, at most " + ProductAssessmentService.MAX_PRODUCTS + ".")
 		List<String> productKeys
 ) implements BasketRequest {
 }

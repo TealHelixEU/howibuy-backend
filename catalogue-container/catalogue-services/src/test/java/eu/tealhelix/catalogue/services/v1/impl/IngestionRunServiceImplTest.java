@@ -46,6 +46,7 @@ import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
@@ -206,6 +207,22 @@ public class IngestionRunServiceImplTest {
 		assertThrows(BadInputValueException.class, () -> sut.findRejects(OPERATOR_USER, RUN_ID, 0, 0).await().atMost(WAIT));
 		assertThrows(BadInputValueException.class, () -> sut.findRejects(OPERATOR_USER, RUN_ID, 0, 1001).await().atMost(WAIT));
 		verifyNoInteractions(mockIngestionRunDao);
+	}
+
+	@Test
+	void aPageHasALimit() {
+		var e = assertThrows(RequiredInputMissingException.class, () -> sut.findRejects(OPERATOR_USER, RUN_ID, 0, null));
+
+		assertEquals("limit", e.getInputName());
+		verifyNoInteractions(mockIngestionRunDao);
+	}
+
+	@Test
+	void aPageWithoutAnOffsetStartsAtTheFirstReject() {
+		when(mockIngestionRunDao.find(any(), eq(RUN_ID))).thenReturn(Uni.createFrom().item(RUN));
+		when(mockIngestionRunDao.findRejects(any(), eq(RUN_ID), eq(0), eq(10))).thenReturn(Uni.createFrom().item(REJECTS));
+
+		assertEquals(REJECTS, sut.findRejects(OPERATOR_USER, RUN_ID, null, 10).await().atMost(WAIT));
 	}
 
 	@Test

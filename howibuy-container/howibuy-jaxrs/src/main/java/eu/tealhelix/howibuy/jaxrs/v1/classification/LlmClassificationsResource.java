@@ -3,8 +3,8 @@ package eu.tealhelix.howibuy.jaxrs.v1.classification;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+import static eu.tealhelix.common.web.RequestValuesHelper.nullable;
 import static eu.tealhelix.common.web.RequestValuesHelper.required;
-import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.common.web.RequestValuesHelper.uuid;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION_DESC;
@@ -56,7 +56,7 @@ public class LlmClassificationsResource {
 	public Uni<LlmClassificationResponse> classify(@Context ContainerRequestContext crc, LlmClassificationRequest request) {
 		var user = currentUser(crc);
 		return Uni.createFrom().item(() -> required("body", request))
-				.flatMap(body -> classificationService.classifyWithLlm(user, new RetailerProductIdImpl(uuid("retailerProductId", body.retailerProductId())), requiredText("language", body.language())))
+				.flatMap(body -> classificationService.classifyWithLlm(user, nullable(uuid("retailerProductId", body.retailerProductId()), RetailerProductIdImpl::new), body.language()))
 				.map(LlmClassificationsResource::toResponse);
 	}
 

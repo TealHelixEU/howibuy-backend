@@ -17,6 +17,8 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,6 +32,7 @@ import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
@@ -69,6 +72,8 @@ import org.jboss.weld.junit5.auto.ExcludeBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -144,6 +149,12 @@ public class ClassificationServiceImplTest {
 	}
 
 	@Test
+	void thePendingProductsAreFoundWithALimit() {
+		assertMissing("limit", assertThrows(RequiredInputMissingException.class, () -> sut.findPending(OPERATOR_USER, null)));
+		verifyNoInteractions(mockClassificationDao);
+	}
+
+	@Test
 	void theCatalogueSyncAndOperatorsFindTheClassificationsToReviewOutsideATransaction() {
 		var toReview = List.<ClassificationToReview>of(ImmutableClassificationToReview.builder()
 				.id(PRODUCT)
@@ -169,6 +180,12 @@ public class ClassificationServiceImplTest {
 	void theClassificationsToReviewAreFoundFromOneToAThousandAtATime() {
 		assertBadInput("limit", "It must be from 1 to 1000", assertThrows(BadInputValueException.class, () -> sut.findToReview(OPERATOR_USER, 0)));
 		assertBadInput("limit", "It must be from 1 to 1000", assertThrows(BadInputValueException.class, () -> sut.findToReview(OPERATOR_USER, 1001)));
+		verifyNoInteractions(mockClassificationDao);
+	}
+
+	@Test
+	void theClassificationsToReviewAreFoundWithALimit() {
+		assertMissing("limit", assertThrows(RequiredInputMissingException.class, () -> sut.findToReview(OPERATOR_USER, null)));
 		verifyNoInteractions(mockClassificationDao);
 	}
 
@@ -236,6 +253,14 @@ public class ClassificationServiceImplTest {
 		var failure = assertThrows(BadInputValueException.class, () -> sut.recordAttempt(OPERATOR_USER, PRODUCT, attemptInput("el", Classifier.LLM, YOGHURT, "h1")));
 
 		assertBadInput("classifier", "The attempts of the LLM are made by HowiBuy itself", failure);
+		assertNothingTouched();
+	}
+
+	@Test
+	void anAttemptNamesItsProduct() {
+		var attempt = attemptInput("el", Classifier.MANUAL, YOGHURT, "h1");
+
+		assertMissing("retailerProductId", assertThrows(RequiredInputMissingException.class, () -> sut.recordAttempt(OPERATOR_USER, null, attempt)));
 		assertNothingTouched();
 	}
 
@@ -380,6 +405,21 @@ public class ClassificationServiceImplTest {
 	}
 
 	@Test
+	void theLlmClassifiesANamedProduct() {
+		assertMissing("retailerProductId", assertThrows(RequiredInputMissingException.class, () -> sut.classifyWithLlm(OPERATOR_USER, null, "el")));
+		assertNothingTouched();
+		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	void theLlmClassifiesInALanguage(String language) {
+		assertMissing("language", assertThrows(RequiredInputMissingException.class, () -> sut.classifyWithLlm(OPERATOR_USER, PRODUCT, language)));
+		assertNothingTouched();
+		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@Test
 	void anUnknownProductIsNotClassifiedWithTheLlm() {
 		when(mockClassificationDao.findClassificationInput(any(), eq(PRODUCT))).thenReturn(Uni.createFrom().nullItem());
 
@@ -444,6 +484,51 @@ public class ClassificationServiceImplTest {
 	}
 
 	@Test
+	void productDataWithoutCharacteristicsOrTagsIsPreviewedWithNone() {
+		givenTheMatchingEndsWith(new ArchetypeMatchOutcome.NoMatch(diagnostics(null, null, null, null)));
+
+		sut.previewWithLlm(OPERATOR_USER, "el", "Γιαούρτι", null, null).await().atMost(WAIT);
+
+		var productCaptor = ArgumentCaptor.forClass(ProductBaseData.class);
+		verify(mockArchetypeMatching).match(productCaptor.capture());
+		assertEquals(Map.of(), productCaptor.getValue().getCharacteristics());
+		assertEquals(List.of(), productCaptor.getValue().getTags());
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	void productDataWithoutALanguageIsNotPreviewed(String language) {
+		assertMissing("language", assertThrows(RequiredInputMissingException.class, () -> sut.previewWithLlm(OPERATOR_USER, language, "Γιαούρτι", Map.of(), List.of())));
+		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	void productDataWithoutANameIsNotPreviewed(String name) {
+		assertMissing("name", assertThrows(RequiredInputMissingException.class, () -> sut.previewWithLlm(OPERATOR_USER, "el", name, Map.of(), List.of())));
+		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@Test
+	void productDataWithACharacteristicWithoutAValueIsNotPreviewed() {
+		var characteristics = new HashMap<String, String>();
+		characteristics.put("Λιπαρά", null);
+
+		var failure = assertThrows(BadInputValueException.class, () -> sut.previewWithLlm(OPERATOR_USER, "el", "Γιαούρτι", characteristics, List.of()));
+
+		assertBadInput("characteristics", "Their values must be text", failure);
+		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@Test
+	void productDataWithAMissingTagIsNotPreviewed() {
+		var failure = assertThrows(BadInputValueException.class, () -> sut.previewWithLlm(OPERATOR_USER, "el", "Γιαούρτι", Map.of(), Arrays.asList("ψυγείου", null)));
+
+		assertBadInput("tags", "They must be text", failure);
+		verifyNoInteractions(mockArchetypeMatching);
+	}
+
+	@Test
 	void productDataWithABlankNameIsNotPreviewed() {
 		var failure = assertThrows(BadInputValueException.class, () -> sut.previewWithLlm(OPERATOR_USER, "el", " \t", Map.of(), List.of()));
 
@@ -474,6 +559,19 @@ public class ClassificationServiceImplTest {
 		assertThrows(NotAuthenticatedException.class, () -> sut.reopen(null, Classifier.LLM, LLM_VERSION));
 		assertThrows(NotAuthorizedException.class, () -> sut.reopen(CATALOGUE_SYNC_USER, Classifier.LLM, LLM_VERSION));
 		assertThrows(NotAuthorizedException.class, () -> sut.reopen(RETAILER_USER, Classifier.LLM, LLM_VERSION));
+		assertNothingTouched();
+	}
+
+	@Test
+	void theClassificationsReopenedCameFromAClassifier() {
+		assertMissing("classifier", assertThrows(RequiredInputMissingException.class, () -> sut.reopen(OPERATOR_USER, null, LLM_VERSION)));
+		assertNothingTouched();
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	void theClassificationsReopenedCameFromAVersionOfTheClassifier(String classifierVersion) {
+		assertMissing("classifierVersion", assertThrows(RequiredInputMissingException.class, () -> sut.reopen(OPERATOR_USER, Classifier.LLM, classifierVersion)));
 		assertNothingTouched();
 	}
 
@@ -542,6 +640,10 @@ public class ClassificationServiceImplTest {
 	private void assertNothingRecorded() {
 		verify(mockClassificationDao, never()).recordAttempt(any(), any(), any());
 		verify(mockClassificationDao, never()).saveClassification(any(), any(), any());
+	}
+
+	private static void assertMissing(String inputName, RequiredInputMissingException failure) {
+		assertEquals(inputName, failure.getInputName());
 	}
 
 	private static void assertBadInput(String inputName, String hint, Throwable failure) {

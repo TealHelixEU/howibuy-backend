@@ -14,6 +14,7 @@ import jakarta.inject.Inject;
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.UserId;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
@@ -57,6 +58,8 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	@Override
 	public Uni<ProductAssessmentOutcome> assessSingleProduct(User user, CatalogueId catalogueId, ProductKey productKey, String language) {
 		authorization.requirePerson(user);
+		RequiredInputMissingException.throwIfRequiredInputMissing("language", language);
+		RequiredInputMissingException.throwIfRequiredInputMissing("productKey", productKey);
 		LOG.info("Assess single product, user: {}, catalogue: {}, language: {}, key: {}", user.getId().asString(), catalogueId.asString(), language, productKey.asString());
 		return forc(
 				personalWeightsProvider.forUser(user).map(WeightProfileAndAttemptId::profile),
@@ -70,6 +73,7 @@ public class ProductAssessmentServiceImpl implements ProductAssessmentService {
 	@Override
 	public Uni<List<ProductAssessmentOutcome>> assessMultipleProductsSync(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language) {
 		authorization.requirePerson(user);
+		AssessmentInputs.requireLanguageAndProductKeys(language, productKeys);
 		return assessBatch(user, catalogueId, productKeys, language);
 	}
 

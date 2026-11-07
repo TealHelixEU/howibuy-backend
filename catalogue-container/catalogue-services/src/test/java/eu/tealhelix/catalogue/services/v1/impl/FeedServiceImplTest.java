@@ -43,6 +43,7 @@ import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
@@ -171,6 +172,13 @@ public class FeedServiceImplTest {
 		assertThrows(NotAuthenticatedException.class, () -> sut.receiveForActiveCatalogues(null, FeedType.SNAPSHOT, body));
 		assertThrows(NotAuthorizedException.class, () -> sut.receiveForActiveCatalogues(OPERATOR_USER, FeedType.SNAPSHOT, body));
 		assertThrows(NotAuthorizedException.class, () -> sut.receiveForActiveCatalogues(CATALOGUE_SYNC_USER, FeedType.SNAPSHOT, body));
+		verifyNoInteractions(mockCatalogueDao, mockFeedStore, mockFeedDao, mockIngestionRunDao, mockDispatcher);
+	}
+
+	@Test
+	void aFeedHasAType() {
+		assertEquals("type", assertThrows(RequiredInputMissingException.class, () -> sut.receive(RETAILER_USER, CATALOGUE, null, body)).getInputName());
+		assertEquals("type", assertThrows(RequiredInputMissingException.class, () -> sut.receiveForActiveCatalogues(RETAILER_USER, null, body)).getInputName());
 		verifyNoInteractions(mockCatalogueDao, mockFeedStore, mockFeedDao, mockIngestionRunDao, mockDispatcher);
 	}
 

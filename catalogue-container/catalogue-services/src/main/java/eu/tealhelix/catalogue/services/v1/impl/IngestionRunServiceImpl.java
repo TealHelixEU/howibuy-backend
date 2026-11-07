@@ -32,6 +32,7 @@ import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import io.smallrye.mutiny.Uni;
 
@@ -76,12 +77,13 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 	}
 
 	@Override
-	public Uni<List<IngestionReject>> findRejects(User caller, HasIngestionRunId runId, int offset, int limit) {
+	public Uni<List<IngestionReject>> findRejects(User caller, HasIngestionRunId runId, Integer offset, Integer limit) {
 		authorization.requireLogin(caller);
-		requirePage(offset, limit);
+		int skipped = offset != null ? offset : 0;
+		requirePage(skipped, limit);
 		return persistenceContextFactory.withoutTransaction(em -> forc(
 				requireReadableRun(em, caller, runId),
-				run -> ingestionRunDao.findRejects(em, runId, offset, limit)
+				run -> ingestionRunDao.findRejects(em, runId, skipped, limit)
 		));
 	}
 
@@ -187,7 +189,8 @@ public class IngestionRunServiceImpl implements IngestionRunService {
 		});
 	}
 
-	private static void requirePage(int offset, int limit) {
+	private static void requirePage(int offset, Integer limit) {
+		RequiredInputMissingException.throwIfRequiredInputMissing("limit", limit);
 		if (offset < 0) {
 			throw BadInputValueException.fromInputNameAndHint("offset", "It must not be negative");
 		}

@@ -15,6 +15,11 @@ import io.smallrye.mutiny.Uni;
 public interface BasketAssessmentService {
 	/**
 	 * Assess the basket of a user before purchase.
+	 *
+	 * @throws eu.tealhelix.common.types.validation.RequiredInputMissingException without a language or the product keys, or with a key missing
+	 * @throws eu.tealhelix.common.types.validation.BadInputValueException       with more than
+	 *                                                                     {@link ProductAssessmentService#MAX_PRODUCTS}
+	 *                                                                     product keys
 	 */
 	Uni<BasketAssessmentOutcome> assessBasketPrePurchase(User user, CatalogueId catalogueId, List<ProductKey> productKeys, String language);
 
@@ -33,6 +38,11 @@ public interface BasketAssessmentService {
 	 * @param language    The language of the labels of the Basket Match and of the badges
 	 * @return The outcome, whose total XP and Streak include this basket; a failure with
 	 *         {@code BadInputValueException} for a purchase time in the future
+	 * @throws eu.tealhelix.common.types.validation.RequiredInputMissingException without a language, the product keys, the Catalogue or the purchase
+	 *                                                                     time, or with a key missing
+	 * @throws eu.tealhelix.common.types.validation.BadInputValueException       with more than
+	 *                                                                     {@link ProductAssessmentService#MAX_PRODUCTS}
+	 *                                                                     product keys
 	 */
 	Uni<BasketAssessmentOutcome> assessPurchasedBasket(
 			User user, CatalogueId catalogueId, OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language);

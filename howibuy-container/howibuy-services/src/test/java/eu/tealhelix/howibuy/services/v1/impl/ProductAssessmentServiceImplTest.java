@@ -1,5 +1,6 @@
 package eu.tealhelix.howibuy.services.v1.impl;
 
+import static eu.tealhelix.howibuy.services.v1.ProductAssessmentService.MAX_PRODUCTS;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_OTHER;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.FAILURE_TO_IDENTIFY;
 import static eu.tealhelix.howibuy.v1.types.ProductAssessmentOutcomeType.SUCCESS;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,8 @@ import eu.tealhelix.catalogue.v1.types.impl.CatalogueIdImpl;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
+import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.UserId;
@@ -53,6 +57,8 @@ import org.jboss.weld.junit5.auto.EnableAutoWeld;
 import org.jboss.weld.junit5.auto.ExcludeBean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -124,9 +130,34 @@ public class ProductAssessmentServiceImplTest {
 		assertThrows(NotAuthorizedException.class, () -> sut.assessSingleProduct(SERVICE_USER, CATALOGUE, PRODUCT, LANGUAGE));
 	}
 
+	@ParameterizedTest
+	@NullAndEmptySource
+	void assessSingleProductRequiresTheLanguage(String language) {
+		var e = assertThrows(RequiredInputMissingException.class, () -> sut.assessSingleProduct(USER, CATALOGUE, PRODUCT, language));
+
+		assertEquals("language", e.getInputName());
+	}
+
+	@Test
+	void assessSingleProductRequiresTheProductKey() {
+		var e = assertThrows(RequiredInputMissingException.class, () -> sut.assessSingleProduct(USER, CATALOGUE, null, LANGUAGE));
+
+		assertEquals("productKey", e.getInputName());
+	}
+
 	@Test
 	void assessMultipleProductsSyncRejectsAServiceUser() {
 		assertThrows(NotAuthorizedException.class, () -> sut.assessMultipleProductsSync(SERVICE_USER, CATALOGUE, List.of(PRODUCT), LANGUAGE));
+	}
+
+	/**
+	 * {@link AssessmentInputsTest} tests the checks themselves.
+	 */
+	@Test
+	void assessMultipleProductsSyncChecksTheLanguageAndTheProductKeys() {
+		var e = assertThrows(BadInputValueException.class, () -> sut.assessMultipleProductsSync(USER, CATALOGUE, Collections.nCopies(MAX_PRODUCTS + 1, PRODUCT), LANGUAGE));
+
+		assertEquals("productKeys", e.getInputName());
 	}
 
 	@Test

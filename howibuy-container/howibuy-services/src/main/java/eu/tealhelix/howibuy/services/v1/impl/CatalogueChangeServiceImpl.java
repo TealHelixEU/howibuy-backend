@@ -16,6 +16,7 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.dao.reactive.ReactivePersistenceTxContext;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.howibuy.dao.CatalogueChangeCursorDao;
@@ -62,8 +63,15 @@ public class CatalogueChangeServiceImpl implements CatalogueChangeService {
 	@Override
 	public Uni<Void> apply(User caller, ProductChangePage page) {
 		authorization.requireCatalogueSync(caller);
+		requireCompletePage(page);
 		requireChangesWithinPage(page);
 		return persistenceContextFactory.withTransaction(tx -> applyInTx(tx, page));
+	}
+
+	private static void requireCompletePage(ProductChangePage page) {
+		RequiredInputMissingException.throwIfRequiredInputMissing("fromSequence", page.fromSequence());
+		RequiredInputMissingException.throwIfRequiredInputMissing("toSequence", page.toSequence());
+		RequiredInputMissingException.throwIfRequiredInputMissing("products", page.products());
 	}
 
 	private static void requireChangesWithinPage(ProductChangePage page) {

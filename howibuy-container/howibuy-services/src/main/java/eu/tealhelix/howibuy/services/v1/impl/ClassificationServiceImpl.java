@@ -5,6 +5,7 @@ import static eu.tealhelix.common.utils.UniComprehensions.forc;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -13,6 +14,7 @@ import eu.tealhelix.common.dao.reactive.ReactivePersistenceContextFactory;
 import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.howibuy.dao.ArchetypeProductDao;
 import eu.tealhelix.howibuy.dao.ClassificationDao;
@@ -71,14 +73,14 @@ public class ClassificationServiceImpl implements ClassificationService {
 	}
 
 	@Override
-	public Uni<List<PendingProduct>> findPending(User caller, int limit) {
+	public Uni<List<PendingProduct>> findPending(User caller, Integer limit) {
 		authorization.requireCatalogueSyncOrOperator(caller);
 		requireLimitOfPage(limit);
 		return persistenceContextFactory.withoutTransaction(em -> classificationDao.findPending(em, limit));
 	}
 
 	@Override
-	public Uni<List<ClassificationToReview>> findToReview(User caller, int limit) {
+	public Uni<List<ClassificationToReview>> findToReview(User caller, Integer limit) {
 		authorization.requireCatalogueSyncOrOperator(caller);
 		requireLimitOfPage(limit);
 		return persistenceContextFactory.withoutTransaction(em -> classificationDao.findToReview(em, limit));
@@ -87,6 +89,7 @@ public class ClassificationServiceImpl implements ClassificationService {
 	@Override
 	public Uni<Void> recordAttempt(User caller, HasRetailerProductId productId, ClassificationAttemptInput attempt) {
 		authorization.requireCatalogueSyncOrOperator(caller);
+		RequiredInputMissingException.throwIfRequiredInputMissing("retailerProductId", productId);
 		if (attempt.getClassifier() == Classifier.LLM) {
 			throw BadInputValueException.fromInputNameAndHint("classifier", "The attempts of the LLM are made by HowiBuy itself");
 		}
@@ -101,6 +104,8 @@ public class ClassificationServiceImpl implements ClassificationService {
 	@Override
 	public Uni<LlmClassification> classifyWithLlm(User caller, HasRetailerProductId productId, String language) {
 		authorization.requireCatalogueSyncOrOperator(caller);
+		RequiredInputMissingException.throwIfRequiredInputMissing("retailerProductId", productId);
+		RequiredInputMissingException.throwIfRequiredInputMissing("language", language);
 		return forc(
 				persistenceContextFactory.withoutTransaction(em -> classificationDao.findClassificationInput(em, productId)),
 				input -> requireNamedIn(productId, input, language),
@@ -116,7 +121,9 @@ public class ClassificationServiceImpl implements ClassificationService {
 	@Override
 	public Uni<ArchetypeMatchOutcome> previewWithLlm(User caller, String language, String name, Map<String, String> characteristics, List<String> tags) {
 		authorization.requireOperator(caller);
-		var product = TrimmedProductBaseData.of(language, name, characteristics, tags);
+		RequiredInputMissingException.throwIfRequiredInputMissing("language", language);
+		RequiredInputMissingException.throwIfRequiredInputMissing("name", name);
+		var product = TrimmedProductBaseData.of(language, name, characteristics(characteristics), tags(tags));
 		if (product.getName().isEmpty()) {
 			throw BadInputValueException.fromInputNameAndHint("name", "It must not be blank");
 		}
@@ -126,6 +133,8 @@ public class ClassificationServiceImpl implements ClassificationService {
 	@Override
 	public Uni<Integer> reopen(User caller, Classifier classifier, String classifierVersion) {
 		authorization.requireOperator(caller);
+		RequiredInputMissingException.throwIfRequiredInputMissing("classifier", classifier);
+		RequiredInputMissingException.throwIfRequiredInputMissing("classifierVersion", classifierVersion);
 		return persistenceContextFactory.withTransaction(tx -> classificationDao.reopen(tx, classifier, classifierVersion));
 	}
 
@@ -167,10 +176,33 @@ public class ClassificationServiceImpl implements ClassificationService {
 		));
 	}
 
-	private static void requireLimitOfPage(int limit) {
+	private static void requireLimitOfPage(Integer limit) {
+		RequiredInputMissingException.throwIfRequiredInputMissing("limit", limit);
 		if (limit < 1 || limit > MAX_PER_PAGE) {
 			throw BadInputValueException.fromInputNameAndHint("limit", "It must be from 1 to " + MAX_PER_PAGE);
 		}
+	}
+
+	/**
+	 * @return The characteristics of product data, none if {@code null}
+	 */
+	private static Map<String, String> characteristics(Map<String, String> characteristics) {
+		if (characteristics == null) return Map.of();
+		if (characteristics.values().stream().anyMatch(Objects::isNull)) {
+			throw BadInputValueException.fromInputNameAndHint("characteristics", "Their values must be text");
+		}
+		return characteristics;
+	}
+
+	/**
+	 * @return The tags of product data, none if {@code null}
+	 */
+	private static List<String> tags(List<String> tags) {
+		if (tags == null) return List.of();
+		if (tags.stream().anyMatch(Objects::isNull)) {
+			throw BadInputValueException.fromInputNameAndHint("tags", "They must be text");
+		}
+		return tags;
 	}
 
 	/**

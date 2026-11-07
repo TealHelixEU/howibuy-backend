@@ -3,13 +3,12 @@ package eu.tealhelix.howibuy.jaxrs.v1.assessment;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+import static eu.tealhelix.common.web.RequestValuesHelper.nullable;
 import static eu.tealhelix.common.web.RequestValuesHelper.required;
-import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.howibuy.jaxrs.authentication.RequestCatalogue.requireCatalogue;
+import static eu.tealhelix.howibuy.services.v1.ProductAssessmentService.MAX_PRODUCTS;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.PRODUCT_ASSESSMENT;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.PRODUCT_ASSESSMENT_DESC;
-
-import java.util.List;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -20,7 +19,6 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
-import eu.tealhelix.catalogue.v1.types.ProductKey;
 import eu.tealhelix.catalogue.v1.types.impl.ProductKeyImpl;
 import eu.tealhelix.howibuy.services.v1.ProductAssessmentService;
 import eu.tealhelix.howibuy.v1.model.ProductAssessmentOutcome;
@@ -34,11 +32,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Tag(name = PRODUCT_ASSESSMENT, description = PRODUCT_ASSESSMENT_DESC)
 @SecurityRequirement(name = BEARER_AUTH)
 public class ProductAssessmentResource {
-	/**
-	 * The most products a request assesses.
-	 */
-	static final int MAX_PRODUCTS = 400;
-
 	private static final String FORBIDDEN = "The token is not one of the token exchange, so it names no Catalogue to look the products up in; or a service account presented it, while an assessment belongs to an end-user, whose weighting it is made against.";
 	private static final String BAD_PRODUCT = "The request could not be read, or it lacks the product key or the language.";
 	private static final String BAD_PRODUCTS = "The request could not be read, it lacks the language or a product key, or it has more than " + MAX_PRODUCTS + " products.";
@@ -62,8 +55,8 @@ public class ProductAssessmentResource {
 	public Uni<ProductAssessmentOutcome> assessSingleProduct(@Context ContainerRequestContext crc, SingleProductAssessmentRequest request) {
 		var user = currentUser(crc);
 		var catalogueId = requireCatalogue(crc);
-		return Uni.createFrom().item(() -> productKey(request))
-				.flatMap(productKey -> productAssessmentService.assessSingleProduct(user, catalogueId, productKey, request.language()));
+		return Uni.createFrom().item(() -> required("body", request))
+				.flatMap(body -> productAssessmentService.assessSingleProduct(user, catalogueId, nullable(body.productKey(), ProductKeyImpl::new), body.language()));
 	}
 
 	@Operation(
@@ -80,25 +73,8 @@ public class ProductAssessmentResource {
 	public Uni<MultiProductAssessmentResponse> assessMultipleProductsSync(@Context ContainerRequestContext crc, MultiProductAssessmentRequest request) {
 		var user = currentUser(crc);
 		var catalogueId = requireCatalogue(crc);
-		return Uni.createFrom().item(() -> productKeys(request))
-				.flatMap(productKeys -> productAssessmentService.assessMultipleProductsSync(user, catalogueId, productKeys, request.language()))
+		return Uni.createFrom().item(() -> required("body", request))
+				.flatMap(body -> productAssessmentService.assessMultipleProductsSync(user, catalogueId, AssessmentRequests.productKeys(body.productKeys()), body.language()))
 				.map(MultiProductAssessmentResponse::new);
-	}
-
-	/**
-	 * @return The key of the product of a request that carries one and a language
-	 */
-	private static ProductKey productKey(SingleProductAssessmentRequest request) {
-		required("body", request);
-		requiredText("language", request.language());
-		return new ProductKeyImpl(requiredText("productKey", request.productKey()));
-	}
-
-	/**
-	 * @return The keys of the products of a request that carries a language and at most {@link #MAX_PRODUCTS} of them
-	 */
-	private static List<ProductKey> productKeys(MultiProductAssessmentRequest request) {
-		required("body", request);
-		return AssessmentRequests.productKeys(request.language(), request.productKeys());
 	}
 }

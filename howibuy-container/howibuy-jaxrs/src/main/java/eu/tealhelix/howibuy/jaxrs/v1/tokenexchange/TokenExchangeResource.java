@@ -2,7 +2,8 @@ package eu.tealhelix.howibuy.jaxrs.v1.tokenexchange;
 
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
-import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
+import static eu.tealhelix.common.web.RequestValuesHelper.nullable;
+import static eu.tealhelix.common.web.RequestValuesHelper.required;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.TOKEN_EXCHANGE;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.TOKEN_EXCHANGE_DESC;
 
@@ -49,7 +50,8 @@ public class TokenExchangeResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Uni<TokenExchangeResponse> exchangeToken(@Context ContainerRequestContext crc, TokenExchangeRequest request) {
 		var user = (User) crc.getSecurityContext().getUserPrincipal();
-		var catalogueId = new CatalogueIdImpl(requiredText("catalogueId", request.catalogueId()));
+		required("body", request);
+		var catalogueId = nullable(request.catalogueId(), CatalogueIdImpl::new);
 		return userImpersonationService.impersonateUserAsRetailer(user, request.correlationId(), catalogueId)
 				.map(impersonatedUser -> jwtGenerationService.toTokenForImpersonation(impersonatedUser.getId(), catalogueId))
 				.map(t -> new TokenExchangeResponse(t.accessToken(), t.expiresInSeconds()));

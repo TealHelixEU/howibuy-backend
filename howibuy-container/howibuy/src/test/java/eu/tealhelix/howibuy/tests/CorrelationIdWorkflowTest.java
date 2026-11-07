@@ -1,6 +1,7 @@
 package eu.tealhelix.howibuy.tests;
 
 import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.time.Duration;
 import jakarta.inject.Inject;
@@ -99,6 +100,20 @@ public class CorrelationIdWorkflowTest {
 
 	@Test
 	@Order(4)
+	void testTokenExchangeWithoutABodyIsMalformed() {
+		RestAssured
+				.given()
+				.header("Authorization", "Bearer " + ServiceAccount.RETAILER.accessToken(keycloak))
+				.header("Content-Type", "application/json")
+				.when()
+				.post("/api/howibuy/v1/tokenexchange")
+				.then()
+				.statusCode(400)
+				.body("message", equalTo("Required input 'body' is missing."));
+	}
+
+	@Test
+	@Order(5)
 	void testTokenExchangeIsRefusedInACatalogueThatIsNotTheRetailers() {
 		RestAssured
 				.given()

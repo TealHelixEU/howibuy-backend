@@ -3,6 +3,9 @@ package eu.tealhelix.howibuy.jaxrs.v1.classification;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+import static eu.tealhelix.common.web.RequestValuesHelper.built;
+import static eu.tealhelix.common.web.RequestValuesHelper.nullable;
+import static eu.tealhelix.common.web.RequestValuesHelper.required;
 import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.common.web.RequestValuesHelper.uuid;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION;
@@ -55,17 +58,17 @@ public class ClassificationAttemptsResource {
 	public Uni<Void> recordAttempt(@Context ContainerRequestContext crc, ClassificationAttemptRequest request) {
 		var user = currentUser(crc);
 		return Uni.createFrom().item(() -> toAttempt(request))
-				.flatMap(attempt -> classificationService.recordAttempt(user, new RetailerProductIdImpl(uuid("retailerProductId", request.retailerProductId())), attempt));
+				.flatMap(attempt -> classificationService.recordAttempt(user, nullable(uuid("retailerProductId", request.retailerProductId()), RetailerProductIdImpl::new), attempt));
 	}
 
 	private static ClassificationAttemptInput toAttempt(ClassificationAttemptRequest request) {
 		if (request == null) throw RequiredInputMissingException.fromRequiredInputName("body");
-		return ImmutableClassificationAttemptInput.builder()
+		var builder = ImmutableClassificationAttemptInput.builder()
 				.inputHash(requiredText("inputHash", request.inputHash()))
 				.language(requiredText("language", request.language()))
-				.classifier(ClassificationsResource.classifier(requiredText("classifier", request.classifier()), "It must be MANUAL or EXPERT"))
+				.classifier(required("classifier", ClassificationsResource.classifier(request.classifier(), "It must be MANUAL or EXPERT")))
 				.classifierVersion(requiredText("classifierVersion", request.classifierVersion()))
-				.archetypeProductId(request.archetypeProductId() != null ? new ArchetypeProductIdImpl(uuid("archetypeProductId", request.archetypeProductId())) : null)
-				.build();
+				.archetypeProductId(nullable(uuid("archetypeProductId", request.archetypeProductId()), ArchetypeProductIdImpl::new));
+		return built("body", builder::build);
 	}
 }

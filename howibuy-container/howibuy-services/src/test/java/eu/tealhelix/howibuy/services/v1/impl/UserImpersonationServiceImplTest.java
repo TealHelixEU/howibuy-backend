@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
@@ -24,6 +25,7 @@ import eu.tealhelix.common.services.authz.impl.TealHelixAuthorizationImpl;
 import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.EmailAddress;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
@@ -190,6 +192,16 @@ public class UserImpersonationServiceImplTest {
 		var t = sut.impersonateUserAsRetailer(RETAILER_USER, CORRELATION_ID, CATALOGUE_ID).subscribe().withSubscriber(UniAssertSubscriber.create())
 				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getFailure();
 		assertInstanceOf(NotAuthorizedException.class, t);
+	}
+
+	@Test
+	@DisplayName("When invoking impersonateUserAsRetailer without a Catalogue, we get a RequiredInputMissingException before the database is read")
+	void testImpersonateUserAsRetailerWithoutACatalogue() {
+		var t = sut.impersonateUserAsRetailer(RETAILER_USER, CORRELATION_ID, null).subscribe().withSubscriber(UniAssertSubscriber.create())
+				.awaitFailure(Duration.ofSeconds(ASYNC_WAIT_SECONDS)).getFailure();
+		var e = assertInstanceOf(RequiredInputMissingException.class, t);
+		assertEquals("catalogueId", e.getInputName());
+		verifyNoInteractions(mockRetailerDao, mockCatalogueDao, mockCorrelationIdDao);
 	}
 
 	private void mockCatalogueActiveFlag(User retailerUser, Boolean active) {

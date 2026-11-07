@@ -63,7 +63,7 @@ POST /api/howibuy/v1/assessment/basket/purchase
   The resource then calls the same `BasketAssessmentService.assessPurchasedBasket(user, catalogueId, ...)` an
   impersonation token would; switching the endpoint to the impersonation token touches the resource only. Whether
   Rimi accepts this is an open question to Rimi.
-- At most `ProductAssessmentResource.MAX_PRODUCTS` (400) keys, counted as sent; more is `400`.
+- At most `ProductAssessmentService.MAX_PRODUCTS` (400) keys, counted as sent; more is `400`.
 - Repeated keys are merged silently. Quantities are not modelled (a known limitation): each distinct product counts once.
 - An empty list is not an error: the outcome is `NOTHING_TO_ASSESS` (and, for a purchase, it is stored).
 - `purchasedAt` is optional, ISO-8601 with an offset, and defaults to the time of the request. It may not be in the future.

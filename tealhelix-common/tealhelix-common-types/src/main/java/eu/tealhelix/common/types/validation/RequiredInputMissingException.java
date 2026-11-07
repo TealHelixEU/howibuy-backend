@@ -13,6 +13,15 @@ public class RequiredInputMissingException extends AppValidationException {
 		}
 	}
 
+	/**
+	 * A value other than text is missing when it is {@code null}.
+	 */
+	public static void throwIfRequiredInputMissing(String inputName, Object value) {
+		if (value == null) {
+			throw fromRequiredInputName(inputName);
+		}
+	}
+
 	private String inputName;
 
 	public RequiredInputMissingException(String message) {

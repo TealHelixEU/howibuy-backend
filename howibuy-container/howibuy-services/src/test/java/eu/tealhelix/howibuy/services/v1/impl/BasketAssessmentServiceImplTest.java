@@ -43,6 +43,7 @@ import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
 import eu.tealhelix.common.v1.types.RetailerId;
@@ -188,6 +189,17 @@ class BasketAssessmentServiceImplTest {
 	@Test
 	void rejectsAServiceUser() {
 		assertThrows(NotAuthorizedException.class, () -> sut.assessBasketPrePurchase(SERVICE_USER, CATALOGUE, List.of(GOOD), LANGUAGE));
+	}
+
+	/**
+	 * {@link AssessmentInputsTest} tests the checks themselves.
+	 */
+	@Test
+	void checksTheLanguageAndTheProductKeys() {
+		var e = assertThrows(RequiredInputMissingException.class, () -> sut.assessBasketPrePurchase(USER, CATALOGUE, List.of(GOOD), null));
+
+		assertEquals("language", e.getInputName());
+		verifyNoInteractions(referenceProductIdentifier, userProfileDao);
 	}
 
 	@Test
@@ -456,6 +468,33 @@ class BasketAssessmentServiceImplTest {
 		var e = assertThrows(BadInputValueException.class, () -> sut.assessPurchasedBasket(USER, CATALOGUE, future, List.of(GOOD), LANGUAGE));
 
 		assertEquals("purchasedAt", e.getInputName());
+		verifyNoInteractions(purchasedBasketDao, userProfileDao);
+	}
+
+	@Test
+	void requiresTheCatalogueOfAPurchase() {
+		var e = assertThrows(RequiredInputMissingException.class, () -> sut.assessPurchasedBasket(USER, null, EARLIER, List.of(GOOD), LANGUAGE));
+
+		assertEquals("catalogueId", e.getInputName());
+		verifyNoInteractions(purchasedBasketDao, userProfileDao);
+	}
+
+	@Test
+	void requiresThePurchaseTime() {
+		var e = assertThrows(RequiredInputMissingException.class, () -> sut.assessPurchasedBasket(USER, CATALOGUE, null, List.of(GOOD), LANGUAGE));
+
+		assertEquals("purchasedAt", e.getInputName());
+		verifyNoInteractions(purchasedBasketDao, userProfileDao);
+	}
+
+	/**
+	 * {@link AssessmentInputsTest} tests the checks themselves.
+	 */
+	@Test
+	void checksTheLanguageAndTheProductKeysOfAPurchase() {
+		var e = assertThrows(RequiredInputMissingException.class, () -> sut.assessPurchasedBasket(USER, CATALOGUE, EARLIER, null, LANGUAGE));
+
+		assertEquals("productKeys", e.getInputName());
 		verifyNoInteractions(purchasedBasketDao, userProfileDao);
 	}
 

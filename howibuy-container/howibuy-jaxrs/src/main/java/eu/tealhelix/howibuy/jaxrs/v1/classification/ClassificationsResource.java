@@ -3,8 +3,8 @@ package eu.tealhelix.howibuy.jaxrs.v1.classification;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.BEARER_AUTH;
 import static eu.tealhelix.common.web.CommonOpenApiConstants.UNAUTHENTICATED;
 import static eu.tealhelix.common.web.JaxRsUtils.currentUser;
+import static eu.tealhelix.common.web.RequestValuesHelper.nullable;
 import static eu.tealhelix.common.web.RequestValuesHelper.required;
-import static eu.tealhelix.common.web.RequestValuesHelper.requiredText;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION;
 import static eu.tealhelix.howibuy.jaxrs.v1.HowiBuyOpenApiTagNames.CLASSIFICATION_DESC;
 
@@ -62,8 +62,7 @@ public class ClassificationsResource {
 			@Parameter(description = "How many products to read at most, from 1 to " + ClassificationService.MAX_PER_PAGE + ".", required = true) @QueryParam("limit") Integer limit
 	) {
 		var user = currentUser(crc);
-		return Uni.createFrom().item(() -> required("limit", limit))
-				.flatMap(checkedLimit -> classificationService.findPending(user, checkedLimit))
+		return classificationService.findPending(user, limit)
 				.map(products -> products.stream().map(ClassificationsResource::toDto).toList());
 	}
 
@@ -83,8 +82,7 @@ public class ClassificationsResource {
 			@Parameter(description = "How many products to read at most, from 1 to " + ClassificationService.MAX_PER_PAGE + ".", required = true) @QueryParam("limit") Integer limit
 	) {
 		var user = currentUser(crc);
-		return Uni.createFrom().item(() -> required("limit", limit))
-				.flatMap(checkedLimit -> classificationService.findToReview(user, checkedLimit))
+		return classificationService.findToReview(user, limit)
 				.map(products -> products.stream().map(ClassificationsResource::toDto).toList());
 	}
 
@@ -105,18 +103,23 @@ public class ClassificationsResource {
 		return Uni.createFrom().item(() -> required("body", request))
 				.flatMap(body -> classificationService.reopen(
 						user,
-						classifier(requiredText("classifier", body.classifier()), "It must be MANUAL, EXPERT or LLM"),
-						requiredText("classifierVersion", body.classifierVersion())
+						classifier(body.classifier(), "It must be MANUAL, EXPERT or LLM"),
+						body.classifierVersion()
 				))
 				.map(ClassificationReopeningResponse::new);
 	}
 
+	/**
+	 * @return The classifier named, or {@code null} when the name is missing
+	 */
 	static Classifier classifier(String name, String hint) {
-		try {
-			return Classifier.valueOf(name);
-		} catch (IllegalArgumentException e) {
-			throw BadInputValueException.fromInputNameAndHint("classifier", hint);
-		}
+		return nullable(name, text -> {
+			try {
+				return Classifier.valueOf(text);
+			} catch (IllegalArgumentException e) {
+				throw BadInputValueException.fromInputNameAndHint("classifier", hint);
+			}
+		});
 	}
 
 	private static PendingProductDto toDto(PendingProduct product) {

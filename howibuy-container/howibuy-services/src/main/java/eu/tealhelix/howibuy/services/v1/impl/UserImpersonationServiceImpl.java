@@ -62,23 +62,28 @@ public class UserImpersonationServiceImpl implements UserImpersonationService {
 
 	@Override
 	public Uni<User> impersonateUserAsRetailer(User currentUser, String correlationId) {
-		return impersonateUserAsRetailer(currentUser, correlationId, this::requireActiveRetailer);
+		return impersonateUserAsRetailer(currentUser, correlationId, () -> {}, this::requireActiveRetailer);
 	}
 
 	@Override
 	public Uni<User> impersonateUserAsRetailer(User currentUser, String correlationId, CatalogueId catalogueId) {
-		return impersonateUserAsRetailer(currentUser, correlationId, (em, retailerId) ->
-				requireActiveRetailer(em, retailerId).chain(() -> requireActiveCatalogue(em, retailerId, catalogueId)));
+		return impersonateUserAsRetailer(currentUser, correlationId,
+				() -> RequiredInputMissingException.throwIfRequiredInputMissing("catalogueId", catalogueId),
+				(em, retailerId) -> requireActiveRetailer(em, retailerId).chain(() -> requireActiveCatalogue(em, retailerId, catalogueId)));
 	}
 
 	/**
+	 * @param inputChecks  The checks of the inputs other than the correlation id, made once the caller is authorized,
+	 *                     before the transaction of the impersonation
 	 * @param requirements What the retailer must satisfy to impersonate a user, checked in the transaction of the
 	 *                     impersonation, before the user is looked up
 	 */
-	private Uni<User> impersonateUserAsRetailer(User currentUser, String correlationId, BiFunction<ReactivePersistenceContext, RetailerId, Uni<Void>> requirements) {
+	private Uni<User> impersonateUserAsRetailer(
+			User currentUser, String correlationId, Runnable inputChecks, BiFunction<ReactivePersistenceContext, RetailerId, Uni<Void>> requirements) {
 		return authorization.authorizeImpersonation(currentUser)
 				.invoke(() -> RequiredInputMissingException.throwIfRequiredInputMissing("correlationId", correlationId))
 				.invoke(() -> BadInputValueException.throwForStringMaxLength("correlationId", correlationId, 100))
+				.invoke(inputChecks)
 				.chain(() ->
 						persistenceContextFactory.withTransaction(tx -> {
 							LOG.info("Impersonating user as retailer {} -> correlationId: {}", currentUser.getId().asString(), correlationId);

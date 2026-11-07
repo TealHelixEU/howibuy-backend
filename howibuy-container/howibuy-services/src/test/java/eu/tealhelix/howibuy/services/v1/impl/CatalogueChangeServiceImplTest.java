@@ -32,6 +32,7 @@ import eu.tealhelix.common.test.jpa.MockReactivePersistenceContextFactory;
 import eu.tealhelix.common.types.authorization.NotAuthenticatedException;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.validation.BadInputValueException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.Role;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.model.impl.UserImpl;
@@ -118,7 +119,7 @@ public class CatalogueChangeServiceImplTest {
 
 	@Test
 	void onlyTheCatalogueSyncAppliesAPage() {
-		var page = new ProductChangePage(0, 1, List.of(change(RETAILER, "yoghurt", 1, CATALOGUE_GR)));
+		var page = new ProductChangePage(0L, 1L, List.of(change(RETAILER, "yoghurt", 1, CATALOGUE_GR)));
 
 		assertThrows(NotAuthenticatedException.class, () -> sut.apply(null, page));
 		assertThrows(NotAuthorizedException.class, () -> sut.apply(RETAILER_USER, page));
@@ -138,7 +139,7 @@ public class CatalogueChangeServiceImplTest {
 		givenTheCataloguesBelongTo(Map.of(CATALOGUE_GR, RETAILER, CATALOGUE_CY, RETAILER, OTHER_RETAILERS_CATALOGUE, OTHER_RETAILER));
 		when(mockRetailerProductDao.apply(any(), eq(changes))).thenReturn(Uni.createFrom().voidItem());
 
-		sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5, 9, changes)).await().atMost(WAIT);
+		sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5L, 9L, changes)).await().atMost(WAIT);
 
 		assertEquals(1, mockReactivePersistenceContextFactory.getOpenedTransactions().size(), "one transaction");
 		var tx = mockReactivePersistenceContextFactory.getOpenedTransactions().getFirst();
@@ -155,7 +156,7 @@ public class CatalogueChangeServiceImplTest {
 	void aPageNotStartingAtTheCursorIsAConflict() {
 		when(mockCursorDao.advance(any(), eq(5L), eq(6L))).thenReturn(Uni.createFrom().item(false));
 
-		var failure = applyAndExpectFailure(new ProductChangePage(5, 6, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR))));
+		var failure = applyAndExpectFailure(new ProductChangePage(5L, 6L, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR))));
 
 		assertInstanceOf(ChangeCursorConflictException.class, failure);
 		assertEquals("The page does not start at the change cursor, fromSequence: 5", failure.getMessage());
@@ -170,7 +171,7 @@ public class CatalogueChangeServiceImplTest {
 		givenTheCataloguesBelongTo(Map.of(CATALOGUE_GR, RETAILER));
 		when(mockRetailerProductDao.apply(any(), eq(changes))).thenReturn(Uni.createFrom().voidItem());
 
-		sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5, 6, changes)).await().atMost(WAIT);
+		sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5L, 6L, changes)).await().atMost(WAIT);
 
 		verify(mockRetailerProductDao).apply(any(), eq(changes));
 	}
@@ -180,7 +181,7 @@ public class CatalogueChangeServiceImplTest {
 		givenTheCursorAdvances(5, 6);
 		when(mockRetailerDao.findActiveFlag(any(), eq(RETAILER))).thenReturn(Uni.createFrom().nullItem());
 
-		var failure = applyAndExpectFailure(new ProductChangePage(5, 6, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR))));
+		var failure = applyAndExpectFailure(new ProductChangePage(5L, 6L, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR))));
 
 		assertBadInput("retailerId", "No such Retailer, retailerId: " + RETAILER.asString(), failure);
 		verifyNoInteractions(mockCatalogueDao, mockRetailerProductDao);
@@ -192,7 +193,7 @@ public class CatalogueChangeServiceImplTest {
 		givenTheRetailersExist(RETAILER);
 		givenTheCataloguesBelongTo(Map.of(CATALOGUE_GR, RETAILER));
 
-		var failure = applyAndExpectFailure(new ProductChangePage(5, 6, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR, CATALOGUE_CY))));
+		var failure = applyAndExpectFailure(new ProductChangePage(5L, 6L, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR, CATALOGUE_CY))));
 
 		assertBadInput("catalogueId", "No such Catalogue, catalogueId: " + CATALOGUE_CY.asString(), failure);
 		verifyNoInteractions(mockRetailerProductDao);
@@ -204,15 +205,23 @@ public class CatalogueChangeServiceImplTest {
 		givenTheRetailersExist(RETAILER);
 		givenTheCataloguesBelongTo(Map.of(CATALOGUE_GR, RETAILER, OTHER_RETAILERS_CATALOGUE, OTHER_RETAILER));
 
-		var failure = applyAndExpectFailure(new ProductChangePage(5, 6, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR, OTHER_RETAILERS_CATALOGUE))));
+		var failure = applyAndExpectFailure(new ProductChangePage(5L, 6L, List.of(change(RETAILER, "yoghurt", 6, CATALOGUE_GR, OTHER_RETAILERS_CATALOGUE))));
 
 		assertBadInput("catalogueId", "The Catalogue belongs to another Retailer, catalogueId: " + OTHER_RETAILERS_CATALOGUE.asString(), failure);
 		verifyNoInteractions(mockRetailerProductDao);
 	}
 
 	@Test
+	void aPageNamesItsSequencesAndCarriesItsChanges() {
+		assertMissing("fromSequence", assertThrows(RequiredInputMissingException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(null, 1L, List.of()))));
+		assertMissing("toSequence", assertThrows(RequiredInputMissingException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(0L, null, List.of()))));
+		assertMissing("products", assertThrows(RequiredInputMissingException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(0L, 1L, null))));
+		assertNothingTouched();
+	}
+
+	@Test
 	void aPageEndingBeforeItStartsIsRefused() {
-		var e = assertThrows(BadInputValueException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5, 4, List.of())));
+		var e = assertThrows(BadInputValueException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5L, 4L, List.of())));
 
 		assertBadInput("toSequence", "It must not be before fromSequence", e);
 		assertNothingTouched();
@@ -227,7 +236,7 @@ public class CatalogueChangeServiceImplTest {
 		givenTheCataloguesBelongTo(Map.of());
 		when(mockRetailerProductDao.apply(any(), eq(List.of()))).thenReturn(Uni.createFrom().voidItem());
 
-		sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5, 5, List.of())).await().atMost(WAIT);
+		sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5L, 5L, List.of())).await().atMost(WAIT);
 
 		verify(mockCursorDao).advance(any(), eq(5L), eq(5L));
 		verify(mockRetailerDao, never()).findActiveFlag(any(), any());
@@ -235,7 +244,7 @@ public class CatalogueChangeServiceImplTest {
 
 	@Test
 	void aChangeAtOrBeforeTheStartOfThePageIsRefused() {
-		var e = assertThrows(BadInputValueException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5, 9, List.of(
+		var e = assertThrows(BadInputValueException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5L, 9L, List.of(
 				change(RETAILER, "yoghurt", 6, CATALOGUE_GR),
 				change(RETAILER, "feta", 5, CATALOGUE_GR)
 		))));
@@ -246,7 +255,7 @@ public class CatalogueChangeServiceImplTest {
 
 	@Test
 	void aChangeAfterTheEndOfThePageIsRefused() {
-		var e = assertThrows(BadInputValueException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5, 9, List.of(
+		var e = assertThrows(BadInputValueException.class, () -> sut.apply(CATALOGUE_SYNC_USER, new ProductChangePage(5L, 9L, List.of(
 				change(RETAILER, "yoghurt", 9, CATALOGUE_GR),
 				change(RETAILER, "feta", 10, CATALOGUE_GR)
 		))));
@@ -274,6 +283,10 @@ public class CatalogueChangeServiceImplTest {
 				.subscribe().withSubscriber(UniAssertSubscriber.create())
 				.awaitFailure(WAIT)
 				.getFailure();
+	}
+
+	private static void assertMissing(String inputName, RequiredInputMissingException failure) {
+		assertEquals(inputName, failure.getInputName());
 	}
 
 	private void assertNothingTouched() {

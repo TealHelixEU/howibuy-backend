@@ -24,10 +24,11 @@ public interface FeedService {
 	 * @param feedType    What the Feed tells about its Catalogue
 	 * @param body        The Feed as the Retailer sent it
 	 * @return The Feed and its run
-	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException If the caller is not authenticated
-	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException    If the caller is not a Retailer, or the
-	 *                                                                            Catalogue is another Retailer's or inactive
-	 * @throws eu.tealhelix.common.types.entity.NotFoundException                If the Catalogue does not exist
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException  If the caller is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException     If the caller is not a Retailer, or the
+	 *                                                                             Catalogue is another Retailer's or inactive
+	 * @throws eu.tealhelix.common.types.entity.NotFoundException                 If the Catalogue does not exist
+	 * @throws eu.tealhelix.common.types.validation.RequiredInputMissingException If the type is missing
 	 */
 	FeedWithRuns receive(User caller, HasCatalogueId catalogueId, FeedType feedType, InputStream body);
 
@@ -40,9 +41,10 @@ public interface FeedService {
 	 * @param feedType What the Feed tells about each Catalogue
 	 * @param body     The Feed as the Retailer sent it
 	 * @return The Feed and its runs
-	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException If the caller is not authenticated
-	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException    If the caller is not a Retailer, or has
-	 *                                                                            no active Catalogue
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthenticatedException  If the caller is not authenticated
+	 * @throws eu.tealhelix.common.types.authorization.NotAuthorizedException     If the caller is not a Retailer, or has
+	 *                                                                             no active Catalogue
+	 * @throws eu.tealhelix.common.types.validation.RequiredInputMissingException If the type is missing
 	 */
 	FeedWithRuns receiveForActiveCatalogues(User caller, FeedType feedType, InputStream body);
 

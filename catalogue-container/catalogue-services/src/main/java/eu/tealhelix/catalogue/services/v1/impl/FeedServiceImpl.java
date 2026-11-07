@@ -32,6 +32,7 @@ import eu.tealhelix.common.services.authz.TealHelixAuthorization;
 import eu.tealhelix.common.services.generic.DateTimeService;
 import eu.tealhelix.common.types.authorization.NotAuthorizedException;
 import eu.tealhelix.common.types.entity.NotFoundException;
+import eu.tealhelix.common.types.validation.RequiredInputMissingException;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.common.v1.types.RetailerId;
 import eu.tealhelix.common.v1.types.impl.GenericRetailerId;
@@ -78,6 +79,7 @@ public class FeedServiceImpl implements FeedService {
 	@Override
 	public FeedWithRuns receive(User caller, HasCatalogueId catalogueId, FeedType feedType, InputStream body) {
 		authorization.requireRetailer(caller);
+		RequiredInputMissingException.throwIfRequiredInputMissing("type", feedType);
 		var catalogue = uniAwaiter.await(() -> persistenceContextFactory.withoutTransaction(em -> catalogueDao.find(em, catalogueId)));
 		requireAcceptsFeedsOf(catalogue, catalogueId, caller);
 		return store(catalogue.getRetailerId(), List.of(catalogue), feedType, body);
@@ -89,6 +91,7 @@ public class FeedServiceImpl implements FeedService {
 	@Override
 	public FeedWithRuns receiveForActiveCatalogues(User caller, FeedType feedType, InputStream body) {
 		authorization.requireRetailer(caller);
+		RequiredInputMissingException.throwIfRequiredInputMissing("type", feedType);
 		var retailerId = new GenericRetailerId(caller.getId().asString());
 		var catalogues = uniAwaiter.await(() -> persistenceContextFactory.withoutTransaction(em -> catalogueDao.findActive(em, retailerId)));
 		if (catalogues.isEmpty()) {

@@ -21,9 +21,10 @@ public interface UserImpersonationService {
 	 *
 	 * @param currentUser   The <em>service account</em> representing a <em>retailer</em> trying to impersonate the user
 	 * @param correlationId The correlation id in the retailer of the user to impersonate
-	 * @param catalogueId   The Catalogue of the retailer, cannot be {@code null}
+	 * @param catalogueId   The Catalogue of the retailer
 	 * @return The user object, as {@link #impersonateUserAsRetailer(User, String)} returns it; also
-	 *         {@code NotAuthorizedException}, if the Catalogue is not an active Catalogue of the retailer
+	 *         {@code NotAuthorizedException}, if the Catalogue is not an active Catalogue of the retailer, and
+	 *         {@code RequiredInputMissingException}, without a Catalogue
 	 */
 	Uni<User> impersonateUserAsRetailer(User currentUser, String correlationId, CatalogueId catalogueId);
 }
