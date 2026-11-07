@@ -257,6 +257,96 @@ components:
     RetailerProductId:
       description: Names one product of a retailer, as this application knows it.
 
+    # ---- Dashboard ----------------------------------------------------------------------------------------------
+
+    Dashboard:
+      description: >-
+        Where an end-user stands with their purchases: their experience points and how they compare with the other
+        shoppers', their streak, their progress in each sustainability dimension from the month before to the month
+        asked for, and their badges.
+      properties:
+        xpTotal:
+          description: The experience points the user has earned so far, from the baskets they purchased.
+        xpPercentile:
+          description: >-
+            Of the other users who have purchased at least one basket, the percentage whose experience points total is
+            below the user's, rounded down; a tie is not below. `null` when the user has purchased no basket, or no
+            other user has. Sent whatever its value: whether to show a low one is the consumer's choice.
+        xpPerProduct:
+          description: >-
+            The experience points a product earns when its overall score under the scientific weighting is above 0.8:
+            the number an explanation of the experience points quotes.
+        streak:
+          description: >-
+            The user's streak: how many of the baskets they purchased in a row, in the order they were registered, each
+            had a product above 0.8 on the scientific weighting.
+        purchasedBasketCount:
+          description: >-
+            How many baskets the user has purchased, those with nothing to assess included. 0 for a user who has
+            purchased none, whose dashboard has nothing to show yet.
+        monthlyProgress:
+          description: The progress in every sustainability dimension, one entry per dimension, in the order of `ScoredSustainabilityDimension`.
+        badgeSeries:
+          description: The badges of every sustainability dimension, one series per dimension, in the order of `ScoredSustainabilityDimension`.
+
+    DimensionProgress:
+      description: >-
+        How the products the user bought in a month score in one sustainability dimension, against those of the month
+        before it. A month's average is the mean normalised score, in the dimension, of the products of the baskets the
+        user purchased in it, by the time at the shop: a product counts once per basket it was bought in, and only the
+        products that can be judged count.
+      properties:
+        dimension:
+          description: The sustainability dimension.
+        currentAverage:
+          description: >-
+            The average of the month asked for, from 0 to 1, rounded to two decimals (half up). `null` when the user
+            bought no product that can be judged in it.
+        previousAverage:
+          description: >-
+            The average of the month before the one asked for, from 0 to 1, rounded to two decimals (half up). `null`
+            when the user bought no product that can be judged in it.
+        changePercent:
+          description: >-
+            The change from the previous average to the current one, in percent of the previous one, computed from the
+            rounded averages and rounded to one decimal (half up), so that 0.84 to 0.87 is 3.6 and two equal averages
+            are 0.0; negative for a fall. `null` when either average is, or the previous one is 0.00.
+
+    BadgeSeries:
+      description: The badges of one sustainability dimension, with what the user has towards them.
+      properties:
+        dimension:
+          description: The sustainability dimension.
+        productCount:
+          description: >-
+            How many products the user has purchased above 0.8 on the normalised score of the dimension, counted as the
+            badges count them: a product counts once per basket it was bought in.
+        levels:
+          description: The badges of the dimension, one per level, in the order of `Badge`.
+
+    BadgeLevel:
+      description: A badge of a series, with the number of products that awards it and whether the user holds it.
+      properties:
+        badge:
+          description: The badge.
+        label:
+          description: >-
+            The name of the badge put in words for the user, in the language asked for, or in English when it has no
+            translation there.
+        requiredProducts:
+          description: How many products above 0.8 on the normalised score of the dimension award the badge.
+        earned:
+          description: >-
+            Whether the user holds the badge. A badge is kept once earned, even when its number is later raised above
+            the user's count; and a badge whose number the count reaches is earned only when a purchased basket awards
+            it, so after the numbers change the two may disagree until the next purchase.
+
+    ScoredSustainabilityDimension:
+      description: >-
+        One of the four sustainability dimensions a product is scored in. Not the compass's `SustainabilityDimension`:
+        `SOCIO_ECONOMIC` covers the compass's social and economic dimensions together, and `ENVIRONMENT` is the one the
+        compass calls ecological.
+
     # ---- Sustainable Food Compass -------------------------------------------------------------------------------
 
     Progress:

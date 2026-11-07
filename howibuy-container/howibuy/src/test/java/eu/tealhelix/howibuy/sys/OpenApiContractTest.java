@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -23,10 +24,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.tealhelix.common.test.quarkus.PostgresTestResource;
+import eu.tealhelix.howibuy.JaxRsAppHowiBuyV1;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.path.json.JsonPath;
+import org.eclipse.microprofile.openapi.annotations.OpenAPIDefinition;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -281,6 +285,37 @@ public class OpenApiContractTest {
 	}
 
 	/**
+	 * The dashboard is read for a month, which the front names, and in a language of the badges' names, which it may
+	 * leave out. Its monthly progress and its badge series are lists of a dimension each.
+	 */
+	@Test
+	void documentsTheDashboard() {
+		var document = openApiDocument();
+		var read = operation(document, "get", "/api/howibuy/v1/dashboard");
+
+		var parameters = parameters(read).stream()
+				.map(parameter -> parameter.get("in") + " " + parameter.get("name") + " " + Boolean.TRUE.equals(parameter.get("required")))
+				.collect(Collectors.toSet());
+		assertEquals(Set.of("query month true", "query lang false"), parameters);
+		assertEquals("#/components/schemas/Dashboard", at(read, "responses", "200", "content", "application/json", "schema", "$ref"));
+		var dashboard = at(schemas(document), "Dashboard", "properties");
+		assertEquals(Set.of("xpTotal", "xpPercentile", "xpPerProduct", "streak", "purchasedBasketCount", "monthlyProgress", "badgeSeries"),
+				((Map<?, ?>) dashboard).keySet());
+		assertEquals("#/components/schemas/DimensionProgress", at(dashboard, "monthlyProgress", "items", "$ref"));
+		assertEquals("#/components/schemas/BadgeSeries", at(dashboard, "badgeSeries", "items", "$ref"));
+		assertEquals(Set.of("dimension", "currentAverage", "previousAverage", "changePercent"),
+				((Map<?, ?>) at(schemas(document), "DimensionProgress", "properties")).keySet());
+		var series = at(schemas(document), "BadgeSeries", "properties");
+		assertEquals(Set.of("dimension", "productCount", "levels"), ((Map<?, ?>) series).keySet());
+		assertEquals("#/components/schemas/BadgeLevel", at(series, "levels", "items", "$ref"));
+		assertEquals(Set.of("badge", "label", "requiredProducts", "earned"), ((Map<?, ?>) at(schemas(document), "BadgeLevel", "properties")).keySet());
+		assertEquals(List.of("ENVIRONMENT", "ANIMAL_WELFARE", "SOCIO_ECONOMIC", "HEALTH"), at(schemas(document), "ScoredSustainabilityDimension", "enum"));
+		for (var status : List.of("400", "401", "403")) {
+			assertNotNull(at(read, "responses", status, "description"), "a refused read is documented, status: " + status);
+		}
+	}
+
+	/**
 	 * Left to itself the generator names every operation after the Java method behind it ("Assess Single Product") and
 	 * leaves it at that, which tells a consumer no more than the URL already did. Every operation carries a summary and
 	 * a description written for the consumer, and so does every path and query parameter it takes.
@@ -328,7 +363,7 @@ public class OpenApiContractTest {
 
 		var declared = tags.stream().map(tag -> String.valueOf(tag.get("name"))).collect(Collectors.toSet());
 		assertEquals(
-				Set.of("Product assessment", "Basket assessment", "Session handoff", "Token exchange", "Catalogue changes", "Classification", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
+				Set.of("Product assessment", "Basket assessment", "Dashboard", "Session handoff", "Token exchange", "Catalogue changes", "Classification", "Sustainable Food Compass", "Sustainable Food Compass attempts", "Miscellaneous"),
 				declared,
 				"the API is grouped by what its parts do");
 		var ungrouped = new ArrayList<String>();
@@ -337,6 +372,17 @@ public class OpenApiContractTest {
 			if (!declared.containsAll(operationTags)) ungrouped.add(name + ": " + operationTags);
 		});
 		assertEquals(List.of(), ungrouped, "every operation sits under a declared tag");
+	}
+
+	/**
+	 * The application declares every tag, so the document lists them in the application's order, rather than with a
+	 * tag that a resource alone declares wherever the scan happens to meet it.
+	 */
+	@Test
+	void declaresEveryTagOnTheApplication() {
+		var onTheApplication = Arrays.stream(JaxRsAppHowiBuyV1.class.getAnnotation(OpenAPIDefinition.class).tags()).map(Tag::name).toList();
+		List<String> inTheDocument = openApiDocument().getList("tags.name");
+		assertEquals(onTheApplication, inTheDocument);
 	}
 
 	/**
