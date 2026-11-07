@@ -109,7 +109,10 @@ class BasketAssessmentServiceImplTest {
 	private static final UUID ATTEMPT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 	private static final RetailerId RETAILER = new GenericRetailerId("8d1e5b4a-7c2f-4e93-a6b0-3f9d2c1e7a54");
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 31, 12, 0);
-	private static final LocalDateTime EARLIER = NOW.minusHours(2);
+	/**
+	 * Two hours before the server's clock, at the server's offset.
+	 */
+	private static final OffsetDateTime EARLIER = NOW.minusHours(2).atZone(ZoneId.systemDefault()).toOffsetDateTime();
 	private static final Map<ScoredSustainabilityDimension, Long> NOTHING_COUNTED = counts(0, 0, 0, 0);
 
 	private static final Branch DAIRY = new Branch("Dairy", "Milk", "Cow milk");
@@ -283,7 +286,7 @@ class BasketAssessmentServiceImplTest {
 
 	@Test
 	void rejectsAServiceUserRegisteringAPurchase() {
-		assertThrows(NotAuthorizedException.class, () -> sut.assessPurchasedBasket(SERVICE_USER, CATALOGUE, null, List.of(GOOD), LANGUAGE));
+		assertThrows(NotAuthorizedException.class, () -> sut.assessPurchasedBasket(SERVICE_USER, CATALOGUE, EARLIER, List.of(GOOD), LANGUAGE));
 	}
 
 	@Test
@@ -293,7 +296,7 @@ class BasketAssessmentServiceImplTest {
 		givenIdentifications(Set.of(GOOD, FAIR, POOR, UNKNOWN));
 		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 
-		var outcome = purchase(atServerZone(EARLIER), List.of(FAIR, GOOD, POOR, UNKNOWN));
+		var outcome = purchase(EARLIER, List.of(FAIR, GOOD, POOR, UNKNOWN));
 
 		assertEquals(ASSESSED, outcome.getType());
 		assertEquals(BasketMatch.NEEDS_IMPROVEMENT, outcome.getBasketMatch());
@@ -325,7 +328,7 @@ class BasketAssessmentServiceImplTest {
 		givenIdentifications(Set.of(GOOD, FAIR));
 		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 
-		var outcome = purchase(null, List.of(GOOD, FAIR));
+		var outcome = purchase(EARLIER, List.of(GOOD, FAIR));
 
 		assertEquals(TOTAL_XP + 10, outcome.getTotalXp(), "the total includes this basket");
 		assertEquals(StreakEffect.EXTEND, outcome.getStreakEffect());
@@ -343,7 +346,7 @@ class BasketAssessmentServiceImplTest {
 		givenIdentifications(Set.of(GOOD));
 		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1, counts(49, 0, 0, 199), Set.of(Badge.HEALTH_HERO_1, Badge.HEALTH_HERO_2));
 
-		var outcome = purchase(null, List.of(GOOD));
+		var outcome = purchase(EARLIER, List.of(GOOD));
 
 		assertEquals(List.of(earned(Badge.ENVIRONMENTAL_HERO_1, "Environmental Hero Level 1"), earned(Badge.HEALTH_HERO_3, "Health Hero Level 3")), outcome.getEarnedBadges());
 		assertEquals(List.of(Badge.ENVIRONMENTAL_HERO_1, Badge.HEALTH_HERO_3), storedBasket.getValue().getEarnedBadges());
@@ -359,7 +362,7 @@ class BasketAssessmentServiceImplTest {
 		givenIdentifications(Set.of(GOOD));
 		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
 
-		purchase(null, List.of(GOOD));
+		purchase(EARLIER, List.of(GOOD));
 
 		var order = inOrder(userProfileDao, purchasedBasketDao);
 		order.verify(userProfileDao).lock(any(), matchesHasUserId(USER));
@@ -374,7 +377,7 @@ class BasketAssessmentServiceImplTest {
 		givenIdentifications(Set.of(FAIR, POOR));
 		givenThePurchaseIsStored(0, StreakEffect.RESET, 0);
 
-		var outcome = purchase(null, List.of(FAIR, POOR));
+		var outcome = purchase(EARLIER, List.of(FAIR, POOR));
 
 		assertEquals(StreakEffect.RESET, outcome.getStreakEffect());
 		assertEquals(0, outcome.getStreak());
@@ -387,7 +390,7 @@ class BasketAssessmentServiceImplTest {
 		givenIdentifications(Set.of());
 		givenThePurchaseIsStored(0, StreakEffect.NONE, STREAK);
 
-		var outcome = purchase(null, List.of());
+		var outcome = purchase(EARLIER, List.of());
 
 		assertEquals(NOTHING_TO_ASSESS, outcome.getType());
 		assertEquals(TOTAL_XP, outcome.getTotalXp());
@@ -405,27 +408,32 @@ class BasketAssessmentServiceImplTest {
 	}
 
 	@Test
-	void takesThePurchaseTimeToBeTheTimeOfTheRequestWhenNotGiven() {
+	void keepsThePurchaseTimeAsSentAndRecordsItAtTheServersTime() {
 		givenWeights(ScientificWeights.profile());
 		givenIdentifications(Set.of(GOOD));
 		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
-
-		purchase(null, List.of(GOOD));
-
-		assertEquals(NOW, storedBasket.getValue().getPurchasedAt());
-		assertEquals(NOW, storedBasket.getValue().getRecordedAt());
-	}
-
-	@Test
-	void keepsThePurchaseTimeInTheTimeZoneOfTheServer() {
-		givenWeights(ScientificWeights.profile());
-		givenIdentifications(Set.of(GOOD));
-		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
-		var elsewhere = atServerZone(EARLIER).withOffsetSameInstant(ZoneOffset.ofHours(-7));
+		var elsewhere = EARLIER.withOffsetSameInstant(ZoneOffset.ofHours(-7));
 
 		purchase(elsewhere, List.of(GOOD));
 
-		assertEquals(EARLIER, storedBasket.getValue().getPurchasedAt(), "the same instant, as the server tells the time");
+		assertEquals(elsewhere, storedBasket.getValue().getPurchasedAt(), "the local time at the shop, with its offset");
+		assertEquals(NOW, storedBasket.getValue().getRecordedAt());
+	}
+
+	/**
+	 * A shop at +14:00 sends a purchase it made just now: its local time runs ahead of the server's clock by hours, its
+	 * instant does not.
+	 */
+	@Test
+	void acceptsAPurchaseMadeNowAtAShopAheadOfTheServersTimeZone() {
+		givenWeights(ScientificWeights.profile());
+		givenIdentifications(Set.of(GOOD));
+		givenThePurchaseIsStored(10, StreakEffect.EXTEND, STREAK + 1);
+		var now = atServerZone(NOW).withOffsetSameInstant(ZoneOffset.ofHours(14));
+
+		purchase(now, List.of(GOOD));
+
+		assertEquals(now, storedBasket.getValue().getPurchasedAt(), "stored as sent");
 	}
 
 	@Test
@@ -437,7 +445,7 @@ class BasketAssessmentServiceImplTest {
 
 		purchase(atServerZone(ahead), List.of(GOOD));
 
-		assertEquals(ahead, storedBasket.getValue().getPurchasedAt(), "stored as sent");
+		assertEquals(atServerZone(ahead), storedBasket.getValue().getPurchasedAt(), "stored as sent");
 	}
 
 	@Test
@@ -459,7 +467,7 @@ class BasketAssessmentServiceImplTest {
 		when(userProfileDao.lock(any(), matchesHasUserId(USER))).thenReturn(Uni.createFrom().voidItem());
 		when(catalogueDao.findRetailers(any(), eq(Set.of(CATALOGUE)))).thenReturn(Uni.createFrom().item(Map.of()));
 
-		var failure = sut.assessPurchasedBasket(USER, CATALOGUE, null, List.of(GOOD), LANGUAGE)
+		var failure = sut.assessPurchasedBasket(USER, CATALOGUE, EARLIER, List.of(GOOD), LANGUAGE)
 				.onItem().<Throwable>transform(_ -> null)
 				.onFailure().recoverWithItem(t -> t)
 				.await().atMost(WAIT);

@@ -164,12 +164,12 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 
 	@Override
 	public Uni<BasketAssessmentOutcome> assessPurchasedBasket(
-			User user, CatalogueId catalogueId, @Nullable OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language) {
+			User user, CatalogueId catalogueId, OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language) {
 		authorization.requirePerson(user);
 		var recordedAt = dateTimeService.getNow();
-		LocalDateTime purchaseTime = purchaseTime(purchasedAt, recordedAt);
+		requireNotInTheFuture(purchasedAt, recordedAt);
 		LOG.info("Assess purchased basket, user: {}, catalogue: {}, purchasedAt: {}, language: {}, keys: {}", user.getId().asString(), catalogueId.asString(),
-				purchaseTime, language, productKeys.stream().map(ProductKey::asString).toList());
+				purchasedAt, language, productKeys.stream().map(ProductKey::asString).toList());
 		return persistenceContextFactory.withTransaction(tx -> forcm(
 				userProfileDao.lock(tx, user),
 				_ -> scoreBasket(user, catalogueId, productKeys),
@@ -181,7 +181,7 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 									.userId(user.getId())
 									.retailerId(retailerId)
 									.catalogueId(catalogueId)
-									.purchasedAt(purchaseTime)
+									.purchasedAt(purchasedAt)
 									.recordedAt(recordedAt)
 									.type(typeOf(verdict))
 									.basketMatch(verdict.basketMatch())
@@ -200,18 +200,16 @@ public class BasketAssessmentServiceImpl implements BasketAssessmentService {
 	}
 
 	/**
-	 * The time of the purchase as this application tells the time: the time of recording when the caller states none.
-	 * A time ahead of the clock by more than {@link #MAX_CLOCK_SKEW} is refused.
+	 * Refuse a purchase time ahead of the clock of this application by more than {@link #MAX_CLOCK_SKEW}. The instants
+	 * are compared, so a shop whose local time runs ahead of the server's is not in the future.
+	 *
+	 * @param recordedAt The time of recording, in the server's time zone
 	 */
-	private static LocalDateTime purchaseTime(@Nullable OffsetDateTime purchasedAt, LocalDateTime recordedAt) {
-		if (purchasedAt == null) {
-			return recordedAt;
-		}
-		var purchaseTime = purchasedAt.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
-		if (purchaseTime.isAfter(recordedAt.plus(MAX_CLOCK_SKEW))) {
+	private static void requireNotInTheFuture(OffsetDateTime purchasedAt, LocalDateTime recordedAt) {
+		var latest = recordedAt.atZone(ZoneId.systemDefault()).toInstant().plus(MAX_CLOCK_SKEW);
+		if (purchasedAt.toInstant().isAfter(latest)) {
 			throw BadInputValueException.fromInputNameAndHint("purchasedAt", "The purchase time is in the future, purchasedAt: " + purchasedAt);
 		}
-		return purchaseTime;
 	}
 
 	private Uni<RetailerId> requireRetailerOf(ReactivePersistenceContext em, CatalogueId catalogueId) {

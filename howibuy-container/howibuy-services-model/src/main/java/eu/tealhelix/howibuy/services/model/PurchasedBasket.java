@@ -1,6 +1,7 @@
 package eu.tealhelix.howibuy.services.model;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,9 +27,10 @@ public interface PurchasedBasket {
 	CatalogueId getCatalogueId();
 
 	/**
-	 * When the user bought the basket, as the Retailer states it.
+	 * When the user bought the basket, as the Retailer states it: the date and time at the shop, with the shop's offset
+	 * from UTC.
 	 */
-	LocalDateTime getPurchasedAt();
+	OffsetDateTime getPurchasedAt();
 
 	/**
 	 * When HowiBuy registered the purchase.

@@ -40,7 +40,7 @@ public class BasketAssessmentResource {
 	private static final String BAD_BASKET = "The request could not be read, it lacks the language or a product key, or it has more than " + ProductAssessmentResource.MAX_PRODUCTS + " products.";
 
 	private static final String PURCHASE_FORBIDDEN = "The caller is not an active retailer of this application, the Catalogue named is not an active Catalogue of the retailer, or the user named has not consented to it.";
-	private static final String BAD_PURCHASE = "The request could not be read, it lacks the Catalogue id, the language or a product key, its correlation id is missing or longer than 100 characters, its purchase time is in the future, or it has more than " + ProductAssessmentResource.MAX_PRODUCTS + " products.";
+	private static final String BAD_PURCHASE = "The request could not be read, it lacks the Catalogue id, the purchase time, the language or a product key, its correlation id is missing or longer than 100 characters, its purchase time has no offset or is in the future, or it has more than " + ProductAssessmentResource.MAX_PRODUCTS + " products.";
 
 	@Inject
 	BasketAssessmentService basketAssessmentService;
@@ -92,9 +92,10 @@ public class BasketAssessmentResource {
 		return Uni.createFrom().item(() -> productKeys(request))
 				.flatMap(productKeys -> {
 					var catalogueId = new CatalogueIdImpl(requiredText("catalogueId", request.catalogueId()));
+					var purchasedAt = required("purchasedAt", request.purchasedAt());
 					return forc(
 							userImpersonationService.impersonateUserAsRetailer(retailer, request.correlationId(), catalogueId),
-							user -> basketAssessmentService.assessPurchasedBasket(user, catalogueId, request.purchasedAt(), productKeys, request.language()));
+							user -> basketAssessmentService.assessPurchasedBasket(user, catalogueId, purchasedAt, productKeys, request.language()));
 				});
 	}
 

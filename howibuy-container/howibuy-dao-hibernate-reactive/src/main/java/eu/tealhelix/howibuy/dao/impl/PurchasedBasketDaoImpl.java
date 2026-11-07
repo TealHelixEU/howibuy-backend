@@ -105,7 +105,8 @@ public class PurchasedBasketDaoImpl implements PurchasedBasketDao {
 		entity.setUserProfileId(basket.getUserId().asUuid());
 		entity.setRetailerId(basket.getRetailerId().asUuid());
 		entity.setCatalogueId(basket.getCatalogueId().asString());
-		entity.setPurchasedAt(basket.getPurchasedAt());
+		entity.setPurchasedAt(basket.getPurchasedAt().toLocalDateTime());
+		entity.setPurchasedAtOffset(basket.getPurchasedAt().getOffset().getTotalSeconds());
 		entity.setRecordedAt(basket.getRecordedAt());
 		entity.setOutcomeType(basket.getType());
 		entity.setBasketMatch(basket.getBasketMatch());

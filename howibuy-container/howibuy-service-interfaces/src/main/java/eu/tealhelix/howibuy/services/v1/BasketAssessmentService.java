@@ -5,7 +5,6 @@ import java.util.List;
 
 import eu.tealhelix.catalogue.v1.types.CatalogueId;
 import eu.tealhelix.catalogue.v1.types.ProductKey;
-import eu.tealhelix.common.types.Nullable;
 import eu.tealhelix.common.v1.model.User;
 import eu.tealhelix.howibuy.v1.model.BasketAssessmentOutcome;
 import io.smallrye.mutiny.Uni;
@@ -27,13 +26,14 @@ public interface BasketAssessmentService {
 	 *
 	 * @param user        The user who bought the basket
 	 * @param catalogueId The Catalogue the user bought it from
-	 * @param purchasedAt When the user bought it; {@code null} for the time of this call. It may run ahead of the clock of
-	 *                    this application by a few minutes at most
+	 * @param purchasedAt When the user bought it: the date and time at the shop, with the shop's offset from UTC, which
+	 *                    decides the month the purchase counts in. It may run ahead of the clock of this application by a
+	 *                    few minutes at most
 	 * @param productKeys The products of the basket
 	 * @param language    The language of the labels of the Basket Match and of the badges
 	 * @return The outcome, whose total XP and Streak include this basket; a failure with
 	 *         {@code BadInputValueException} for a purchase time in the future
 	 */
 	Uni<BasketAssessmentOutcome> assessPurchasedBasket(
-			User user, CatalogueId catalogueId, @Nullable OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language);
+			User user, CatalogueId catalogueId, OffsetDateTime purchasedAt, List<ProductKey> productKeys, String language);
 }

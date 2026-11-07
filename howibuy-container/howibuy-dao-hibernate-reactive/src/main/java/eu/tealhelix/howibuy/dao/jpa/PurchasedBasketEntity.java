@@ -32,6 +32,9 @@ public class PurchasedBasketEntity {
 	@Column(name = "purchased_at")
 	private LocalDateTime purchasedAt;
 
+	@Column(name = "purchased_at_offset")
+	private int purchasedAtOffset;
+
 	@Column(name = "recorded_at")
 	private LocalDateTime recordedAt;
 
@@ -87,6 +90,14 @@ public class PurchasedBasketEntity {
 
 	public void setPurchasedAt(LocalDateTime purchasedAt) {
 		this.purchasedAt = purchasedAt;
+	}
+
+	public int getPurchasedAtOffset() {
+		return purchasedAtOffset;
+	}
+
+	public void setPurchasedAtOffset(int purchasedAtOffset) {
+		this.purchasedAtOffset = purchasedAtOffset;
 	}
 
 	public LocalDateTime getRecordedAt() {

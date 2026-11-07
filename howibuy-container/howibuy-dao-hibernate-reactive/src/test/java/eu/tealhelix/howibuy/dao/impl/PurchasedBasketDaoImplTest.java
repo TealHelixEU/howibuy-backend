@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +68,7 @@ public class PurchasedBasketDaoImplTest {
 	private static final UUID ATTEMPT = UUID.fromString("0e6d9b42-1f87-4c3a-b5e0-7a29c4f8d613");
 	private static final UUID MILK = UUID.fromString("7b2f4e18-9c63-4a05-8d71-e4a0b3c95f26");
 	private static final UUID CHIPS = UUID.fromString("7b2f4e18-9c63-4a05-8d71-e4a0b3c95f27");
-	private static final LocalDateTime PURCHASED_AT = LocalDateTime.of(2026, 10, 31, 9, 15, 30);
+	private static final OffsetDateTime PURCHASED_AT = OffsetDateTime.of(2026, 10, 31, 9, 15, 30, 0, ZoneOffset.ofHours(5));
 	private static final LocalDateTime RECORDED_AT = LocalDateTime.of(2026, 10, 31, 9, 20, 45);
 
 	@Container
@@ -107,13 +109,14 @@ public class PurchasedBasketDaoImplTest {
 		new ReactivePersistenceContextFactoryImpl(sessionFactory).withTransaction(tx -> sut.store(tx, basket))
 				.await().atMost(Duration.ofSeconds(ASYNC_WAIT_SECONDS));
 
-		var baskets = rows("SELECT id, user_profile_id, retailer_id, catalogue_id, purchased_at, recorded_at, outcome_type, basket_match, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET");
+		var baskets = rows("SELECT id, user_profile_id, retailer_id, catalogue_id, purchased_at, purchased_at_offset, recorded_at, outcome_type, basket_match, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET");
 		assertEquals(1, baskets.size());
 		var stored = baskets.getFirst();
 		assertEquals(USER, stored.get("user_profile_id"));
 		assertEquals(RETAILER, stored.get("retailer_id"));
 		assertEquals(CATALOGUE, stored.get("catalogue_id"));
-		assertEquals(PURCHASED_AT, stored.get("purchased_at"));
+		assertEquals(LocalDateTime.of(2026, 10, 31, 9, 15, 30), stored.get("purchased_at"), "the local time at the shop, as sent");
+		assertEquals(18000, stored.get("purchased_at_offset"), "the offset as sent, in seconds");
 		assertEquals(RECORDED_AT, stored.get("recorded_at"));
 		assertEquals("ASSESSED", stored.get("outcome_type"));
 		assertEquals("GOOD", stored.get("basket_match"));

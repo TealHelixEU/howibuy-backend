@@ -16,7 +16,6 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,6 +74,10 @@ public class BasketAssessmentTest {
 	private static final int TOTAL_XP = 12;
 	private static final int STREAK = 3;
 	private static final String SHOPPER_CORRELATION_ID = "basket-shopper";
+	/**
+	 * The time of a purchase whose time the test does not look at.
+	 */
+	private static final String PURCHASED_AT = "2026-11-06T18:30:00+02:00";
 	private static final User RETAILER = new UserImpl(new UserIdImpl(RETAILER_ID), "test-retailer", null, false, false, Set.of(Role.RETAILER));
 
 	private static final Map<String, Authentication> AUTHENTICATIONS_BY_TOKEN = AssessmentFixtures.authenticationsWith(Map.of(
@@ -252,11 +255,10 @@ public class BasketAssessmentTest {
 				.body("streak", equalTo(STREAK + 1))
 				.body("earnedBadges", equalTo(List.of()));
 
-		var serverTime = OffsetDateTime.parse(purchasedAt).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 		assertEquals(
-				List.of(SHOPPER_ID + "|" + RETAILER_ID + "|" + CATALOGUE_GR + "|" + serverTime + "|ASSESSED|" + match + "|10|null"),
-				fixtures.rows("SELECT user_profile_id, retailer_id, catalogue_id, to_char(purchased_at, 'YYYY-MM-DD\"T\"HH24:MI:SS'), outcome_type, basket_match, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET"),
-				"bought at the time the Retailer states, under the scientific weights");
+				List.of(SHOPPER_ID + "|" + RETAILER_ID + "|" + CATALOGUE_GR + "|2026-10-30T10:15:30|18000|ASSESSED|" + match + "|10|null"),
+				fixtures.rows("SELECT user_profile_id, retailer_id, catalogue_id, to_char(purchased_at, 'YYYY-MM-DD\"T\"HH24:MI:SS'), purchased_at_offset, outcome_type, basket_match, xp_value, compass_attempt_id FROM TH_PURCHASED_BASKET"),
+				"bought at the shop's local time the Retailer states, with its offset, under the scientific weights");
 		assertEquals(List.of(storedProduct("feta", feta, scientific), storedProduct("yoghurt", yoghurt, scientific)), storedProducts());
 		assertEquals(TOTAL_XP + 10, xpTotal(SHOPPER_ID));
 		assertEquals(STREAK + 1, streak(SHOPPER_ID));
@@ -270,7 +272,7 @@ public class BasketAssessmentTest {
 		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
 		fixtures.classify("yoghurt", "h1", yoghurt);
 
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200).body("basketMatch", equalTo(matchOf(personal, yoghurt).name()));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "yoghurt"), 200).body("basketMatch", equalTo(matchOf(personal, yoghurt).name()));
 
 		assertEquals(
 				fixtures.rows("SELECT id FROM TH_SFC_ATTEMPT WHERE user_id = '" + SHOPPER_ID + "'"),
@@ -283,8 +285,8 @@ public class BasketAssessmentTest {
 		fixtures.applyProduct("yoghurt", 1, "h1", listing(CATALOGUE_GR, true));
 		fixtures.classify("yoghurt", "h1", anArchetypeThatEarnsXp());
 
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200).body("totalXp", equalTo(TOTAL_XP + 10));
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200).body("totalXp", equalTo(TOTAL_XP + 20));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "yoghurt"), 200).body("totalXp", equalTo(TOTAL_XP + 10));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "yoghurt"), 200).body("totalXp", equalTo(TOTAL_XP + 20));
 
 		assertEquals(TOTAL_XP + 20, xpTotal(SHOPPER_ID));
 		assertEquals(List.of("2"), fixtures.rows("SELECT count(*) FROM TH_PURCHASED_BASKET WHERE user_profile_id = '" + SHOPPER_ID + "'"),
@@ -303,15 +305,15 @@ public class BasketAssessmentTest {
 		fixtures.classify("yoghurt", "h1", anArchetypeThatEarnsXp());
 		fixtures.classify("feta", "h2", aProblematicArchetype());
 
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt", "feta"), 200)
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "yoghurt", "feta"), 200)
 				.body("streakEffect", equalTo("EXTEND")).body("streak", equalTo(STREAK + 1));
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200)
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "yoghurt"), 200)
 				.body("streakEffect", equalTo("EXTEND")).body("streak", equalTo(STREAK + 2));
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "unknown"), 200)
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "unknown"), 200)
 				.body("streakEffect", equalTo("NONE")).body("streak", equalTo(STREAK + 2));
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "feta"), 200)
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "feta"), 200)
 				.body("streakEffect", equalTo("RESET")).body("streak", equalTo(0));
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200)
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "yoghurt"), 200)
 				.body("streakEffect", equalTo("EXTEND")).body("streak", equalTo(1));
 
 		assertEquals(1, streak(SHOPPER_ID));
@@ -339,13 +341,13 @@ public class BasketAssessmentTest {
 				"earned by the basket, when the purchase was recorded, not when it was made");
 
 		assess("shopper", request("en", "yoghurt"), 200).body("earnedBadges", equalTo(List.of()));
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 200).body("earnedBadges", equalTo(List.of()));
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT, "yoghurt"), 200).body("earnedBadges", equalTo(List.of()));
 		assertEquals(List.of("1"), fixtures.rows("SELECT count(*) FROM TH_USER_BADGE"), "a badge is earned once");
 	}
 
 	@Test
 	void aPurchaseWithNothingToAssessIsStoredWithoutProducts() throws SQLException {
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null), 200)
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT), 200)
 				.body("type", equalTo("NOTHING_TO_ASSESS"))
 				.body("basketMatch", equalTo(null))
 				.body("xpValue", equalTo(0))
@@ -366,7 +368,7 @@ public class BasketAssessmentTest {
 		fixtures.classify("yoghurt", "h1", anArchetypeThatEarnsXp());
 		var correlationId = UUID.randomUUID().toString();
 
-		purchase("retailer", purchaseRequest(correlationId, null, "yoghurt"), 200).body("totalXp", equalTo(10)).body("streak", equalTo(1));
+		purchase("retailer", purchaseRequest(correlationId, PURCHASED_AT, "yoghurt"), 200).body("totalXp", equalTo(10)).body("streak", equalTo(1));
 
 		var userId = fixtures.rows("SELECT user_id FROM TH_CORREL_ID WHERE retailer_id = '" + RETAILER_ID + "' AND correlation_id = '" + correlationId + "'").getFirst();
 		assertEquals(List.of(userId), fixtures.rows("SELECT user_profile_id FROM TH_PURCHASED_BASKET"));
@@ -375,17 +377,35 @@ public class BasketAssessmentTest {
 	}
 
 	@Test
-	void thePurchaseTimeIsTheTimeOfTheRequestWhenNotGiven() throws SQLException {
+	void aPurchaseIsRecordedAtTheTimeOfTheRequest() throws SQLException {
 		var before = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
 
-		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null), 200);
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT), 200);
 
 		var after = LocalDateTime.now().plusSeconds(1);
-		var times = fixtures.rows("SELECT purchased_at, recorded_at FROM TH_PURCHASED_BASKET").getFirst().split("\\|");
-		assertEquals(times[1], times[0], "bought when it was registered");
-		var recordedAt = LocalDateTime.parse(times[1].replace(' ', 'T'));
+		var recordedAt = LocalDateTime.parse(fixtures.rows("SELECT recorded_at FROM TH_PURCHASED_BASKET").getFirst().replace(' ', 'T'));
 		assertFalse(recordedAt.isBefore(before), "recorded at " + recordedAt + ", not before " + before);
 		assertTrue(recordedAt.isBefore(after), "recorded at " + recordedAt + ", before " + after);
+	}
+
+	@Test
+	void aPurchaseWithoutAPurchaseTimeIsRefused() throws SQLException {
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, null, "yoghurt"), 400)
+				.body("message", equalTo("Required input 'purchasedAt' is missing."));
+
+		assertNothingPurchased();
+	}
+
+	/**
+	 * The offset decides the month a purchase counts in, so a time without one is refused, and so is a date alone.
+	 */
+	@Test
+	void aPurchaseTimeWithoutAnOffsetIsRefused() throws SQLException {
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, "2026-11-06T18:30:00", "yoghurt"), 400);
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, "2026-11-06", "yoghurt"), 400);
+		purchase("retailer", purchaseRequest(SHOPPER_CORRELATION_ID, "yesterday", "yoghurt"), 400);
+
+		assertNothingPurchased();
 	}
 
 	@Test
@@ -400,11 +420,11 @@ public class BasketAssessmentTest {
 
 	@Test
 	void aPurchaseWithoutACatalogueOrACorrelationIdIsRefused() throws SQLException {
-		var withoutCatalogue = purchaseRequest(SHOPPER_CORRELATION_ID, null);
+		var withoutCatalogue = purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT);
 		withoutCatalogue.remove("catalogueId");
 		purchase("retailer", withoutCatalogue, 400).body("message", equalTo("Required input 'catalogueId' is missing."));
-		purchase("retailer", purchaseRequest(null, null), 400).body("message", equalTo("Required input 'correlationId' is missing."));
-		purchase("retailer", Map.of("correlationId", SHOPPER_CORRELATION_ID, "catalogueId", CATALOGUE_GR, "language", "en"), 400)
+		purchase("retailer", purchaseRequest(null, PURCHASED_AT), 400).body("message", equalTo("Required input 'correlationId' is missing."));
+		purchase("retailer", Map.of("correlationId", SHOPPER_CORRELATION_ID, "catalogueId", CATALOGUE_GR, "purchasedAt", PURCHASED_AT, "language", "en"), 400)
 				.body("message", equalTo("Required input 'productKeys' is missing."));
 
 		assertNothingPurchased();
@@ -416,8 +436,8 @@ public class BasketAssessmentTest {
 	 */
 	@Test
 	void onlyARetailerMayRegisterAPurchase() throws SQLException {
-		purchase("shopper", purchaseRequest(SHOPPER_CORRELATION_ID, null), 403);
-		purchase("sync", purchaseRequest(SHOPPER_CORRELATION_ID, null), 403);
+		purchase("shopper", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT), 403);
+		purchase("sync", purchaseRequest(SHOPPER_CORRELATION_ID, PURCHASED_AT), 403);
 
 		assertNothingPurchased();
 	}
@@ -433,8 +453,8 @@ public class BasketAssessmentTest {
 	 */
 	private void theShopperHasBoughtProductsAbove08OnTheEnvironment(int products) throws SQLException {
 		try (var c = dataSource.getConnection(); var s = c.createStatement()) {
-			s.execute("INSERT INTO TH_PURCHASED_BASKET (id, user_profile_id, retailer_id, catalogue_id, purchased_at, recorded_at, outcome_type, basket_match, xp_value) "
-					+ "VALUES ('" + EARLIER_BASKET_ID + "', '" + SHOPPER_ID + "', '" + RETAILER_ID + "', '" + CATALOGUE_GR + "', now(), now(), 'ASSESSED', 'GOOD', 0)");
+			s.execute("INSERT INTO TH_PURCHASED_BASKET (id, user_profile_id, retailer_id, catalogue_id, purchased_at, purchased_at_offset, recorded_at, outcome_type, basket_match, xp_value) "
+					+ "VALUES ('" + EARLIER_BASKET_ID + "', '" + SHOPPER_ID + "', '" + RETAILER_ID + "', '" + CATALOGUE_GR + "', now(), 0, now(), 'ASSESSED', 'GOOD', 0)");
 			s.execute("INSERT INTO TH_PURCHASED_BASKET_PRODUCT (purchased_basket_id, product_key, archetype_product_id, personal_overall_score, scientific_overall_score, "
 					+ "score_environment, score_animal_welfare, score_socio_economic, score_health) "
 					+ "SELECT '" + EARLIER_BASKET_ID + "', 'earlier-' || n, '" + UUID.randomUUID() + "', 0.5, 0.5, 0.9, 0.1, 0.1, 0.1 FROM generate_series(1, " + products + ") n");

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd
+	http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd"
+>
+	<changeSet id="purchased_basket_purchased_at_local" author="nikospara">
+		<setColumnRemarks tableName="TH_PURCHASED_BASKET" columnName="purchased_at" remarks="When the user bought the basket: the date and time at the shop, in the shop's local time, as the Retailer states it; its offset from UTC is purchased_at_offset" />
+		<rollback>
+			<setColumnRemarks tableName="TH_PURCHASED_BASKET" columnName="purchased_at" remarks="When the user bought the basket, as the Retailer states it" />
+		</rollback>
+	</changeSet>
+
+	<!--
+		The default serves the baskets stored so far only, and is dropped: they are test calls, timed in the server's zone,
+		which the containers leave unset, so most likely UTC.
+	-->
+	<changeSet id="purchased_basket_purchased_at_offset" author="nikospara">
+		<addColumn tableName="TH_PURCHASED_BASKET">
+			<column name="purchased_at_offset" type="INT" defaultValueNumeric="0" remarks="The offset from UTC of purchased_at, in seconds, as the Retailer states it">
+				<constraints nullable="false" notNullConstraintName="NL_TH_PURCHASED_BASKET__PURCHASED_AT_OFFSET" />
+			</column>
+		</addColumn>
+		<dropDefaultValue tableName="TH_PURCHASED_BASKET" columnName="purchased_at_offset" />
+		<rollback>
+			<dropColumn tableName="TH_PURCHASED_BASKET" columnName="purchased_at_offset" />
+		</rollback>
+	</changeSet>
+</databaseChangeLog>
